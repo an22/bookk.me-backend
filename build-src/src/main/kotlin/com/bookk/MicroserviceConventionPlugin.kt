@@ -1,0 +1,59 @@
+package com.bookk
+
+import com.bookk.build_src.convention.applyConvention
+import com.bookk.build_src.tools.libs
+import com.bookk.build_src.tools.nativeClassifier
+import io.ktor.plugin.features.*
+import org.gradle.api.Plugin
+import org.gradle.api.Project
+import org.gradle.api.plugins.JavaPluginExtension
+import org.gradle.api.tasks.testing.Test
+import org.gradle.kotlin.dsl.dependencies
+import org.gradle.kotlin.dsl.getByType
+import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
+
+@Suppress("unused")
+class MicroserviceConventionPlugin : Plugin<Project> {
+
+    private val includeJson = true
+
+    override fun apply(target: Project) {
+        with(target) {
+            pluginManager.apply {
+                apply(libs.plugins.kotlin.jvm.get().pluginId)
+                apply(libs.plugins.ktor.get().pluginId)
+                apply(libs.plugins.kotlin.serialization.get().pluginId)
+            }
+
+            extensions.getByType<JavaPluginExtension>().applyConvention()
+            extensions.getByType<KotlinJvmProjectExtension>().applyConvention()
+            extensions.getByType<KtorExtension>().applyConvention(target)
+            target.tasks.withType(Test::class.java) {
+                useJUnitPlatform()
+            }
+
+            target.dependencies {
+                add("implementation", libs.ktor.core)
+                add("implementation", libs.ktor.netty)
+                add("implementation", libs.ktor.logging)
+                add("implementation", libs.ktor.certificates)
+                add("implementation", libs.ktor.negotiation)
+                add("implementation", libs.ktor.protobuf)
+                if (includeJson) {
+                    add("implementation", libs.ktor.json)
+                }
+                add("implementation", libs.ktor.documentation.generation)
+                add("implementation", libs.ktor.auth)
+                add("implementation", libs.ktor.jwt)
+                add("implementation", libs.kotlin.coroutines)
+                add("implementation", libs.kotlin.datetime)
+                add("implementation", libs.koin.core)
+                add("implementation", libs.koin.ktor)
+                add("implementation", libs.koin.ktor)
+                add("implementation", platform(libs.koin.bom))
+                add("implementation", variantOf(libs.netty.boringssl) { classifier(nativeClassifier.orEmpty()) })
+                add("testImplementation", libs.kotlin.test)
+            }
+        }
+    }
+}

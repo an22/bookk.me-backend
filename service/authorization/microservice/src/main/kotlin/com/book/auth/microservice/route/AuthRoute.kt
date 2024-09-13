@@ -1,13 +1,13 @@
 package com.book.auth.microservice.route
 
+import com.book.auth.domain.api.entity.DeleteAccountInfo
 import com.book.auth.domain.api.entity.RefreshTokenInfo
 import com.book.auth.domain.api.entity.SignInInfo
 import com.book.auth.domain.api.entity.SignUpInfo
-import com.book.auth.domain.api.operation.CreateUserAccount
-import com.book.auth.domain.api.operation.GenerateAuthToken
+import com.book.auth.domain.api.operation.*
 import com.book.auth.domain.api.operation.GenerateAuthToken.GenerateAuthTokenBusinessError
-import com.book.auth.domain.api.operation.RefreshToken
 import com.book.core.domain.entity.handle
+import com.book.core.service.auth.AppPrincipal
 import com.book.core.service.enity.MessageServerError
 import com.book.core.service.enity.SimpleServerError
 import io.ktor.http.*
@@ -80,7 +80,44 @@ fun Routing.authRoute() {
         authenticate {
             route("/sign_out") {
                 signOutDocumentation()
-
+                post {
+                    val operation by application.inject<SignOut>()
+                    val principal = requireNotNull(call.principal<AppPrincipal>())
+                    operation.call(SignOut.Param(principal.deviceId))
+                        .handle<_, Unit>(
+                            onSuccess = {
+                                call.respond(HttpStatusCode.OK)
+                            },
+                            onBusinessError = {
+                                call.respond(HttpStatusCode.BadRequest)
+                            },
+                            onUnexpectedError = {
+                                call.respond(HttpStatusCode.InternalServerError, MessageServerError(it.message.orEmpty()))
+                            }
+                        )
+                }
+            }
+        }
+        authenticate {
+            route("/delete_account") {
+                deleteAccountDocumentation()
+                post {
+                    val operation by application.inject<DeleteAccount>()
+                    val principal = requireNotNull(call.principal<AppPrincipal>())
+                    val info = call.receive<DeleteAccountInfo>()
+                    operation.call(DeleteAccount.Param(principal.userName, info))
+                        .handle<_, DeleteAccount.DeleteAccountError>(
+                            onSuccess = {
+                                call.respond(HttpStatusCode.OK)
+                            },
+                            onBusinessError = {
+                                call.respond(HttpStatusCode.BadRequest, SimpleServerError(it.errorMessage.orEmpty(), it.code))
+                            },
+                            onUnexpectedError = {
+                                call.respond(HttpStatusCode.InternalServerError, MessageServerError(it.message.orEmpty()))
+                            }
+                        )
+                }
             }
         }
     }

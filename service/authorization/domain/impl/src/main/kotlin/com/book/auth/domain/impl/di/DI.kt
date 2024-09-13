@@ -1,13 +1,7 @@
 package com.book.auth.domain.impl.di
 
-import com.book.auth.domain.api.operation.CreateUserAccount
-import com.book.auth.domain.api.operation.GenerateAuthToken
-import com.book.auth.domain.api.operation.RefreshToken
-import com.book.auth.domain.api.operation.SignOut
-import com.book.auth.domain.impl.operation.CreateUserAccountImpl
-import com.book.auth.domain.impl.operation.GenerateAuthTokenImpl
-import com.book.auth.domain.impl.operation.RefreshTokenImpl
-import com.book.auth.domain.impl.operation.SignOutImpl
+import com.book.auth.domain.api.operation.*
+import com.book.auth.domain.impl.operation.*
 import org.koin.dsl.module
 
 fun authDomainModule() = module {
@@ -15,4 +9,5 @@ fun authDomainModule() = module {
     single<CreateUserAccount> { CreateUserAccountImpl(get(), get()) }
     single<RefreshToken> { RefreshTokenImpl(get(), get()) }
     single<SignOut> { SignOutImpl(get()) }
+    single<DeleteAccount> { DeleteAccountImpl(get(), get()) }
 }

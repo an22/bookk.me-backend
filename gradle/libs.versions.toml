@@ -17,9 +17,10 @@ kafka = "3.8.0"
 mariadb = "3.4.1"
 totp = "2.4.1"
 apache-codec = "1.17.1"
+elastic = "8.16.1"
 
 [libraries]
-apache-base32 = {module = "commons-codec:commons-codec", version.ref = "apache-codec"}
+apache-base32 = { module = "commons-codec:commons-codec", version.ref = "apache-codec" }
 ktor-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
 ktor-netty = { module = "io.ktor:ktor-server-netty", version.ref = "ktor" }
 ktor-certificates = { module = "io.ktor:ktor-network-tls-certificates", version.ref = "ktor" }

@@ -113,4 +113,12 @@ internal class UserAuthLocalDataSourceImpl(
             set(it.isSignedIn, false)
         } as Long
     }
+
+    override suspend fun deleteAccount(userId: Long) {
+        execute {
+            database.delete(UserAuthInfo) {
+                it.userId eq userId
+            }
+        }
+    }
 }

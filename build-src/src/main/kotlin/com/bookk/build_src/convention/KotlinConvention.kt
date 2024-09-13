@@ -7,5 +7,6 @@ internal fun KotlinJvmProjectExtension.applyConvention() {
     sourceSets.all {
         languageSettings.optIn("io.lettuce.core.ExperimentalLettuceCoroutinesApi")
         languageSettings.optIn("kotlinx.serialization.ExperimentalSerializationApi")
+        languageSettings.optIn("kotlinx.coroutines.ExperimentalCoroutinesApi")
     }
 }

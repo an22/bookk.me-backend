@@ -45,6 +45,13 @@ internal class UserAuthLocalDataSourceImpl(
             .firstOrNull()
     }
 
+    override suspend fun deleteUser(id: Long) {
+        database.delete(UserColumn) {
+            it.id eq id
+        }
+        cacheClient.delete("${USER_CACHE_KEY}$id")
+    }
+
     companion object {
         const val USER_CACHE_KEY = "user:"
     }

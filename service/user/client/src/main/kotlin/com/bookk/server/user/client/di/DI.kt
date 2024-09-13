@@ -5,5 +5,5 @@ import com.bookk.server.user.client.impl.LocalUserClient
 import org.koin.dsl.module
 
 fun userClientModule() = module {
-    single<UserClient> { LocalUserClient(get(), get(), get()) }
+    single<UserClient> { LocalUserClient(get(), get(), get(), get()) }
 }

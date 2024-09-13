@@ -1,8 +1,7 @@
 package com.bookk.core
 
 interface Logger {
-    fun d(message: String)
-    fun e(throwable: Throwable)
-    fun e(message: String, throwable: Throwable)
-    fun i(message: String)
+    fun error(throwable: Throwable, message: String? = null)
+    fun info(message: String)
+    fun debug(message: String)
 }

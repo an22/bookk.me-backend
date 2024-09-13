@@ -15,4 +15,5 @@ interface UserAuthLocalDataSource {
     suspend fun getDevice(authRecordId: Long, deviceName: String): DeviceInfo?
     suspend fun getAuthRecordByUsername(login: String): UserAuthRecord?
     suspend fun deleteTokenInfoForDevice(deviceId: Long)
+    suspend fun deleteAccount(userId: Long)
 }

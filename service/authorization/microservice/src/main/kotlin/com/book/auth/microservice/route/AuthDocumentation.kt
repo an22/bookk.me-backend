@@ -1,9 +1,6 @@
 package com.book.auth.microservice.route
 
-import com.book.auth.domain.api.entity.RefreshTokenInfo
-import com.book.auth.domain.api.entity.SignInInfo
-import com.book.auth.domain.api.entity.SignUpInfo
-import com.book.auth.domain.api.entity.TokenInfo
+import com.book.auth.domain.api.entity.*
 import com.book.auth.domain.api.operation.CreateUserAccount.CreateUserAccountError.*
 import com.book.auth.domain.api.operation.RefreshToken.RefreshTokenError.InvalidRefreshToken
 import com.book.auth.domain.impl.operation.MIN_PASSWORD_LENGTH
@@ -21,7 +18,7 @@ internal fun Route.signInDocumentation() {
     install(NotarizedRoute()) {
         tags = setOf("auth")
         post = PostInfo.builder {
-            summary("Get auth tokens.")
+            summary("Sign In")
             description("Get access token and refresh token.")
             request {
                 mediaTypes(ContentType.Application.ProtoBuf.toString())
@@ -48,7 +45,7 @@ internal fun Route.signUpDocumentation() {
     install(NotarizedRoute()) {
         tags = setOf("auth")
         post = PostInfo.builder {
-            summary("Create user account.")
+            summary("Sign Up")
             description("Create new user account.")
             request {
                 mediaTypes(ContentType.Application.ProtoBuf.toString())
@@ -94,7 +91,7 @@ internal fun Route.refreshDocumentation() {
         tags = setOf("auth")
         security = mapOf("jwt" to emptyList())
         post = PostInfo.builder {
-            summary("Refresh access token.")
+            summary("Refresh access token")
             description("This request will generate new access/refresh pair.")
             request {
                 mediaTypes(ContentType.Application.ProtoBuf.toString())
@@ -129,6 +126,39 @@ internal fun Route.refreshDocumentation() {
 
 internal fun Route.signOutDocumentation() {
     install(NotarizedRoute()) {
+        tags = setOf("auth")
+        security = mapOf("jwt" to emptyList())
+        post = PostInfo.builder {
+            summary("Sign Out")
+            description("Mark user as signed out")
+            response {
+                mediaTypes(ContentType.Application.ProtoBuf.toString())
+                responseCode(HttpStatusCode.OK)
+                responseType<Unit>()
+                description("Success operation")
+            }
+        }
+    }
+}
 
+internal fun Route.deleteAccountDocumentation() {
+    install(NotarizedRoute()) {
+        tags = setOf("auth")
+        security = mapOf("jwt" to emptyList())
+        post = PostInfo.builder {
+            summary("Delete Account")
+            description("Delete user account and all associated data")
+            request {
+                mediaTypes(ContentType.Application.ProtoBuf.toString())
+                requestType<DeleteAccountInfo>()
+                description("Password with totp code")
+            }
+            response {
+                mediaTypes(ContentType.Application.ProtoBuf.toString())
+                responseCode(HttpStatusCode.OK)
+                responseType<Unit>()
+                description("Success operation")
+            }
+        }
     }
 }

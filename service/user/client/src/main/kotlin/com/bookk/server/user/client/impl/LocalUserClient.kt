@@ -1,6 +1,7 @@
 package com.bookk.server.user.client.impl
 
 import com.book.user.domain.api.operation.CreateUser
+import com.book.user.domain.api.operation.DeleteUser
 import com.book.user.domain.api.operation.GetCurrentUser
 import com.book.user.domain.api.operation.IsUserExistWithParameters
 import com.bookk.server.user.client.UserClient
@@ -8,5 +9,6 @@ import com.bookk.server.user.client.UserClient
 internal class LocalUserClient(
     override val getCurrentUserOperation: GetCurrentUser,
     override val createUser: CreateUser,
-    override val isUserExistWithParameters: IsUserExistWithParameters
+    override val isUserExistWithParameters: IsUserExistWithParameters,
+    override val deleteUser: DeleteUser
 ) : UserClient

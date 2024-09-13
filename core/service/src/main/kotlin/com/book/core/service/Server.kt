@@ -34,17 +34,18 @@ fun startServer(
     diModules: List<Module> = emptyList(),
     modules: Application.() -> Unit
 ) {
-    val keyStoreFile = File("keystore.p12")
     embeddedServer(
         factory = Netty,
         environment = applicationEngineEnvironment {
             developmentMode = true
 
+            val keyStoreFile = File(System.getenv("me.bookk.ssl_filename"))
+            val keyStorePass = System.getenv("me.bookk.ssl_pass")
             sslConnector(
-                keyStore = KeyStore.getInstance(keyStoreFile, "6485".toCharArray()),
-                keyAlias = "localhost",
-                keyStorePassword = { "6485".toCharArray() },
-                privateKeyPassword = { "6485".toCharArray() }
+                keyStore = KeyStore.getInstance(keyStoreFile, keyStorePass.toCharArray()),
+                keyAlias = System.getenv("me.bookk.ssl_alias"),
+                keyStorePassword = { keyStorePass.toCharArray() },
+                privateKeyPassword = { keyStorePass.toCharArray() }
             ) {
                 port = System.getenv("me.bookk.port").toInt()
                 keyStorePath = keyStoreFile

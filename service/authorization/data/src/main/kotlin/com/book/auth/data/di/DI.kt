@@ -6,21 +6,19 @@ import com.book.auth.domain.api.datasource.UserAuthLocalDataSource
 import com.book.auth.domain.api.datasource.UserAuthRemoteDataSource
 import com.book.core.data.database.createDataSourceAndMigrateDb
 import com.bookk.server.user.client.di.userClientModule
-import org.koin.core.qualifier.named
+import org.koin.core.qualifier.Qualifier
 import org.koin.dsl.module
 import org.ktorm.database.Database
 import org.ktorm.logging.ConsoleLogger
 import org.ktorm.logging.LogLevel
 import org.ktorm.support.mysql.MySqlDialect
 
-val authQualifier = named("authorization")
-
-fun authDataModule() = module {
+fun authDataModule(qualifier: Qualifier) = module {
     includes(userClientModule())
-    single<UserAuthLocalDataSource> { UserAuthLocalDataSourceImpl(get(authQualifier), get(authQualifier)) }
+    single<UserAuthLocalDataSource> { UserAuthLocalDataSourceImpl(get(qualifier), get(qualifier)) }
     single<UserAuthRemoteDataSource> { UserAuthRemoteDataSourceImpl() }
-    single<Database>(authQualifier) {
-        val dataSource= createDataSourceAndMigrateDb(authQualifier.value)
+    single<Database>(qualifier) {
+        val dataSource= createDataSourceAndMigrateDb(qualifier.value)
         Database.connect(
             dataSource = dataSource,
             logger = ConsoleLogger(threshold = LogLevel.INFO),

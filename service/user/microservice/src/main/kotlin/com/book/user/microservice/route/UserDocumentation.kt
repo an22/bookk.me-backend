@@ -14,7 +14,7 @@ internal fun Route.createUserDocumentation() {
             security = mapOf(
                 "jwt" to emptyList()
             )
-            summary("Get current user.")
+            summary("Get current user")
             description("Get user profile from current authentication token.")
             response {
                 mediaTypes(ContentType.Application.ProtoBuf.toString())

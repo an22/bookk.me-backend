@@ -27,16 +27,17 @@ internal class GenerateAuthTokenImpl(
 
     override suspend fun call(params: Param): Result<TokenInfo> = runCatching {
         val deviceRecord = params.getAuthRecord() ?: throw InvalidCredentials
-        val accessToken = createToken(deviceRecord, ACCESS_EXPIRATION_TIME)
-        val refreshToken = createToken(deviceRecord, REFRESH_EXPIRATION_TIME)
+        val accessToken = createToken(deviceRecord, ACCESS_EXPIRATION_TIME, false)
+        val refreshToken = createToken(deviceRecord, REFRESH_EXPIRATION_TIME, true)
         localDataSource.saveUserRefreshToken(deviceRecord.deviceInfo.id, refreshToken)
         TokenInfo(accessToken, refreshToken)
     }
 
-    private fun createToken(record: DeviceAuthRecord, expirationMs: Long): String {
+    private fun createToken(record: DeviceAuthRecord, expirationMs: Long, isRefresh: Boolean): String {
         return JWT.create()
             .withAudience(serviceUrl)
             .withIssuer(ISSUER)
+            .withClaim("refresh", isRefresh)
             .withClaim("username", record.authRecord.login)
             .withClaim("id", record.authRecord.userId)
             .withClaim("role", record.authRecord.role.id)

@@ -31,13 +31,16 @@ object JwtConfig {
         .build()
 
     val validator: ApplicationCall.(JWTCredential) -> Principal? = { credentials ->
-        if (credentials.payload.expiresAt.time > Clock.System.now().toEpochMilliseconds())
+        val isNotExpired = credentials.payload.expiresAt.time > Clock.System.now().toEpochMilliseconds()
+        val isRefresh = credentials.payload.getClaim(Claim.REFRESH.key).asBoolean()
+        if (isNotExpired && !isRefresh) {
             AppPrincipal(
                 userId = credentials.payload.getClaim(Claim.ID.key).asLong(),
                 userName = credentials.payload.getClaim(Claim.USERNAME.key).asString(),
                 role = credentials.payload.getClaim(Claim.ROLE.key).asInt(),
                 deviceId = credentials.payload.getClaim(Claim.DEVICE_ID.key).asLong()
             )
+        }
         else null
     }
 

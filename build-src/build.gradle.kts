@@ -41,5 +41,10 @@ gradlePlugin {
             implementationClass = "com.bookk.DomainImplConventionPlugin"
             version = "1.0"
         }
+        register("client") {
+            id = "com.bookk.client"
+            implementationClass = "com.bookk.ClientConventionPlugin"
+            version = "1.0"
+        }
     }
 }

@@ -9,6 +9,7 @@ interface DeleteAccount : SuspendOperation<DeleteAccount.Param, Result<Unit>> {
         val userName: String,
         val info: DeleteAccountInfo
     )
+    suspend fun a(): Result<Unit>
 
     sealed class DeleteAccountError(code: Int, message: String) : BusinessError(code, message) {
         data object InvalidCredentials : DeleteAccountError(1, "Invalid credentials")

@@ -1,9 +1,75 @@
 package com.bookk.server.user.client.di
 
+import com.book.user.domain.api.operation.CreateUser
+import com.book.user.domain.api.operation.DeleteUser
+import com.book.user.domain.api.operation.GetUserById
+import com.book.user.domain.api.operation.IsUserExistWithParameters
+import com.bookk.core.AppLevelConstants
+import com.bookk.core.SslSettings
 import com.bookk.server.user.client.UserClient
-import com.bookk.server.user.client.impl.LocalUserClient
+import com.bookk.server.user.client.impl.UserClientImpl
+import com.bookk.server.user.client.impl.operation.CreateUserClientImpl
+import com.bookk.server.user.client.impl.operation.DeleteUserClientImpl
+import com.bookk.server.user.client.impl.operation.GetUserByIdClientImpl
+import com.bookk.server.user.client.impl.operation.IsUserExistWithParametersClientImpl
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.cio.CIO
+import io.ktor.client.plugins.UserAgent
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.defaultRequest
+import io.ktor.client.plugins.logging.DEFAULT
+import io.ktor.client.plugins.logging.LogLevel
+import io.ktor.client.plugins.logging.Logger
+import io.ktor.client.plugins.logging.Logging
+import io.ktor.client.plugins.resources.Resources
+import io.ktor.http.ContentType
+import io.ktor.http.URLProtocol
+import io.ktor.http.contentType
+import io.ktor.serialization.kotlinx.json.json
+import io.ktor.serialization.kotlinx.protobuf.protobuf
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.protobuf.ProtoBuf
 import org.koin.dsl.module
 
-fun userClientModule() = module {
-    single<UserClient> { LocalUserClient(get(), get(), get(), get()) }
+fun userClientModule(clientTag: String) = module {
+    single {
+        HttpClient(CIO) {
+            install(Resources)
+            install(UserAgent) { agent = clientTag }
+            install(ContentNegotiation) {
+                when (AppLevelConstants.BUILD_TYPE) {
+                    AppLevelConstants.BuildType.DEBUG -> {
+                        json(Json {
+                            prettyPrint = true
+                            encodeDefaults = true
+                            explicitNulls = false
+                        })
+                    }
+                    AppLevelConstants.BuildType.RELEASE -> {
+                        protobuf(ProtoBuf { encodeDefaults = true })
+                    }
+                }
+            }
+            install(Logging) {
+                logger = Logger.DEFAULT
+                level = LogLevel.ALL
+            }
+            engine {
+                https {
+                    trustManager = SslSettings.getTrustManager()
+                }
+            }
+            expectSuccess = true
+            defaultRequest {
+                host = System.getenv("BOOKK_ME_USER_SERVICE_HOSTNAME")
+                contentType(ContentType.Application.Json)
+                url { protocol = URLProtocol.HTTPS }
+            }
+        }
+    }
+    single<GetUserById> { GetUserByIdClientImpl(get()) }
+    single<CreateUser> { CreateUserClientImpl(get()) }
+    single<IsUserExistWithParameters> { IsUserExistWithParametersClientImpl(get()) }
+    single<DeleteUser> { DeleteUserClientImpl(get()) }
+    single<UserClient> { UserClientImpl(get(), get(), get(), get()) }
 }

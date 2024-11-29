@@ -13,7 +13,14 @@ import org.ktorm.support.mysql.MySqlDialect
 fun userDataModule(qualifier: Qualifier) = module {
     single<UserLocalDataSource> { UserAuthLocalDataSourceImpl(get(qualifier), get(qualifier)) }
     single<Database>(qualifier) {
-        val dataSource = createDataSourceAndMigrateDb(qualifier.value)
+        val dataSource= createDataSourceAndMigrateDb(
+            schemaName = System.getenv("BOOKK_ME_DB_SCHEME"),
+            driver = System.getenv("BOOKK_ME_DB_DRIVER"),
+            dbUrl = System.getenv("BOOKK_ME_DB_URL"),
+            dbPort = System.getenv("BOOKK_ME_DB_PORT"),
+            dbUsername = System.getenv("BOOKK_ME_DB_USER"),
+            dbPassword = System.getenv("BOOKK_ME_DB_PASSWORD")
+        )
         Database.connect(
             dataSource = dataSource,
             logger = ConsoleLogger(threshold = LogLevel.INFO),

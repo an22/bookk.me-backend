@@ -1,5 +1,5 @@
 plugins {
-    alias(libs.plugins.book.data)
+    alias(libs.plugins.bookk.data)
 }
 
 dependencies {

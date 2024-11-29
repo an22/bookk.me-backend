@@ -14,11 +14,18 @@ import org.ktorm.logging.LogLevel
 import org.ktorm.support.mysql.MySqlDialect
 
 fun authDataModule(qualifier: Qualifier) = module {
-    includes(userClientModule())
+    includes(userClientModule(System.getenv("BOOKK_ME_SERVICE_NAME")))
     single<UserAuthLocalDataSource> { UserAuthLocalDataSourceImpl(get(qualifier), get(qualifier)) }
     single<UserAuthRemoteDataSource> { UserAuthRemoteDataSourceImpl() }
     single<Database>(qualifier) {
-        val dataSource= createDataSourceAndMigrateDb(qualifier.value)
+        val dataSource = createDataSourceAndMigrateDb(
+            schemaName = System.getenv("BOOKK_ME_DB_SCHEME"),
+            driver = System.getenv("BOOKK_ME_DB_DRIVER"),
+            dbUrl = System.getenv("BOOKK_ME_DB_URL"),
+            dbPort = System.getenv("BOOKK_ME_DB_PORT"),
+            dbUsername = System.getenv("BOOKK_ME_DB_USER"),
+            dbPassword = System.getenv("BOOKK_ME_DB_PASSWORD")
+        )
         Database.connect(
             dataSource = dataSource,
             logger = ConsoleLogger(threshold = LogLevel.INFO),

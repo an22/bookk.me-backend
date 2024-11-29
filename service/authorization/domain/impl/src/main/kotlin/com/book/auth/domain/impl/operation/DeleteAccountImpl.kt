@@ -30,4 +30,6 @@ internal class DeleteAccountImpl(
         authLocalDataSource.deleteAccount(authRecord.userId)
         userClient.deleteUser.call(DeleteUser.Param(authRecord.userId))
     }
+
+    override suspend fun a() = userClient.deleteUser.call(DeleteUser.Param(1))
 }

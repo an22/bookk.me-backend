@@ -1,5 +1,5 @@
 plugins {
-    alias(libs.plugins.book.microservice)
+    alias(libs.plugins.bookk.microservice)
 }
 
 group = "com.bookk.server.microservice.authorization"

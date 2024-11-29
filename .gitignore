@@ -5,8 +5,9 @@ build/
 !**/src/test/**/build/
 *.pem
 environment.properties
-keystore.p12
-
+core/service/src/main/resources/keystore.p12
+**/*.jks
+**/ca-key
 ### IntelliJ IDEA ###
 .kotlin
 .idea
@@ -41,3 +42,7 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+### Application ###
+deployment/elastic-stack/elasticsearch/certs/*
+!deployment/elastic-stack/elasticsearch/certs/instances.yml

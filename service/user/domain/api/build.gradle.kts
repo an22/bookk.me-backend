@@ -1,5 +1,5 @@
 plugins {
-    alias(libs.plugins.book.domain.api)
+    alias(libs.plugins.bookk.domain.api)
 }
 
 dependencies {

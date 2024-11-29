@@ -9,11 +9,11 @@ import org.koin.dsl.module
 
 fun eventStreamingModule(qualifier: Qualifier) = module {
     factory<EventStreaming.Consumer<String, ByteArray>>(qualifier) {
-        val servers = System.getenv("me.bookk.kafka_servers").split(';')
+        val servers = System.getenv("BOOKK_ME_KAFKA_HOSTS").split(',')
         KafkaEventConsumer(servers, ProtoBuf { encodeDefaults = true })
     }
     factory<EventStreaming.Producer<String, ByteArray>>(qualifier) {
-        val servers = System.getenv("me.bookk.kafka_servers").split(';')
+        val servers = System.getenv("BOOKK_ME_KAFKA_HOSTS").split(',')
         KafkaEventProducer(servers, ProtoBuf { encodeDefaults = true })
     }
 }

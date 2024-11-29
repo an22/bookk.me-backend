@@ -1,62 +1,70 @@
 [versions]
-kotlin = "2.0.0"
-kotlin-datetime = "0.6.0"
-coroutines = "1.9.0-RC"
-ktor = "2.3.12"
-logback = "1.5.6"
-bookPlugins = "1.0"
+apache-codec = "1.17.1"
+apache-common-pool = "2.4.3"
+bookkPlugins = "1.0"
 boringssl = "2.0.65.Final"
-ktorm = "4.1.0"
+coroutines = "1.9.0-RC"
 flyway = "10.17.1"
 hikari = "5.1.0"
-koin-bom = "4.0.0-RC1"
-ktor-doc = "4.0.0-alpha"
-redis = "6.4.0.RELEASE"
-apache-common-pool = "2.4.3"
 kafka = "3.8.0"
+koin-bom = "4.1.0-Beta1"
+kotlin = "2.0.0"
+kotlin-datetime = "0.6.0"
+ktor = "3.0.0"
+ktor-doc = "4.0.3"
+ktorm = "4.1.0"
+logback = "1.5.6"
 mariadb = "3.4.1"
+redis = "6.4.0.RELEASE"
 totp = "2.4.1"
-apache-codec = "1.17.1"
-elastic = "8.16.1"
 
 [libraries]
 apache-base32 = { module = "commons-codec:commons-codec", version.ref = "apache-codec" }
-ktor-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
-ktor-netty = { module = "io.ktor:ktor-server-netty", version.ref = "ktor" }
-ktor-certificates = { module = "io.ktor:ktor-network-tls-certificates", version.ref = "ktor" }
-ktor-negotiation = { module = "io.ktor:ktor-server-content-negotiation", version.ref = "ktor" }
-ktor-logging = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
-ktor-protobuf = { module = "io.ktor:ktor-serialization-kotlinx-protobuf", version.ref = "ktor" }
-ktor-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
-ktor-documentation-generation = { module = "io.bkbn:kompendium-core", version.ref = "ktor-doc" }
-ktor-auth = { module = "io.ktor:ktor-server-auth", version.ref = "ktor" }
-ktor-jwt = { module = "io.ktor:ktor-server-auth-jwt", version.ref = "ktor" }
-kotlin-coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
-kotlin-coroutines-reactive = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-reactive", version.ref = "coroutines" }
-kotlin-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlin-datetime" }
-kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
-netty-boringssl = { module = "io.netty:netty-tcnative-boringssl-static", version.ref = "boringssl" }
-ktorm = { module = "org.ktorm:ktorm-core", version.ref = "ktorm" }
-ktorm-dialect-mysql = { module = "org.ktorm:ktorm-support-mysql", version.ref = "ktorm" }
 flyway-core = { module = "org.flywaydb:flyway-core", version.ref = "flyway" }
 flyway-mysql = { module = "org.flywaydb:flyway-mysql", version.ref = "flyway" }
 hikari-cp = { module = "com.zaxxer:HikariCP", version.ref = "hikari" }
+kafka-client = { module = "org.apache.kafka:kafka-clients", version.ref = "kafka" }
 koin-bom = { module = "io.insert-koin:koin-bom", version.ref = "koin-bom" }
 koin-core = { module = "io.insert-koin:koin-core" }
 koin-ktor = { module = "io.insert-koin:koin-ktor" }
+kotlin-coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+kotlin-coroutines-reactive = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-reactive", version.ref = "coroutines" }
+kotlin-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlin-datetime" }
 kotlin-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
+ktor-auth = { module = "io.ktor:ktor-server-auth", version.ref = "ktor" }
+ktor-certificates = { module = "io.ktor:ktor-network-tls-certificates", version.ref = "ktor" }
+ktor-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
+ktor-client-log = { module = "io.ktor:ktor-client-logging", version.ref = "ktor" }
+ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
+ktor-documentation-generation = { module = "io.bkbn:kompendium-core", version.ref = "ktor-doc" }
+ktor-documentation-generation-resources = { module = "io.bkbn:kompendium-resources", version.ref = "ktor-doc" }
+ktor-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
+ktor-jwt = { module = "io.ktor:ktor-server-auth-jwt", version.ref = "ktor" }
+ktor-logging = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+ktor-logging-call = { module = "io.ktor:ktor-server-call-logging", version.ref = "logback" }
+ktor-server-negotiation = { module = "io.ktor:ktor-server-content-negotiation", version.ref = "ktor" }
+ktor-client-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
+ktor-netty = { module = "io.ktor:ktor-server-netty", version.ref = "ktor" }
 ktor-plugin = { module = "io.ktor.plugin:io.ktor.plugin.gradle.plugin", version.ref = "ktor" }
+ktor-protobuf = { module = "io.ktor:ktor-serialization-kotlinx-protobuf", version.ref = "ktor" }
+ktor-server-resources = { module = "io.ktor:ktor-server-resources", version.ref = "ktor" }
+ktor-client-resources = { module = "io.ktor:ktor-client-resources", version.ref = "ktor" }
+ktorm = { module = "org.ktorm:ktorm-core", version.ref = "ktorm" }
+ktorm-dialect-mysql = { module = "org.ktorm:ktorm-support-mysql", version.ref = "ktorm" }
+mariadb = { module = "org.mariadb.jdbc:mariadb-java-client", version.ref = "mariadb" }
+netty-boringssl = { module = "io.netty:netty-tcnative-boringssl-static", version.ref = "boringssl" }
 redis-client = { module = "io.lettuce:lettuce-core", version.ref = "redis" }
 redis-pool = { module = "org.apache.commons:commons-pool2", version.ref = "apache-common-pool" }
-kafka-client = { module = "org.apache.kafka:kafka-clients", version.ref = "kafka" }
-mariadb = { module = "org.mariadb.jdbc:mariadb-java-client", version.ref = "mariadb" }
 totp = { module = "dev.turingcomplete:kotlin-onetimepassword", version.ref = "totp" }
 
 [plugins]
-ktor = { id = "io.ktor.plugin", version.ref = "ktor" }
+bookk-data = { id = "com.bookk.data", version.ref = "bookkPlugins" }
+bookk-domain-api = { id = "com.bookk.domain.api", version.ref = "bookkPlugins" }
+bookk-domain-impl = { id = "com.bookk.domain.impl", version.ref = "bookkPlugins" }
+bookk-microservice = { id = "com.bookk.microservice", version.ref = "bookkPlugins" }
+bookk-client = { id = "com.bookk.client", version.ref = "bookkPlugins" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
-book-microservice = { id = "com.bookk.microservice", version.ref = "bookPlugins" }
-book-data = { id = "com.bookk.data", version.ref = "bookPlugins" }
-book-domain-api = { id = "com.bookk.domain.api", version.ref = "bookPlugins" }
-book-domain-impl = { id = "com.bookk.domain.impl", version.ref = "bookPlugins" }
+ktor = { id = "io.ktor.plugin", version.ref = "ktor" }

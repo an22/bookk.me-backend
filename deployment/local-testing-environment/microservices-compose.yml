@@ -1,0 +1,18 @@
+version: "3.9"
+
+services:
+  auth:
+    image: com.bookk.server.microservice.authorization:0.0.1
+    hostname: auth.service
+    ports:
+      - '65500:443'
+    env_file:
+      - service/auth.env
+
+  user:
+    image: com.bookk.server.microservice.user:0.0.1
+    ports:
+      - '65501:443'
+    hostname: user.service
+    env_file:
+      - service/auth.env

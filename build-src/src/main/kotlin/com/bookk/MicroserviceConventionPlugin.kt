@@ -3,7 +3,7 @@ package com.bookk
 import com.bookk.build_src.convention.applyConvention
 import com.bookk.build_src.tools.libs
 import com.bookk.build_src.tools.nativeClassifier
-import io.ktor.plugin.features.*
+import io.ktor.plugin.features.KtorExtension
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.plugins.JavaPluginExtension
@@ -14,8 +14,6 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 
 @Suppress("unused")
 class MicroserviceConventionPlugin : Plugin<Project> {
-
-    private val includeJson = true
 
     override fun apply(target: Project) {
         with(target) {
@@ -37,12 +35,12 @@ class MicroserviceConventionPlugin : Plugin<Project> {
                 add("implementation", libs.ktor.netty)
                 add("implementation", libs.ktor.logging)
                 add("implementation", libs.ktor.certificates)
-                add("implementation", libs.ktor.negotiation)
+                add("implementation", libs.ktor.server.negotiation)
                 add("implementation", libs.ktor.protobuf)
-                if (includeJson) {
-                    add("implementation", libs.ktor.json)
-                }
+                add("implementation", libs.ktor.server.resources)
+                add("implementation", libs.ktor.json)
                 add("implementation", libs.ktor.documentation.generation)
+                add("implementation", libs.ktor.documentation.generation.resources)
                 add("implementation", libs.ktor.auth)
                 add("implementation", libs.ktor.jwt)
                 add("implementation", libs.kotlin.coroutines)

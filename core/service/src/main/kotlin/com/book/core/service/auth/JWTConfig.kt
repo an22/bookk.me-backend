@@ -6,9 +6,10 @@ import com.auth0.jwt.JWT
 import com.auth0.jwt.JWTVerifier
 import com.auth0.jwt.algorithms.Algorithm
 import com.auth0.jwt.interfaces.RSAKeyProvider
-import io.ktor.server.application.*
-import io.ktor.server.auth.*
-import io.ktor.server.auth.jwt.*
+import com.bookk.core.AppLevelConstants
+import io.ktor.server.application.ApplicationCall
+import io.ktor.server.auth.Principal
+import io.ktor.server.auth.jwt.JWTCredential
 import kotlinx.datetime.Clock
 import java.nio.charset.Charset
 import java.security.KeyFactory
@@ -27,7 +28,7 @@ object JwtConfig {
     val verifier: JWTVerifier = JWT
         .require(Algorithm.RSA256(createPublicKeyProvider()))
         .withIssuer(ISSUER)
-        .withAudience(System.getenv("me.bookk.domain_name"))
+        .withAudience(AppLevelConstants.DOMAIN_NAME)
         .build()
 
     val validator: ApplicationCall.(JWTCredential) -> Principal? = { credentials ->
@@ -73,7 +74,7 @@ object JwtConfig {
 
     private fun readPublicPemFile(): ByteArray {
         return javaClass.classLoader
-            .getResource(System.getenv("me.bookk.jwt_public_key_file"))!!
+            .getResource(System.getenv("BOOKK_ME_JWT_PUBLIC_KEY_FILE"))!!
             .readBytes()
             .toString(Charset.defaultCharset())
             .replace("-----BEGIN PUBLIC KEY-----", "")
@@ -84,7 +85,7 @@ object JwtConfig {
 
     private fun readPrivatePemFile(): ByteArray {
         return javaClass.classLoader
-            .getResource(System.getenv("me.bookk.jwt_private_key_file"))!!
+            .getResource(System.getenv("BOOKK_ME_JWT_PRIVATE_KEY_FILE"))!!
             .readBytes()
             .toString(Charset.defaultCharset())
             .replace("-----BEGIN PRIVATE KEY-----", "")

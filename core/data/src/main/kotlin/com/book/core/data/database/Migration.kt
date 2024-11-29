@@ -6,13 +6,20 @@ import org.flywaydb.core.Flyway
 import org.flywaydb.core.api.Location
 import javax.sql.DataSource
 
-fun createDataSourceAndMigrateDb(schemaName: String): DataSource {
+fun createDataSourceAndMigrateDb(
+    schemaName: String,
+    driver: String,
+    dbUrl: String,
+    dbPort: String,
+    dbUsername: String,
+    dbPassword: String,
+): DataSource {
     val migrationDataSource: DataSource = HikariDataSource(
         HikariConfig().apply {
-            driverClassName = System.getenv("me.bookk.db_driver")
-            jdbcUrl = System.getenv("me.bookk.db_url")
-            username = System.getenv("me.bookk.db_user")
-            password = System.getenv("me.bookk.db_password")
+            driverClassName = driver
+            jdbcUrl = "$dbUrl:$dbPort?allowPublicKeyRetrieval=true"
+            username = dbUsername
+            password = dbPassword
             validate()
         }
     )
@@ -27,10 +34,10 @@ fun createDataSourceAndMigrateDb(schemaName: String): DataSource {
 
     return HikariDataSource(
         HikariConfig().apply {
-            driverClassName = System.getenv("me.bookk.db_driver")
-            jdbcUrl = System.getenv("me.bookk.db_url") + "/" + schemaName
-            username = System.getenv("me.bookk.db_user")
-            password = System.getenv("me.bookk.db_password")
+            driverClassName = driver
+            jdbcUrl = "$dbUrl:$dbPort/$schemaName?allowPublicKeyRetrieval=true"
+            username = dbUsername
+            password = dbPassword
             validate()
         }
     )

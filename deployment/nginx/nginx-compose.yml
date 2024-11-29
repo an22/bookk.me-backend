@@ -1,0 +1,54 @@
+version: "3.9"
+
+networks:
+  bookk-me:
+    driver: overlay
+    external: true
+
+configs:
+  nginx_config:
+    name: nginx-v10
+    file: nginx.conf
+
+services:
+  nginx:
+    image: nginx:latest
+    networks:
+      - bookk-me
+    ports:
+      - target: 443
+        published: 443
+        protocol: tcp
+        mode: host
+    configs:
+      - source: nginx_config
+        target: '/etc/nginx/nginx.conf'
+    volumes:
+      - '/etc/letsencrypt/live/bookkk.me/fullchain.pem:/etc/letsencrypt/live/bookkk.me/fullchain.pem:ro'
+      - '/etc/letsencrypt/live/bookkk.me/privkey.pem:/etc/letsencrypt/live/bookkk.me/privkey.pem:ro'
+      - '/etc/letsencrypt/live/orchestrator.bookkk.me/fullchain.pem:/etc/letsencrypt/live/orchestrator.bookkk.me/fullchain.pem:ro'
+      - '/etc/letsencrypt/live/orchestrator.bookkk.me/privkey.pem:/etc/letsencrypt/live/orchestrator.bookkk.me/privkey.pem:ro'
+      - '/etc/letsencrypt/live/kafka.bookkk.me/fullchain.pem:/etc/letsencrypt/live/kafka.bookkk.me/fullchain.pem:ro'
+      - '/etc/letsencrypt/live/kafka.bookkk.me/privkey.pem:/etc/letsencrypt/live/kafka.bookkk.me/privkey.pem:ro'
+      - '/etc/letsencrypt/live/kibana.bookkk.me/fullchain.pem:/etc/letsencrypt/live/kibana.bookkk.me/fullchain.pem:ro'
+      - '/etc/letsencrypt/live/kibana.bookkk.me/privkey.pem:/etc/letsencrypt/live/kibana.bookkk.me/privkey.pem:ro'
+      - '/etc/letsencrypt/live/vpn.bookkk.me/fullchain.pem:/etc/letsencrypt/live/vpn.bookkk.me/fullchain.pem:ro'
+      - '/etc/letsencrypt/live/vpn.bookkk.me/privkey.pem:/etc/letsencrypt/live/vpn.bookkk.me/privkey.pem:ro'
+
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+      replicas: 1
+      update_config:
+        parallelism: 1
+        order: start-first
+        failure_action: rollback
+        delay: 10s
+      rollback_config:
+        parallelism: 0
+        order: stop-first
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+        window: 120s

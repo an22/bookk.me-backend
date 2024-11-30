@@ -1,0 +1,33 @@
+name: init_swarm
+on:
+  workflow_dispatch:
+    inputs:
+      host:
+        description: 'Host'
+        required: true
+      port:
+        description: 'Port'
+        required: true
+        default: '22'
+      username:
+        description: 'Username'
+        required: true
+      password:
+        description: 'Password'
+        required: true
+
+
+jobs:
+
+  init_swarm:
+    name: Init swarm
+    runs-on: ubuntu-latest
+    steps:
+      - name: Init swarm on remote host
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ github.event.inputs.host }}
+          username: ${{ github.event.inputs.username }}
+          password: ${{ github.event.inputs.password }}
+          port: ${{ github.event.inputs.port }}
+          script_path: docker swarm init --advertise-addr "${{ secrets.VPN_SUBNET }}"

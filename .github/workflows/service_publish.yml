@@ -1,0 +1,15 @@
+name: service_publish
+on: workflow_dispatch
+
+jobs:
+  publish_auth_microservice:
+    name: Publish Auth Microservice
+    uses: ./.github/workflows/service_publish_template.yml
+    with:
+      module: "service:authorization:microservice"
+
+  publish_user_microservice:
+    name: Publish User Microservice
+    uses: ./.github/workflows/service_publish_template.yml
+    with:
+      module: "service:user:microservice"

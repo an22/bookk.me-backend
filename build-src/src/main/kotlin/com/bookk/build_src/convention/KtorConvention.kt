@@ -16,7 +16,7 @@ fun KtorExtension.applyConvention(project: Project) {
             DockerImageRegistry.dockerHub(
                 appName = project.provider { "microservice-${project.name}" },
                 username = project.providers.environmentVariable("DOCKERHUB_USERNAME"),
-                password = project.providers.environmentVariable("DOCKERHUB_TOKEN")
+                password = project.providers.environmentVariable("DOCKERHUB_PASSWORD")
             )
         )
     }

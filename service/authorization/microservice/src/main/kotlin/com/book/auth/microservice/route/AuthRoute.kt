@@ -2,14 +2,14 @@ package com.book.auth.microservice.route
 
 import com.book.auth.microservice.route.api.deleteAccount
 import com.book.auth.microservice.route.api.deleteLogOut
-import com.book.auth.microservice.route.api.getHealthCheck
+import com.book.auth.microservice.route.api.healthCheck
 import com.book.auth.microservice.route.api.postCreateAccount
 import com.book.auth.microservice.route.api.postLogin
 import com.book.auth.microservice.route.api.postRefreshToken
 import io.ktor.server.routing.Routing
 
 fun Routing.authRoute() {
-    getHealthCheck()
+    healthCheck()
     postLogin()
     postCreateAccount()
     postRefreshToken()

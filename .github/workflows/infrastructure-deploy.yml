@@ -1,4 +1,4 @@
-name: infrastructure_deploy
+name: Deploy project infrastructure
 on: workflow_dispatch
 
 jobs:

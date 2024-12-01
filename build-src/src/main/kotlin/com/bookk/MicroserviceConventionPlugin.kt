@@ -21,6 +21,7 @@ class MicroserviceConventionPlugin : Plugin<Project> {
                 apply(libs.plugins.kotlin.jvm.get().pluginId)
                 apply(libs.plugins.ktor.get().pluginId)
                 apply(libs.plugins.kotlin.serialization.get().pluginId)
+                apply(libs.plugins.kotlin.fixtures.get().pluginId)
             }
 
             extensions.getByType<JavaPluginExtension>().applyConvention()
@@ -51,6 +52,14 @@ class MicroserviceConventionPlugin : Plugin<Project> {
                 add("implementation", platform(libs.koin.bom))
                 add("implementation", variantOf(libs.netty.boringssl) { classifier(nativeClassifier.orEmpty()) })
                 add("testImplementation", libs.kotlin.test)
+                add("testImplementation", libs.ktor.test)
+                add("testImplementation", libs.ktor.client.resources)
+                add("testImplementation", libs.ktor.client.negotiation)
+                add("testImplementation", libs.ktor.documentation.generation)
+                add("testImplementation", libs.ktor.documentation.generation.resources)
+                add("testFixturesImplementation", libs.ktor.client.resources)
+                add("testFixturesImplementation", libs.ktor.client.negotiation)
+                add("testFixturesImplementation", libs.ktor.test)
             }
         }
     }

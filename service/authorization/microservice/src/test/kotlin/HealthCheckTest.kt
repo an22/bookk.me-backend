@@ -1,0 +1,25 @@
+import com.book.auth.domain.api.routing.AuthRouting
+import com.book.auth.microservice.route.api.healthCheck
+import com.bookk.core.test.createTestClient
+import com.bookk.core.test.installTestPlugins
+import io.ktor.client.plugins.resources.get
+import io.ktor.http.HttpStatusCode
+import io.ktor.server.routing.routing
+import io.ktor.server.testing.testApplication
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Test
+
+class HealthCheckTest {
+    @Test
+    fun test() = testApplication {
+        application {
+            installTestPlugins()
+            routing {
+                healthCheck()
+            }
+        }
+        val client = createTestClient()
+        val response = client.get(AuthRouting.Api.Auth.HealthCheck())
+        assertEquals(HttpStatusCode.OK, response.status)
+    }
+}

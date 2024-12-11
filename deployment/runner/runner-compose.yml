@@ -13,6 +13,7 @@ services:
       RUNNER_NAME: backend-runner
       ACCESS_TOKEN: ${RUNNER_ACCESS_TOKEN}
       RUNNER_WORKDIR: /tmp/runner/work
+      CONFIGURED_ACTIONS_RUNNER_FILES_DIR: /runner/data
       RUNNER_SCOPE: 'repo'
       REPO_URL: "https://github.com/an22/bookk.me-backend"
 

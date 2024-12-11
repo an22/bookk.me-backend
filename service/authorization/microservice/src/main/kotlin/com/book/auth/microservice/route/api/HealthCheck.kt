@@ -8,7 +8,7 @@ import io.ktor.server.resources.get
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 
-internal fun Route.getHealthCheck() {
+internal fun Route.healthCheck() {
     withHealthCheckDocumentation()
     get<Api.Auth.HealthCheck> {
         call.respond(HttpStatusCode.OK)

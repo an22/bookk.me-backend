@@ -81,7 +81,7 @@ private fun Application.installAuthPlugin() {
     }
 }
 
-private fun Application.installDocumentationPlugin() {
+fun Application.installDocumentationPlugin() {
     install(NotarizedApplication()) {
         spec = {
             OpenApiSpec(

@@ -4,5 +4,6 @@ enum class Claim(val key: String) {
     ID("id"),
     USERNAME("username"),
     ROLE("role"),
-    DEVICE_ID("device_id")
+    DEVICE_ID("device_id"),
+    REFRESH("refresh")
 }

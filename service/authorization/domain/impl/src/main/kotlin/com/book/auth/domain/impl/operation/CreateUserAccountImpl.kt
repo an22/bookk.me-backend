@@ -1,6 +1,6 @@
 package com.book.auth.domain.impl.operation
 
-import com.book.auth.domain.api.datasource.UserAuthLocalDataSource
+import com.book.auth.domain.api.datasource.UserAuthDataSource
 import com.book.auth.domain.api.entity.SignUpInfo
 import com.book.auth.domain.api.entity.TotpSecret
 import com.book.auth.domain.api.operation.CreateUserAccount
@@ -17,27 +17,27 @@ const val MIN_PASSWORD_LENGTH = 8
 
 internal class CreateUserAccountImpl(
     private val userClient: UserClient,
-    private val localDataSource: UserAuthLocalDataSource
+    private val localDataSource: UserAuthDataSource
 ) : CreateUserAccount {
 
     private val secretGenerator = RandomSecretGenerator()
     private val base32 = Base32()
 
-    override suspend fun call(params: SignUpInfo): Result<TotpSecret> {
-        if (params.password.length < MIN_PASSWORD_LENGTH) return Result.failure(CreateUserAccountError.PasswordTooShort)
-        if (!PASSWORD_REGEX.matches(params.password)) return Result.failure(CreateUserAccountError.PasswordTooWeak)
+    override suspend fun call(params: SignUpInfo): Result<TotpSecret> = runCatching {
+        if (params.password.length < MIN_PASSWORD_LENGTH) throw CreateUserAccountError.PasswordTooShort
+        if (!PASSWORD_REGEX.matches(params.password)) throw CreateUserAccountError.PasswordTooWeak
         val userRecord = localDataSource.getAuthRecordByUsername(params.login)
-        if (userRecord != null) return Result.failure(CreateUserAccountError.LoginAlreadyExist)
+        if (userRecord != null) throw CreateUserAccountError.LoginAlreadyExist
         val userByParams = userClient.isUserExistWithParameters.call(Param(params.phone, params.email))
-        if (userByParams.getOrThrow()) return Result.failure(CreateUserAccountError.EmailOrPhoneAlreadyExist)
+        if (userByParams.getOrThrow()) throw CreateUserAccountError.EmailOrPhoneAlreadyExist
         val passwordHash = createPasswordHash(params.password)
-        return userClient.createUser.call(params.asUser())
+        userClient.createUser.call(params.asUser())
             .map {
                 val newSecret = secretGenerator.createRandomSecret(HmacAlgorithm.SHA1)
                 val encodedSecret = base32.encodeAsString(newSecret)
                 localDataSource.createAuthRecord(it, passwordHash, encodedSecret, params)
                 TotpSecret(encodedSecret)
-            }
+            }.getOrThrow()
     }
 
     private fun SignUpInfo.asUser(): User {

@@ -3,19 +3,23 @@ package com.book.user.data.di
 import com.book.core.data.database.createDataSourceAndMigrateDb
 import com.book.user.data.repository.UserAuthLocalDataSourceImpl
 import com.book.user.domain.api.datasource.UserLocalDataSource
-import org.koin.core.qualifier.named
 import org.koin.dsl.module
 import org.ktorm.database.Database
 import org.ktorm.logging.ConsoleLogger
 import org.ktorm.logging.LogLevel
 import org.ktorm.support.mysql.MySqlDialect
 
-val userQualifier = named("user")
-
 fun userDataModule() = module {
-    single<UserLocalDataSource> { UserAuthLocalDataSourceImpl(get(userQualifier), get(userQualifier)) }
-    single<Database>(userQualifier) {
-        val dataSource = createDataSourceAndMigrateDb(userQualifier.value)
+    single<UserLocalDataSource> { UserAuthLocalDataSourceImpl(get(), get()) }
+    single<Database> {
+        val dataSource= createDataSourceAndMigrateDb(
+            schemaName = System.getenv("BOOKK_ME_DB_SCHEME"),
+            driver = System.getenv("BOOKK_ME_DB_DRIVER"),
+            dbUrl = System.getenv("BOOKK_ME_DB_URL"),
+            dbPort = System.getenv("BOOKK_ME_DB_PORT"),
+            dbUsername = System.getenv("BOOKK_ME_DB_USER"),
+            dbPassword = System.getenv("BOOKK_ME_DB_PASSWORD")
+        )
         Database.connect(
             dataSource = dataSource,
             logger = ConsoleLogger(threshold = LogLevel.INFO),

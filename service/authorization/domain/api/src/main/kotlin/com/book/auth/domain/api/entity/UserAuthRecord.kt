@@ -10,3 +10,9 @@ class UserAuthRecord(
     val totpSecret: String,
     val passwordHash: String
 )
+
+class UserAuthRecordV2(
+    val id: Long,
+    val login: String,
+    val role: UserRole,
+)

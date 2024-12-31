@@ -6,9 +6,9 @@ import com.auth0.jwt.JWT
 import com.auth0.jwt.JWTVerifier
 import com.auth0.jwt.algorithms.Algorithm
 import com.auth0.jwt.interfaces.RSAKeyProvider
-import io.ktor.server.application.*
-import io.ktor.server.auth.*
-import io.ktor.server.auth.jwt.*
+import com.bookk.core.AppLevelConstants
+import io.ktor.server.application.ApplicationCall
+import io.ktor.server.auth.jwt.JWTCredential
 import kotlinx.datetime.Clock
 import java.nio.charset.Charset
 import java.security.KeyFactory
@@ -27,17 +27,20 @@ object JwtConfig {
     val verifier: JWTVerifier = JWT
         .require(Algorithm.RSA256(createPublicKeyProvider()))
         .withIssuer(ISSUER)
-        .withAudience(System.getenv("me.bookk.domain_name"))
+        .withAudience(AppLevelConstants.DOMAIN_NAME)
         .build()
 
-    val validator: ApplicationCall.(JWTCredential) -> Principal? = { credentials ->
-        if (credentials.payload.expiresAt.time > Clock.System.now().toEpochMilliseconds())
+    val validator: ApplicationCall.(JWTCredential) -> AppPrincipal? = { credentials ->
+        val isNotExpired = credentials.payload.expiresAt.time > Clock.System.now().toEpochMilliseconds()
+        val isRefresh = credentials.payload.getClaim(Claim.REFRESH.key).asBoolean()
+        if (isNotExpired && !isRefresh) {
             AppPrincipal(
                 userId = credentials.payload.getClaim(Claim.ID.key).asLong(),
                 userName = credentials.payload.getClaim(Claim.USERNAME.key).asString(),
                 role = credentials.payload.getClaim(Claim.ROLE.key).asInt(),
                 deviceId = credentials.payload.getClaim(Claim.DEVICE_ID.key).asLong()
             )
+        }
         else null
     }
 
@@ -70,7 +73,7 @@ object JwtConfig {
 
     private fun readPublicPemFile(): ByteArray {
         return javaClass.classLoader
-            .getResource(System.getenv("me.bookk.jwt_public_key_file"))!!
+            .getResource(System.getenv("BOOKK_ME_JWT_PUBLIC_KEY_FILE"))!!
             .readBytes()
             .toString(Charset.defaultCharset())
             .replace("-----BEGIN PUBLIC KEY-----", "")
@@ -81,7 +84,7 @@ object JwtConfig {
 
     private fun readPrivatePemFile(): ByteArray {
         return javaClass.classLoader
-            .getResource(System.getenv("me.bookk.jwt_private_key_file"))!!
+            .getResource(System.getenv("BOOKK_ME_JWT_PRIVATE_KEY_FILE"))!!
             .readBytes()
             .toString(Charset.defaultCharset())
             .replace("-----BEGIN PRIVATE KEY-----", "")

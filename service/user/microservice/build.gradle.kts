@@ -1,5 +1,5 @@
 plugins {
-    alias(libs.plugins.book.microservice)
+    alias(libs.plugins.bookk.microservice)
 }
 
 group = "com.bookk.server.microservice.user"
@@ -10,8 +10,11 @@ application {
 }
 
 dependencies {
+    implementation(projects.core)
     implementation(projects.core.service)
     implementation(projects.core.domain)
+    implementation(projects.core.data.eventstreaming.api)
+    implementation(projects.core.data.eventstreaming.impl)
     implementation(projects.core.data.cache.api)
     implementation(projects.core.data.cache.impl)
     implementation(projects.service.user.data)

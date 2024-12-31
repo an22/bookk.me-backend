@@ -1,11 +1,14 @@
+import com.bookk.build_src.tools.includeLocalProperties
+
 plugins {
     alias(libs.plugins.ktor).apply(false)
     alias(libs.plugins.kotlin.jvm).apply(false)
     alias(libs.plugins.kotlin.serialization).apply(false)
-    alias(libs.plugins.book.data).apply(false)
-    alias(libs.plugins.book.domain.api).apply(false)
-    alias(libs.plugins.book.domain.impl).apply(false)
-    alias(libs.plugins.book.microservice)
+    alias(libs.plugins.bookk.data).apply(false)
+    alias(libs.plugins.bookk.domain.api).apply(false)
+    alias(libs.plugins.bookk.domain.impl).apply(false)
+    alias(libs.plugins.bookk.client).apply(false)
+    alias(libs.plugins.bookk.microservice)
 }
 
 group = "com.bookk.server"
@@ -20,3 +23,5 @@ dependencies {
     implementation(projects.service.authorization.microservice)
     implementation(projects.service.user.microservice)
 }
+
+includeLocalProperties(providers.gradleProperty("local.propertiesFile").get())

@@ -1,5 +1,5 @@
 plugins {
-    alias(libs.plugins.book.domain.impl)
+    alias(libs.plugins.bookk.domain.impl)
 }
 
 dependencies {
@@ -7,6 +7,7 @@ dependencies {
     implementation(libs.ktor.jwt)
     implementation(libs.totp)
     implementation(libs.apache.base32)
+    implementation(libs.passkey)
     implementation(projects.core)
     implementation(projects.core.domain)
     implementation(projects.service.authorization.data)

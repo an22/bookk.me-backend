@@ -1,10 +1,12 @@
 plugins {
-    alias(libs.plugins.book.data)
+    alias(libs.plugins.bookk.data)
 }
 
 dependencies {
+    implementation(projects.core)
     implementation(projects.core.data)
     implementation(projects.core.data.cache.api)
     implementation(projects.service.authorization.domain.api)
     implementation(projects.service.user.client)
+    implementation(libs.passkey)
 }

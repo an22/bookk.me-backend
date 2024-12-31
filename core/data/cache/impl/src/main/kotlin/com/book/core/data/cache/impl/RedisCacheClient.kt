@@ -13,15 +13,24 @@ import kotlinx.serialization.serializer
 import java.nio.ByteBuffer
 import kotlin.reflect.KType
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.toJavaDuration
 
 class RedisCacheClient(
     host: String,
     port: Int,
+    password: CharSequence,
     private val protobuf: ProtoBuf
 ) : CacheClient<String> {
 
-    private val client = RedisClient.create(RedisURI.create(host, port))
+    private val client = RedisClient.create(
+        RedisURI.builder()
+            .withHost(host)
+            .withPort(port)
+            .withPassword(password)
+            .withTimeout(5.seconds.toJavaDuration())
+            .build()
+    )
     private val connectionPool =
         ConnectionPoolSupport.createSoftReferenceObjectPool { client.connect(ProtobufRedisCodec()) }
 

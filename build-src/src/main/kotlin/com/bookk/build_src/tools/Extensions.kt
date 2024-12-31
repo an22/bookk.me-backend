@@ -8,12 +8,14 @@ import org.gradle.kotlin.dsl.getByType
 import java.util.*
 
 fun Project.includeLocalProperties(fileName: String) {
-    val propertiesFile = project.rootProject.file(fileName)
-    val properties = Properties()
-    properties.load(propertiesFile.inputStream())
-    with(extensions.getByType<ExtraPropertiesExtension>()) {
-        properties.entries.forEach {
-            set(it.key.toString(), it.value)
+    runCatching {
+        val propertiesFile = project.rootProject.file(fileName)
+        val properties = Properties()
+        properties.load(propertiesFile.inputStream())
+        with(extensions.getByType<ExtraPropertiesExtension>()) {
+            properties.entries.forEach {
+                set(it.key.toString(), it.value)
+            }
         }
     }
 }

@@ -8,7 +8,6 @@ import com.auth0.jwt.algorithms.Algorithm
 import com.auth0.jwt.interfaces.RSAKeyProvider
 import com.bookk.core.AppLevelConstants
 import io.ktor.server.application.ApplicationCall
-import io.ktor.server.auth.Principal
 import io.ktor.server.auth.jwt.JWTCredential
 import kotlinx.datetime.Clock
 import java.nio.charset.Charset
@@ -31,7 +30,7 @@ object JwtConfig {
         .withAudience(AppLevelConstants.DOMAIN_NAME)
         .build()
 
-    val validator: ApplicationCall.(JWTCredential) -> Principal? = { credentials ->
+    val validator: ApplicationCall.(JWTCredential) -> AppPrincipal? = { credentials ->
         val isNotExpired = credentials.payload.expiresAt.time > Clock.System.now().toEpochMilliseconds()
         val isRefresh = credentials.payload.getClaim(Claim.REFRESH.key).asBoolean()
         if (isNotExpired && !isRefresh) {

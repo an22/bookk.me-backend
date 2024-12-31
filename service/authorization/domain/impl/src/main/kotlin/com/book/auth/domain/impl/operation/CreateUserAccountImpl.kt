@@ -1,6 +1,6 @@
 package com.book.auth.domain.impl.operation
 
-import com.book.auth.domain.api.datasource.UserAuthLocalDataSource
+import com.book.auth.domain.api.datasource.UserAuthDataSource
 import com.book.auth.domain.api.entity.SignUpInfo
 import com.book.auth.domain.api.entity.TotpSecret
 import com.book.auth.domain.api.operation.CreateUserAccount
@@ -17,7 +17,7 @@ const val MIN_PASSWORD_LENGTH = 8
 
 internal class CreateUserAccountImpl(
     private val userClient: UserClient,
-    private val localDataSource: UserAuthLocalDataSource
+    private val localDataSource: UserAuthDataSource
 ) : CreateUserAccount {
 
     private val secretGenerator = RandomSecretGenerator()

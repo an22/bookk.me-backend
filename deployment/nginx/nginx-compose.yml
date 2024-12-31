@@ -7,8 +7,16 @@ networks:
 
 configs:
   nginx_config:
-    name: nginx-v10
+    name: nginx-v25
     file: nginx.conf
+
+  android_well_known:
+    name: android_well_known-v2
+    file: android_well_known.json
+
+  ios_well_known:
+    name: ios_well_known-v2
+    file: ios_well_known.json
 
 services:
   nginx:
@@ -23,6 +31,10 @@ services:
     configs:
       - source: nginx_config
         target: '/etc/nginx/nginx.conf'
+      - source: android_well_known
+        target: '/srv/static/android_well_known.json'
+      - source: ios_well_known
+        target: '/srv/static/ios_well_known.json'
     volumes:
       - '/etc/letsencrypt/live/bookkk.me/fullchain.pem:/etc/letsencrypt/live/bookkk.me/fullchain.pem:ro'
       - '/etc/letsencrypt/live/bookkk.me/privkey.pem:/etc/letsencrypt/live/bookkk.me/privkey.pem:ro'
@@ -41,7 +53,6 @@ services:
       replicas: 1
       update_config:
         parallelism: 1
-        order: start-first
         failure_action: rollback
         delay: 10s
       rollback_config:

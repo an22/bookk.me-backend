@@ -14,6 +14,7 @@ import com.bookk.server.user.client.impl.operation.GetUserByIdClientImpl
 import com.bookk.server.user.client.impl.operation.IsUserExistWithParametersClientImpl
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
+import io.ktor.client.plugins.HttpRequestRetry
 import io.ktor.client.plugins.UserAgent
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
@@ -36,6 +37,10 @@ fun userClientModule(clientTag: String) = module {
         HttpClient(CIO) {
             install(Resources)
             install(UserAgent) { agent = clientTag }
+            install(HttpRequestRetry) {
+                retryOnExceptionOrServerErrors(maxRetries = 3)
+                constantDelay(millis = 100L)
+            }
             install(ContentNegotiation) {
                 when (AppLevelConstants.BUILD_TYPE) {
                     AppLevelConstants.BuildType.DEBUG -> {
@@ -62,7 +67,10 @@ fun userClientModule(clientTag: String) = module {
             expectSuccess = true
             defaultRequest {
                 host = System.getenv("BOOKK_ME_USER_SERVICE_HOSTNAME")
-                contentType(ContentType.Application.Json)
+                when (AppLevelConstants.BUILD_TYPE) {
+                    AppLevelConstants.BuildType.DEBUG -> contentType(ContentType.Application.Json)
+                    AppLevelConstants.BuildType.RELEASE -> contentType(ContentType.Application.ProtoBuf)
+                }
                 url { protocol = URLProtocol.HTTPS }
             }
         }

@@ -13,6 +13,7 @@ import kotlinx.serialization.serializer
 import java.nio.ByteBuffer
 import kotlin.reflect.KType
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.toJavaDuration
 
 class RedisCacheClient(
@@ -27,6 +28,7 @@ class RedisCacheClient(
             .withHost(host)
             .withPort(port)
             .withPassword(password)
+            .withTimeout(5.seconds.toJavaDuration())
             .build()
     )
     private val connectionPool =

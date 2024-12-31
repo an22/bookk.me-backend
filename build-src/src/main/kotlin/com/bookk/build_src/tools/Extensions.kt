@@ -1,16 +1,21 @@
 package com.bookk.build_src.tools
 
 import org.gradle.accessors.dm.LibrariesForLibs
-import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.plugins.ExtensionAware
+import org.gradle.api.plugins.ExtraPropertiesExtension
+import org.gradle.kotlin.dsl.getByType
 import java.util.*
 
-fun Project.findStringProperty(key: String, fileName: String): String {
+fun Project.includeLocalProperties(fileName: String) {
     val propertiesFile = project.rootProject.file(fileName)
     val properties = Properties()
     properties.load(propertiesFile.inputStream())
-    return properties.getProperty(key)?.toString() ?: throw GradleException("$key not found in $fileName")
+    with(extensions.getByType<ExtraPropertiesExtension>()) {
+        properties.entries.forEach {
+            set(it.key.toString(), it.value)
+        }
+    }
 }
 
 val Project.nativeClassifier: String?

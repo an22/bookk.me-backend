@@ -1,6 +1,6 @@
 package com.book.auth.domain.impl.operation
 
-import com.book.auth.domain.api.datasource.UserAuthLocalDataSource
+import com.book.auth.domain.api.datasource.UserAuthDataSource
 import com.book.auth.domain.api.operation.DeleteAccount
 import com.book.auth.domain.api.operation.DeleteAccount.DeleteAccountError.InvalidCredentials
 import com.book.auth.domain.impl.totp.createTotpConfig
@@ -11,7 +11,7 @@ import dev.turingcomplete.kotlinonetimepassword.TimeBasedOneTimePasswordGenerato
 import org.apache.commons.codec.binary.Base32
 
 internal class DeleteAccountImpl(
-    private val authLocalDataSource: UserAuthLocalDataSource,
+    private val authLocalDataSource: UserAuthDataSource,
     private val userClient: UserClient
 ) : DeleteAccount {
 
@@ -31,5 +31,4 @@ internal class DeleteAccountImpl(
         userClient.deleteUser.call(DeleteUser.Param(authRecord.userId))
     }
 
-    override suspend fun a() = userClient.deleteUser.call(DeleteUser.Param(1))
 }

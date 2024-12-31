@@ -3,7 +3,7 @@ package com.book.auth.domain.impl.operation
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import com.auth0.jwt.interfaces.RSAKeyProvider
-import com.book.auth.domain.api.datasource.UserAuthLocalDataSource
+import com.book.auth.domain.api.datasource.UserAuthDataSource
 import com.book.auth.domain.api.entity.DeviceAuthRecord
 import com.book.auth.domain.api.entity.TokenInfo
 import com.book.auth.domain.api.operation.GenerateAuthToken
@@ -20,7 +20,7 @@ import kotlin.time.Duration.Companion.milliseconds
 internal class GenerateAuthTokenImpl(
     private val serviceUrl: String,
     private val keyProvider: RSAKeyProvider,
-    private val localDataSource: UserAuthLocalDataSource
+    private val localDataSource: UserAuthDataSource
 ) : GenerateAuthToken {
     private val totpConfig = createTotpConfig()
     private val base32 = Base32()

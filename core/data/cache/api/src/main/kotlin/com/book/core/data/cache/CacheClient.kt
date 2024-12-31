@@ -27,6 +27,14 @@ suspend inline fun <K, reified V : Any> CacheClient<K>.get(key: K): V? {
     return get(key, typeOf<V>())
 }
 
+inline fun <K, reified V : Any> CacheClient.CacheTransaction<K>.set(key: K, value: V) {
+    set(key, value, typeOf<V>())
+}
+
+inline fun <K, reified V : Any> CacheClient.CacheTransaction<K>.get(key: K): V? {
+    return get(key, typeOf<V>())
+}
+
 suspend inline fun <K, reified V : Any> CacheClient<K>.withTransaction(noinline action: CacheClient.CacheTransaction<K>.() -> Unit) {
     withTransaction<V>(action, typeOf<V>())
 }

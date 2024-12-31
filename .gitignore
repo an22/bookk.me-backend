@@ -46,3 +46,4 @@ bin/
 ### Application ###
 deployment/elastic-stack/elasticsearch/certs/*
 !deployment/elastic-stack/elasticsearch/certs/instances.yml
+local.properties

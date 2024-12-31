@@ -1,3 +1,5 @@
+import com.bookk.build_src.tools.includeLocalProperties
+
 plugins {
     alias(libs.plugins.ktor).apply(false)
     alias(libs.plugins.kotlin.jvm).apply(false)
@@ -21,3 +23,5 @@ dependencies {
     implementation(projects.service.authorization.microservice)
     implementation(projects.service.user.microservice)
 }
+
+includeLocalProperties(providers.gradleProperty("local.propertiesFile").get())

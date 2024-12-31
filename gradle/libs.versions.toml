@@ -17,6 +17,7 @@ logback = "1.5.6"
 mariadb = "3.4.1"
 redis = "6.4.0.RELEASE"
 totp = "2.4.1"
+passkey = "2.5.4"
 
 [libraries]
 apache-base32 = { module = "commons-codec:commons-codec", version.ref = "apache-codec" }
@@ -59,6 +60,7 @@ netty-boringssl = { module = "io.netty:netty-tcnative-boringssl-static", version
 redis-client = { module = "io.lettuce:lettuce-core", version.ref = "redis" }
 redis-pool = { module = "org.apache.commons:commons-pool2", version.ref = "apache-common-pool" }
 totp = { module = "dev.turingcomplete:kotlin-onetimepassword", version.ref = "totp" }
+passkey = { module = "com.yubico:webauthn-server-core", version.ref = "passkey" }
 
 [plugins]
 bookk-data = { id = "com.bookk.data", version.ref = "bookkPlugins" }

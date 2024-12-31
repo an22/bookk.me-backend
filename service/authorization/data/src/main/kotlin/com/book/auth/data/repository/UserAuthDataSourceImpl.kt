@@ -5,7 +5,7 @@ import com.book.auth.data.map.toDeviceInfo
 import com.book.auth.data.map.toUserAuthRecord
 import com.book.auth.data.orm.AuthDevice
 import com.book.auth.data.orm.UserAuthInfo
-import com.book.auth.domain.api.datasource.UserAuthLocalDataSource
+import com.book.auth.domain.api.datasource.UserAuthDataSource
 import com.book.auth.domain.api.entity.DeviceAuthRecord
 import com.book.auth.domain.api.entity.DeviceInfo
 import com.book.auth.domain.api.entity.SignUpInfo
@@ -13,12 +13,22 @@ import com.book.auth.domain.api.entity.UserAuthRecord
 import com.book.core.data.BaseDataSource
 import com.book.core.data.cache.CacheClient
 import org.ktorm.database.Database
-import org.ktorm.dsl.*
+import org.ktorm.dsl.QueryRowSet
+import org.ktorm.dsl.and
+import org.ktorm.dsl.delete
+import org.ktorm.dsl.eq
+import org.ktorm.dsl.from
+import org.ktorm.dsl.innerJoin
+import org.ktorm.dsl.insertAndGenerateKey
+import org.ktorm.dsl.map
+import org.ktorm.dsl.select
+import org.ktorm.dsl.update
+import org.ktorm.dsl.where
 
-internal class UserAuthLocalDataSourceImpl(
+internal class UserAuthDataSourceImpl(
     private val database: Database,
     private val cacheClient: CacheClient<String>
-) : BaseDataSource(), UserAuthLocalDataSource {
+) : BaseDataSource(), UserAuthDataSource {
     override suspend fun saveUserRefreshToken(deviceId: Long, token: String) {
         execute {
             database.update(AuthDevice) {

@@ -13,3 +13,9 @@ object UserAuthInfo : Table<Nothing>("user_auth_info") {
     val totpSecret = varchar("totp_secret")
     val role = int("role")
 }
+
+object UserAuthInfoV2 : Table<Nothing>("user_auth_info_v2") {
+    val id = long("id").primaryKey()
+    val login = varchar("login")
+    val role = int("role")
+}

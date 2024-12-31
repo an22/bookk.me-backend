@@ -1,7 +1,6 @@
 package com.book.auth.microservice
 
 import com.book.auth.data.di.authDataModule
-import com.book.auth.domain.impl.di.DIQualifier
 import com.book.auth.domain.impl.di.authDomainModule
 import com.book.auth.microservice.route.authRoute
 import com.book.core.data.cache.impl.di.cacheModule
@@ -16,9 +15,9 @@ fun authModule() = module {
     single { JwtConfig.createPrivateKeyProvider() }
     includes(
         authDomainModule(),
-        authDataModule(DIQualifier.AUTH),
-        eventStreamingModule(DIQualifier.AUTH),
-        cacheModule(DIQualifier.AUTH)
+        authDataModule(),
+        eventStreamingModule(),
+        cacheModule()
     )
 }
 

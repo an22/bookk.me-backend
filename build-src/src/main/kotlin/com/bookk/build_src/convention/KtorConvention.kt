@@ -14,7 +14,7 @@ fun KtorExtension.applyConvention(project: Project) {
         imageTag.set(project.provider { project.version.toString() })
         externalRegistry.set(
             DockerImageRegistry.externalRegistry(
-                project = project.provider { project.name },
+                project = project.provider { project.group.toString() },
                 namespace = project.provider { "an22" },
                 hostname = project.provider { "ghcr.io" },
                 username = project.provider {

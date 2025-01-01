@@ -32,10 +32,24 @@ services:
       MYSQL_TCP_PORT: ${BOOKK_ME_DB_PORT}
     volumes:
       - database_volume:/var/lib/mysql
-    healthcheck:
-      test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost" ]
-      timeout: 10s
-      retries: 10
+
+    deploy:
+      placement:
+        constraints: [ node.role == worker ]
+      replicas: 1
+      update_config:
+        parallelism: 1
+        order: start-first
+        failure_action: rollback
+        delay: 10s
+      rollback_config:
+        parallelism: 1
+        order: stop-first
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 3
+        window: 120s
 
   redis:
     image: bitnami/redis:6.2.14
@@ -51,11 +65,23 @@ services:
       REDIS_DISABLE_COMMANDS: FLUSHDB,FLUSHALL,CONFIG
       REDIS_PASSWORD: ${BOOKK_ME_REDIS_PASSWORD}
 
-    healthcheck:
-      test: [ "CMD-SHELL", "redis-cli ping | grep PONG" ]
-      interval: 1s
-      timeout: 5s
-      retries: 5
+    deploy:
+      placement:
+        constraints: [ node.role == worker ]
+      replicas: 1
+      update_config:
+        parallelism: 1
+        order: start-first
+        failure_action: rollback
+        delay: 10s
+      rollback_config:
+        parallelism: 1
+        order: stop-first
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 3
+        window: 120s
 
   microservice:
     image: ${SERVICE_IMAGE}:${BOOKK_ME_SERVICE_VERSION}
@@ -104,7 +130,7 @@ services:
         failure_action: rollback
         delay: 10s
       rollback_config:
-        parallelism: 0
+        parallelism: 1
         order: stop-first
       restart_policy:
         condition: any

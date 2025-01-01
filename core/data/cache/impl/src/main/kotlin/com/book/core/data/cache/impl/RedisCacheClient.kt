@@ -2,6 +2,7 @@ package com.book.core.data.cache.impl
 
 import com.book.core.data.cache.CacheClient
 import com.book.core.data.cache.impl.codec.ProtobufRedisCodec
+import io.lettuce.core.ExperimentalLettuceCoroutinesApi
 import io.lettuce.core.RedisClient
 import io.lettuce.core.RedisURI
 import io.lettuce.core.api.coroutines
@@ -16,6 +17,7 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.toJavaDuration
 
+@OptIn(ExperimentalLettuceCoroutinesApi::class)
 class RedisCacheClient(
     host: String,
     port: Int,
@@ -86,6 +88,7 @@ class RedisCacheClient(
                 )
             }
 
+            @Suppress("UNCHECKED_CAST")
             override fun <V> get(key: K, kType: KType): V? {
                 val deserializer = protobuf.serializersModule.serializer(kType)
                 return get(key)?.let { protobuf.decodeFromByteArray(deserializer, it.array()) as V }

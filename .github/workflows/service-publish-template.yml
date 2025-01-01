@@ -11,14 +11,18 @@ on:
       module:
         required: true
         type: string
+      registry:
+        required: true
+        type: string
       serviceName:
         required: true
         type: string
-    secrets:
-      DOCKERHUB_USERNAME:
+      envFile:
         required: true
-      DOCKERHUB_PASSWORD:
+        type: string
+      tagPrefix:
         required: true
+        type: string
 
 jobs:
 
@@ -43,11 +47,39 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Import environment variables from a file
+        shell: bash
+        run: echo ${{ inputs.envFile }} >> $GITHUB_ENV
+
+      - name: Prepare docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          flavor: |
+            latest=false
+
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
+      - name: Write release version
+        id: version
+        run: echo "version_tag=${${{ steps.meta.outputs.tags }}#*/}" >> "$GITHUB_OUTPUT"
+
       - name: Publish image
-        run: ./gradlew ${{ inputs.module }}:publishImage
+        id: push
+        shell: bash
+        run: |
+          ./gradlew ${{ inputs.module }}:publishImage
+          digest=$(docker inspect --format='{{index .RepoDigests 0}}' ${{ inputs.registry }}/${{ inputs.serviceName }}:${{ steps.version.outputs.version_tag }}  | perl -wnE'say /sha256.*/g')
+          echo "digest=${digest}" >> "$GITHUB_OUTPUT"
         env:
+          BOOKK_ME_SERVICE_VERSION: ${{ steps.version.outputs.version_tag }}
           DOCKER_USERNAME: ${{ github.actor }}
           DOCKER_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-name: ${{ inputs.registry }}/${{ inputs.serviceName }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true

@@ -8,9 +8,10 @@ jobs:
   publish_user_microservice:
     name: Publish User Microservice
     uses: ./.github/workflows/service-publish-template.yml
+    secrets:
+      envFile: ${{ secrets.USER_ENV_FILE }}
     with:
       registry: "ghcr.io/an22/"
       module: "service:user:microservice"
       serviceName: "com.bookk.server.microservice.user"
-      envFile: ${{ secrets.USER_ENV_FILE }}
       tagPrefix: "user"

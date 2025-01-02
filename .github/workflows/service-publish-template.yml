@@ -7,6 +7,9 @@ permissions:
 
 on:
   workflow_call:
+    secrets:
+      envFile:
+        required: true
     inputs:
       module:
         required: true
@@ -15,9 +18,6 @@ on:
         required: true
         type: string
       serviceName:
-        required: true
-        type: string
-      envFile:
         required: true
         type: string
       tagPrefix:
@@ -49,7 +49,7 @@ jobs:
 
       - name: Import environment variables from a file
         shell: bash
-        run: echo ${{ inputs.envFile }} >> $GITHUB_ENV
+        run: echo ${{ secrets.envFile }} >> $GITHUB_ENV
 
       - name: Prepare docker meta
         id: meta

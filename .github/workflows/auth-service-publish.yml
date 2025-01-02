@@ -8,9 +8,10 @@ jobs:
   publish_auth_microservice:
     name: Publish Auth Microservice
     uses: ./.github/workflows/service-publish-template.yml
+    secrets:
+      envFile: ${{ secrets.AUTH_ENV_FILE }}
     with:
       registry: "ghcr.io/an22/"
       module: "service:authorization:microservice"
       serviceName: "com.bookk.server.microservice.authorization"
-      envFile: ${{ secrets.AUTH_ENV_FILE }}
       tagPrefix: "auth"

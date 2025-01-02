@@ -5,13 +5,23 @@ on:
       - 'auth/*'
 
 jobs:
-  publish_auth_microservice:
+  publish:
     name: Publish Auth Microservice
     uses: ./.github/workflows/service-publish-template.yml
-    secrets:
-      envFile: ${{ secrets.AUTH_ENV_FILE }}
     with:
-      registry: "ghcr.io/an22/"
       module: "service:authorization:microservice"
       serviceName: "com.bookk.server.microservice.authorization"
-      tagPrefix: "auth"
+
+  deploy:
+    needs: publish
+    name: Deploy Auth Microservice
+    uses: ./.github/workflows/service-deploy-template.yml
+    secrets:
+      envFile: ${{ secrets.AUTH_ENV_FILE }}
+      privateKey: ${{ secrets.SSH_PRIVATE_KEY }}
+      remoteUri: ${{ secrets.SWARM_MANAGER }}
+      knownHosts: ${{ secrets.SSH_KNOWN_HOSTS }}
+    with:
+      image: "ghcr.io/an22/com.bookk.server.microservice.authorization"
+      stackName: "authorization"
+      version: ${{ needs.publish.outputs.version }}

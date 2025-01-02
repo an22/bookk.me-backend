@@ -10,6 +10,8 @@ secrets:
     external: true
   public-jwt:
     external: true
+  ssl-keystore:
+    external: true
 
 volumes:
   database_volume:
@@ -21,7 +23,7 @@ services:
   database:
     image: mariadb:11.5.2-ubi9
     networks:
-      auth-network:
+      bookk-me:
         aliases:
           - ${BOOKK_ME_SERVICE_NAME}.database.bookk.me
     environment:
@@ -57,7 +59,7 @@ services:
       - redis_data:/opt/bitnami/redis/
 
     networks:
-      auth-network:
+      bookk-me:
         aliases:
           - ${BOOKK_ME_SERVICE_NAME}.redis.bookk.me
 
@@ -84,25 +86,27 @@ services:
         window: 120s
 
   microservice:
-    image: ${SERVICE_IMAGE}:${BOOKK_ME_SERVICE_VERSION}
+    image: ${BOOKK_ME_SERVICE_IMAGE}:${BOOKK_ME_SERVICE_VERSION}
     networks:
-      default:
+      bookk-me:
         aliases:
           - ${BOOKK_ME_SERVICE_NAME}.service.bookk.me
 
     secrets:
       - source: public-jwt
-        target: ${BOOKK_ME_JWT_PUBLIC_KEY_FILE}
+        target: /etc/service/${BOOKK_ME_SERVICE_NAME}/${BOOKK_ME_JWT_PUBLIC_KEY_FILE}
       - source: private-jwt
-        target: ${BOOKK_ME_JWT_PRIVATE_KEY_FILE}
+        target: /etc/service/${BOOKK_ME_SERVICE_NAME}/${BOOKK_ME_JWT_PRIVATE_KEY_FILE}
+      - source: ssl-keystore
+        target: /etc/service/${BOOKK_ME_SERVICE_NAME}/${BOOKK_ME_SERVICE_SSL_FILE}
     environment:
       #Service info
       BOOKK_ME_SERVICE_NAME: ${BOOKK_ME_SERVICE_NAME}
       BOOKK_ME_SERVICE_VERSION: ${BOOKK_ME_SERVICE_VERSION}
       BOOKK_ME_SERVICE_PORT: ${BOOKK_ME_SERVICE_PORT}
       BOOKK_ME_SERVICE_SSL_ALIAS: ${BOOKK_ME_SERVICE_SSL_ALIAS}
-      BOOKK_ME_SERVICE_SSL_PASSWORD: ${BOOKK_ME_SERVICE_SSL_PASSWORD}
-      BOOKK_ME_SERVICE_SSL_FILE: ${BOOKK_ME_SERVICE_SSL_FILE}
+      BOOKK_ME_SERVICE_SSL_PASSWORD: '${BOOKK_ME_SERVICE_SSL_PASSWORD}'
+      BOOKK_ME_SERVICE_SSL_FILE: /etc/service/${BOOKK_ME_SERVICE_NAME}/${BOOKK_ME_SERVICE_SSL_FILE}
       #Database info
       BOOKK_ME_DB_URL: ${BOOKK_ME_DB_URL}
       BOOKK_ME_DB_PORT: ${BOOKK_ME_DB_PORT}
@@ -117,8 +121,8 @@ services:
       BOOKK_ME_KAFKA_HOSTS: ${BOOKK_ME_KAFKA_HOSTS} #Should be separated with ',' sign
       BOOKK_ME_KAFKA_CLUSTER_ID: ${BOOKK_ME_KAFKA_CLUSTER_ID}
       #JWT
-      BOOKK_ME_JWT_PUBLIC_KEY_FILE: ${BOOKK_ME_JWT_PUBLIC_KEY_FILE}
-      BOOKK_ME_JWT_PRIVATE_KEY_FILE: ${BOOKK_ME_JWT_PRIVATE_KEY_FILE}
+      BOOKK_ME_JWT_PUBLIC_KEY_FILE: /etc/service/${BOOKK_ME_SERVICE_NAME}/${BOOKK_ME_JWT_PUBLIC_KEY_FILE}
+      BOOKK_ME_JWT_PRIVATE_KEY_FILE: /etc/service/${BOOKK_ME_SERVICE_NAME}/${BOOKK_ME_JWT_PRIVATE_KEY_FILE}
 
     deploy:
       placement:

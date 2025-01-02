@@ -22,7 +22,7 @@ import io.ktor.server.routing.post
 import org.koin.ktor.ext.inject
 import kotlin.reflect.typeOf
 
-internal fun Route.getSignUpChallenge() {
+internal fun Route.postSignUpChallenge() {
     withSignUpChallengeDocumentation()
     post<Api.Auth.SignUp.PassKey.Challenge> {
         val startRegistration by application.inject<StartRegistration>()

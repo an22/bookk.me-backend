@@ -39,6 +39,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.protobuf.ProtoBuf
 import org.koin.core.module.Module
 import org.koin.ktor.plugin.Koin
+import java.io.File
 import java.security.KeyStore
 
 fun startServer(
@@ -48,12 +49,13 @@ fun startServer(
     embeddedServer(
         factory = Netty,
         configure = {
-            val keystoreStream = javaClass.classLoader.getResourceAsStream(System.getenv("BOOKK_ME_SERVICE_SSL_FILE"))
-            val keyStorePass = System.getenv("BOOKK_ME_SERVICE_SSL_PASSWORD")
+            val keystoreFile = File(System.getenv("BOOKK_ME_SERVICE_SSL_FILE"))
+            val keyStorePass = "*_S\\o?I!9StR2\\\"-aL{D2aJ933L1uLt"
             sslConnector(
-                keyStore = KeyStore.getInstance(KeyStore.getDefaultType()).apply {
-                    load(keystoreStream, keyStorePass.toCharArray())
-                },
+                keyStore = KeyStore.getInstance(
+                    keystoreFile,
+                    keyStorePass.toCharArray()
+                ),
                 keyAlias = System.getenv("BOOKK_ME_SERVICE_SSL_ALIAS"),
                 keyStorePassword = { keyStorePass.toCharArray() },
                 privateKeyPassword = { keyStorePass.toCharArray() }

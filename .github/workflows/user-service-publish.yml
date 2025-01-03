@@ -5,13 +5,24 @@ on:
       - 'user/*'
 
 jobs:
-  publish_user_microservice:
+  publish:
     name: Publish User Microservice
     uses: ./.github/workflows/service-publish-template.yml
-    secrets:
-      envFile: ${{ secrets.USER_ENV_FILE }}
     with:
-      registry: "ghcr.io/an22/"
       module: "service:user:microservice"
       serviceName: "com.bookk.server.microservice.user"
-      tagPrefix: "user"
+
+  deploy:
+    needs: publish
+    name: Deploy User Microservice
+    uses: ./.github/workflows/service-deploy-template.yml
+    secrets:
+      envFile: ${{ secrets.USER_ENV_FILE }}
+      privateKey: ${{ secrets.SSH_PRIVATE_KEY }}
+      remoteUri: ${{ secrets.SWARM_MANAGER }}
+      knownHosts: ${{ secrets.SSH_KNOWN_HOSTS }}
+    with:
+      image: "ghcr.io/an22/com.bookk.server.microservice.user"
+      stackName: "user"
+      version: ${{ needs.publish.outputs.version }}
+

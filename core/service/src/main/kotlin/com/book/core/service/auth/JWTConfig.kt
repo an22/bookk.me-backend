@@ -10,6 +10,7 @@ import com.bookk.core.AppLevelConstants
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.auth.jwt.JWTCredential
 import kotlinx.datetime.Clock
+import java.io.File
 import java.nio.charset.Charset
 import java.security.KeyFactory
 import java.security.interfaces.RSAPrivateKey
@@ -40,8 +41,7 @@ object JwtConfig {
                 role = credentials.payload.getClaim(Claim.ROLE.key).asInt(),
                 deviceId = credentials.payload.getClaim(Claim.DEVICE_ID.key).asLong()
             )
-        }
-        else null
+        } else null
     }
 
     private fun createPublicKeyProvider(): RSAKeyProvider {
@@ -72,10 +72,14 @@ object JwtConfig {
     }
 
     private fun readPublicPemFile(): ByteArray {
-        return javaClass.classLoader
-            .getResource(System.getenv("BOOKK_ME_JWT_PUBLIC_KEY_FILE"))!!
-            .readBytes()
-            .toString(Charset.defaultCharset())
+        return runCatching {
+            File(System.getenv("BOOKK_ME_JWT_PUBLIC_KEY_FILE"))
+                .readBytes()
+        }.getOrElse {
+            javaClass.classLoader
+                .getResource(System.getenv("BOOKK_ME_JWT_PUBLIC_KEY_FILE"))!!
+                .readBytes()
+        }.toString(Charset.defaultCharset())
             .replace("-----BEGIN PUBLIC KEY-----", "")
             .replace(System.lineSeparator(), "")
             .replace("-----END PUBLIC KEY-----", "")
@@ -83,10 +87,14 @@ object JwtConfig {
     }
 
     private fun readPrivatePemFile(): ByteArray {
-        return javaClass.classLoader
-            .getResource(System.getenv("BOOKK_ME_JWT_PRIVATE_KEY_FILE"))!!
-            .readBytes()
-            .toString(Charset.defaultCharset())
+        return runCatching {
+            File(System.getenv("BOOKK_ME_JWT_PRIVATE_KEY_FILE"))
+                .readBytes()
+        }.getOrElse {
+            javaClass.classLoader
+                .getResource(System.getenv("BOOKK_ME_JWT_PRIVATE_KEY_FILE"))!!
+                .readBytes()
+        }.toString(Charset.defaultCharset())
             .replace("-----BEGIN PRIVATE KEY-----", "")
             .replace(System.lineSeparator(), "")
             .replace("-----END PRIVATE KEY-----", "")

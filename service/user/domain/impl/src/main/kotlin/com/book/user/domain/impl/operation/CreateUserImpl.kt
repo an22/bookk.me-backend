@@ -1,15 +1,15 @@
 package com.book.user.domain.impl.operation
 
-import com.book.user.domain.api.datasource.UserLocalDataSource
+import com.book.user.domain.api.datasource.UserDataSource
 import com.book.user.domain.api.entity.User
 import com.book.user.domain.api.operation.CreateUser
 
 internal class CreateUserImpl(
-    private val localDataSource: UserLocalDataSource
+    private val localDataSource: UserDataSource
 ) : CreateUser {
-    override suspend fun call(params: User): Result<Long> {
-        return runCatching {
-            localDataSource.insertNewUser(params)
-        }
+
+    override suspend fun invoke(user: User): Result<Long> = runCatching {
+        localDataSource.insertNewUser(user).id
     }
+
 }

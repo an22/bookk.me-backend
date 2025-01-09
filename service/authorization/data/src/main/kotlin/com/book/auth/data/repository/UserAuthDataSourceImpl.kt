@@ -1,134 +1,101 @@
 package com.book.auth.data.repository
 
-import com.book.auth.data.map.toDeviceAuthRecord
-import com.book.auth.data.map.toDeviceInfo
-import com.book.auth.data.map.toUserAuthRecord
-import com.book.auth.data.orm.AuthDevice
-import com.book.auth.data.orm.UserAuthInfo
+import com.book.auth.data.map.toDomain
+import com.book.auth.data.orm.entity.AuthDeviceEntity
+import com.book.auth.data.orm.entity.AuthenticationEntity
+import com.book.auth.data.orm.table.AuthDeviceTable
+import com.book.auth.data.orm.table.AuthenticationTable
 import com.book.auth.domain.api.datasource.UserAuthDataSource
-import com.book.auth.domain.api.entity.DeviceAuthRecord
-import com.book.auth.domain.api.entity.DeviceInfo
-import com.book.auth.domain.api.entity.SignUpInfo
-import com.book.auth.domain.api.entity.UserAuthRecord
-import com.book.core.data.BaseDataSource
+import com.book.auth.domain.api.entity.Authentication
+import com.book.auth.domain.api.entity.Device
+import com.book.core.data.DataSource
 import com.book.core.data.cache.CacheClient
-import org.ktorm.database.Database
-import org.ktorm.dsl.QueryRowSet
-import org.ktorm.dsl.and
-import org.ktorm.dsl.delete
-import org.ktorm.dsl.eq
-import org.ktorm.dsl.from
-import org.ktorm.dsl.innerJoin
-import org.ktorm.dsl.insertAndGenerateKey
-import org.ktorm.dsl.map
-import org.ktorm.dsl.select
-import org.ktorm.dsl.update
-import org.ktorm.dsl.where
 
 internal class UserAuthDataSourceImpl(
-    private val database: Database,
     private val cacheClient: CacheClient<String>
-) : BaseDataSource(), UserAuthDataSource {
+) : DataSource(), UserAuthDataSource {
+
+    override suspend fun createAuthorization(info: Authentication): Authentication = dbTransaction {
+        AuthenticationEntity.new {
+            userId = info.userId
+            email = info.email
+        }.toDomain()
+    }
+
+    override suspend fun getAuthRecordById(id: Long): Authentication? = dbTransaction {
+        AuthenticationEntity[id].toDomain()
+    }
+
+    override suspend fun getAuthRecordByEmail(email: String): Authentication? = dbTransaction {
+        AuthenticationEntity.find {
+            AuthenticationTable.email eq email
+        }
+            .map(AuthenticationEntity::toDomain)
+            .firstOrNull()
+    }
+
+    override suspend fun getAuthRecordByUserId(userId: Long): Authentication? = dbTransaction {
+        AuthenticationEntity.find {
+            AuthenticationTable.userId eq userId
+        }
+            .map(AuthenticationEntity::toDomain)
+            .firstOrNull()
+    }
+
+    override suspend fun deleteAuthorization(authId: Long) {
+        dbTransaction {
+            AuthenticationEntity[authId].delete()
+        }
+    }
+
     override suspend fun saveUserRefreshToken(deviceId: Long, token: String) {
-        execute {
-            database.update(AuthDevice) {
-                set(it.isSignedIn, true)
-                set(it.refreshToken, token)
-                where { it.id eq deviceId }
+        dbTransaction {
+            AuthDeviceEntity.findByIdAndUpdate(deviceId) {
+                it.isSignedIn = true
+                it.refreshToken = token
             }
         }
     }
 
-    override suspend fun getDeviceAuthRecord(
-        deviceName: String,
-        login: String,
-        passwordHash: String
-    ): DeviceAuthRecord? = execute {
-        database.from(AuthDevice)
-            .innerJoin(UserAuthInfo, on = AuthDevice.userAuthId eq UserAuthInfo.id)
-            .select()
-            .where {
-                (AuthDevice.deviceName eq deviceName) and
-                        (UserAuthInfo.login eq login) and
-                        (UserAuthInfo.passwordHash eq passwordHash)
-            }
-            .map(QueryRowSet::toDeviceAuthRecord)
-            .firstOrNull()
-    }
-
-    override suspend fun getAuthRecordByUsername(login: String): UserAuthRecord? = execute {
-        database.from(UserAuthInfo)
-            .select()
-            .where { (UserAuthInfo.login eq login) }
-            .map(QueryRowSet::toUserAuthRecord)
-            .firstOrNull()
-    }
-
-    override suspend fun createAuthRecord(
-        userId: Long,
-        passwordHash: String,
-        totpSecret: String,
-        info: SignUpInfo
-    ) {
-        execute {
-            database.insertAndGenerateKey(UserAuthInfo) {
-                set(it.userId, userId)
-                set(it.login, info.login)
-                set(it.passwordHash, passwordHash)
-                set(it.totpSecret, totpSecret)
-                set(it.role, info.role.id)
-            }
+    override suspend fun getDeviceById(deviceId: Long): Device? = dbTransaction {
+        AuthDeviceEntity.find {
+            AuthDeviceTable.id eq deviceId
         }
-    }
-
-    override suspend fun getDeviceAuthRecord(deviceId: Long, refreshToken: String): DeviceAuthRecord? = execute {
-        database.from(AuthDevice)
-            .innerJoin(UserAuthInfo, on = AuthDevice.userAuthId eq UserAuthInfo.id)
-            .select()
-            .where { (AuthDevice.id eq deviceId) and (AuthDevice.refreshToken eq refreshToken) }
-            .map(QueryRowSet::toDeviceAuthRecord)
+            .map(AuthDeviceEntity::toDomain)
             .firstOrNull()
     }
 
-    override suspend fun getDevices(authRecordId: Long): List<DeviceInfo> = execute {
-        database.from(AuthDevice)
-            .select()
-            .where { AuthDevice.userAuthId eq authRecordId }
-            .map(QueryRowSet::toDeviceInfo)
+    override suspend fun getDeviceByUUID(deviceUUID: String): Device? = dbTransaction {
+        AuthDeviceEntity.find {
+            AuthDeviceTable.deviceUUID eq deviceUUID
+        }
+            .map(AuthDeviceEntity::toDomain)
+            .firstOrNull()
     }
 
-    override suspend fun getDevice(authRecordId: Long, deviceName: String): DeviceInfo? = execute {
-        database.from(AuthDevice)
-            .select()
-            .where { (AuthDevice.userAuthId eq authRecordId) and (AuthDevice.deviceName eq deviceName) }
-            .map(QueryRowSet::toDeviceInfo)
-            .firstOrNull()
+    override suspend fun getDevices(authId: Long): List<Device> = dbTransaction {
+        AuthDeviceEntity.find {
+            AuthDeviceTable.userAuthId eq authId
+        }
+            .map(AuthDeviceEntity::toDomain)
     }
 
     override suspend fun deleteTokenInfoForDevice(deviceId: Long) {
-        execute {
-            database.update(AuthDevice) {
-                set(it.refreshToken, "")
-                set(it.isSignedIn, false)
-                where { it.id eq deviceId }
+        dbTransaction {
+            AuthDeviceEntity.findByIdAndUpdate(deviceId) {
+                it.isSignedIn = false
+                it.refreshToken = null
             }
         }
     }
 
-    override suspend fun createDevice(authRecordId: Long, deviceName: String): Long = execute {
-        database.insertAndGenerateKey(AuthDevice) {
-            set(it.userAuthId, authRecordId)
-            set(it.deviceName, deviceName)
-            set(it.refreshToken, "")
-            set(it.isSignedIn, false)
-        } as Long
-    }
-
-    override suspend fun deleteAccount(userId: Long) {
-        execute {
-            database.delete(UserAuthInfo) {
-                it.userId eq userId
-            }
-        }
+    override suspend fun createDevice(authId: Long, uuid: String, name: String): Device = dbTransaction {
+        AuthDeviceEntity.new {
+            userAuth = AuthenticationEntity[authId]
+            deviceUUID = uuid
+            deviceName = name
+            refreshToken = null
+            isSignedIn = false
+        }.toDomain()
     }
 }

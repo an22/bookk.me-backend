@@ -1,44 +1,72 @@
 package com.book.core.data.database
 
+import MigrationUtils
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import org.flywaydb.core.Flyway
-import org.flywaydb.core.api.Location
+import org.jetbrains.exposed.sql.Database
+import org.jetbrains.exposed.sql.DatabaseConfig
+import org.jetbrains.exposed.sql.ExperimentalDatabaseMigrationApi
+import org.jetbrains.exposed.sql.Schema
+import org.jetbrains.exposed.sql.SchemaUtils
+import org.jetbrains.exposed.sql.Table
+import org.jetbrains.exposed.sql.transactions.transaction
+import java.io.File
 import javax.sql.DataSource
 
-fun createDataSourceAndMigrateDb(
+@OptIn(ExperimentalDatabaseMigrationApi::class)
+fun createDatabase(
+    version: Int,
     schemaName: String,
     driver: String,
     dbUrl: String,
     dbPort: String,
     dbUsername: String,
     dbPassword: String,
-): DataSource {
-    val migrationDataSource: DataSource = HikariDataSource(
+    tables: Array<Table>
+) {
+    val dataSource: DataSource = HikariDataSource(
         HikariConfig().apply {
             driverClassName = driver
             jdbcUrl = "$dbUrl:$dbPort?allowPublicKeyRetrieval=true"
             username = dbUsername
             password = dbPassword
+            schema = schemaName
             validate()
         }
     )
-
-    Flyway.configure()
-        .dataSource(migrationDataSource)
-        .createSchemas(true)
+    val flyway = Flyway.configure()
+        .dataSource(dataSource)
+        .baselineOnMigrate(true)
         .defaultSchema(schemaName)
-        .locations(Location("db/migration/$schemaName"))
+        .locations("filesystem:db/migration/$schemaName")
         .load()
-        .migrate()
 
-    return HikariDataSource(
-        HikariConfig().apply {
-            driverClassName = driver
-            jdbcUrl = "$dbUrl:$dbPort/$schemaName?allowPublicKeyRetrieval=true"
-            username = dbUsername
-            password = dbPassword
-            validate()
+    val schema = Schema(schemaName)
+    Database.connect(datasource = dataSource)
+    transaction {
+        SchemaUtils.createSchema(schema)
+    }
+    Database.connect(
+        datasource = dataSource,
+        databaseConfig = DatabaseConfig {
+            defaultSchema = schema
         }
     )
+
+    transaction {
+        val dir = File("db/migration/$schemaName")
+        if (!dir.exists()) {
+            dir.mkdirs()
+        }
+        MigrationUtils.generateMigrationScript(
+            tables = tables,
+            scriptDirectory = "db/migration/$schemaName",
+            scriptName = "V${version}__migration_script"
+        )
+    }
+
+    transaction {
+        flyway.migrate()
+    }
 }

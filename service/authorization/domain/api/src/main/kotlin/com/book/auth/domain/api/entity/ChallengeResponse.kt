@@ -4,5 +4,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 class ChallengeResponse(
-    val challenge: String
+    val challenge: String,
+    val displayName: String,
+    val userId: String
 )

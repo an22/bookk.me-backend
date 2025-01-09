@@ -12,9 +12,10 @@ import io.ktor.client.request.setBody
 internal class CreateUserClientImpl(
     private val httpClient: HttpClient
 ) : CreateUser {
-    override suspend fun call(params: User): Result<Long> = runCatching {
+
+    override suspend fun invoke(user: User) = runCatching {
         httpClient.post(UserRouting.Api.Internal.User()) {
-            setBody(params)
+            setBody(user)
         }.body<UserId>().id
     }
 }

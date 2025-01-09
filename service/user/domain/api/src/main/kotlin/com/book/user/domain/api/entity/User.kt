@@ -7,7 +7,6 @@ class User(
     val id: Long,
     val name: String,
     val lastName: String,
-    val phone: String,
     val email: String,
-    val role: UserRole
+    val phone: String?
 )

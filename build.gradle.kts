@@ -1,4 +1,5 @@
 import com.bookk.build_src.tools.includeLocalProperties
+import com.google.cloud.tools.jib.gradle.BuildDockerTask
 import com.google.cloud.tools.jib.gradle.JibTask
 
 plugins {
@@ -28,5 +29,9 @@ dependencies {
 includeLocalProperties(providers.gradleProperty("local.propertiesFile").get())
 
 tasks.withType<JibTask> {
+    notCompatibleWithConfigurationCache("because of https://github.com/GoogleContainerTools/jib/issues/3132")
+}
+
+tasks.withType<BuildDockerTask> {
     notCompatibleWithConfigurationCache("because of https://github.com/GoogleContainerTools/jib/issues/3132")
 }

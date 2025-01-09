@@ -1,6 +1,6 @@
 package com.book.auth.microservice.route.api
 
-import com.book.auth.domain.api.entity.PasskeySignUpInfo
+import com.book.auth.domain.api.entity.VerifyAccountCreationRequest
 import com.book.auth.domain.api.operation.FinishRegistration
 import com.book.auth.domain.api.operation.StartRegistration.CreateUserAccountError
 import com.book.auth.domain.api.routing.AuthRouting.Api
@@ -23,8 +23,8 @@ internal fun Route.postValidateRegistration() {
     withValidateRegistrationDocumentation()
     get<Api.Auth.SignUp.PassKey.Validate> {
         val finishRegistration by application.inject<FinishRegistration>()
-        val info = call.receive<PasskeySignUpInfo>()
-        finishRegistration.call(info)
+        val info = call.receive<VerifyAccountCreationRequest>()
+        finishRegistration(info)
             .handle<_, CreateUserAccountError>(
                 onSuccess = {
                     call.respond(HttpStatusCode.OK, it)
@@ -53,7 +53,7 @@ internal fun Route.withValidateRegistrationDocumentation() {
             description("Validate passkey data from native credentials API")
             request {
                 applyMediaType()
-                requestType<PasskeySignUpInfo>()
+                requestType<VerifyAccountCreationRequest>()
                 description("User parameters")
             }
             response {

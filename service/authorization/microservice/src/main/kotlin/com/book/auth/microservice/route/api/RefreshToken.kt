@@ -24,9 +24,9 @@ import org.koin.ktor.ext.inject
 internal fun Route.postRefreshToken() {
     withRefreshDocumentation()
     post<Api.Auth.Refresh> {
-        val operation by application.inject<RefreshToken>()
         val info = call.receive<RefreshTokenInfo>()
-        operation.call(info)
+        val refreshToken by application.inject<RefreshToken>()
+        refreshToken(info)
             .handle<_, RefreshToken.RefreshTokenError>(
                 onSuccess = {
                     call.respond(it)

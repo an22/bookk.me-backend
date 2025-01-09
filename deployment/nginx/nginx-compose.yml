@@ -7,7 +7,7 @@ networks:
 
 configs:
   nginx_config:
-    name: nginx-v26
+    name: nginx-v27
     file: nginx.conf
 
   android_well_known:

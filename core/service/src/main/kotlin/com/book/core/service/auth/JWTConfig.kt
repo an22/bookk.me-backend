@@ -7,6 +7,7 @@ import com.auth0.jwt.JWTVerifier
 import com.auth0.jwt.algorithms.Algorithm
 import com.auth0.jwt.interfaces.RSAKeyProvider
 import com.bookk.core.AppLevelConstants
+import com.bookk.core.AppLevelConstants.Claim
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.auth.jwt.JWTCredential
 import kotlinx.datetime.Clock
@@ -33,12 +34,11 @@ object JwtConfig {
 
     val validator: ApplicationCall.(JWTCredential) -> AppPrincipal? = { credentials ->
         val isNotExpired = credentials.payload.expiresAt.time > Clock.System.now().toEpochMilliseconds()
-        val isRefresh = credentials.payload.getClaim(Claim.REFRESH.key).asBoolean()
+        val isRefresh = credentials.payload.getClaim(Claim.IS_REFRESH.key).asBoolean()
         if (isNotExpired && !isRefresh) {
             AppPrincipal(
-                userId = credentials.payload.getClaim(Claim.ID.key).asLong(),
-                userName = credentials.payload.getClaim(Claim.USERNAME.key).asString(),
-                role = credentials.payload.getClaim(Claim.ROLE.key).asInt(),
+                authId = credentials.payload.getClaim(Claim.AUTH_ID.key).asLong(),
+                userId = credentials.payload.getClaim(Claim.USER_ID.key).asLong(),
                 deviceId = credentials.payload.getClaim(Claim.DEVICE_ID.key).asLong()
             )
         } else null

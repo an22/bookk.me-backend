@@ -24,11 +24,11 @@ internal fun Route.deleteAccount() {
     withDeleteAccountDocumentation()
     authenticate {
         post<Api.Auth.DeleteAccount> {
-            val operation by application.inject<DeleteAccount>()
             val principal = requireNotNull(call.principal<AppPrincipal>())
             val info = call.receive<DeleteAccountInfo>()
+            val deleteAccount by application.inject<DeleteAccount>()
 
-            operation.call(DeleteAccount.Param(principal.userName, info))
+            deleteAccount(principal.userId, info)
                 .handle<_, DeleteAccount.DeleteAccountError>(
                     onSuccess = {
                         call.respond(HttpStatusCode.OK)

@@ -21,9 +21,9 @@ import org.koin.ktor.ext.inject
 internal fun Route.postCreateUser() {
     withCreateUserDocumentation()
     post<Api.Internal.User> {
-        val operation by application.inject<CreateUser>()
         val user = call.receive<User>()
-        operation.call(user)
+        val createUser by application.inject<CreateUser>()
+        createUser(user)
             .handle<_, CreateUser.CreateUserError>(
                 onSuccess = {
                     call.respond(UserId(it))
@@ -59,6 +59,7 @@ internal fun Route.withCreateUserDocumentation() {
             canRespond {
                 applyMediaType()
                 responseType<Unit>()
+                responseCode(HttpStatusCode.BadRequest)
                 description("Error while creating new user")
             }
         }

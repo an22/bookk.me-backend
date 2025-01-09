@@ -8,7 +8,9 @@ import io.ktor.client.plugins.resources.get
 internal class DeleteUserClientImpl(
     private val httpClient: HttpClient
 ) : DeleteUser {
-    override suspend fun call(params: DeleteUser.Param): Result<Unit> = runCatching {
-        httpClient.get(UserRouting.Api.Internal.User.Id(id = params.userId))
+
+    override suspend fun invoke(userId: Long) : Result<Unit> = runCatching {
+        httpClient.get(UserRouting.Api.Internal.User.Id(id = userId))
     }
+
 }

@@ -23,9 +23,9 @@ internal fun Route.getCurrentUser() {
     withMeDocumentation()
     authenticate {
         get<Api.User.Me> {
-            val operation by application.inject<GetUserById>()
             val principal = requireNotNull(call.principal<AppPrincipal>())
-            operation.call(principal.userId)
+            val getCurrentUser by application.inject<GetUserById>()
+            getCurrentUser(principal.userId)
                 .handle<_, GetUserById.GetCurrentUserError>(
                     onSuccess = {
                         call.respond(it)

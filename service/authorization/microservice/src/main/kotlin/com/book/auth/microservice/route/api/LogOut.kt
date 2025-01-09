@@ -20,9 +20,9 @@ internal fun Route.deleteLogOut() {
     withSignOutDocumentation()
     authenticate {
         delete<Api.Auth.SignOut> {
-            val operation by application.inject<SignOut>()
             val principal = requireNotNull(call.principal<AppPrincipal>())
-            operation.call(SignOut.Param(principal.deviceId))
+            val signOut by application.inject<SignOut>()
+            signOut(principal.deviceId)
                 .handle<_, Unit>(
                     onSuccess = {
                         call.respond(HttpStatusCode.OK)

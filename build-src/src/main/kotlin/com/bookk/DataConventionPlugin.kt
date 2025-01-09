@@ -25,13 +25,15 @@ class DataConventionPlugin : Plugin<Project> {
             }
 
             target.dependencies {
-                add("implementation", libs.ktorm)
-                add("implementation", libs.ktorm.dialect.mysql)
-                add("implementation", libs.koin.core)
+                add("implementation", libs.exposed.core)
+                add("implementation", libs.exposed.dao)
+                add("implementation", libs.exposed.migration)
+                add("implementation", libs.exposed.jdbc)
                 add("implementation", libs.hikari.cp)
-                add("implementation", platform(libs.koin.bom))
+                add("implementation", libs.koin.core)
                 add("implementation", libs.flyway.core)
                 add("implementation", libs.flyway.mysql)
+                add("implementation", platform(libs.koin.bom))
                 add("implementation", libs.mariadb)
                 add("implementation", libs.kotlin.coroutines)
                 add("testImplementation", libs.kotlin.test)

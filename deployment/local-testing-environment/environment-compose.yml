@@ -53,7 +53,7 @@ services:
 
     environment:
       REDIS_DISABLE_COMMANDS: FLUSHDB,FLUSHALL,CONFIG
-      REDIS_PASSWORD: "TestPassword"
+      REDIS_PASSWORD: "R6YjCd49YUUaN6hC4tFH4Ljy"
 
   redis-ui:
     image: redis/redisinsight:2.58

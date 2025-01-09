@@ -19,8 +19,8 @@ import org.koin.ktor.ext.inject
 internal fun Route.getUserById() {
     withUserIdDocumentation()
     get<Api.Internal.User.Id> { user ->
-        val operation by application.inject<GetUserById>()
-        operation.call(user.id)
+        val getUserById by application.inject<GetUserById>()
+        getUserById(user.id)
             .handle<_, GetUserById.GetCurrentUserError>(
                 onSuccess = {
                     call.respond(it)

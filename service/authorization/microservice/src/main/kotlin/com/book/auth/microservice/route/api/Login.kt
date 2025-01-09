@@ -22,9 +22,9 @@ import org.koin.ktor.ext.inject
 internal fun Route.postLogin() {
     withSignInDocumentation()
     post<Api.Auth.SignIn> {
-        val generator by application.inject<GenerateAuthToken>()
         val info = call.receive<SignInInfo>()
-        generator.call(GenerateAuthToken.Param.FromCredentials(info))
+        val generateToken by application.inject<GenerateAuthToken>()
+        generateToken(GenerateAuthToken.Source.FromCredentials(info))
             .handle<_, GenerateAuthTokenBusinessError>(
                 onSuccess = {
                     call.respond(it)

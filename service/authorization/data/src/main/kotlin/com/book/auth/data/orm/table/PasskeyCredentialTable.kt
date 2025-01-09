@@ -1,0 +1,19 @@
+package com.book.auth.data.orm.table
+
+import org.jetbrains.exposed.dao.id.LongIdTable
+import org.jetbrains.exposed.sql.ReferenceOption
+
+internal object PasskeyCredentialTable: LongIdTable("passkey_credentials") {
+    val authId = reference("auth_id", AuthenticationTable, onDelete = ReferenceOption.CASCADE)
+    val userHandle = binary("handle", 64)
+    val credDescriptorId = binary("cred_descriptor_id", 255)
+    val credDescriptorType = varchar("cred_descriptor_type", 255)
+    val credDescriptorTransports = varchar("cred_descriptor_transports", 255)
+    val publicKey = varchar("public_key", 255)
+    val signatureCount = long("signature_count")
+    val isDiscoverable = bool("discoverable")
+    val isBackupEligible = bool("backup_eligible")
+    val isBackedUp = bool("backed_up")
+    val attestationObject = binary("attestation_object", 255)
+    val clientData = binary("client_data", 255)
+}

@@ -7,6 +7,8 @@ volumes:
     driver: local
   database_data:
     driver: local
+  reference_database_data:
+    driver: local
 
 services:
   kafka:

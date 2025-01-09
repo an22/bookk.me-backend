@@ -1,4 +1,4 @@
-package com.book.auth.data.repository
+package com.book.auth.data.datasource
 
 import com.book.auth.data.orm.entity.AuthenticationEntity
 import com.book.auth.data.orm.entity.PasskeyCredentialEntity
@@ -9,6 +9,7 @@ import com.book.core.data.cache.CacheClient
 import com.book.core.data.cache.get
 import com.book.core.data.cache.set
 import com.book.core.data.cache.withTransaction
+import kotlinx.datetime.Clock
 import kotlin.time.Duration.Companion.minutes
 
 internal class PassKeyDataSourceImpl(
@@ -44,6 +45,7 @@ internal class PassKeyDataSourceImpl(
                 isBackedUp = credential.isBackedUp
                 attestationObject = credential.attestationObject
                 clientData = credential.clientData
+                updatedAt = Clock.System.now()
             }
         }
     }

@@ -4,4 +4,5 @@ plugins {
 
 dependencies {
     implementation(projects.core.domain)
+    implementation(libs.exposed.h2)
 }

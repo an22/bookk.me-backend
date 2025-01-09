@@ -12,6 +12,8 @@ internal class AuthDeviceEntity(id: EntityID<Long>) : LongEntity(id) {
     var deviceName by AuthDeviceTable.deviceName
     var refreshToken by AuthDeviceTable.refreshToken
     var isSignedIn by AuthDeviceTable.isSignedIn
+    var createdAt by AuthDeviceTable.createdAt
+    var updatedAt by AuthDeviceTable.updatedAt
 
     companion object : LongEntityClass<AuthDeviceEntity>(AuthDeviceTable)
 }

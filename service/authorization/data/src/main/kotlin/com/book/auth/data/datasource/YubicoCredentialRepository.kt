@@ -1,4 +1,4 @@
-package com.book.auth.data.repository
+package com.book.auth.data.datasource
 
 import com.yubico.webauthn.CredentialRepository
 import com.yubico.webauthn.RegisteredCredential

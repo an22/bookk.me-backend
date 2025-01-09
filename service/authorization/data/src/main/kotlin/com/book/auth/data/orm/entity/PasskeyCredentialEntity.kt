@@ -18,6 +18,8 @@ internal class PasskeyCredentialEntity(id: EntityID<Long>) : LongEntity(id) {
     var isBackedUp by PasskeyCredentialTable.isBackedUp
     var attestationObject by PasskeyCredentialTable.attestationObject
     var clientData by PasskeyCredentialTable.clientData
+    var createdAt by PasskeyCredentialTable.createdAt
+    var updatedAt by PasskeyCredentialTable.updatedAt
 
     companion object : LongEntityClass<PasskeyCredentialEntity>(PasskeyCredentialTable)
 }

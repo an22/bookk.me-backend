@@ -1,29 +1,23 @@
 package com.book.core.data.database
 
-import MigrationUtils
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import org.flywaydb.core.Flyway
+import org.flywaydb.core.api.Location
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.DatabaseConfig
 import org.jetbrains.exposed.sql.ExperimentalDatabaseMigrationApi
 import org.jetbrains.exposed.sql.Schema
-import org.jetbrains.exposed.sql.SchemaUtils
-import org.jetbrains.exposed.sql.Table
-import org.jetbrains.exposed.sql.transactions.transaction
-import java.io.File
 import javax.sql.DataSource
 
 @OptIn(ExperimentalDatabaseMigrationApi::class)
 fun createDatabase(
-    version: Int,
     schemaName: String,
     driver: String,
     dbUrl: String,
     dbPort: String,
     dbUsername: String,
-    dbPassword: String,
-    tables: Array<Table>
+    dbPassword: String
 ) {
     val dataSource: DataSource = HikariDataSource(
         HikariConfig().apply {
@@ -35,38 +29,19 @@ fun createDatabase(
             validate()
         }
     )
-    val flyway = Flyway.configure()
+    Flyway.configure()
         .dataSource(dataSource)
         .baselineOnMigrate(true)
+        .createSchemas(true)
         .defaultSchema(schemaName)
-        .locations("filesystem:db/migration/$schemaName")
+        .locations(Location("db/migration/$schemaName"))
         .load()
+        .migrate()
 
-    val schema = Schema(schemaName)
-    Database.connect(datasource = dataSource)
-    transaction {
-        SchemaUtils.createSchema(schema)
-    }
     Database.connect(
         datasource = dataSource,
         databaseConfig = DatabaseConfig {
-            defaultSchema = schema
+            defaultSchema = Schema(schemaName)
         }
     )
-
-    transaction {
-        val dir = File("db/migration/$schemaName")
-        if (!dir.exists()) {
-            dir.mkdirs()
-        }
-        MigrationUtils.generateMigrationScript(
-            tables = tables,
-            scriptDirectory = "db/migration/$schemaName",
-            scriptName = "V${version}__migration_script"
-        )
-    }
-
-    transaction {
-        flyway.migrate()
-    }
 }

@@ -1,4 +1,4 @@
-package com.book.auth.data.repository
+package com.book.auth.data.datasource
 
 import com.book.auth.data.map.toDomain
 import com.book.auth.data.orm.entity.AuthDeviceEntity
@@ -10,6 +10,7 @@ import com.book.auth.domain.api.entity.Authentication
 import com.book.auth.domain.api.entity.Device
 import com.book.core.data.DataSource
 import com.book.core.data.cache.CacheClient
+import kotlinx.datetime.Clock
 
 internal class UserAuthDataSourceImpl(
     private val cacheClient: CacheClient<String>
@@ -19,6 +20,7 @@ internal class UserAuthDataSourceImpl(
         AuthenticationEntity.new {
             userId = info.userId
             email = info.email
+            updatedAt = Clock.System.now()
         }.toDomain()
     }
 
@@ -53,6 +55,7 @@ internal class UserAuthDataSourceImpl(
             AuthDeviceEntity.findByIdAndUpdate(deviceId) {
                 it.isSignedIn = true
                 it.refreshToken = token
+                it.updatedAt = Clock.System.now()
             }
         }
     }
@@ -85,6 +88,7 @@ internal class UserAuthDataSourceImpl(
             AuthDeviceEntity.findByIdAndUpdate(deviceId) {
                 it.isSignedIn = false
                 it.refreshToken = null
+                it.updatedAt = Clock.System.now()
             }
         }
     }
@@ -96,6 +100,7 @@ internal class UserAuthDataSourceImpl(
             deviceName = name
             refreshToken = null
             isSignedIn = false
+            updatedAt = Clock.System.now()
         }.toDomain()
     }
 }

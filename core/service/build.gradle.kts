@@ -13,6 +13,10 @@ dependencies {
     implementation(libs.ktor.json)
     implementation(libs.ktor.logging)
     implementation(libs.ktor.logging.call)
+    implementation(libs.ktor.idempotency)
     implementation(projects.core)
+    implementation(projects.core.data)
     implementation(projects.core.data.cache.api)
+    implementation(projects.core.domain)
+    implementation(projects.core.domain.datasource)
 }

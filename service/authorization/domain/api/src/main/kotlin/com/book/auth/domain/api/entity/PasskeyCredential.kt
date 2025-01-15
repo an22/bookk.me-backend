@@ -1,13 +1,13 @@
 package com.book.auth.domain.api.entity
 
-class PasskeyCredential(
+data class PasskeyCredential(
     val id: Long,
     val authId: Long,
     val userHandle: ByteArray,
     val credDescriptorId: ByteArray,
     val credDescriptorType: String,
     val credDescriptorTransports: String,
-    val publicKey: String,
+    val publicKey: ByteArray,
     val signatureCount: Long,
     val isDiscoverable: Boolean,
     val isBackupEligible: Boolean,

@@ -1,22 +1,22 @@
 package com.book.auth.domain.impl.operation.token
 
-import com.book.auth.domain.api.datasource.UserAuthDataSource
 import com.book.auth.domain.api.entity.RefreshTokenInfo
 import com.book.auth.domain.api.entity.TokenInfo
 import com.book.auth.domain.api.operation.GenerateAuthToken
 import com.book.auth.domain.api.operation.GenerateAuthToken.Source
 import com.book.auth.domain.api.operation.RefreshToken
 import com.book.auth.domain.api.operation.RefreshToken.RefreshTokenError
+import com.book.auth.domain.datasource.AccountDataSource
 
 internal class RefreshTokenImpl(
     private val generateAuthToken: GenerateAuthToken,
-    private val localDataSource: UserAuthDataSource
+    private val accountDataSource: AccountDataSource
 ) : RefreshToken {
 
 
     override suspend fun invoke(info: RefreshTokenInfo): Result<TokenInfo> = runCatching {
         if (info.refreshToken.isBlank()) throw RefreshTokenError.InvalidRefreshToken
-        val authRecord = localDataSource.getAuthRecordByUserId(info.userId)
+        val authRecord = accountDataSource.getAuthRecordByUserId(info.userId)
         if (authRecord != null) throw RefreshTokenError.InvalidRefreshToken
         generateAuthToken(Source.FromRefresh(info.userId, info.refreshToken)).getOrThrow()
     }

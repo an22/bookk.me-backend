@@ -1,44 +1,45 @@
 package com.book.auth.domain.impl.operation.registration
 
-import com.book.auth.domain.api.datasource.PassKeyDataSource
-import com.book.auth.domain.api.datasource.UserAuthDataSource
 import com.book.auth.domain.api.entity.ChallengeResponse
 import com.book.auth.domain.api.entity.CreateAccountRequest
 import com.book.auth.domain.api.operation.StartRegistration
 import com.book.auth.domain.api.operation.StartRegistration.CreateUserAccountError
-import com.bookk.core.AppLevelConstants
+import com.book.auth.domain.datasource.AccountDataSource
+import com.book.auth.domain.datasource.PassKeyDataSource
 import com.yubico.webauthn.CredentialRepository
-import com.yubico.webauthn.RelyingParty
 import com.yubico.webauthn.StartRegistrationOptions
 import com.yubico.webauthn.data.AuthenticatorSelectionCriteria
 import com.yubico.webauthn.data.ByteArray
-import com.yubico.webauthn.data.RelyingPartyIdentity
+import com.yubico.webauthn.data.PublicKeyCredentialCreationOptions
 import com.yubico.webauthn.data.ResidentKeyRequirement
 import com.yubico.webauthn.data.UserIdentity
 import kotlin.random.Random
 
 internal class StartRegistrationImpl(
-    private val authDataSource: UserAuthDataSource,
+    private val accountDataSource: AccountDataSource,
     private val userPassKeyDataSource: PassKeyDataSource,
-    credentialsRepository: CredentialRepository
+    private val credentialsRepository: CredentialRepository
 ) : StartRegistration {
 
-    private val rp: RelyingParty = RelyingParty.builder()
-        .identity(
-            RelyingPartyIdentity.builder()
-                .id(AppLevelConstants.DOMAIN_NAME)
-                .name(AppLevelConstants.APP_NAME)
-                .build()
-        )
-        .credentialRepository(credentialsRepository)
-        .build()
-
     override suspend fun invoke(request: CreateAccountRequest) = runCatching {
-        val userRecord = authDataSource.getAuthRecordByEmail(request.email)
+        val userRecord = accountDataSource.getAuthRecordByEmail(request.email)
         if (userRecord != null) throw CreateUserAccountError.EmailAlreadyExist
         val byteArray = ByteArray(64)
         val handle = ByteArray(Random.nextBytes(byteArray))
-        val credentialCreationOptions = rp.startRegistration(
+        val challenge = createCreationOptions(request, handle).toJson()
+        userPassKeyDataSource.saveChallengeToCache(handle.base64, challenge)
+        ChallengeResponse(
+            challenge = challenge,
+            displayName = "${request.firstName} ${request.lastName}",
+            userId = handle.base64
+        )
+    }
+
+    private fun createCreationOptions(
+        request: CreateAccountRequest,
+        handle: ByteArray
+    ): PublicKeyCredentialCreationOptions {
+        return createRelyingParty(credentialsRepository).startRegistration(
             StartRegistrationOptions.builder()
                 .user(
                     UserIdentity.builder()
@@ -53,13 +54,6 @@ internal class StartRegistrationImpl(
                         .build()
                 )
                 .build()
-        )
-        val challenge = credentialCreationOptions.toJson()
-        userPassKeyDataSource.saveChallengeToCache(handle.base64, challenge)
-        ChallengeResponse(
-            challenge = challenge,
-            displayName = "${request.firstName} ${request.lastName}",
-            userId = handle.base64
         )
     }
 }

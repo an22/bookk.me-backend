@@ -1,4 +1,4 @@
-package com.book.user.domain.api.datasource
+package com.book.user.domain.datasource
 
 import com.book.user.domain.api.entity.User
 

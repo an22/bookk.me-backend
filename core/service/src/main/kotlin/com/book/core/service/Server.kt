@@ -1,7 +1,10 @@
 package com.book.core.service
 
 import com.book.core.service.auth.JwtConfig
+import com.book.core.service.di.commonModule
 import com.bookk.core.AppLevelConstants
+import com.bookk.core.AppLevelConstants.SupportedSerializers
+import com.wolt.utils.ktor.idempotency.IdempotencyPlugin
 import io.bkbn.kompendium.core.attribute.KompendiumAttributes
 import io.bkbn.kompendium.core.metadata.RequestInfo
 import io.bkbn.kompendium.core.metadata.ResponseInfo
@@ -38,6 +41,7 @@ import io.ktor.server.routing.routing
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.protobuf.ProtoBuf
 import org.koin.core.module.Module
+import org.koin.ktor.ext.get
 import org.koin.ktor.plugin.Koin
 import org.slf4j.event.Level
 import java.io.File
@@ -66,7 +70,7 @@ fun startServer(
             }
         },
         module = {
-            install(Koin) { modules(diModules) }
+            install(Koin) { modules(*diModules.toTypedArray(), commonModule()) }
             install(CallLogging) {
                 level = when(AppLevelConstants.BUILD_TYPE) {
                     AppLevelConstants.BuildType.DEBUG.STR -> Level.DEBUG
@@ -74,6 +78,11 @@ fun startServer(
                 }
             }
             install(Resources)
+            install(IdempotencyPlugin) {
+                idempotentResponseRepository = get()
+                //We use Redis expiration time for cache management
+                cleanUpWorkerEnabled = false
+            }
             installAuthPlugin()
             installDocumentationPlugin()
             modules()
@@ -141,7 +150,7 @@ fun Application.installDocumentationPlugin() {
 fun Routing.installNegotiation() {
     install(ContentNegotiation) {
         when (AppLevelConstants.SERIALIZER) {
-            AppLevelConstants.SupportedSerializers.JSON.STR -> {
+            SupportedSerializers.JSON.STR -> {
                 json(Json {
                     prettyPrint = true
                     encodeDefaults = true
@@ -149,7 +158,7 @@ fun Routing.installNegotiation() {
                 })
             }
 
-            AppLevelConstants.SupportedSerializers.PROTOBUF.STR -> {
+            SupportedSerializers.PROTOBUF.STR -> {
                 protobuf(ProtoBuf { encodeDefaults = true })
             }
         }
@@ -159,15 +168,15 @@ fun Routing.installNegotiation() {
 @Suppress("KotlinConstantConditions")
 fun ResponseInfo.Builder.applyMediaType() {
     when (AppLevelConstants.SERIALIZER) {
-        AppLevelConstants.SupportedSerializers.JSON.STR -> mediaTypes(ContentType.Application.Json.toString())
-        AppLevelConstants.SupportedSerializers.PROTOBUF.STR -> mediaTypes(ContentType.Application.ProtoBuf.toString())
+        SupportedSerializers.JSON.STR -> mediaTypes(ContentType.Application.Json.toString())
+        SupportedSerializers.PROTOBUF.STR -> mediaTypes(ContentType.Application.ProtoBuf.toString())
     }
 }
 
 @Suppress("KotlinConstantConditions")
 fun RequestInfo.Builder.applyMediaType() {
     when (AppLevelConstants.SERIALIZER) {
-        AppLevelConstants.SupportedSerializers.JSON.STR -> mediaTypes(ContentType.Application.Json.toString())
-        AppLevelConstants.SupportedSerializers.PROTOBUF.STR -> mediaTypes(ContentType.Application.ProtoBuf.toString())
+        SupportedSerializers.JSON.STR -> mediaTypes(ContentType.Application.Json.toString())
+        SupportedSerializers.PROTOBUF.STR -> mediaTypes(ContentType.Application.ProtoBuf.toString())
     }
 }

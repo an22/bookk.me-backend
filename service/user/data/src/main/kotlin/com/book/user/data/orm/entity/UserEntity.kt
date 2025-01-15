@@ -11,6 +11,8 @@ class UserEntity(id: EntityID<Long>) : LongEntity(id) {
     var lastName by UserTable.lastName
     var email by UserTable.email
     var phone by UserTable.phone
+    var createdAt by UserTable.createdAt
+    var updatedAt by UserTable.updatedAt
 
     companion object : LongEntityClass<UserEntity>(UserTable)
 }

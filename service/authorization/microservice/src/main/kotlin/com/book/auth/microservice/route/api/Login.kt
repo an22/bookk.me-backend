@@ -24,7 +24,7 @@ internal fun Route.postLogin() {
     post<Api.Auth.SignIn> {
         val info = call.receive<SignInInfo>()
         val generateToken by application.inject<GenerateAuthToken>()
-        generateToken(GenerateAuthToken.Source.FromCredentials(info))
+        generateToken(GenerateAuthToken.Source.FromPublicKey(info))
             .handle<_, GenerateAuthTokenBusinessError>(
                 onSuccess = {
                     call.respond(it)

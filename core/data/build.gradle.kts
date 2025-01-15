@@ -4,5 +4,7 @@ plugins {
 
 dependencies {
     implementation(projects.core.domain)
-    implementation(libs.exposed.h2)
+    implementation(projects.core.domain.datasource)
+    implementation(projects.core.data.cache.api)
+    implementation(libs.ktor.idempotency)
 }

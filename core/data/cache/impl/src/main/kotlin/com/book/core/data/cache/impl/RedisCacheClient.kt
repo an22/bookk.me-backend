@@ -56,10 +56,7 @@ class RedisCacheClient(
         }
     }
 
-    override suspend fun <V : Any> withTransaction(
-        action: CacheClient.CacheTransaction<String>.() -> Unit,
-        kType: KType
-    ) {
+    override suspend fun withTransaction(action: CacheClient.CacheTransaction<String>.() -> Unit) {
         with(connectionPool.borrowObject()) {
             sync().multi {
                 action(asCacheTransactionTransaction())

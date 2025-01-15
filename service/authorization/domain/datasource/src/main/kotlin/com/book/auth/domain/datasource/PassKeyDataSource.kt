@@ -1,4 +1,4 @@
-package com.book.auth.domain.api.datasource
+package com.book.auth.domain.datasource
 
 import com.book.auth.domain.api.entity.PasskeyCredential
 

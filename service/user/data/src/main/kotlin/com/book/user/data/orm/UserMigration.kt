@@ -1,7 +1,8 @@
 package com.book.user.data.orm
 
 import com.book.core.data.database.createMigrationScriptFor
-import com.book.user.data.di.userTables
+import com.book.user.data.orm.table.UserTable
+import org.jetbrains.exposed.sql.Table
 
 fun main() {
     createMigrationScriptFor(
@@ -9,5 +10,11 @@ fun main() {
         targetVersion = 1,
         schemaName = "user",
         tables = userTables()
+    )
+}
+
+private fun userTables(): Array<Table> {
+    return arrayOf(
+        UserTable
     )
 }

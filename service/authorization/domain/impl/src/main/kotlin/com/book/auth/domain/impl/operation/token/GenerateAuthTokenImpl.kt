@@ -3,12 +3,12 @@ package com.book.auth.domain.impl.operation.token
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import com.auth0.jwt.interfaces.RSAKeyProvider
-import com.book.auth.domain.api.datasource.UserAuthDataSource
 import com.book.auth.domain.api.entity.Device
 import com.book.auth.domain.api.entity.TokenInfo
 import com.book.auth.domain.api.operation.GenerateAuthToken
 import com.book.auth.domain.api.operation.GenerateAuthToken.GenerateAuthTokenBusinessError.InvalidCredentials
 import com.book.auth.domain.api.operation.GenerateAuthToken.Source
+import com.book.auth.domain.datasource.DeviceDataSource
 import com.bookk.core.AppLevelConstants.Claim
 import kotlinx.datetime.Clock
 import kotlinx.datetime.toJavaInstant
@@ -17,14 +17,14 @@ import kotlin.time.Duration.Companion.milliseconds
 internal class GenerateAuthTokenImpl(
     private val serviceUrl: String,
     private val keyProvider: RSAKeyProvider,
-    private val localDataSource: UserAuthDataSource
+    private val deviceDataSource: DeviceDataSource
 ) : GenerateAuthToken {
 
     override suspend fun invoke(params: Source): Result<TokenInfo> = runCatching {
         val deviceRecord = params.getDevice() ?: throw InvalidCredentials
         val accessToken = createToken(deviceRecord, ACCESS_EXPIRATION_TIME, false)
         val refreshToken = createToken(deviceRecord, REFRESH_EXPIRATION_TIME, true)
-        localDataSource.saveUserRefreshToken(deviceRecord.deviceInfo.id, refreshToken)
+        deviceDataSource.attachRefreshTokenToDevice(deviceRecord.deviceInfo.id, refreshToken)
         TokenInfo(accessToken, refreshToken)
     }
 
@@ -44,15 +44,15 @@ internal class GenerateAuthTokenImpl(
 
     private suspend fun Source.getDevice(): Device? {
         return when (this) {
-            is Source.FromCredentials -> {
+            is Source.FromPublicKey -> {
                 null
             }
 
             is Source.FromRefresh -> JWT.decode(refreshToken).claims[Claim.DEVICE_ID.key]?.asLong()?.let { deviceId ->
-                localDataSource.getDeviceById(deviceId)
+                deviceDataSource.getDeviceById(deviceId)
             }
 
-            is Source.FromDeviceUUID -> localDataSource.getDeviceByUUID(deviceUUID)
+            is Source.FromDeviceUUID -> deviceDataSource.getDeviceByUUID(deviceUUID)
         }
     }
 

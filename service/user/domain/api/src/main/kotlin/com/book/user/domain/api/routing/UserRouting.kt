@@ -11,6 +11,9 @@ object UserRouting {
             class User(val parent: Internal = Internal()) {
                 @Resource("/{id}")
                 class Id(val parent: User = User(), val id: Long)
+
+                @Resource("/{id}")
+                class Delete(val parent: User = User(), val id: Long)
             }
         }
 

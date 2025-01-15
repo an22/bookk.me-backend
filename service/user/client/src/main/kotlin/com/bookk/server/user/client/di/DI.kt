@@ -30,7 +30,10 @@ import io.ktor.serialization.kotlinx.protobuf.protobuf
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.protobuf.ProtoBuf
 import org.koin.dsl.module
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
+@OptIn(ExperimentalUuidApi::class)
 @Suppress("KotlinConstantConditions")
 fun userClientModule(clientTag: String) = module {
     single {
@@ -39,7 +42,7 @@ fun userClientModule(clientTag: String) = module {
             install(UserAgent) { agent = clientTag }
             install(HttpRequestRetry) {
                 retryOnExceptionOrServerErrors(maxRetries = 3)
-                constantDelay(millis = 100L)
+                constantDelay(millis = 50, randomizationMs = 100)
             }
             install(ContentNegotiation) {
                 when (AppLevelConstants.SERIALIZER) {
@@ -70,11 +73,15 @@ fun userClientModule(clientTag: String) = module {
             expectSuccess = true
             defaultRequest {
                 host = System.getenv("BOOKK_ME_USER_SERVICE_HOSTNAME")
+
+                headers["Idempotency-Key"] = Uuid.random().toHexString()
+
+                url { protocol = URLProtocol.HTTPS }
+
                 when (AppLevelConstants.SERIALIZER) {
                     SupportedSerializers.JSON.STR -> contentType(ContentType.Application.Json)
                     SupportedSerializers.PROTOBUF.STR -> contentType(ContentType.Application.ProtoBuf)
                 }
-                url { protocol = URLProtocol.HTTPS }
             }
         }
     }

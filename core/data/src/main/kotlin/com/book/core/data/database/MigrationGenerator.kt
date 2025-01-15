@@ -10,10 +10,10 @@ import org.jetbrains.exposed.sql.Table
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.io.File
 
-private const val URL = "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1;MODE=MYSQL"
+private const val URL = "jdbc:mariadb://127.0.0.1:3308"
 private const val USER = "root"
-private const val PASS = ""
-private const val DRIVER = "org.h2.Driver"
+private const val PASS = "migration"
+private const val DRIVER = "org.mariadb.jdbc.Driver"
 
 @OptIn(ExperimentalDatabaseMigrationApi::class)
 fun createMigrationScriptFor(
@@ -26,13 +26,14 @@ fun createMigrationScriptFor(
     if (!migrationDir.exists()) {
         migrationDir.mkdirs()
     }
-    createInMemoryDatabase(referenceVersion, migrationDir.path, schemaName)
+    moveDBWithVersion(referenceVersion, migrationDir.path, schemaName)
     transaction {
         SchemaUtils.setSchema(Schema(schemaName))
         val file = MigrationUtils.generateMigrationScript(
             tables = tables,
             scriptDirectory = "${migrationDir.path}",
             scriptName = "V${targetVersion}__migration_script",
+            withLogs = true
         )
         Flyway.configure()
             .dataSource(URL, USER, PASS)
@@ -46,7 +47,7 @@ fun createMigrationScriptFor(
     }
 }
 
-private fun createInMemoryDatabase(
+private fun moveDBWithVersion(
     schemaVersion: Int,
     migrationsFolderPath: String,
     schemaName: String
@@ -57,6 +58,9 @@ private fun createInMemoryDatabase(
         driver = DRIVER,
         password = PASS
     )
+    transaction {
+        SchemaUtils.dropSchema(Schema(schemaName))
+    }
     if (schemaVersion != 0) {
         Flyway.configure()
             .dataSource(URL, USER, PASS)

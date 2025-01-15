@@ -10,6 +10,7 @@ class VerifyAccountCreationRequest(
 ) {
     @Serializable
     class UserInfo(
+        val userId: String,
         val name: String,
         val lastName: String,
         val email: String

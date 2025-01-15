@@ -15,7 +15,7 @@ import org.koin.ktor.ext.inject
 
 internal fun Route.deleteUser() {
     withDeleteUserDocumentation()
-    delete<Api.Internal.User.Id> { user ->
+    delete<Api.Internal.User.Delete> { user ->
         val deleteUser by application.inject<DeleteUser>()
         deleteUser(user.id)
             .handle<_, Unit>(
@@ -36,7 +36,7 @@ internal fun Route.deleteUser() {
 }
 
 internal fun Route.withDeleteUserDocumentation() {
-    install(NotarizedResource<Api.Internal.User.Id>()) {
+    install(NotarizedResource<Api.Internal.User.Delete>()) {
         tags = setOf("internal", "user")
         delete = DeleteInfo.builder {
             summary("Delete user")

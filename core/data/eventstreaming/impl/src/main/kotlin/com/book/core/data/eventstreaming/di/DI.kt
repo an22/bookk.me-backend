@@ -1,18 +1,23 @@
 package com.book.core.data.eventstreaming.di
 
-import com.book.core.data.eventstreaming.EventStreaming
+import com.book.core.data.eventstreaming.StandardEventConsumer
+import com.book.core.data.eventstreaming.StandardEventProducer
 import com.book.core.data.eventstreaming.impl.KafkaEventConsumer
 import com.book.core.data.eventstreaming.impl.KafkaEventProducer
 import kotlinx.serialization.protobuf.ProtoBuf
 import org.koin.dsl.module
+import kotlin.uuid.ExperimentalUuidApi
 
+@OptIn(ExperimentalUuidApi::class)
 fun eventStreamingModule() = module {
-    factory<EventStreaming.Consumer<String, ByteArray>> {
+    factory<StandardEventConsumer> {
         val servers = System.getenv("BOOKK_ME_KAFKA_HOSTS").split(',')
-        KafkaEventConsumer(servers, ProtoBuf { encodeDefaults = true })
+        val group = "${System.getenv("BOOKK_ME_SERVICE_NAME")}_group"
+        KafkaEventConsumer(servers, group, ProtoBuf { encodeDefaults = true })
     }
-    factory<EventStreaming.Producer<String, ByteArray>> {
+    factory<StandardEventProducer> {
         val servers = System.getenv("BOOKK_ME_KAFKA_HOSTS").split(',')
-        KafkaEventProducer(servers, ProtoBuf { encodeDefaults = true })
+        val clientName = "${System.getenv("BOOKK_ME_SERVICE_NAME")}_producer"
+        KafkaEventProducer(servers, clientName, ProtoBuf { encodeDefaults = true })
     }
 }

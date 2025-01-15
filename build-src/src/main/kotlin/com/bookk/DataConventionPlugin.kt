@@ -16,6 +16,7 @@ class DataConventionPlugin : Plugin<Project> {
         with(target) {
             pluginManager.apply {
                 apply(libs.plugins.kotlin.jvm.get().pluginId)
+                apply(libs.plugins.kotlin.serialization.get().pluginId)
             }
 
             extensions.getByType<JavaPluginExtension>().applyConvention()
@@ -37,6 +38,7 @@ class DataConventionPlugin : Plugin<Project> {
                 add("implementation", platform(libs.koin.bom))
                 add("implementation", libs.mariadb)
                 add("implementation", libs.kotlin.coroutines)
+                add("implementation", libs.ktor.protobuf)
                 add("testImplementation", libs.kotlin.test)
             }
         }

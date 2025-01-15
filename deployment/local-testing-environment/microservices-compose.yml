@@ -26,7 +26,7 @@ services:
     image: com.bookk.server.microservice.user
     hostname: user.service.bookk.me
     env_file:
-      - service/auth.env
+      - service/user.env
     volumes:
       - './security/test.jks:/etc/service/keystore.jks:ro'
       - './security/private.pem:/etc/service/private.pem:ro'

@@ -12,7 +12,7 @@ import io.bkbn.kompendium.core.metadata.PostInfo
 import io.bkbn.kompendium.resources.NotarizedResource
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.request.receive
-import io.ktor.server.resources.get
+import io.ktor.server.resources.post
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.application
@@ -21,9 +21,9 @@ import kotlin.reflect.typeOf
 
 internal fun Route.postValidateRegistration() {
     withValidateRegistrationDocumentation()
-    get<Api.Auth.SignUp.PassKey.Validate> {
-        val finishRegistration by application.inject<FinishRegistration>()
+    post<Api.Auth.SignUp.PassKey.Validate> {
         val info = call.receive<VerifyAccountCreationRequest>()
+        val finishRegistration by application.inject<FinishRegistration>()
         finishRegistration(info)
             .handle<_, CreateUserAccountError>(
                 onSuccess = {

@@ -8,10 +8,10 @@ import org.jetbrains.exposed.sql.kotlin.datetime.timestamp
 internal object PasskeyCredentialTable: LongIdTable("passkey_credentials") {
     val authId = reference("auth_id", AuthenticationTable, onDelete = ReferenceOption.CASCADE)
     val userHandle = binary("handle", 64)
-    val credDescriptorId = binary("cred_descriptor_id", 255)
+    val credDescriptorId = binary("cred_descriptor_id", 24)
     val credDescriptorType = varchar("cred_descriptor_type", 255)
     val credDescriptorTransports = varchar("cred_descriptor_transports", 255)
-    val publicKey = varchar("public_key", 255)
+    val publicKey = binary("public_key", 255)
     val signatureCount = long("signature_count")
     val isDiscoverable = bool("discoverable")
     val isBackupEligible = bool("backup_eligible")

@@ -7,7 +7,6 @@ import com.book.auth.domain.api.operation.StartRegistration.Error.EmailAlreadyEx
 import com.book.auth.domain.api.operation.StartRegistration.Error.InvalidEmailFormat
 import com.book.auth.domain.datasource.AccountDataSource
 import com.book.auth.domain.datasource.PassKeyDataSource
-import com.bookk.core.AppLevelConstants
 import com.yubico.webauthn.CredentialRepository
 import com.yubico.webauthn.StartRegistrationOptions
 import com.yubico.webauthn.data.AuthenticatorSelectionCriteria
@@ -23,7 +22,7 @@ internal class StartRegistrationImpl(
     private val credentialsRepository: CredentialRepository
 ) : StartRegistration {
 
-    private val emailRegex = Regex(AppLevelConstants.EMAIL_REGEX)
+    private val emailRegex = Regex(RegistrationConstants.EMAIL_REGEX)
 
     override suspend fun invoke(request: CreateAccountRequest) = runCatching {
         if (!emailRegex.matches(request.email)) throw InvalidEmailFormat

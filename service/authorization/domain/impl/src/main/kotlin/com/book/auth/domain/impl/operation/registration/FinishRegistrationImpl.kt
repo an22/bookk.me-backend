@@ -20,7 +20,6 @@ import com.book.core.data.eventstreaming.send
 import com.book.core.domain.transaction.TransactionManager
 import com.book.user.domain.api.entity.User
 import com.book.user.domain.api.event.UserEvents.DeleteUserEvent
-import com.bookk.core.AppLevelConstants
 import com.bookk.server.user.client.UserClient
 import com.yubico.webauthn.CredentialRepository
 import com.yubico.webauthn.FinishRegistrationOptions
@@ -47,7 +46,7 @@ internal class FinishRegistrationImpl(
     private val transactionManager: TransactionManager
 ) : FinishRegistration {
 
-    private val emailRegex = Regex(AppLevelConstants.EMAIL_REGEX)
+    private val emailRegex = Regex(RegistrationConstants.EMAIL_REGEX)
 
     override suspend fun invoke(request: VerifyAccountCreationRequest) = runCatching {
         if (!emailRegex.matches(request.userInfo.email)) throw InvalidEmailFormat

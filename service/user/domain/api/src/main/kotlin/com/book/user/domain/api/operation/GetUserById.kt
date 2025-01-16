@@ -7,7 +7,11 @@ interface GetUserById {
 
     suspend operator fun invoke(userId: Long): Result<User>
 
-    sealed class GetCurrentUserError(code: Int) : BusinessError(code) {
-        data object UserNotFound : GetCurrentUserError(1)
+    sealed interface GetCurrentUserError {
+        data object UserNotFound : BusinessError(
+            statusCode = 404,
+            code = 1,
+            message = "User not found"
+        ), GetCurrentUserError
     }
 }

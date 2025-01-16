@@ -8,9 +8,10 @@ interface FinishRegistration {
 
     suspend operator fun invoke(request: VerifyAccountCreationRequest): Result<TokenInfo>
 
-    sealed class Error(code: Int, message: String) : BusinessError(code, errorMessage = message) {
-        data object UserAlreadyExist : Error(1, "User with this email already exist")
-        data object VerificationFailed : Error(2, "Passkey verification failed")
-        data object AccountCreationFailed : Error(3, "Error during account creation, try again later")
+    sealed interface Error {
+        data object InvalidEmailFormat : BusinessError(422, 1, "InvalidEmailFormat"), Error
+        data object UserAlreadyExist : BusinessError(422, 2, "User with this email already exist"), Error
+        data object VerificationFailed : BusinessError(422, 3, "Passkey verification failed"), Error
+        data object AccountCreationFailed : BusinessError(500, 4, "Error during account creation, try again later"), Error
     }
 }

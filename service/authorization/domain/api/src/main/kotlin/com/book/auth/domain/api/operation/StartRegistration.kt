@@ -8,7 +8,17 @@ interface StartRegistration {
 
     suspend operator fun invoke(request: CreateAccountRequest): Result<ChallengeResponse>
 
-    sealed class CreateUserAccountError(code: Int, message: String) : BusinessError(code, message) {
-        data object EmailAlreadyExist : CreateUserAccountError(2, "This email already exists")
+    sealed interface Error {
+        data object EmailAlreadyExist : BusinessError(
+            statusCode = 422,
+            code = 1,
+            message = "This email already exists"
+        ), Error
+
+        data object InvalidEmailFormat : BusinessError(
+            statusCode = 422,
+            code = 2,
+            message = "Invalid email format"
+        ), Error
     }
 }

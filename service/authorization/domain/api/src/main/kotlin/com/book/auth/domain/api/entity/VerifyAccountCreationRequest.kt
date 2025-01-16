@@ -3,13 +3,13 @@ package com.book.auth.domain.api.entity
 import kotlinx.serialization.Serializable
 
 @Serializable
-class VerifyAccountCreationRequest(
+data class VerifyAccountCreationRequest(
     val deviceInfo: DeviceInfo,
     val userInfo: UserInfo,
     val publicKeyCredentialJson: String
 ) {
     @Serializable
-    class UserInfo(
+    data class UserInfo(
         val userId: String,
         val name: String,
         val lastName: String,
@@ -17,7 +17,7 @@ class VerifyAccountCreationRequest(
     )
 
     @Serializable
-    class DeviceInfo(
+    data class DeviceInfo(
         val deviceUUID: String,
         val deviceName: String,
     )

@@ -1,7 +1,7 @@
 package com.bookk.server.user.client.impl.operation
 
 import com.book.user.domain.api.operation.DeleteUser
-import com.book.user.domain.api.routing.UserRouting
+import com.bookk.server.user.client.impl.UserRouting
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.resources.get
 

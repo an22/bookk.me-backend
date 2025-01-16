@@ -1,4 +1,4 @@
-package com.book.auth.domain.api.routing
+package com.book.auth.microservice.route
 
 import io.ktor.resources.Resource
 

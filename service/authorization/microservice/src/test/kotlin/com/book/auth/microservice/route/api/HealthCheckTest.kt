@@ -1,7 +1,8 @@
-import com.book.auth.domain.api.routing.AuthRouting
-import com.book.auth.microservice.route.api.healthCheck
-import com.bookk.core.test.createTestClient
-import com.bookk.core.test.installTestPlugins
+package com.book.auth.microservice.route.api
+
+import com.book.auth.microservice.route.AuthRouting
+import com.bookk.core.service.test.createTestClient
+import com.bookk.core.service.test.installTestPlugins
 import io.ktor.client.plugins.resources.get
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.routing.routing

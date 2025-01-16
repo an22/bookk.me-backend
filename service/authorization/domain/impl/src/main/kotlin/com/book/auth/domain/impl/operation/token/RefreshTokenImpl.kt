@@ -5,7 +5,7 @@ import com.book.auth.domain.api.entity.TokenInfo
 import com.book.auth.domain.api.operation.GenerateAuthToken
 import com.book.auth.domain.api.operation.GenerateAuthToken.Source
 import com.book.auth.domain.api.operation.RefreshToken
-import com.book.auth.domain.api.operation.RefreshToken.RefreshTokenError
+import com.book.auth.domain.api.operation.RefreshToken.Error.InvalidRefreshToken
 import com.book.auth.domain.datasource.AccountDataSource
 
 internal class RefreshTokenImpl(
@@ -15,9 +15,9 @@ internal class RefreshTokenImpl(
 
 
     override suspend fun invoke(info: RefreshTokenInfo): Result<TokenInfo> = runCatching {
-        if (info.refreshToken.isBlank()) throw RefreshTokenError.InvalidRefreshToken
+        if (info.refreshToken.isBlank()) throw InvalidRefreshToken
         val authRecord = accountDataSource.getAuthRecordByUserId(info.userId)
-        if (authRecord != null) throw RefreshTokenError.InvalidRefreshToken
+        if (authRecord != null) throw InvalidRefreshToken
         generateAuthToken(Source.FromRefresh(info.userId, info.refreshToken)).getOrThrow()
     }
 }

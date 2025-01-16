@@ -6,7 +6,7 @@ import com.auth0.jwt.interfaces.RSAKeyProvider
 import com.book.auth.domain.api.entity.Device
 import com.book.auth.domain.api.entity.TokenInfo
 import com.book.auth.domain.api.operation.GenerateAuthToken
-import com.book.auth.domain.api.operation.GenerateAuthToken.GenerateAuthTokenBusinessError.InvalidCredentials
+import com.book.auth.domain.api.operation.GenerateAuthToken.Error.InvalidCredentials
 import com.book.auth.domain.api.operation.GenerateAuthToken.Source
 import com.book.auth.domain.datasource.DeviceDataSource
 import com.bookk.core.AppLevelConstants.Claim

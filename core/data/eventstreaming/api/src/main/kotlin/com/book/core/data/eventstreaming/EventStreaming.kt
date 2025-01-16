@@ -1,6 +1,7 @@
 package com.book.core.data.eventstreaming
 
 import com.book.core.data.eventstreaming.EventStreaming.Consumer
+import com.book.core.data.eventstreaming.EventStreaming.Event
 import com.book.core.data.eventstreaming.EventStreaming.Producer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -19,12 +20,16 @@ interface EventStreaming {
     }
 
     interface Producer<K> {
-        suspend fun <T : Any> send(topic: K, data: T, kType: KType)
+        suspend fun <T : Event<K>> send(data: T, kType: KType)
+    }
+
+    interface Event<K> {
+        val topic: K
     }
 }
 
-suspend inline fun <reified T : Any, K> Producer<K>.send(topic: K, data: T) {
-    send(topic, data, typeOf<T>())
+suspend inline fun <reified T : Event<K>, K> Producer<K>.send(data: T) {
+    send(data, typeOf<T>())
 }
 
 inline fun <reified T : Any, K> Consumer<K>.registerReceiver(

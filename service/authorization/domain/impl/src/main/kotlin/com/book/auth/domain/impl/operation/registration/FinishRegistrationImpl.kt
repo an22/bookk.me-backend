@@ -7,6 +7,7 @@ import com.book.auth.domain.api.entity.VerifyAccountCreationRequest
 import com.book.auth.domain.api.entity.VerifyAccountCreationRequest.UserInfo
 import com.book.auth.domain.api.operation.FinishRegistration
 import com.book.auth.domain.api.operation.FinishRegistration.Error.AccountCreationFailed
+import com.book.auth.domain.api.operation.FinishRegistration.Error.InvalidEmailFormat
 import com.book.auth.domain.api.operation.FinishRegistration.Error.UserAlreadyExist
 import com.book.auth.domain.api.operation.FinishRegistration.Error.VerificationFailed
 import com.book.auth.domain.api.operation.GenerateAuthToken
@@ -19,6 +20,7 @@ import com.book.core.data.eventstreaming.send
 import com.book.core.domain.transaction.TransactionManager
 import com.book.user.domain.api.entity.User
 import com.book.user.domain.api.event.UserEvents.DeleteUserEvent
+import com.bookk.core.AppLevelConstants
 import com.bookk.server.user.client.UserClient
 import com.yubico.webauthn.CredentialRepository
 import com.yubico.webauthn.FinishRegistrationOptions
@@ -29,8 +31,6 @@ import com.yubico.webauthn.data.ClientRegistrationExtensionOutputs
 import com.yubico.webauthn.data.PublicKeyCredential
 import com.yubico.webauthn.data.PublicKeyCredentialCreationOptions
 import com.yubico.webauthn.exception.RegistrationFailedException
-import io.ktor.util.logging.KtorSimpleLogger
-import io.ktor.util.logging.error
 import kotlin.jvm.optionals.getOrElse
 import kotlin.jvm.optionals.getOrNull
 
@@ -47,9 +47,10 @@ internal class FinishRegistrationImpl(
     private val transactionManager: TransactionManager
 ) : FinishRegistration {
 
-    private val logger = KtorSimpleLogger("FinishRegistration")
+    private val emailRegex = Regex(AppLevelConstants.EMAIL_REGEX)
 
     override suspend fun invoke(request: VerifyAccountCreationRequest) = runCatching {
+        if (!emailRegex.matches(request.userInfo.email)) throw InvalidEmailFormat
         verifyUserDoesNotExist(request)
         val pkc = PublicKeyCredential.parseRegistrationResponseJson(request.publicKeyCredentialJson)
         val result = validateRegistrationChallenge(request, pkc)
@@ -60,10 +61,9 @@ internal class FinishRegistrationImpl(
             savePasskeyCredentials(ownerId, request.userInfo.userId, result, pkc)
             createAndSaveAuthCredentials(ownerId, request)
         }.onFailure {
-            eventProducer.send(DeleteUserEvent.TOPIC, DeleteUserEvent(userId))
+            eventProducer.send(DeleteUserEvent(userId))
         }.getOrThrow()
     }.recoverCatching {
-        logger.error(it)
         when (it) {
             is RegistrationFailedException -> throw VerificationFailed
             is FinishRegistration.Error -> throw it
@@ -104,7 +104,6 @@ internal class FinishRegistrationImpl(
         publicCredential: PKS
     ) {
         val creds = registrationResult.asPasskeyCredential(ownerId, userHandle, publicCredential)
-        logger.info(creds.toString())
         passKeyDataSource.createPasskeyCredential(creds)
     }
 
@@ -124,7 +123,6 @@ internal class FinishRegistrationImpl(
 
     @Suppress("DEPRECATION")
     private fun RegistrationResult.asPasskeyCredential(authId: Long, userId: String, pkc: PKS): PasskeyCredential {
-        logger.debug(toString())
         val transports = keyId.transports.getOrNull()?.joinToString { it.id }.orEmpty()
         return PasskeyCredential(
             id = 0,

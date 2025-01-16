@@ -40,6 +40,7 @@ class DataConventionPlugin : Plugin<Project> {
                 add("implementation", libs.kotlin.coroutines)
                 add("implementation", libs.ktor.protobuf)
                 add("testImplementation", libs.kotlin.test)
+                add("testImplementation", libs.mockk)
             }
         }
     }

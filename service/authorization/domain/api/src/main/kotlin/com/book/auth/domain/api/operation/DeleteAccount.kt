@@ -7,8 +7,11 @@ interface DeleteAccount {
 
     suspend operator fun invoke(userId: Long, info: DeleteAccountInfo): Result<Unit>
 
-    sealed class DeleteAccountError(code: Int, message: String) : BusinessError(code, message) {
-        data object InvalidCredentials : DeleteAccountError(1, "Invalid credentials")
-        data object UnableToDeleteAccount : DeleteAccountError(2, "Error while deleting account. Try again later.")
+    sealed interface Error {
+        data object InvalidCredentials : BusinessError(
+            statusCode = 422,
+            code = 1,
+            message = "Invalid credentials"
+        ), Error
     }
 }

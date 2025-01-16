@@ -1,4 +1,4 @@
-package com.book.user.domain.api.routing
+package com.bookk.server.user.client.impl
 
 import io.ktor.resources.Resource
 
@@ -15,16 +15,6 @@ object UserRouting {
                 @Resource("/{id}")
                 class Delete(val parent: User = User(), val id: Long)
             }
-        }
-
-        @Resource("/user")
-        class User(val parent: Api = Api()) {
-
-            @Resource("/healthcheck")
-            class HealthCheck(val parent: User = User())
-
-            @Resource("/me")
-            class Me(val parent: User = User())
         }
     }
 }

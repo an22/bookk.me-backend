@@ -26,10 +26,9 @@ class DomainApiConventionPlugin : Plugin<Project> {
 
             target.dependencies {
                 add("implementation", libs.ktor.protobuf)
-                add("implementation", libs.ktor.client.resources)
-                add("implementation", libs.ktor.server.resources)
                 add("implementation", libs.kotlin.coroutines)
                 add("testImplementation", libs.kotlin.test)
+                add("testImplementation", libs.mockk)
             }
         }
     }

@@ -19,4 +19,5 @@ dependencies {
     implementation(projects.core.data.cache.api)
     implementation(projects.core.domain)
     implementation(projects.core.domain.datasource)
+    testFixturesImplementation(testFixtures(projects.core))
 }

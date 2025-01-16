@@ -3,9 +3,11 @@ package com.book.auth.domain.impl.operation.registration
 import com.book.auth.domain.api.entity.ChallengeResponse
 import com.book.auth.domain.api.entity.CreateAccountRequest
 import com.book.auth.domain.api.operation.StartRegistration
-import com.book.auth.domain.api.operation.StartRegistration.CreateUserAccountError
+import com.book.auth.domain.api.operation.StartRegistration.Error.EmailAlreadyExist
+import com.book.auth.domain.api.operation.StartRegistration.Error.InvalidEmailFormat
 import com.book.auth.domain.datasource.AccountDataSource
 import com.book.auth.domain.datasource.PassKeyDataSource
+import com.bookk.core.AppLevelConstants
 import com.yubico.webauthn.CredentialRepository
 import com.yubico.webauthn.StartRegistrationOptions
 import com.yubico.webauthn.data.AuthenticatorSelectionCriteria
@@ -21,9 +23,12 @@ internal class StartRegistrationImpl(
     private val credentialsRepository: CredentialRepository
 ) : StartRegistration {
 
+    private val emailRegex = Regex(AppLevelConstants.EMAIL_REGEX)
+
     override suspend fun invoke(request: CreateAccountRequest) = runCatching {
+        if (!emailRegex.matches(request.email)) throw InvalidEmailFormat
         val userRecord = accountDataSource.getAuthRecordByEmail(request.email)
-        if (userRecord != null) throw CreateUserAccountError.EmailAlreadyExist
+        if (userRecord != null) throw EmailAlreadyExist
         val byteArray = ByteArray(64)
         val handle = ByteArray(Random.nextBytes(byteArray))
         val challenge = createCreationOptions(request, handle).toJson()

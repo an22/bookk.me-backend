@@ -8,7 +8,7 @@ interface RefreshToken {
 
     suspend operator fun invoke(info: RefreshTokenInfo): Result<TokenInfo>
 
-    sealed class RefreshTokenError(code: Int, message: String) : BusinessError(code, message) {
-        data object InvalidRefreshToken : RefreshTokenError(1, "Invalid refresh token")
+    sealed interface Error {
+        data object InvalidRefreshToken : BusinessError(422, 1, "Invalid refresh token")
     }
 }

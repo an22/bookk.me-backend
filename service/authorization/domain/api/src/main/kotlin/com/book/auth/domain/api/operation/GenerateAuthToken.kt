@@ -14,7 +14,7 @@ interface GenerateAuthToken {
         class FromDeviceUUID(val deviceUUID: String) : Source
     }
 
-    sealed class GenerateAuthTokenBusinessError(code: Int) : BusinessError(code) {
-        data object InvalidCredentials : GenerateAuthTokenBusinessError(1)
+    sealed interface Error {
+        data object InvalidCredentials : BusinessError(422, 1, "Invalid credentials"), Error
     }
 }

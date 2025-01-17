@@ -119,7 +119,7 @@ fun Application.installDocumentationPlugin() {
         }
         specRoute = { _: OpenApiSpec, _: Routing ->
             routing {
-                route("/openapi.json") {
+                route("/api/${System.getenv("BOOKK_ME_SERVICE_NAME")}/openapi.json") {
                     install(ContentNegotiation) {
                         json(Json {
                             serializersModule = KompendiumSerializersModule.module
@@ -136,9 +136,11 @@ fun Application.installDocumentationPlugin() {
                 }
                 redoc(
                     path = "/api/${System.getenv("BOOKK_ME_SERVICE_NAME")}/redoc",
+                    specUrl = "/api/${System.getenv("BOOKK_ME_SERVICE_NAME")}/openapi.json"
                 )
                 swagger(
                     path = "/api/${System.getenv("BOOKK_ME_SERVICE_NAME")}/swagger",
+                    specUrl = "/api/${System.getenv("BOOKK_ME_SERVICE_NAME")}/openapi.json"
                 )
             }
         }

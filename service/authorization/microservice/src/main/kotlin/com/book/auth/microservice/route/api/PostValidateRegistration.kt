@@ -58,10 +58,10 @@ internal fun Route.withValidateRegistrationDocumentation() {
                             minimum = 1
                             maximum = 4
                             description = buildString {
-                                append("${InvalidEmailFormat.code} - ${InvalidEmailFormat.message}")
-                                append("${UserAlreadyExist.code} - ${UserAlreadyExist.message}")
-                                append("${VerificationFailed.code} - ${VerificationFailed.message}")
-                                append("${AccountCreationFailed.code} - ${AccountCreationFailed.message}")
+                                append("${InvalidEmailFormat.code} - ${InvalidEmailFormat.message}\n")
+                                append("${UserAlreadyExist.code} - ${UserAlreadyExist.message}\n")
+                                append("${VerificationFailed.code} - ${VerificationFailed.message}\n")
+                                append("${AccountCreationFailed.code} - ${AccountCreationFailed.message}\n")
                             }
                         }
                     }

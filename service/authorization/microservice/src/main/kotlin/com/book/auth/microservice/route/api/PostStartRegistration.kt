@@ -57,8 +57,8 @@ internal fun Route.withStartRegistrationDocumentation() {
                             minimum = 1
                             maximum = 2
                             description = buildString {
-                                append("${InvalidEmailFormat.code} - ${InvalidEmailFormat.message}")
-                                append("${EmailAlreadyExist.code} - ${EmailAlreadyExist.message}")
+                                append("${EmailAlreadyExist.code} - ${EmailAlreadyExist.message}\n")
+                                append("${InvalidEmailFormat.code} - ${InvalidEmailFormat.message}\n")
                             }
                         }
                     }

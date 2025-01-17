@@ -3,18 +3,15 @@ package com.book.auth.microservice.route.api
 import com.book.auth.domain.api.entity.SignInInfo
 import com.book.auth.domain.api.entity.TokenInfo
 import com.book.auth.domain.api.operation.GenerateAuthToken
-import com.book.auth.domain.api.operation.GenerateAuthToken.GenerateAuthTokenBusinessError
-import com.book.auth.domain.api.routing.AuthRouting.Api
-import com.book.core.domain.entity.handle
+import com.book.auth.microservice.route.AuthRouting.Api
 import com.book.core.service.applyMediaType
-import com.book.core.service.enity.MessageServerError
 import com.book.core.service.enity.SimpleServerError
+import com.book.core.service.enity.respondWith
 import io.bkbn.kompendium.core.metadata.PostInfo
 import io.bkbn.kompendium.resources.NotarizedResource
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.request.receive
 import io.ktor.server.resources.post
-import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.application
 import org.koin.ktor.ext.inject
@@ -22,26 +19,9 @@ import org.koin.ktor.ext.inject
 internal fun Route.postLogin() {
     withSignInDocumentation()
     post<Api.Auth.SignIn> {
-        val generator by application.inject<GenerateAuthToken>()
         val info = call.receive<SignInInfo>()
-        generator.call(GenerateAuthToken.Param.FromCredentials(info))
-            .handle<_, GenerateAuthTokenBusinessError>(
-                onSuccess = {
-                    call.respond(it)
-                },
-                onBusinessError = {
-                    call.respond(
-                        HttpStatusCode.BadRequest,
-                        SimpleServerError("Invalid credentials", it.code)
-                    )
-                },
-                onUnexpectedError = {
-                    call.respond(
-                        HttpStatusCode.InternalServerError,
-                        MessageServerError(it.message.orEmpty())
-                    )
-                }
-            )
+        val generateToken by application.inject<GenerateAuthToken>()
+        call.respondWith(generateToken(GenerateAuthToken.Source.FromPublicKey(info)))
     }
 }
 

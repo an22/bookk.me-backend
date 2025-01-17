@@ -1,6 +1,7 @@
 package com.book.user.microservice.route.api
 
-import com.book.user.domain.api.routing.UserRouting.Api
+
+import com.book.user.microservice.route.UserRouting.Api
 import io.bkbn.kompendium.core.metadata.PostInfo
 import io.bkbn.kompendium.resources.NotarizedResource
 import io.ktor.http.HttpStatusCode

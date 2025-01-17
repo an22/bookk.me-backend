@@ -1,7 +1,10 @@
 package com.book.core.service
 
 import com.book.core.service.auth.JwtConfig
+import com.book.core.service.di.commonModule
 import com.bookk.core.AppLevelConstants
+import com.bookk.core.AppLevelConstants.SupportedSerializers
+import com.wolt.utils.ktor.idempotency.IdempotencyPlugin
 import io.bkbn.kompendium.core.attribute.KompendiumAttributes
 import io.bkbn.kompendium.core.metadata.RequestInfo
 import io.bkbn.kompendium.core.metadata.ResponseInfo
@@ -38,10 +41,13 @@ import io.ktor.server.routing.routing
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.protobuf.ProtoBuf
 import org.koin.core.module.Module
+import org.koin.ktor.ext.get
 import org.koin.ktor.plugin.Koin
+import org.slf4j.event.Level
 import java.io.File
 import java.security.KeyStore
 
+@Suppress("KotlinConstantConditions")
 fun startServer(
     diModules: List<Module> = emptyList(),
     modules: Application.() -> Unit
@@ -50,7 +56,7 @@ fun startServer(
         factory = Netty,
         configure = {
             val keystoreFile = File(System.getenv("BOOKK_ME_SERVICE_SSL_FILE"))
-            val keyStorePass = "*_S\\o?I!9StR2\\\"-aL{D2aJ933L1uLt"
+            val keyStorePass = System.getenv("BOOKK_ME_SERVICE_SSL_PASSWORD")
             sslConnector(
                 keyStore = KeyStore.getInstance(
                     keystoreFile,
@@ -64,9 +70,19 @@ fun startServer(
             }
         },
         module = {
-            install(Koin) { modules(diModules) }
-            install(CallLogging)
+            install(Koin) { modules(*diModules.toTypedArray(), commonModule()) }
+            install(CallLogging) {
+                level = when(AppLevelConstants.BUILD_TYPE) {
+                    AppLevelConstants.BuildType.DEBUG.STR -> Level.DEBUG
+                    else -> Level.INFO
+                }
+            }
             install(Resources)
+            install(IdempotencyPlugin) {
+                idempotentResponseRepository = get()
+                //We use Redis expiration time for cache management
+                cleanUpWorkerEnabled = false
+            }
             installAuthPlugin()
             installDocumentationPlugin()
             modules()
@@ -118,18 +134,23 @@ fun Application.installDocumentationPlugin() {
                         )
                     }
                 }
-                redoc()
-                swagger()
+                redoc(
+                    path = "/api/${System.getenv("BOOKK_ME_SERVICE_NAME")}/redoc",
+                )
+                swagger(
+                    path = "/api/${System.getenv("BOOKK_ME_SERVICE_NAME")}/swagger",
+                )
             }
         }
         schemaConfigurator = KotlinXSchemaConfigurator()
     }
 }
 
+@Suppress("KotlinConstantConditions")
 fun Routing.installNegotiation() {
     install(ContentNegotiation) {
-        when (AppLevelConstants.BUILD_TYPE) {
-            AppLevelConstants.BuildType.DEBUG -> {
+        when (AppLevelConstants.SERIALIZER) {
+            SupportedSerializers.JSON.STR -> {
                 json(Json {
                     prettyPrint = true
                     encodeDefaults = true
@@ -137,23 +158,25 @@ fun Routing.installNegotiation() {
                 })
             }
 
-            AppLevelConstants.BuildType.RELEASE -> {
+            SupportedSerializers.PROTOBUF.STR -> {
                 protobuf(ProtoBuf { encodeDefaults = true })
             }
         }
     }
 }
 
+@Suppress("KotlinConstantConditions")
 fun ResponseInfo.Builder.applyMediaType() {
-    when (AppLevelConstants.BUILD_TYPE) {
-        AppLevelConstants.BuildType.DEBUG -> mediaTypes(ContentType.Application.Json.toString())
-        AppLevelConstants.BuildType.RELEASE -> mediaTypes(ContentType.Application.ProtoBuf.toString())
+    when (AppLevelConstants.SERIALIZER) {
+        SupportedSerializers.JSON.STR -> mediaTypes(ContentType.Application.Json.toString())
+        SupportedSerializers.PROTOBUF.STR -> mediaTypes(ContentType.Application.ProtoBuf.toString())
     }
 }
 
+@Suppress("KotlinConstantConditions")
 fun RequestInfo.Builder.applyMediaType() {
-    when (AppLevelConstants.BUILD_TYPE) {
-        AppLevelConstants.BuildType.DEBUG -> mediaTypes(ContentType.Application.Json.toString())
-        AppLevelConstants.BuildType.RELEASE -> mediaTypes(ContentType.Application.ProtoBuf.toString())
+    when (AppLevelConstants.SERIALIZER) {
+        SupportedSerializers.JSON.STR -> mediaTypes(ContentType.Application.Json.toString())
+        SupportedSerializers.PROTOBUF.STR -> mediaTypes(ContentType.Application.ProtoBuf.toString())
     }
 }

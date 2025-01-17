@@ -1,7 +1,7 @@
 package com.book.user.domain.api.operation
 
-import com.book.core.domain.operation.SuspendOperation
+interface DeleteUser {
 
-interface DeleteUser : SuspendOperation<DeleteUser.Param, Result<Unit>> {
-    class Param(val userId: Long)
+    suspend operator fun invoke(userId: Long): Result<Unit>
+
 }

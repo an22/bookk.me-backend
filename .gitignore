@@ -47,3 +47,4 @@ bin/
 deployment/elastic-stack/elasticsearch/certs/*
 !deployment/elastic-stack/elasticsearch/certs/instances.yml
 local.properties
+!deployment/local-testing-environment/security/*

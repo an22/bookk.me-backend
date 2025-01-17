@@ -1,34 +1,25 @@
 package com.book.auth.domain.impl.operation
 
-import com.book.auth.domain.api.datasource.UserAuthDataSource
+import com.book.auth.domain.api.entity.DeleteAccountInfo
 import com.book.auth.domain.api.operation.DeleteAccount
-import com.book.auth.domain.api.operation.DeleteAccount.DeleteAccountError.InvalidCredentials
-import com.book.auth.domain.impl.totp.createTotpConfig
-import com.book.user.domain.api.operation.DeleteUser
-import com.book.user.domain.api.util.createPasswordHash
-import com.bookk.server.user.client.UserClient
-import dev.turingcomplete.kotlinonetimepassword.TimeBasedOneTimePasswordGenerator
-import org.apache.commons.codec.binary.Base32
+import com.book.auth.domain.api.operation.DeleteAccount.Error.InvalidCredentials
+import com.book.auth.domain.datasource.AccountDataSource
+import com.book.core.data.eventstreaming.StandardEventProducer
+import com.book.core.data.eventstreaming.send
+import com.book.user.domain.api.event.UserEvents.DeleteUserEvent
 
 internal class DeleteAccountImpl(
-    private val authLocalDataSource: UserAuthDataSource,
-    private val userClient: UserClient
+    private val accountDataSource: AccountDataSource,
+    private val eventProducer: StandardEventProducer
 ) : DeleteAccount {
 
-    private val totpConfig = createTotpConfig()
-    private val base32 = Base32()
 
-    override suspend fun call(params: DeleteAccount.Param): Result<Unit> = runCatching {
-        val authRecord = authLocalDataSource.getAuthRecordByUsername(params.userName) ?: throw InvalidCredentials
-        val generator = TimeBasedOneTimePasswordGenerator(
-            secret = base32.decode(authRecord.totpSecret),
-            config = totpConfig
-        )
-        val isCredentialsInvalid = authRecord.passwordHash != createPasswordHash(params.info.password) &&
-                !generator.isValid(params.info.totpCode)
+    override suspend fun invoke(userId: Long, info: DeleteAccountInfo): Result<Unit> = runCatching {
+        val authRecord = accountDataSource.getAuthRecordByUserId(userId) ?: throw InvalidCredentials
+        val isCredentialsInvalid = false
         if (isCredentialsInvalid) throw InvalidCredentials
-        authLocalDataSource.deleteAccount(authRecord.userId)
-        userClient.deleteUser.call(DeleteUser.Param(authRecord.userId))
+        eventProducer.send(DeleteUserEvent(authRecord.userId))
+        accountDataSource.deleteAuthorization(authRecord.userId)
     }
 
 }

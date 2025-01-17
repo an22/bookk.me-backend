@@ -26,6 +26,7 @@ rootProject.name = "bookk-server"
 //Core
 include(":core")
 include(":core:domain")
+include(":core:domain:datasource")
 include(":core:data")
 include(":core:data:cache:api")
 include(":core:data:cache:impl")
@@ -37,6 +38,7 @@ include(":core:service")
 include(":service:authorization:microservice")
 include(":service:authorization:domain:api")
 include(":service:authorization:domain:impl")
+include(":service:authorization:domain:datasource")
 include(":service:authorization:data")
 include(":service:authorization:client")
 
@@ -44,6 +46,7 @@ include(":service:authorization:client")
 include(":service:user:microservice")
 include(":service:user:domain:api")
 include(":service:user:domain:impl")
+include(":service:user:domain:datasource")
 include(":service:user:data")
 include(":service:user:client")
 

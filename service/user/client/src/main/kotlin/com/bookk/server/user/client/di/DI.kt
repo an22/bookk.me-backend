@@ -3,15 +3,14 @@ package com.bookk.server.user.client.di
 import com.book.user.domain.api.operation.CreateUser
 import com.book.user.domain.api.operation.DeleteUser
 import com.book.user.domain.api.operation.GetUserById
-import com.book.user.domain.api.operation.IsUserExistWithParameters
 import com.bookk.core.AppLevelConstants
+import com.bookk.core.AppLevelConstants.SupportedSerializers
 import com.bookk.core.SslSettings
 import com.bookk.server.user.client.UserClient
 import com.bookk.server.user.client.impl.UserClientImpl
 import com.bookk.server.user.client.impl.operation.CreateUserClientImpl
 import com.bookk.server.user.client.impl.operation.DeleteUserClientImpl
 import com.bookk.server.user.client.impl.operation.GetUserByIdClientImpl
-import com.bookk.server.user.client.impl.operation.IsUserExistWithParametersClientImpl
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.HttpRequestRetry
@@ -31,7 +30,11 @@ import io.ktor.serialization.kotlinx.protobuf.protobuf
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.protobuf.ProtoBuf
 import org.koin.dsl.module
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
+@OptIn(ExperimentalUuidApi::class)
+@Suppress("KotlinConstantConditions")
 fun userClientModule(clientTag: String) = module {
     single {
         HttpClient(CIO) {
@@ -39,25 +42,28 @@ fun userClientModule(clientTag: String) = module {
             install(UserAgent) { agent = clientTag }
             install(HttpRequestRetry) {
                 retryOnExceptionOrServerErrors(maxRetries = 3)
-                constantDelay(millis = 100L)
+                constantDelay(millis = 50, randomizationMs = 100)
             }
             install(ContentNegotiation) {
-                when (AppLevelConstants.BUILD_TYPE) {
-                    AppLevelConstants.BuildType.DEBUG -> {
+                when (AppLevelConstants.SERIALIZER) {
+                    SupportedSerializers.JSON.STR -> {
                         json(Json {
                             prettyPrint = true
                             encodeDefaults = true
                             explicitNulls = false
                         })
                     }
-                    AppLevelConstants.BuildType.RELEASE -> {
+                    SupportedSerializers.PROTOBUF.STR -> {
                         protobuf(ProtoBuf { encodeDefaults = true })
                     }
                 }
             }
             install(Logging) {
                 logger = Logger.DEFAULT
-                level = LogLevel.ALL
+                level = when(AppLevelConstants.BUILD_TYPE) {
+                    AppLevelConstants.BuildType.DEBUG.STR -> LogLevel.ALL
+                    else -> LogLevel.INFO
+                }
             }
             engine {
                 https {
@@ -67,17 +73,20 @@ fun userClientModule(clientTag: String) = module {
             expectSuccess = true
             defaultRequest {
                 host = System.getenv("BOOKK_ME_USER_SERVICE_HOSTNAME")
-                when (AppLevelConstants.BUILD_TYPE) {
-                    AppLevelConstants.BuildType.DEBUG -> contentType(ContentType.Application.Json)
-                    AppLevelConstants.BuildType.RELEASE -> contentType(ContentType.Application.ProtoBuf)
-                }
+
+                headers["Idempotency-Key"] = Uuid.random().toHexString()
+
                 url { protocol = URLProtocol.HTTPS }
+
+                when (AppLevelConstants.SERIALIZER) {
+                    SupportedSerializers.JSON.STR -> contentType(ContentType.Application.Json)
+                    SupportedSerializers.PROTOBUF.STR -> contentType(ContentType.Application.ProtoBuf)
+                }
             }
         }
     }
     single<GetUserById> { GetUserByIdClientImpl(get()) }
     single<CreateUser> { CreateUserClientImpl(get()) }
-    single<IsUserExistWithParameters> { IsUserExistWithParametersClientImpl(get()) }
     single<DeleteUser> { DeleteUserClientImpl(get()) }
-    single<UserClient> { UserClientImpl(get(), get(), get(), get()) }
+    single<UserClient> { UserClientImpl(get(), get(), get()) }
 }

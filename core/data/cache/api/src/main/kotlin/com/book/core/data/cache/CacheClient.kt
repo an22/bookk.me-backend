@@ -8,7 +8,7 @@ import kotlin.time.Duration
 interface CacheClient<K> : Closeable {
     suspend fun <V : Any> set(key: K, value: V, kType: KType)
     suspend fun <V : Any> get(key: K, kType: KType): V?
-    suspend fun <V : Any> withTransaction(action: CacheTransaction<K>.() -> Unit, kType: KType)
+    suspend fun withTransaction(action: CacheTransaction<K>.() -> Unit)
     suspend fun delete(key: K)
 
     interface CacheTransaction<K> {
@@ -33,8 +33,4 @@ inline fun <K, reified V : Any> CacheClient.CacheTransaction<K>.set(key: K, valu
 
 inline fun <K, reified V : Any> CacheClient.CacheTransaction<K>.get(key: K): V? {
     return get(key, typeOf<V>())
-}
-
-suspend inline fun <K, reified V : Any> CacheClient<K>.withTransaction(noinline action: CacheClient.CacheTransaction<K>.() -> Unit) {
-    withTransaction<V>(action, typeOf<V>())
 }

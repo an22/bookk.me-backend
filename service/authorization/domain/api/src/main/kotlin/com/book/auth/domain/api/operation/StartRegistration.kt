@@ -1,12 +1,24 @@
 package com.book.auth.domain.api.operation
 
 import com.book.auth.domain.api.entity.ChallengeResponse
-import com.book.auth.domain.api.entity.PassKeySignUpStartInfo
+import com.book.auth.domain.api.entity.CreateAccountRequest
 import com.book.core.domain.entity.BusinessError
-import com.book.core.domain.operation.SuspendOperation
 
-interface StartRegistration : SuspendOperation<PassKeySignUpStartInfo, Result<ChallengeResponse>> {
-    sealed class CreateUserAccountError(code: Int, message: String) : BusinessError(code, message) {
-        data object EmailAlreadyExist : CreateUserAccountError(2, "This email already exists")
+interface StartRegistration {
+
+    suspend operator fun invoke(request: CreateAccountRequest): Result<ChallengeResponse>
+
+    sealed interface Error {
+        data object EmailAlreadyExist : BusinessError(
+            statusCode = 422,
+            code = 1,
+            message = "This email already exists"
+        ), Error
+
+        data object InvalidEmailFormat : BusinessError(
+            statusCode = 422,
+            code = 2,
+            message = "Invalid email format"
+        ), Error
     }
 }

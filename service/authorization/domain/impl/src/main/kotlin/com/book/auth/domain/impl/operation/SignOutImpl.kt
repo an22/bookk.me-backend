@@ -1,12 +1,13 @@
 package com.book.auth.domain.impl.operation
 
-import com.book.auth.domain.api.datasource.UserAuthDataSource
 import com.book.auth.domain.api.operation.SignOut
+import com.book.auth.domain.datasource.DeviceDataSource
 
 internal class SignOutImpl(
-    private val localDataSource: UserAuthDataSource
+    private val deviceDataSource: DeviceDataSource
 ) : SignOut {
-    override suspend fun call(params: SignOut.Param): Result<Unit> = runCatching {
-        localDataSource.deleteTokenInfoForDevice(params.deviceId)
+
+    override suspend fun invoke(deviceId: Long): Result<Unit> = runCatching {
+        deviceDataSource.deleteTokenFromDevice(deviceId)
     }
 }

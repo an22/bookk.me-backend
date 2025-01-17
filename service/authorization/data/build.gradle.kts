@@ -7,6 +7,7 @@ dependencies {
     implementation(projects.core.data)
     implementation(projects.core.data.cache.api)
     implementation(projects.service.authorization.domain.api)
+    implementation(projects.service.authorization.domain.datasource)
     implementation(projects.service.user.client)
     implementation(libs.passkey)
 }

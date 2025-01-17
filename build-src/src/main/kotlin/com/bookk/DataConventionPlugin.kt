@@ -16,6 +16,7 @@ class DataConventionPlugin : Plugin<Project> {
         with(target) {
             pluginManager.apply {
                 apply(libs.plugins.kotlin.jvm.get().pluginId)
+                apply(libs.plugins.kotlin.serialization.get().pluginId)
             }
 
             extensions.getByType<JavaPluginExtension>().applyConvention()
@@ -25,16 +26,21 @@ class DataConventionPlugin : Plugin<Project> {
             }
 
             target.dependencies {
-                add("implementation", libs.ktorm)
-                add("implementation", libs.ktorm.dialect.mysql)
-                add("implementation", libs.koin.core)
+                add("implementation", libs.exposed.core)
+                add("implementation", libs.exposed.dao)
+                add("implementation", libs.exposed.migration)
+                add("implementation", libs.exposed.jdbc)
+                add("implementation", libs.exposed.kotlin.datetime)
                 add("implementation", libs.hikari.cp)
-                add("implementation", platform(libs.koin.bom))
+                add("implementation", libs.koin.core)
                 add("implementation", libs.flyway.core)
                 add("implementation", libs.flyway.mysql)
+                add("implementation", platform(libs.koin.bom))
                 add("implementation", libs.mariadb)
                 add("implementation", libs.kotlin.coroutines)
+                add("implementation", libs.ktor.protobuf)
                 add("testImplementation", libs.kotlin.test)
+                add("testImplementation", libs.mockk)
             }
         }
     }

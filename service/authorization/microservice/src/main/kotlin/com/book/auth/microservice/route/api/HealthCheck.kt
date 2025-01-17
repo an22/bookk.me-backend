@@ -1,6 +1,6 @@
 package com.book.auth.microservice.route.api
 
-import com.book.auth.domain.api.routing.AuthRouting.Api
+import com.book.auth.microservice.route.AuthRouting.Api
 import io.bkbn.kompendium.core.metadata.GetInfo
 import io.bkbn.kompendium.resources.NotarizedResource
 import io.ktor.http.HttpStatusCode

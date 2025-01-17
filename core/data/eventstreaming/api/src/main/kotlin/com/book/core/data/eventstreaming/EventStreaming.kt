@@ -1,34 +1,44 @@
 package com.book.core.data.eventstreaming
 
 import com.book.core.data.eventstreaming.EventStreaming.Consumer
+import com.book.core.data.eventstreaming.EventStreaming.Event
 import com.book.core.data.eventstreaming.EventStreaming.Producer
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlin.reflect.KType
 import kotlin.reflect.typeOf
 
 interface EventStreaming {
-    interface Consumer<K, V> {
+    interface Consumer<K> {
         fun <T> registerReceiver(
             topic: K,
             type: KType,
-            onEvent: (T) -> Unit
-        ): Consumer<K, V>
+            onEvent: suspend (T) -> Unit
+        ): Consumer<K>
 
-        fun start(): Job
+        fun start(scope: CoroutineScope): Job
     }
 
-    interface Producer<K, V> {
-        suspend fun <T : Any> send(topic: K, data: T, kType: KType)
+    interface Producer<K> {
+        suspend fun <T : Event<K>> send(data: T, kType: KType)
+    }
+
+    interface Event<K> {
+        val topic: K
     }
 }
 
-suspend inline fun <reified T : Any, K, V> Producer<K, V>.send(topic: K, data: T) {
-    send(topic, data, typeOf<T>())
+suspend inline fun <reified T : Event<K>, K> Producer<K>.send(data: T) {
+    send(data, typeOf<T>())
 }
 
-inline fun <reified T : Any, K, V> Consumer<K, V>.registerReceiver(
+inline fun <reified T : Any, K> Consumer<K>.registerReceiver(
     topic: K,
-    noinline onEvent: (T) -> Unit
-): Consumer<K, V> {
+    noinline onEvent: suspend (T) -> Unit
+): Consumer<K> {
     return registerReceiver(topic, typeOf<T>(), onEvent)
 }
+
+typealias StandardEventProducer = Producer<String>
+
+typealias StandardEventConsumer = Consumer<String>

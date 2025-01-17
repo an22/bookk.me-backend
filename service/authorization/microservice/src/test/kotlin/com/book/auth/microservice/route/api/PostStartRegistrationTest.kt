@@ -1,0 +1,103 @@
+package com.book.auth.microservice.route.api
+
+import com.book.auth.domain.api.entity.ChallengeResponse
+import com.book.auth.domain.api.entity.CreateAccountRequest
+import com.book.auth.domain.api.operation.StartRegistration
+import com.book.auth.domain.api.operation.StartRegistration.Error.EmailAlreadyExist
+import com.book.auth.domain.api.operation.StartRegistration.Error.InvalidEmailFormat
+import com.book.auth.microservice.route.AuthRouting
+import com.book.core.service.enity.SimpleServerError
+import com.bookk.core.service.test.createTestClient
+import com.bookk.core.service.test.serverTest
+import com.bookk.core.service.test.setupApplication
+import com.bookk.core.test.given
+import com.bookk.core.test.then
+import com.bookk.core.test.whenn
+import io.ktor.client.call.body
+import io.ktor.client.plugins.resources.post
+import io.ktor.client.request.setBody
+import io.ktor.http.HttpStatusCode
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.mockk
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Test
+import org.koin.dsl.module
+
+class PostStartRegistrationTest {
+
+    @Test
+    fun incorrectEmailFormat() = serverTest {
+        given()
+        val useCase: StartRegistration = mockk()
+        val client = createTestClient()
+        val request = CreateAccountRequest("firstName", "lastName", "email")
+        coEvery { useCase.invoke(any()) } returns Result.failure(InvalidEmailFormat)
+        setupApplication(
+            diModule = module {
+                single<StartRegistration> { useCase }
+            },
+            routeUnderTest = { postStartRegistration() }
+        )
+        whenn()
+        val response = client.post(AuthRouting.Api.Auth.SignUp.PassKey.Challenge()) {
+            setBody(request)
+        }
+        val body = response.body<SimpleServerError>()
+        then()
+        coVerify { useCase.invoke(eq(request)) }
+        assertEquals(InvalidEmailFormat.statusCode, response.status.value)
+        assertEquals(InvalidEmailFormat.code, body.errorCode)
+        assertEquals(InvalidEmailFormat.message, body.message)
+    }
+
+    @Test
+    fun emailAlreadyExist() = serverTest {
+        given()
+        val useCase: StartRegistration = mockk()
+        val client = createTestClient()
+        val request = CreateAccountRequest("firstName", "lastName", "email")
+        coEvery { useCase.invoke(any()) } returns Result.failure(EmailAlreadyExist)
+        setupApplication(
+            diModule = module {
+                single<StartRegistration> { useCase }
+            },
+            routeUnderTest = { postStartRegistration() }
+        )
+        whenn()
+        val response = client.post(AuthRouting.Api.Auth.SignUp.PassKey.Challenge()) {
+            setBody(request)
+        }
+        val body = response.body<SimpleServerError>()
+        then()
+        coVerify { useCase.invoke(eq(request)) }
+        assertEquals(EmailAlreadyExist.statusCode, response.status.value)
+        assertEquals(EmailAlreadyExist.code, body.errorCode)
+        assertEquals(EmailAlreadyExist.message, body.message)
+    }
+
+    @Test
+    fun successResponse() = serverTest {
+        given()
+        val useCase: StartRegistration = mockk()
+        val client = createTestClient()
+        val request = CreateAccountRequest("firstName", "lastName", "email")
+        val expected = ChallengeResponse("example_challenge", "display_name", "userId")
+        coEvery { useCase.invoke(any()) } returns Result.success(expected)
+        setupApplication(
+            diModule = module {
+                single<StartRegistration> { useCase }
+            },
+            routeUnderTest = { postStartRegistration() }
+        )
+        whenn()
+        val response = client.post(AuthRouting.Api.Auth.SignUp.PassKey.Challenge()) {
+            setBody(request)
+        }
+        val actual = response.body<ChallengeResponse>()
+        then()
+        coVerify { useCase.invoke(eq(request)) }
+        assertEquals(HttpStatusCode.OK, response.status)
+        assertEquals(expected, actual)
+    }
+}

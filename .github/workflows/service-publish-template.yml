@@ -14,21 +14,19 @@ on:
       serviceName:
         required: true
         type: string
-    secrets:
-      DOCKERHUB_USERNAME:
-        required: true
-      DOCKERHUB_PASSWORD:
-        required: true
-
+    outputs:
+      version:
+        value: ${{jobs.dockerPushService.outputs.version}}
 jobs:
 
   dockerPushService:
-    name: Publish Ktor Service
+    name: Publish service
     runs-on: self-hosted
-
+    outputs:
+      version: ${{ steps.version.outputs.version_tag }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up JDK 21
         uses: actions/setup-java@v4
@@ -43,11 +41,28 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Prepare docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          flavor: |
+            latest=false
+
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
       - name: Publish image
-        run: ./gradlew ${{ inputs.module }}:publishImage
+        id: push
+        shell: bash
+        run: |
+          ./gradlew ${{ inputs.module }}:publishImage
         env:
           DOCKER_USERNAME: ${{ github.actor }}
           DOCKER_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Write release version
+        id: version
+        shell: bash
+        run: |
+          image_tag="${{ steps.meta.outputs.tags }}"
+          echo "version_tag=${image_tag#*-}" >> $GITHUB_OUTPUT

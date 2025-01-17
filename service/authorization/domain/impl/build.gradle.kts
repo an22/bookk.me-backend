@@ -3,15 +3,14 @@ plugins {
 }
 
 dependencies {
-    implementation(libs.kotlin.coroutines)
     implementation(libs.ktor.jwt)
-    implementation(libs.totp)
-    implementation(libs.apache.base32)
     implementation(libs.passkey)
     implementation(projects.core)
     implementation(projects.core.domain)
-    implementation(projects.service.authorization.data)
+    implementation(projects.core.domain.datasource)
+    implementation(projects.core.data.eventstreaming.api)
     implementation(projects.service.authorization.domain.api)
+    implementation(projects.service.authorization.domain.datasource)
     implementation(projects.service.user.domain.api)
     implementation(projects.service.user.client)
 }

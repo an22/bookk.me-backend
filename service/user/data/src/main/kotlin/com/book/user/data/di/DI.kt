@@ -1,29 +1,18 @@
 package com.book.user.data.di
 
-import com.book.core.data.database.createDataSourceAndMigrateDb
-import com.book.user.data.repository.UserAuthLocalDataSourceImpl
-import com.book.user.domain.api.datasource.UserLocalDataSource
+import com.book.core.data.database.createDatabase
+import com.book.user.data.datasource.UserDataSourceImpl
+import com.book.user.domain.datasource.UserDataSource
 import org.koin.dsl.module
-import org.ktorm.database.Database
-import org.ktorm.logging.ConsoleLogger
-import org.ktorm.logging.LogLevel
-import org.ktorm.support.mysql.MySqlDialect
 
 fun userDataModule() = module {
-    single<UserLocalDataSource> { UserAuthLocalDataSourceImpl(get(), get()) }
-    single<Database> {
-        val dataSource= createDataSourceAndMigrateDb(
-            schemaName = System.getenv("BOOKK_ME_DB_SCHEME"),
-            driver = System.getenv("BOOKK_ME_DB_DRIVER"),
-            dbUrl = System.getenv("BOOKK_ME_DB_URL"),
-            dbPort = System.getenv("BOOKK_ME_DB_PORT"),
-            dbUsername = System.getenv("BOOKK_ME_DB_USER"),
-            dbPassword = System.getenv("BOOKK_ME_DB_PASSWORD")
-        )
-        Database.connect(
-            dataSource = dataSource,
-            logger = ConsoleLogger(threshold = LogLevel.INFO),
-            dialect = MySqlDialect()
-        )
-    }
+    single<UserDataSource> { UserDataSourceImpl(get()) }
+    createDatabase(
+        schemaName = System.getenv("BOOKK_ME_DB_SCHEME"),
+        driver = System.getenv("BOOKK_ME_DB_DRIVER"),
+        dbUrl = System.getenv("BOOKK_ME_DB_URL"),
+        dbPort = System.getenv("BOOKK_ME_DB_PORT"),
+        dbUsername = System.getenv("BOOKK_ME_DB_USER"),
+        dbPassword = System.getenv("BOOKK_ME_DB_PASSWORD")
+    )
 }

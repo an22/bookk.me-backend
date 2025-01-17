@@ -57,6 +57,7 @@ class MicroserviceConventionPlugin : Plugin<Project> {
                 add("testImplementation", libs.ktor.client.negotiation)
                 add("testImplementation", libs.ktor.documentation.generation)
                 add("testImplementation", libs.ktor.documentation.generation.resources)
+                add("testImplementation", libs.mockk)
                 add("testFixturesImplementation", libs.ktor.client.resources)
                 add("testFixturesImplementation", libs.ktor.client.negotiation)
                 add("testFixturesImplementation", libs.ktor.test)

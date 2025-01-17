@@ -29,6 +29,7 @@ class DomainImplConventionPlugin : Plugin<Project> {
                 add("implementation", libs.kotlin.coroutines)
                 add("implementation", libs.kotlin.datetime)
                 add("testImplementation", libs.kotlin.test)
+                add("testImplementation", libs.mockk)
             }
         }
     }

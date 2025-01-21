@@ -1,4 +1,4 @@
-package com.book.auth.domain.impl.operation.registration
+package com.book.auth.domain.impl.passkey
 
 import com.bookk.core.AppLevelConstants
 import com.yubico.webauthn.CredentialRepository

@@ -1,20 +1,22 @@
 package com.book.auth.domain.impl.operation.registration
 
-import com.book.auth.domain.api.entity.Authentication
-import com.book.auth.domain.api.entity.PasskeyCredential
-import com.book.auth.domain.api.entity.TokenInfo
-import com.book.auth.domain.api.entity.VerifyAccountCreationRequest
-import com.book.auth.domain.api.entity.VerifyAccountCreationRequest.UserInfo
-import com.book.auth.domain.api.operation.FinishRegistration
-import com.book.auth.domain.api.operation.FinishRegistration.Error.AccountCreationFailed
-import com.book.auth.domain.api.operation.FinishRegistration.Error.InvalidEmailFormat
-import com.book.auth.domain.api.operation.FinishRegistration.Error.UserAlreadyExist
-import com.book.auth.domain.api.operation.FinishRegistration.Error.VerificationFailed
-import com.book.auth.domain.api.operation.GenerateAuthToken
-import com.book.auth.domain.api.operation.GenerateAuthToken.Source
+import com.book.auth.domain.api.authentication.entity.Authentication
+import com.book.auth.domain.api.identification.entity.PasskeyCredential
+import com.book.auth.domain.api.identification.entity.PasskeyCredential.CredentialDescriptor
+import com.book.auth.domain.api.registration.entity.VerifyAccountCreationRequest
+import com.book.auth.domain.api.registration.entity.VerifyAccountCreationRequest.UserInfo
+import com.book.auth.domain.api.registration.operation.FinishRegistration
+import com.book.auth.domain.api.registration.operation.FinishRegistration.Error.AccountCreationFailed
+import com.book.auth.domain.api.registration.operation.FinishRegistration.Error.InvalidEmailFormat
+import com.book.auth.domain.api.registration.operation.FinishRegistration.Error.UserAlreadyExist
+import com.book.auth.domain.api.registration.operation.FinishRegistration.Error.VerificationFailed
+import com.book.auth.domain.api.token.entity.AuthTokens
+import com.book.auth.domain.api.token.operation.GenerateAuthToken
+import com.book.auth.domain.api.token.operation.GenerateAuthToken.Source
 import com.book.auth.domain.datasource.AccountDataSource
 import com.book.auth.domain.datasource.DeviceDataSource
 import com.book.auth.domain.datasource.PassKeyDataSource
+import com.book.auth.domain.impl.passkey.createRelyingParty
 import com.book.core.data.eventstreaming.StandardEventProducer
 import com.book.core.data.eventstreaming.send
 import com.book.core.domain.transaction.TransactionManager
@@ -56,8 +58,8 @@ internal class FinishRegistrationImpl(
         val userId = saveUserExternal(request)
         transactionManager.runInTransaction {
             val ownerId = saveAuthorizationOwner(userId, request.userInfo)
-            throw Exception()
-            savePasskeyCredentials(ownerId, request.userInfo.userId, result, pkc)
+            val passkeyIdentityId = savePasskeyIdentity(ownerId, request)
+            savePasskeyCredentials(passkeyIdentityId, result, pkc)
             createAndSaveAuthCredentials(ownerId, request)
         }.onFailure {
             eventProducer.send(DeleteUserEvent(userId))
@@ -70,13 +72,18 @@ internal class FinishRegistrationImpl(
         }
     }
 
-    private suspend fun createAndSaveAuthCredentials(ownerId: Long, request: VerifyAccountCreationRequest): TokenInfo {
-        val device = deviceDataSource.createDevice(
+    private suspend fun savePasskeyIdentity(
+        ownerId: Long,
+        request: VerifyAccountCreationRequest
+    ): Long = passKeyDataSource.savePasskeyHandle(ownerId, ByteArray.fromBase64(request.userInfo.userId).bytes)
+
+    private suspend fun createAndSaveAuthCredentials(ownerId: Long, request: VerifyAccountCreationRequest): AuthTokens {
+        deviceDataSource.createDeviceIfNotExist(
             authId = ownerId,
             uuid = request.deviceInfo.deviceUUID,
             name = request.deviceInfo.deviceName
         )
-        return generateAuthToken(Source.FromDeviceUUID(device.deviceInfo.deviceUUID)).getOrThrow()
+        return generateAuthToken(Source.FromAuthDevice(ownerId, request.deviceInfo.deviceUUID)).getOrThrow()
     }
 
     private suspend fun verifyUserDoesNotExist(request: VerifyAccountCreationRequest) {
@@ -84,7 +91,7 @@ internal class FinishRegistrationImpl(
     }
 
     private suspend fun saveUserExternal(request: VerifyAccountCreationRequest): Long {
-        return userClient.createUser(createUserFrom(request.userInfo)).getOrThrow()
+        return userClient.createUser(createUserFrom(request.userInfo)).getOrThrow().id
     }
 
     private suspend fun saveAuthorizationOwner(userId: Long, userInfo: UserInfo): Long {
@@ -97,12 +104,11 @@ internal class FinishRegistrationImpl(
     }
 
     private suspend fun savePasskeyCredentials(
-        ownerId: Long,
-        userHandle: String,
+        identityId: Long,
         registrationResult: RegistrationResult,
         publicCredential: PKS
     ) {
-        val creds = registrationResult.asPasskeyCredential(ownerId, userHandle, publicCredential)
+        val creds = registrationResult.asPasskeyCredential(identityId, publicCredential)
         passKeyDataSource.createPasskeyCredential(creds)
     }
 
@@ -111,7 +117,8 @@ internal class FinishRegistrationImpl(
         pkc: PKS
     ): RegistrationResult {
         val challengeJson = passKeyDataSource.getCachedChallenge(request.userInfo.userId)
-        passKeyDataSource.deleteCredentialOptions(request.userInfo.userId)
+        if (challengeJson == null) throw FinishRegistration.Error.ChallengeWindowExpired
+        passKeyDataSource.deleteCachedChallenge(request.userInfo.userId)
         return createRelyingParty(credentialRepository).finishRegistration(
             FinishRegistrationOptions.builder()
                 .request(PublicKeyCredentialCreationOptions.fromJson(challengeJson))
@@ -121,15 +128,17 @@ internal class FinishRegistrationImpl(
     }
 
     @Suppress("DEPRECATION")
-    private fun RegistrationResult.asPasskeyCredential(authId: Long, userId: String, pkc: PKS): PasskeyCredential {
-        val transports = keyId.transports.getOrNull()?.joinToString { it.id }.orEmpty()
+    private fun RegistrationResult.asPasskeyCredential(identityId: Long, pkc: PKS): PasskeyCredential {
         return PasskeyCredential(
             id = 0,
-            authId = authId,
-            userHandle = ByteArray.fromBase64(userId).bytes,
-            credDescriptorId = keyId.id.bytes,
-            credDescriptorType = keyId.type.id,
-            credDescriptorTransports = transports,
+            userIdentityId = identityId,
+            authInfo = Authentication(0, 0, ""),
+            handle = ByteArray(0),
+            credDescriptor = CredentialDescriptor(
+                id = keyId.id.bytes,
+                type = keyId.type.id,
+                transports = keyId.transports.getOrNull()?.map { it.id }.orEmpty().toSet()
+            ),
             publicKey = publicKeyCose.bytes,
             signatureCount = signatureCount,
             isDiscoverable = isDiscoverable.getOrElse { false },

@@ -1,4 +1,6 @@
-package com.book.auth.domain.api.entity
+package com.book.auth.domain.api.identification.entity
+
+import com.book.auth.domain.api.authentication.entity.Authentication
 
 class Device(
     val authRecord: Authentication,

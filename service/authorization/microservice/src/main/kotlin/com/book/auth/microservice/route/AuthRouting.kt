@@ -13,7 +13,16 @@ object AuthRouting {
             class HealthCheck(val parent: Auth = Auth())
 
             @Resource("/sign_in")
-            class SignIn(val parent: Auth = Auth())
+            class SignIn(val parent: Auth = Auth()) {
+                @Resource("/passkey")
+                class PassKey(val parent: SignIn = SignIn()) {
+                    @Resource("/challenge")
+                    class Challenge(val parent: PassKey = PassKey())
+
+                    @Resource("/validate")
+                    class Validate(val parent: PassKey = PassKey())
+                }
+            }
 
             @Resource("/sign_up")
             class SignUp(val parent: Auth = Auth()) {

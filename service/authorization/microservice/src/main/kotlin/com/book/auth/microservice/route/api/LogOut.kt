@@ -1,6 +1,6 @@
 package com.book.auth.microservice.route.api
 
-import com.book.auth.domain.api.operation.SignOut
+import com.book.auth.domain.api.signout.operation.SignOut
 import com.book.auth.microservice.route.AuthRouting.Api
 import com.book.core.service.auth.AppPrincipal
 import com.book.core.service.enity.respondWith

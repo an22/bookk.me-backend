@@ -3,7 +3,7 @@ package com.book.auth.data.datasource
 import com.book.auth.data.map.toDomain
 import com.book.auth.data.orm.entity.AuthenticationEntity
 import com.book.auth.data.orm.table.AuthenticationTable
-import com.book.auth.domain.api.entity.Authentication
+import com.book.auth.domain.api.authentication.entity.Authentication
 import com.book.auth.domain.datasource.AccountDataSource
 import com.book.core.data.DataSource
 import kotlinx.datetime.Clock

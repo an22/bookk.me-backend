@@ -1,9 +1,9 @@
 package com.book.auth.microservice.route.api
 
-import com.book.auth.domain.api.entity.RefreshTokenInfo
-import com.book.auth.domain.api.entity.TokenInfo
-import com.book.auth.domain.api.operation.RefreshToken
-import com.book.auth.domain.api.operation.RefreshToken.Error.InvalidRefreshToken
+import com.book.auth.domain.api.token.entity.AuthTokens
+import com.book.auth.domain.api.token.entity.RefreshTokenInfo
+import com.book.auth.domain.api.token.operation.RefreshToken
+import com.book.auth.domain.api.token.operation.RefreshToken.Error.InvalidRefreshToken
 import com.book.auth.microservice.route.AuthRouting.Api
 import com.book.core.service.applyMediaType
 import com.book.core.service.enity.SimpleServerError
@@ -43,7 +43,7 @@ internal fun Route.withRefreshDocumentation() {
             response {
                 applyMediaType()
                 responseCode(HttpStatusCode.OK)
-                responseType<TokenInfo>()
+                responseType<AuthTokens>()
                 description("New access/refresh pair")
             }
             canRespond {

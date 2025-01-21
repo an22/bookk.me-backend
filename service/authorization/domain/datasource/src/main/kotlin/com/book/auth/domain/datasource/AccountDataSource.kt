@@ -1,6 +1,6 @@
 package com.book.auth.domain.datasource
 
-import com.book.auth.domain.api.entity.Authentication
+import com.book.auth.domain.api.authentication.entity.Authentication
 
 interface AccountDataSource {
     suspend fun createAuthorization(info: Authentication): Authentication

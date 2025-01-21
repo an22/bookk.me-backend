@@ -1,11 +1,10 @@
-package com.book.auth.domain.api.operation
+package com.book.auth.domain.api.delete_account.operation
 
-import com.book.auth.domain.api.entity.DeleteAccountInfo
 import com.book.core.domain.entity.BusinessError
 
 interface DeleteAccount {
 
-    suspend operator fun invoke(userId: Long, info: DeleteAccountInfo): Result<Unit>
+    suspend operator fun invoke(userId: Long): Result<Unit>
 
     sealed interface Error {
         data object InvalidCredentials : BusinessError(

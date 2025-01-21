@@ -34,5 +34,6 @@
 
     <!-- Logger levels -->
     <logger name="com.zaxxer.hikari" level="info" />
+    <logger name="org.apache.kafka" level="info" />
     <logger name="io.netty" level="info" />
 </configuration>

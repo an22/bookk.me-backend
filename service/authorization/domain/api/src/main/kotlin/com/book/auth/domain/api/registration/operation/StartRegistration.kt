@@ -1,13 +1,13 @@
-package com.book.auth.domain.api.operation
+package com.book.auth.domain.api.registration.operation
 
-import com.book.auth.domain.api.entity.ChallengeResponse
-import com.book.auth.domain.api.entity.CreateAccountRequest
 import com.book.auth.domain.api.error.AuthErrorCodes
+import com.book.auth.domain.api.registration.entity.CreateAccountRequest
+import com.book.auth.domain.api.registration.entity.SignUpChallengeResponse
 import com.book.core.domain.entity.BusinessError
 
 interface StartRegistration {
 
-    suspend operator fun invoke(request: CreateAccountRequest): Result<ChallengeResponse>
+    suspend operator fun invoke(request: CreateAccountRequest): Result<SignUpChallengeResponse>
 
     sealed interface Error {
         data object EmailAlreadyExist : BusinessError(

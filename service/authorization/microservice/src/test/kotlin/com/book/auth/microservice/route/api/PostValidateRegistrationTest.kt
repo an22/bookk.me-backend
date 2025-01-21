@@ -1,12 +1,12 @@
 package com.book.auth.microservice.route.api
 
-import com.book.auth.domain.api.entity.TokenInfo
-import com.book.auth.domain.api.entity.VerifyAccountCreationRequest
-import com.book.auth.domain.api.operation.FinishRegistration
-import com.book.auth.domain.api.operation.FinishRegistration.Error.AccountCreationFailed
-import com.book.auth.domain.api.operation.FinishRegistration.Error.InvalidEmailFormat
-import com.book.auth.domain.api.operation.FinishRegistration.Error.UserAlreadyExist
-import com.book.auth.domain.api.operation.FinishRegistration.Error.VerificationFailed
+import com.book.auth.domain.api.registration.entity.VerifyAccountCreationRequest
+import com.book.auth.domain.api.registration.operation.FinishRegistration
+import com.book.auth.domain.api.registration.operation.FinishRegistration.Error.AccountCreationFailed
+import com.book.auth.domain.api.registration.operation.FinishRegistration.Error.InvalidEmailFormat
+import com.book.auth.domain.api.registration.operation.FinishRegistration.Error.UserAlreadyExist
+import com.book.auth.domain.api.registration.operation.FinishRegistration.Error.VerificationFailed
+import com.book.auth.domain.api.token.entity.AuthTokens
 import com.book.auth.microservice.route.AuthRouting
 import com.book.core.service.enity.SimpleServerError
 import com.bookk.core.service.test.createTestClient
@@ -150,7 +150,7 @@ class PostValidateRegistrationTest {
         val useCase: FinishRegistration = mockk()
         val client = createTestClient()
         val request = createSimpleRequest()
-        val expected = TokenInfo("access_token", "refresh_token")
+        val expected = AuthTokens("access_token", "refresh_token")
         coEvery { useCase.invoke(any()) } returns Result.success(expected)
         setupApplication(
             diModule = module {
@@ -162,7 +162,7 @@ class PostValidateRegistrationTest {
         val response = client.post(AuthRouting.Api.Auth.SignUp.PassKey.Validate()) {
             setBody(request)
         }
-        val body = response.body<TokenInfo>()
+        val body = response.body<AuthTokens>()
         then()
         coVerify { useCase.invoke(eq(request)) }
         assertEquals(HttpStatusCode.OK, response.status)

@@ -1,4 +1,4 @@
-package com.book.auth.domain.api.operation
+package com.book.auth.domain.api.signout.operation
 
 interface SignOut {
 

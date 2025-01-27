@@ -16,6 +16,6 @@ internal class CreateUserClientImpl(
     override suspend fun invoke(user: User) = runCatching {
         httpClient.post(UserRouting.Api.Internal.User()) {
             setBody(user)
-        }.body<UserId>().id
+        }.body<UserId>()
     }
 }

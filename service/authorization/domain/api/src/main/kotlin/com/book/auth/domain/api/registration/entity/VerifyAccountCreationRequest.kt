@@ -1,4 +1,4 @@
-package com.book.auth.domain.api.entity
+package com.book.auth.domain.api.registration.entity
 
 import kotlinx.serialization.Serializable
 

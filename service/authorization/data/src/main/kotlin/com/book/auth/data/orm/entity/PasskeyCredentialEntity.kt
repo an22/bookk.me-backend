@@ -6,8 +6,7 @@ import org.jetbrains.exposed.dao.LongEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 
 internal class PasskeyCredentialEntity(id: EntityID<Long>) : LongEntity(id) {
-    var authId by AuthenticationEntity referencedOn PasskeyCredentialTable.authId
-    var userHandle by PasskeyCredentialTable.userHandle
+    var identity by AuthToHandleEntity referencedOn PasskeyCredentialTable.identityId
     var credDescriptorId by PasskeyCredentialTable.credDescriptorId
     var credDescriptorType by PasskeyCredentialTable.credDescriptorType
     var credDescriptorTransports by PasskeyCredentialTable.credDescriptorTransports

@@ -6,8 +6,7 @@ import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.kotlin.datetime.timestamp
 
 internal object PasskeyCredentialTable: LongIdTable("passkey_credentials") {
-    val authId = reference("auth_id", AuthenticationTable, onDelete = ReferenceOption.CASCADE)
-    val userHandle = binary("handle", 64)
+    val identityId = reference("identity_id", AuthToHandleTable, onDelete = ReferenceOption.CASCADE)
     val credDescriptorId = binary("cred_descriptor_id", 24)
     val credDescriptorType = varchar("cred_descriptor_type", 255)
     val credDescriptorTransports = varchar("cred_descriptor_transports", 255)
@@ -20,4 +19,8 @@ internal object PasskeyCredentialTable: LongIdTable("passkey_credentials") {
     val clientData = binary("client_data", 255)
     val createdAt = timestamp("created_at").clientDefault { Clock.System.now() }
     val updatedAt = timestamp("updated_at")
+
+    init {
+        uniqueIndex(identityId, credDescriptorId)
+    }
 }

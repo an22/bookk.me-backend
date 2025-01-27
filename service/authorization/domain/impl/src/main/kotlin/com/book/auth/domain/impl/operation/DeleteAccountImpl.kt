@@ -1,8 +1,7 @@
 package com.book.auth.domain.impl.operation
 
-import com.book.auth.domain.api.entity.DeleteAccountInfo
-import com.book.auth.domain.api.operation.DeleteAccount
-import com.book.auth.domain.api.operation.DeleteAccount.Error.InvalidCredentials
+import com.book.auth.domain.api.delete_account.operation.DeleteAccount
+import com.book.auth.domain.api.delete_account.operation.DeleteAccount.Error.InvalidCredentials
 import com.book.auth.domain.datasource.AccountDataSource
 import com.book.core.data.eventstreaming.StandardEventProducer
 import com.book.core.data.eventstreaming.send
@@ -14,7 +13,7 @@ internal class DeleteAccountImpl(
 ) : DeleteAccount {
 
 
-    override suspend fun invoke(userId: Long, info: DeleteAccountInfo): Result<Unit> = runCatching {
+    override suspend fun invoke(userId: Long): Result<Unit> = runCatching {
         val authRecord = accountDataSource.getAuthRecordByUserId(userId) ?: throw InvalidCredentials
         val isCredentialsInvalid = false
         if (isCredentialsInvalid) throw InvalidCredentials

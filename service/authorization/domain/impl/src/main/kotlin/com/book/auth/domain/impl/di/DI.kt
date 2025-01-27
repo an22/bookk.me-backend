@@ -1,13 +1,17 @@
 package com.book.auth.domain.impl.di
 
-import com.book.auth.domain.api.operation.DeleteAccount
-import com.book.auth.domain.api.operation.FinishRegistration
-import com.book.auth.domain.api.operation.GenerateAuthToken
-import com.book.auth.domain.api.operation.RefreshToken
-import com.book.auth.domain.api.operation.SignOut
-import com.book.auth.domain.api.operation.StartRegistration
+import com.book.auth.domain.api.authentication.operation.FinishSignIn
+import com.book.auth.domain.api.authentication.operation.StartSignIn
+import com.book.auth.domain.api.delete_account.operation.DeleteAccount
+import com.book.auth.domain.api.registration.operation.FinishRegistration
+import com.book.auth.domain.api.registration.operation.StartRegistration
+import com.book.auth.domain.api.signout.operation.SignOut
+import com.book.auth.domain.api.token.operation.GenerateAuthToken
+import com.book.auth.domain.api.token.operation.RefreshToken
 import com.book.auth.domain.impl.operation.DeleteAccountImpl
 import com.book.auth.domain.impl.operation.SignOutImpl
+import com.book.auth.domain.impl.operation.authentication.FinishSignInImpl
+import com.book.auth.domain.impl.operation.authentication.StartSignInImpl
 import com.book.auth.domain.impl.operation.registration.FinishRegistrationImpl
 import com.book.auth.domain.impl.operation.registration.StartRegistrationImpl
 import com.book.auth.domain.impl.operation.token.GenerateAuthTokenImpl
@@ -24,4 +28,6 @@ fun authDomainModule() = module {
     singleOf(::DeleteAccountImpl) bind DeleteAccount::class
     singleOf(::StartRegistrationImpl) bind StartRegistration::class
     singleOf(::FinishRegistrationImpl) bind FinishRegistration::class
+    singleOf(::StartSignInImpl) bind StartSignIn::class
+    singleOf(::FinishSignInImpl) bind FinishSignIn::class
 }

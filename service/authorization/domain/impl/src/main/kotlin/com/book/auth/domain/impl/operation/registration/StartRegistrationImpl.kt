@@ -1,12 +1,13 @@
 package com.book.auth.domain.impl.operation.registration
 
-import com.book.auth.domain.api.entity.ChallengeResponse
-import com.book.auth.domain.api.entity.CreateAccountRequest
-import com.book.auth.domain.api.operation.StartRegistration
-import com.book.auth.domain.api.operation.StartRegistration.Error.EmailAlreadyExist
-import com.book.auth.domain.api.operation.StartRegistration.Error.InvalidEmailFormat
+import com.book.auth.domain.api.registration.entity.CreateAccountRequest
+import com.book.auth.domain.api.registration.entity.SignUpChallengeResponse
+import com.book.auth.domain.api.registration.operation.StartRegistration
+import com.book.auth.domain.api.registration.operation.StartRegistration.Error.EmailAlreadyExist
+import com.book.auth.domain.api.registration.operation.StartRegistration.Error.InvalidEmailFormat
 import com.book.auth.domain.datasource.AccountDataSource
 import com.book.auth.domain.datasource.PassKeyDataSource
+import com.book.auth.domain.impl.passkey.createRelyingParty
 import com.yubico.webauthn.CredentialRepository
 import com.yubico.webauthn.StartRegistrationOptions
 import com.yubico.webauthn.data.AuthenticatorSelectionCriteria
@@ -30,10 +31,10 @@ internal class StartRegistrationImpl(
         if (userRecord != null) throw EmailAlreadyExist
         val byteArray = ByteArray(64)
         val handle = ByteArray(Random.nextBytes(byteArray))
-        val challenge = createCreationOptions(request, handle).toJson()
-        userPassKeyDataSource.saveChallengeToCache(handle.base64, challenge)
-        ChallengeResponse(
-            challenge = challenge,
+        val challenge = createCreationOptions(request, handle)
+        userPassKeyDataSource.saveChallengeToCache(handle.base64, challenge.toJson())
+        SignUpChallengeResponse(
+            challenge = challenge.toCredentialsCreateJson(),
             displayName = "${request.firstName} ${request.lastName}",
             userId = handle.base64
         )

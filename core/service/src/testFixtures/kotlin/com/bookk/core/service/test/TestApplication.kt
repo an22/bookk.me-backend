@@ -36,7 +36,7 @@ fun ApplicationTestBuilder.setupApplication(
     }
 }
 
-fun serverTest(body: suspend ApplicationTestBuilder.() -> Unit) {
+fun routeTest(body: suspend ApplicationTestBuilder.() -> Unit) {
     runTest {
         testApplication {
             body(this)

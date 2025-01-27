@@ -1,10 +1,10 @@
 package com.book.auth.microservice.route.api
 
-import com.book.auth.domain.api.entity.ChallengeResponse
-import com.book.auth.domain.api.entity.CreateAccountRequest
-import com.book.auth.domain.api.operation.StartRegistration
-import com.book.auth.domain.api.operation.StartRegistration.Error.EmailAlreadyExist
-import com.book.auth.domain.api.operation.StartRegistration.Error.InvalidEmailFormat
+import com.book.auth.domain.api.registration.entity.CreateAccountRequest
+import com.book.auth.domain.api.registration.entity.SignUpChallengeResponse
+import com.book.auth.domain.api.registration.operation.StartRegistration
+import com.book.auth.domain.api.registration.operation.StartRegistration.Error.EmailAlreadyExist
+import com.book.auth.domain.api.registration.operation.StartRegistration.Error.InvalidEmailFormat
 import com.book.auth.microservice.route.AuthRouting.Api
 import com.book.core.service.applyMediaType
 import com.book.core.service.enity.SimpleServerError
@@ -45,7 +45,7 @@ internal fun Route.withStartRegistrationDocumentation() {
             response {
                 applyMediaType()
                 responseCode(HttpStatusCode.OK)
-                responseType(typeOf<ChallengeResponse>())
+                responseType(typeOf<SignUpChallengeResponse>())
                 description("Validation challenge returned")
             }
             canRespond {
@@ -57,8 +57,8 @@ internal fun Route.withStartRegistrationDocumentation() {
                             minimum = 1
                             maximum = 2
                             description = buildString {
-                                append("${InvalidEmailFormat.code} - ${InvalidEmailFormat.message}")
-                                append("${EmailAlreadyExist.code} - ${EmailAlreadyExist.message}")
+                                append("${EmailAlreadyExist.code} - ${EmailAlreadyExist.message}\n")
+                                append("${InvalidEmailFormat.code} - ${InvalidEmailFormat.message}\n")
                             }
                         }
                     }

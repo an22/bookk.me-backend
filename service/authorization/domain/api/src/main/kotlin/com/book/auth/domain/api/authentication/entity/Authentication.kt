@@ -1,4 +1,4 @@
-package com.book.auth.domain.api.entity
+package com.book.auth.domain.api.authentication.entity
 
 class Authentication(
     val id: Long,

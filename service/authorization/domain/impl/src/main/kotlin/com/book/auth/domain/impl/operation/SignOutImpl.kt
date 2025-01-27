@@ -1,6 +1,6 @@
 package com.book.auth.domain.impl.operation
 
-import com.book.auth.domain.api.operation.SignOut
+import com.book.auth.domain.api.signout.operation.SignOut
 import com.book.auth.domain.datasource.DeviceDataSource
 
 internal class SignOutImpl(

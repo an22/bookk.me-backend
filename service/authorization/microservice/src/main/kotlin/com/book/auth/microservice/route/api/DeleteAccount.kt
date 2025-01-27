@@ -1,7 +1,6 @@
 package com.book.auth.microservice.route.api
 
-import com.book.auth.domain.api.entity.DeleteAccountInfo
-import com.book.auth.domain.api.operation.DeleteAccount
+import com.book.auth.domain.api.delete_account.operation.DeleteAccount
 import com.book.auth.microservice.route.AuthRouting.Api
 import com.book.core.service.applyMediaType
 import com.book.core.service.auth.AppPrincipal
@@ -11,7 +10,6 @@ import io.bkbn.kompendium.resources.NotarizedResource
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.principal
-import io.ktor.server.request.receive
 import io.ktor.server.resources.post
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.application
@@ -22,10 +20,9 @@ internal fun Route.deleteAccount() {
     authenticate {
         post<Api.Auth.DeleteAccount> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
-            val info = call.receive<DeleteAccountInfo>()
             val deleteAccount by application.inject<DeleteAccount>()
 
-            call.respondWith(deleteAccount(principal.userId, info))
+            call.respondWith(deleteAccount(principal.userId))
         }
     }
 }
@@ -37,11 +34,6 @@ internal fun Route.withDeleteAccountDocumentation() {
         post = PostInfo.builder {
             summary("Delete Account")
             description("Delete user account and all associated data")
-            request {
-                applyMediaType()
-                requestType<DeleteAccountInfo>()
-                description("Password with totp code")
-            }
             response {
                 applyMediaType()
                 responseCode(HttpStatusCode.OK)

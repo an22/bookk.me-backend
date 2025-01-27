@@ -1,14 +1,15 @@
 package com.book.auth.microservice.route.api
 
-import com.book.auth.domain.api.entity.ChallengeResponse
-import com.book.auth.domain.api.entity.CreateAccountRequest
-import com.book.auth.domain.api.operation.StartRegistration
-import com.book.auth.domain.api.operation.StartRegistration.Error.EmailAlreadyExist
-import com.book.auth.domain.api.operation.StartRegistration.Error.InvalidEmailFormat
+import com.book.auth.domain.api.error.AuthErrorCodes
+import com.book.auth.domain.api.registration.entity.CreateAccountRequest
+import com.book.auth.domain.api.registration.entity.SignUpChallengeResponse
+import com.book.auth.domain.api.registration.operation.StartRegistration
+import com.book.auth.domain.api.registration.operation.StartRegistration.Error.EmailAlreadyExist
+import com.book.auth.domain.api.registration.operation.StartRegistration.Error.InvalidEmailFormat
 import com.book.auth.microservice.route.AuthRouting
 import com.book.core.service.enity.SimpleServerError
 import com.bookk.core.service.test.createTestClient
-import com.bookk.core.service.test.serverTest
+import com.bookk.core.service.test.routeTest
 import com.bookk.core.service.test.setupApplication
 import com.bookk.core.test.given
 import com.bookk.core.test.then
@@ -27,7 +28,7 @@ import org.koin.dsl.module
 class PostStartRegistrationTest {
 
     @Test
-    fun incorrectEmailFormat() = serverTest {
+    fun incorrectEmailFormat() = routeTest {
         given()
         val useCase: StartRegistration = mockk()
         val client = createTestClient()
@@ -39,20 +40,22 @@ class PostStartRegistrationTest {
             },
             routeUnderTest = { postStartRegistration() }
         )
+
         whenn()
         val response = client.post(AuthRouting.Api.Auth.SignUp.PassKey.Challenge()) {
             setBody(request)
         }
         val body = response.body<SimpleServerError>()
+
         then()
         coVerify { useCase.invoke(eq(request)) }
-        assertEquals(InvalidEmailFormat.statusCode, response.status.value)
-        assertEquals(InvalidEmailFormat.code, body.errorCode)
+        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
+        assertEquals(AuthErrorCodes.INVALID_EMAIL_FORMAT, body.errorCode)
         assertEquals(InvalidEmailFormat.message, body.message)
     }
 
     @Test
-    fun emailAlreadyExist() = serverTest {
+    fun emailAlreadyExist() = routeTest {
         given()
         val useCase: StartRegistration = mockk()
         val client = createTestClient()
@@ -71,18 +74,18 @@ class PostStartRegistrationTest {
         val body = response.body<SimpleServerError>()
         then()
         coVerify { useCase.invoke(eq(request)) }
-        assertEquals(EmailAlreadyExist.statusCode, response.status.value)
-        assertEquals(EmailAlreadyExist.code, body.errorCode)
+        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
+        assertEquals(AuthErrorCodes.EMAIL_EXIST, body.errorCode)
         assertEquals(EmailAlreadyExist.message, body.message)
     }
 
     @Test
-    fun successResponse() = serverTest {
+    fun successResponse() = routeTest {
         given()
         val useCase: StartRegistration = mockk()
         val client = createTestClient()
         val request = CreateAccountRequest("firstName", "lastName", "email")
-        val expected = ChallengeResponse("example_challenge", "display_name", "userId")
+        val expected = SignUpChallengeResponse("example_challenge", "display_name", "userId")
         coEvery { useCase.invoke(any()) } returns Result.success(expected)
         setupApplication(
             diModule = module {
@@ -94,7 +97,7 @@ class PostStartRegistrationTest {
         val response = client.post(AuthRouting.Api.Auth.SignUp.PassKey.Challenge()) {
             setBody(request)
         }
-        val actual = response.body<ChallengeResponse>()
+        val actual = response.body<SignUpChallengeResponse>()
         then()
         coVerify { useCase.invoke(eq(request)) }
         assertEquals(HttpStatusCode.OK, response.status)

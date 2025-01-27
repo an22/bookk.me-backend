@@ -1,58 +1,50 @@
 package com.book.auth.data.datasource
 
+import com.book.auth.data.map.asPublicKeyCredentialDescriptor
+import com.book.auth.data.map.asRegisteredCredential
+import com.book.auth.domain.api.identification.entity.PasskeyCredential
+import com.book.auth.domain.datasource.PassKeyDataSource
 import com.yubico.webauthn.CredentialRepository
 import com.yubico.webauthn.RegisteredCredential
-import com.yubico.webauthn.data.ByteArray
 import com.yubico.webauthn.data.PublicKeyCredentialDescriptor
-import java.util.*
+import kotlinx.coroutines.runBlocking
+import java.util.Optional
+import com.yubico.webauthn.data.ByteArray as YubicoByteArray
 
 
-internal class YubicoCredentialRepository : CredentialRepository {
+internal class YubicoCredentialRepository(
+    private val passKeyDataSource: PassKeyDataSource
+) : CredentialRepository {
 
     override fun getCredentialIdsForUsername(username: String): MutableSet<PublicKeyCredentialDescriptor> {
+        return runBlocking {
+            passKeyDataSource.getCredentialsByEmail(username)
+                .map(PasskeyCredential::asPublicKeyCredentialDescriptor)
+                .toMutableSet()
+        }
+    }
+
+    override fun getUserHandleForUsername(username: String): Optional<YubicoByteArray> {
+        return runBlocking {
+            Optional.ofNullable(passKeyDataSource.getHandleByEmail(username)?.let { YubicoByteArray(it) })
+        }
+    }
+
+    override fun getUsernameForUserHandle(handle: YubicoByteArray): Optional<String> {
+        return runBlocking {
+            Optional.ofNullable(passKeyDataSource.getEmailByHandle(handle.bytes))
+        }
+    }
+
+    override fun lookup(credentialId: YubicoByteArray, handle: YubicoByteArray): Optional<RegisteredCredential> {
+        return runBlocking {
+            Optional.ofNullable(
+                passKeyDataSource.getCredentialBy(handle.bytes, credentialId.bytes)?.asRegisteredCredential()
+            )
+        }
+    }
+
+    override fun lookupAll(credentialId: YubicoByteArray): MutableSet<RegisteredCredential> {
         return mutableSetOf()
     }
-
-    override fun getUserHandleForUsername(username: String): Optional<ByteArray> {
-        return Optional.empty()
-    }
-
-    override fun getUsernameForUserHandle(handle: ByteArray): Optional<String> {
-        return Optional.empty()
-    }
-
-    override fun lookup(credentialId: ByteArray, handle: ByteArray?): Optional<RegisteredCredential> {
-        return Optional.empty()
-    }
-
-    override fun lookupAll(credentialId: ByteArray): MutableSet<RegisteredCredential> {
-        return mutableSetOf()
-    }
-
-//    private fun getLoginChallenge(): String {
-//        val request = rp.startAssertion(
-//            StartAssertionOptions.builder()
-//                .build()
-//        ).toCredentialsGetJson()
-//
-//        return request
-//    }
-//
-//    private suspend fun validateLogin(publicKeyCredentialJson: String) {
-//        val pkc = PublicKeyCredential.parseAssertionResponseJson(publicKeyCredentialJson)
-//        val request = cacheClient.get<_, String>(pkc.id.toString())
-//        try {
-//            val result = rp.finishAssertion(
-//                FinishAssertionOptions.builder()
-//                    .request(AssertionRequest.fromJson(request)) // The PublicKeyCredentialRequestOptions from startAssertion above
-//                    .response(pkc)
-//                    .build()
-//            )
-//
-//            if (result.isSuccess) {
-//
-//            }
-//        } catch (e: AssertionFailedException) { /* ... */
-//        }
-//    }
 }

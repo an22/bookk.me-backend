@@ -1,12 +1,12 @@
 package com.book.auth.microservice.route.api
 
-import com.book.auth.domain.api.entity.TokenInfo
-import com.book.auth.domain.api.entity.VerifyAccountCreationRequest
-import com.book.auth.domain.api.operation.FinishRegistration
-import com.book.auth.domain.api.operation.FinishRegistration.Error.AccountCreationFailed
-import com.book.auth.domain.api.operation.FinishRegistration.Error.InvalidEmailFormat
-import com.book.auth.domain.api.operation.FinishRegistration.Error.UserAlreadyExist
-import com.book.auth.domain.api.operation.FinishRegistration.Error.VerificationFailed
+import com.book.auth.domain.api.registration.entity.VerifyAccountCreationRequest
+import com.book.auth.domain.api.registration.operation.FinishRegistration
+import com.book.auth.domain.api.registration.operation.FinishRegistration.Error.AccountCreationFailed
+import com.book.auth.domain.api.registration.operation.FinishRegistration.Error.InvalidEmailFormat
+import com.book.auth.domain.api.registration.operation.FinishRegistration.Error.UserAlreadyExist
+import com.book.auth.domain.api.registration.operation.FinishRegistration.Error.VerificationFailed
+import com.book.auth.domain.api.token.entity.AuthTokens
 import com.book.auth.microservice.route.AuthRouting.Api
 import com.book.core.service.applyMediaType
 import com.book.core.service.enity.SimpleServerError
@@ -46,7 +46,7 @@ internal fun Route.withValidateRegistrationDocumentation() {
             response {
                 applyMediaType()
                 responseCode(HttpStatusCode.OK)
-                responseType(typeOf<TokenInfo>())
+                responseType(typeOf<AuthTokens>())
                 description("User has been created")
             }
             canRespond {
@@ -58,10 +58,10 @@ internal fun Route.withValidateRegistrationDocumentation() {
                             minimum = 1
                             maximum = 4
                             description = buildString {
-                                append("${InvalidEmailFormat.code} - ${InvalidEmailFormat.message}")
-                                append("${UserAlreadyExist.code} - ${UserAlreadyExist.message}")
-                                append("${VerificationFailed.code} - ${VerificationFailed.message}")
-                                append("${AccountCreationFailed.code} - ${AccountCreationFailed.message}")
+                                append("${InvalidEmailFormat.code} - ${InvalidEmailFormat.message}\n")
+                                append("${UserAlreadyExist.code} - ${UserAlreadyExist.message}\n")
+                                append("${VerificationFailed.code} - ${VerificationFailed.message}\n")
+                                append("${AccountCreationFailed.code} - ${AccountCreationFailed.message}\n")
                             }
                         }
                     }

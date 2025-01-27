@@ -10,7 +10,7 @@ import io.ktor.server.testing.testApplication
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
-class HealthCheckTest {
+internal class HealthCheckTest {
     @Test
     fun test() = testApplication {
         application {

@@ -8,6 +8,8 @@ jobs:
   publish:
     name: Publish User Microservice
     uses: ./.github/workflows/service-publish-template.yml
+    secrets:
+      gradleEncryption: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
     with:
       module: "service:user:microservice"
       serviceName: "com.bookk.server.microservice.user"

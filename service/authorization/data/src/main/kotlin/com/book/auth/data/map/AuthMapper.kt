@@ -64,6 +64,7 @@ internal fun PasskeyCredential.asPublicKeyCredentialDescriptor(): PublicKeyCrede
         .build()
 }
 
+@Suppress("DEPRECATION")
 internal fun PasskeyCredential.asRegisteredCredential(): RegisteredCredential {
     return RegisteredCredential.builder()
         .credentialId(YubicoByteArray(credDescriptor.id))

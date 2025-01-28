@@ -94,36 +94,12 @@ services:
 
     secrets:
       - source: public-jwt
-        target: /etc/service/${BOOKK_ME_SERVICE_NAME}/${BOOKK_ME_JWT_PUBLIC_KEY_FILE}
+        target: ${BOOKK_ME_JWT_PUBLIC_KEY_FILE}
       - source: private-jwt
-        target: /etc/service/${BOOKK_ME_SERVICE_NAME}/${BOOKK_ME_JWT_PRIVATE_KEY_FILE}
+        target: ${BOOKK_ME_JWT_PRIVATE_KEY_FILE}
       - source: ssl-keystore
-        target: /etc/service/${BOOKK_ME_SERVICE_NAME}/${BOOKK_ME_SERVICE_SSL_FILE}
-    environment:
-      #Service info
-      BOOKK_ME_SERVICE_NAME: ${BOOKK_ME_SERVICE_NAME}
-      BOOKK_ME_SERVICE_VERSION: ${BOOKK_ME_SERVICE_VERSION}
-      BOOKK_ME_SERVICE_PORT: ${BOOKK_ME_SERVICE_PORT}
-      BOOKK_ME_SERVICE_SSL_ALIAS: ${BOOKK_ME_SERVICE_SSL_ALIAS}
-      BOOKK_ME_SERVICE_SSL_PASSWORD: '${BOOKK_ME_SERVICE_SSL_PASSWORD}'
-      BOOKK_ME_SERVICE_SSL_FILE: /etc/service/${BOOKK_ME_SERVICE_NAME}/${BOOKK_ME_SERVICE_SSL_FILE}
-      #Database info
-      BOOKK_ME_DB_URL: ${BOOKK_ME_DB_URL}
-      BOOKK_ME_DB_PORT: ${BOOKK_ME_DB_PORT}
-      BOOKK_ME_DB_USER: ${BOOKK_ME_DB_USER}
-      BOOKK_ME_DB_PASSWORD: ${BOOKK_ME_DB_PASSWORD}
-      BOOKK_ME_DB_DRIVER: ${BOOKK_ME_DB_DRIVER}
-      #Redis
-      BOOKK_ME_REDIS_HOSTS: ${BOOKK_ME_REDIS_HOSTS}
-      BOOKK_ME_REDIS_PORT: ${BOOKK_ME_REDIS_PORT}
-      BOOKK_ME_REDIS_PASSWORD: ${BOOKK_ME_REDIS_PASSWORD}
-      #Kafka
-      BOOKK_ME_KAFKA_HOSTS: ${BOOKK_ME_KAFKA_HOSTS}
-      BOOKK_ME_KAFKA_CLUSTER_ID: ${BOOKK_ME_KAFKA_CLUSTER_ID}
-      #JWT
-      BOOKK_ME_JWT_PUBLIC_KEY_FILE: /etc/service/${BOOKK_ME_SERVICE_NAME}/${BOOKK_ME_JWT_PUBLIC_KEY_FILE}
-      BOOKK_ME_JWT_PRIVATE_KEY_FILE: /etc/service/${BOOKK_ME_SERVICE_NAME}/${BOOKK_ME_JWT_PRIVATE_KEY_FILE}
-
+        target: ${BOOKK_ME_SERVICE_SSL_FILE}
+    env_file: "microservice.env"
     deploy:
       placement:
         constraints: [ node.role == worker ]

@@ -1,0 +1,35 @@
+version: "3.9"
+
+networks:
+  bookk-me:
+    external: true
+
+volumes:
+  admin_panel:
+    driver: local
+
+services:
+  nocodb:
+    image: nocodb/nocodb:latest
+    networks:
+      bookk-me:
+        aliases:
+          - admin.bookk.me
+    volumes:
+      - admin_panel:/usr/app/data/
+    deploy:
+      mode: replicated
+      replicas: 1
+      update_config:
+        parallelism: 1
+        order: start-first
+        failure_action: rollback
+        delay: 10s
+      rollback_config:
+        parallelism: 0
+        order: stop-first
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+        window: 120s

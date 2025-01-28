@@ -7,7 +7,7 @@ networks:
 
 configs:
   nginx_config:
-    name: nginx-v27
+    name: nginx-v28
     file: nginx.conf
 
   android_well_known:
@@ -46,6 +46,8 @@ services:
       - '/etc/letsencrypt/live/kibana.bookkk.me/privkey.pem:/etc/letsencrypt/live/kibana.bookkk.me/privkey.pem:ro'
       - '/etc/letsencrypt/live/vpn.bookkk.me/fullchain.pem:/etc/letsencrypt/live/vpn.bookkk.me/fullchain.pem:ro'
       - '/etc/letsencrypt/live/vpn.bookkk.me/privkey.pem:/etc/letsencrypt/live/vpn.bookkk.me/privkey.pem:ro'
+      - '/etc/letsencrypt/live/admin.bookkk.me/fullchain.pem:/etc/letsencrypt/live/admin.bookkk.me/fullchain.pem:ro'
+      - '/etc/letsencrypt/live/admin.bookkk.me/privkey.pem:/etc/letsencrypt/live/admin.bookkk.me/privkey.pem:ro'
 
     deploy:
       placement:

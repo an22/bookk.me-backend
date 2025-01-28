@@ -37,13 +37,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Import environment variables from a file
+      - name: Import environment variables from a secret
         shell: bash
         run: |
           env_variables='${{ secrets.envFile }}'
           without_blanks=${env_variables//[[:blank:]]/}
           echo "${without_blanks}" >> $GITHUB_ENV
-
+          echo "${without_blanks}" >> "deployment/microservice/microservice.env"
       - name: Install SSH Key
         uses: shimataro/ssh-key-action@v2
         with:

@@ -7,6 +7,9 @@ permissions:
 
 on:
   workflow_call:
+    secrets:
+      gradleEncryption:
+        required: true
     inputs:
       module:
         required: true
@@ -49,7 +52,11 @@ jobs:
             latest=false
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/develop' }}
+          cache-encryption-key: ${{ secrets.gradleEncryption }}
+          cache-overwrite-existing: true
 
       - name: Publish image
         id: push

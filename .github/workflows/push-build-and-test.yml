@@ -1,5 +1,10 @@
-name: Build and test PR
-on: pull_request
+name: Build and test
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
 
 jobs:
 

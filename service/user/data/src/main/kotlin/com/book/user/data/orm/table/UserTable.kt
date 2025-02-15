@@ -8,7 +8,6 @@ object UserTable : LongIdTable("profile") {
     val name = varchar("name", 255)
     val lastName = varchar("last_name", 255)
     val email = varchar("email", 320)
-    val phone = varchar("phone", 255).nullable()
     val createdAt = timestamp("created_at").clientDefault { System.now() }
     val updatedAt = timestamp("updated_at")
 }

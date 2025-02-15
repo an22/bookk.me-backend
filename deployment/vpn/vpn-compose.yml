@@ -40,7 +40,7 @@ services:
       WG_ALLOWED_IPS: 10.8.0.0/24
       WG_MTU: 1280
       WG_PERSISTENT_KEEPALIVE: 25
-      WG_DEFAULT_DNS: dns.bookk.me
+      WG_DEFAULT_DNS: 10.8.0.2
     deploy:
       mode: replicated
       replicas: 1

@@ -5,6 +5,7 @@ import com.book.user.microservice.route.api.getCurrentUser
 import com.book.user.microservice.route.api.getHealthCheck
 import com.book.user.microservice.route.api.getUserById
 import com.book.user.microservice.route.api.postCreateUser
+import com.book.user.microservice.route.api.putUser
 import io.ktor.server.routing.Routing
 
 
@@ -14,4 +15,5 @@ fun Routing.userRoute() {
     postCreateUser()
     deleteUser()
     getCurrentUser()
+    putUser()
 }

@@ -25,6 +25,9 @@ object UserRouting {
 
             @Resource("/me")
             class Me(val parent: User = User())
+
+            @Resource("/me")
+            class PutUser(val parent: User = User())
         }
     }
 }

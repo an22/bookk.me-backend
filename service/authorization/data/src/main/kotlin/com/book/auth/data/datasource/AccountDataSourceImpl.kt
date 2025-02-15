@@ -11,37 +11,47 @@ import org.jetbrains.exposed.sql.transactions.transaction
 
 internal class AccountDataSourceImpl : DataSource(), AccountDataSource {
 
-    override suspend fun createAuthorization(info: Authentication): Authentication = transaction {
-        AuthenticationEntity.new {
-            userId = info.userId
-            email = info.email
-            updatedAt = Clock.System.now()
-        }.toDomain()
-    }
-
-    override suspend fun getAuthRecordById(id: Long): Authentication? = transaction {
-        AuthenticationEntity[id].toDomain()
-    }
-
-    override suspend fun getAuthRecordByEmail(email: String): Authentication? = transaction {
-        AuthenticationEntity.find {
-            AuthenticationTable.email eq email
+    override suspend fun createAuthorization(info: Authentication): Authentication = mapExceptions {
+        transaction {
+            AuthenticationEntity.new {
+                userId = info.userId
+                email = info.email
+                updatedAt = Clock.System.now()
+            }.toDomain()
         }
-            .map(AuthenticationEntity::toDomain)
-            .firstOrNull()
     }
 
-    override suspend fun getAuthRecordByUserId(userId: Long): Authentication? = transaction {
-        AuthenticationEntity.find {
-            AuthenticationTable.userId eq userId
+    override suspend fun getAuthRecordById(id: Long): Authentication? = mapExceptions {
+        transaction {
+            AuthenticationEntity[id].toDomain()
         }
-            .map(AuthenticationEntity::toDomain)
-            .firstOrNull()
+    }
+
+    override suspend fun getAuthRecordByEmail(email: String): Authentication? = mapExceptions {
+        transaction {
+            AuthenticationEntity.find {
+                AuthenticationTable.email eq email
+            }
+                .map(AuthenticationEntity::toDomain)
+                .firstOrNull()
+        }
+    }
+
+    override suspend fun getAuthRecordByUserId(userId: Long): Authentication? = mapExceptions {
+        transaction {
+            AuthenticationEntity.find {
+                AuthenticationTable.userId eq userId
+            }
+                .map(AuthenticationEntity::toDomain)
+                .firstOrNull()
+        }
     }
 
     override suspend fun deleteAuthorization(authId: Long) {
-        transaction {
-            AuthenticationEntity[authId].delete()
+        mapExceptions {
+            transaction {
+                AuthenticationEntity[authId].delete()
+            }
         }
     }
 }

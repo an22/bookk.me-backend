@@ -1,8 +1,35 @@
-filebeat.inputs:
-  - type: log
-    enabled: true
-    paths:
-      - /var/log/bookk_me_logs/*.log
+filebeat.autodiscover:
+  providers:
+    - type: docker
+      hints.enabled: true
+      templates:
+        - condition.or:
+            - contains:
+                docker.container.image: nginx
+          config:
+            - module: nginx
+              access.input:
+                type: container
+                paths:
+                  - /var/lib/docker/containers/${data.docker.container.id}/*.log
+              error.input:
+                type: container
+                paths:
+                  - /var/lib/docker/containers/${data.docker.container.id}/*.log
+        - condition:
+            contains:
+              docker.container.image: com.bookk
+          config:
+            - type: container
+              paths:
+                - /var/lib/docker/containers/${data.docker.container.id}/*.log
 
 output.logstash:
+  enabled: true
   hosts: ["logstash.elastic.bookk.me:5045"]
+
+output.console:
+  enabled: false
+  pretty: true
+
+logging.level: info

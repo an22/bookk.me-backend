@@ -22,6 +22,8 @@ volumes:
 services:
   database:
     image: mariadb:11.5.2-ubi9
+    labels:
+      co.elastic.logs/enabled: "true"
     networks:
       bookk-me:
         aliases:
@@ -55,6 +57,8 @@ services:
 
   redis:
     image: bitnami/redis:6.2.14
+    labels:
+      co.elastic.logs/enabled: "true"
     volumes:
       - redis_data:/opt/bitnami/redis/
 
@@ -87,6 +91,8 @@ services:
 
   microservice:
     image: ${BOOKK_ME_SERVICE_IMAGE}:${BOOKK_ME_SERVICE_VERSION}
+    labels:
+      co.elastic.logs/enabled: "true"
     networks:
       bookk-me:
         aliases:
@@ -100,6 +106,12 @@ services:
       - source: ssl-keystore
         target: ${BOOKK_ME_SERVICE_SSL_FILE}
     env_file: "microservice.env"
+    environment:
+      BOOKK_ME_SERVICE_VERSION: ${BOOKK_ME_SERVICE_VERSION}
+    logging:
+      options:
+        max-size: 100m
+        max-file: 5
     deploy:
       placement:
         constraints: [ node.role == worker ]

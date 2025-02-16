@@ -1,4 +1,4 @@
-package com.book.core.data.eventstreaming.impl
+package com.book.core.data.eventstreaming.impl.kafka
 
 import com.book.core.data.eventstreaming.EventStreaming
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -29,7 +29,7 @@ class KafkaEventProducer(
 
 
     override suspend fun <T : EventStreaming.Event<String>> send(data: T, kType: KType) {
-        suspendCancellableCoroutine<Unit> { continuation ->
+        suspendCancellableCoroutine { continuation ->
             val encodedData = protoBuf.encodeToByteArray(protoBuf.serializersModule.serializer(kType), data)
             producer.send(ProducerRecord(data.topic, encodedData)) { metadata, exception ->
                 when {

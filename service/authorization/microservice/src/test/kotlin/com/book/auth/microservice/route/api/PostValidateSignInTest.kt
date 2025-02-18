@@ -1,10 +1,10 @@
 package com.book.auth.microservice.route.api
 
 import com.book.auth.domain.api.authentication.entity.VerifySignInRequest
-import com.book.auth.domain.api.authentication.operation.FinishSignIn
-import com.book.auth.domain.api.authentication.operation.FinishSignIn.Error.ChallengeWindowExpired
-import com.book.auth.domain.api.authentication.operation.FinishSignIn.Error.PasskeyOwnerNotFound
-import com.book.auth.domain.api.authentication.operation.FinishSignIn.Error.VerificationFailed
+import com.book.auth.domain.api.authentication.operation.SignIn
+import com.book.auth.domain.api.authentication.operation.SignIn.Error.ChallengeWindowExpired
+import com.book.auth.domain.api.authentication.operation.SignIn.Error.PasskeyOwnerNotFound
+import com.book.auth.domain.api.authentication.operation.SignIn.Error.VerificationFailed
 import com.book.auth.domain.api.error.AuthErrorCodes
 import com.book.auth.domain.api.token.entity.AuthTokens
 import com.book.auth.microservice.route.AuthRouting
@@ -32,12 +32,12 @@ internal class PostValidateSignInTest {
     @Test
     fun verifyAnswerOnSuccess() = routeTest {
         given()
-        val useCase: FinishSignIn = mockk()
+        val useCase: SignIn = mockk()
         setupApplication(
             diModule = module {
                 single { useCase }
             },
-            routeUnderTest = { postFinishSignIn() }
+            routeUnderTest = { postSignIn() }
         )
         val client = createTestClient()
         val answer = AuthTokens(accessToken = "token1", refreshToken = "token2")
@@ -66,12 +66,12 @@ internal class PostValidateSignInTest {
     @Test
     fun verifyPasskeyOwnerNotFound() = routeTest {
         given()
-        val useCase: FinishSignIn = mockk()
+        val useCase: SignIn = mockk()
         setupApplication(
             diModule = module {
                 single { useCase }
             },
-            routeUnderTest = { postFinishSignIn() }
+            routeUnderTest = { postSignIn() }
         )
         val client = createTestClient()
         val request = VerifySignInRequest(
@@ -99,12 +99,12 @@ internal class PostValidateSignInTest {
     @Test
     fun verifyChallengeWindowExpired() = routeTest {
         given()
-        val useCase: FinishSignIn = mockk()
+        val useCase: SignIn = mockk()
         setupApplication(
             diModule = module {
                 single { useCase }
             },
-            routeUnderTest = { postFinishSignIn() }
+            routeUnderTest = { postSignIn() }
         )
         val client = createTestClient()
         val request = VerifySignInRequest(
@@ -132,12 +132,12 @@ internal class PostValidateSignInTest {
     @Test
     fun verifyVerificationFailed() = routeTest {
         given()
-        val useCase: FinishSignIn = mockk()
+        val useCase: SignIn = mockk()
         setupApplication(
             diModule = module {
                 single { useCase }
             },
-            routeUnderTest = { postFinishSignIn() }
+            routeUnderTest = { postSignIn() }
         )
         val client = createTestClient()
         val request = VerifySignInRequest(

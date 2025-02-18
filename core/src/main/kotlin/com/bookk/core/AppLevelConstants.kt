@@ -27,7 +27,6 @@ object AppLevelConstants {
     }
 
     enum class Claim(val key: String) {
-        IS_REFRESH("refresh"),
         AUTH_ID("auth_id"),
         USER_ID("user_id"),
         DEVICE_ID("device_id")

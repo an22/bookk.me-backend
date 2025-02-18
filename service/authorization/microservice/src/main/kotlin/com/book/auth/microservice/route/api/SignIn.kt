@@ -1,9 +1,10 @@
 package com.book.auth.microservice.route.api
 
 import com.book.auth.domain.api.authentication.entity.VerifySignInRequest
-import com.book.auth.domain.api.authentication.operation.FinishSignIn
+import com.book.auth.domain.api.authentication.operation.SignIn
 import com.book.auth.domain.api.token.entity.AuthTokens
 import com.book.auth.microservice.route.AuthRouting.Api
+import com.book.auth.microservice.route.api.documentation.common.challengeVerificationEnrichment
 import com.book.core.service.applyMediaType
 import com.book.core.service.enity.respondWith
 import io.bkbn.kompendium.core.metadata.PostInfo
@@ -15,17 +16,17 @@ import io.ktor.server.routing.Route
 import io.ktor.server.routing.application
 import org.koin.ktor.ext.inject
 
-internal fun Route.postFinishSignIn() {
-    withFinishSignInDocumentation()
-    post<Api.Auth.SignIn.PassKey.Validate> {
+internal fun Route.postSignIn() {
+    withSignInDocumentation()
+    post<Api.Auth.SignIn> {
         val request = call.receive<VerifySignInRequest>()
-        val startSigningIn: FinishSignIn by application.inject()
+        val startSigningIn: SignIn by application.inject()
         call.respondWith(startSigningIn(request))
     }
 }
 
-internal fun Route.withFinishSignInDocumentation() {
-    install(NotarizedResource<Api.Auth.SignIn.PassKey.Validate>()) {
+internal fun Route.withSignInDocumentation() {
+    install(NotarizedResource<Api.Auth.SignIn>()) {
         tags = setOf("auth")
         post = PostInfo.builder {
             summary("Verify sign in")
@@ -40,6 +41,9 @@ internal fun Route.withFinishSignInDocumentation() {
                 responseCode(HttpStatusCode.OK)
                 responseType<AuthTokens>()
                 description("Authentication tokens")
+            }
+            canRespond {
+                challengeVerificationEnrichment()
             }
         }
     }

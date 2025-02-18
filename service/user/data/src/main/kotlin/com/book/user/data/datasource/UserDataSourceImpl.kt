@@ -9,6 +9,7 @@ import com.book.user.data.map.toDomain
 import com.book.user.data.orm.entity.UserEntity
 import com.book.user.data.orm.table.UserTable
 import com.book.user.domain.api.entity.User
+import com.book.user.domain.api.entity.UserEditModel
 import com.book.user.domain.datasource.UserDataSource
 import kotlinx.datetime.Clock
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -31,18 +32,24 @@ internal class UserDataSourceImpl(
         return@mapExceptions createdUser
     }
 
-    override suspend fun updateUser(user: User): Boolean {
+    override suspend fun updateUser(id: Long, user: UserEditModel): Boolean {
         return mapExceptions {
             val updatedRowCount = transaction {
-                UserTable.update(where = { UserTable.id eq user.id }) {
-                    it[name] = user.name
-                    it[lastName] = user.lastName
-                    it[email] = user.email
+                UserTable.update(where = { UserTable.id eq id }) {
+                    user.firstName?.let { firstName ->
+                        it[name] = firstName
+                    }
+                    user.lastName?.let { lstName ->
+                        it[lastName] = lstName
+                    }
+                    user.email?.let { mail ->
+                        it[email] = mail
+                    }
                 }
             }
             val isUpdated = updatedRowCount > 0
             if (isUpdated) {
-                cacheClient.save(user)
+                cacheClient.deleteUser(id)
             }
             isUpdated
         }
@@ -56,6 +63,14 @@ internal class UserDataSourceImpl(
             cacheClient.save(user)
         }
         return@mapExceptions user
+    }
+
+    override suspend fun getUserByEmail(email: String): User? = mapExceptions {
+         transaction {
+            UserEntity.find { UserTable.email eq email }
+                .map(UserEntity::toDomain)
+                .firstOrNull()
+        }
     }
 
     override suspend fun deleteUser(id: Long) = mapExceptions {

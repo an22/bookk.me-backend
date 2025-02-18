@@ -10,7 +10,7 @@ class Device(
 class DeviceInfo(
     val id: Long,
     val deviceUUID: String,
-    val refreshToken: String?,
+    val refreshTokenId: String?,
     val deviceName: String,
     val isSignedIn: Boolean
 )

@@ -5,7 +5,6 @@ import com.book.auth.domain.api.authentication.entity.Authentication
 /**
  * Entity is immutable and byte arrays expected to never be touched
  * so saving memory by avoiding deep copying arrays is desired behaviour
- *
  */
 @Suppress("ArrayInDataClass")
 data class PasskeyCredential(

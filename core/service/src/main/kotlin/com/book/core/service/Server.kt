@@ -1,6 +1,7 @@
 package com.book.core.service
 
-import com.book.core.service.auth.JwtConfig
+import com.book.core.service.auth.AccessVerifier
+import com.book.core.service.auth.RefreshVerifier
 import com.book.core.service.di.commonModule
 import com.bookk.core.AppLevelConstants
 import com.bookk.core.AppLevelConstants.SupportedSerializers
@@ -93,8 +94,12 @@ fun startServer(
 private fun Application.installAuthPlugin() {
     install(Authentication) {
         jwt {
-            verifier(JwtConfig.verifier)
-            validate(JwtConfig.validator)
+            verifier(AccessVerifier.verifier)
+            validate(AccessVerifier.validator)
+        }
+        jwt("refresh") {
+            verifier(RefreshVerifier.verifier)
+            validate(RefreshVerifier.validator)
         }
     }
 }

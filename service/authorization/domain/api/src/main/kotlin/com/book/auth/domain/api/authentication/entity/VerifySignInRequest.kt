@@ -4,10 +4,10 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 class VerifySignInRequest(
-    val requestId: String,
-    val deviceInfo: DeviceInfo,
-    val publicKeyCredentialJson: String
-) {
+    override val requestId: String,
+    override val publicKeyCredentialJson: String,
+    val deviceInfo: DeviceInfo
+): FinishAssertionRequest {
     @Serializable
     data class DeviceInfo(
         val deviceUUID: String,

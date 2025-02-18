@@ -1,4 +1,4 @@
-package com.book.user.microservice.route.api
+package com.book.user.microservice.route.api.internal
 
 import com.book.core.service.applyMediaType
 import com.book.core.service.enity.respondWith
@@ -23,7 +23,7 @@ internal fun Route.getUserById() {
 
 internal fun Route.withUserIdDocumentation() {
     install(NotarizedResource<Api.Internal.User.Id>()) {
-        tags = setOf("internal", "user")
+        tags = setOf("internal")
         get = GetInfo.builder {
             summary("Get user by id")
             description("Get user profile by id.")

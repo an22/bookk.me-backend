@@ -1,4 +1,4 @@
-package com.book.user.microservice.route.api
+package com.book.user.microservice.route.api.internal
 
 import com.book.core.service.enity.respondWith
 import com.book.user.domain.api.operation.DeleteUser
@@ -21,7 +21,7 @@ internal fun Route.deleteUser() {
 
 internal fun Route.withDeleteUserDocumentation() {
     install(NotarizedResource<Api.Internal.User.Delete>()) {
-        tags = setOf("internal", "user")
+        tags = setOf("internal")
         delete = DeleteInfo.builder {
             summary("Delete user")
             description("Delete user from the system. This action is permanent and can't be reversed.")

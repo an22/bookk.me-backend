@@ -1,7 +1,7 @@
 package com.book.auth.microservice.route.api
 
-import com.book.auth.domain.api.authentication.entity.SignInStartResponse
-import com.book.auth.domain.api.authentication.operation.StartSignIn
+import com.book.auth.domain.api.authentication.entity.AssertionStartResponse
+import com.book.auth.domain.api.authentication.operation.StartAssertion
 import com.book.auth.microservice.route.AuthRouting
 import com.bookk.core.service.test.createTestClient
 import com.bookk.core.service.test.routeTest
@@ -25,20 +25,20 @@ internal class GetSignInChallengeTest {
     @Test
     fun verifyAnswerOnSuccess() = routeTest {
         given()
-        val useCase: StartSignIn = mockk()
+        val useCase: StartAssertion = mockk()
         setupApplication(
             diModule = module {
                 single { useCase }
             },
-            routeUnderTest = { getSignInChallenge() }
+            routeUnderTest = { getVerificationChallenge() }
         )
         val client = createTestClient()
-        val answer = SignInStartResponse(UUID.randomUUID().toString(), "mock")
+        val answer = AssertionStartResponse(UUID.randomUUID().toString(), "mock")
         coEvery { useCase.invoke() } returns Result.success(answer)
 
         whenn()
         val response = client.get(AuthRouting.Api.Auth.SignIn.PassKey.Challenge())
-        val body = response.body<SignInStartResponse>()
+        val body = response.body<AssertionStartResponse>()
 
         then()
         coVerify { useCase.invoke() }

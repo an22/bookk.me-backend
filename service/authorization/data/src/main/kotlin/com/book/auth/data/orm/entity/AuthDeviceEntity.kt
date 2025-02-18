@@ -10,7 +10,7 @@ internal class AuthDeviceEntity(id: EntityID<Long>) : LongEntity(id) {
     var userAuth by AuthenticationEntity referencedOn AuthDeviceTable.userAuthId
     var deviceUUID by AuthDeviceTable.deviceUUID
     var deviceName by AuthDeviceTable.deviceName
-    var refreshToken by AuthDeviceTable.refreshToken
+    var refreshTokenId by AuthDeviceTable.refreshTokenId
     var isSignedIn by AuthDeviceTable.isSignedIn
     var createdAt by AuthDeviceTable.createdAt
     var updatedAt by AuthDeviceTable.updatedAt

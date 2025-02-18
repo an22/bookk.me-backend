@@ -28,7 +28,7 @@ internal fun AuthDeviceEntity.toDomain(): Device {
         deviceInfo = DeviceInfo(
             id = id.value,
             deviceUUID = deviceUUID,
-            refreshToken = refreshToken,
+            refreshTokenId = refreshTokenId,
             deviceName = deviceName,
             isSignedIn = isSignedIn
         )

@@ -1,16 +1,17 @@
 package com.book.user.domain.api.operation
 
 import com.book.core.domain.entity.BusinessError
-import com.book.user.domain.api.entity.User
+import com.book.user.domain.api.entity.UserEditModel
+import com.book.user.domain.api.error.UserErrorCodes
 import io.ktor.http.HttpStatusCode
 
 interface EditUser {
-    suspend operator fun invoke(user: User): Result<Unit>
+    suspend operator fun invoke(id: Long, user: UserEditModel): Result<Unit>
 
     sealed interface Error {
         data object UserNotFound : BusinessError(
             statusCode = HttpStatusCode.NotFound.value,
-            code = 1,
+            code = UserErrorCodes.USER_NOT_EXIST,
             message = "User not found"
         ), Error
     }

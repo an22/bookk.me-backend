@@ -154,8 +154,7 @@ internal class FinishRegistrationImpl(
             id = 0,
             name = info.name,
             lastName = info.lastName,
-            email = info.email,
-            phone = null
+            email = info.email
         )
     }
 }

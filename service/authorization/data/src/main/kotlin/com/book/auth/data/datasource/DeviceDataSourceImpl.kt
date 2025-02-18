@@ -12,12 +12,12 @@ import org.jetbrains.exposed.sql.insertIgnore
 import org.jetbrains.exposed.sql.transactions.transaction
 
 internal class DeviceDataSourceImpl : DataSource(), DeviceDataSource {
-    override suspend fun attachRefreshTokenToDevice(deviceId: Long, token: String) {
+    override suspend fun attachRefreshTokenToDevice(deviceId: Long, tokenId: String) {
         mapExceptions {
             transaction {
                 AuthDeviceEntity.findByIdAndUpdate(deviceId) {
                     it.isSignedIn = true
-                    it.refreshToken = token
+                    it.refreshTokenId = tokenId
                     it.updatedAt = Clock.System.now()
                 }
             }
@@ -58,7 +58,7 @@ internal class DeviceDataSourceImpl : DataSource(), DeviceDataSource {
             transaction {
                 AuthDeviceEntity.findByIdAndUpdate(deviceId) {
                     it.isSignedIn = false
-                    it.refreshToken = null
+                    it.refreshTokenId = null
                     it.updatedAt = Clock.System.now()
                 }
             }
@@ -72,7 +72,7 @@ internal class DeviceDataSourceImpl : DataSource(), DeviceDataSource {
                     it[userAuthId] = authId
                     it[deviceUUID] = uuid
                     it[deviceName] = name
-                    it[refreshToken] = null
+                    it[refreshTokenId] = null
                     it[isSignedIn] = false
                     it[updatedAt] = Clock.System.now()
                 }

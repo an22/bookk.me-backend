@@ -14,6 +14,9 @@ object UserRouting {
 
                 @Resource("/{id}")
                 class Delete(val parent: User = User(), val id: Long)
+
+                @Resource("/{id}")
+                class Edit(val parent: User = User(), val id: Long)
             }
         }
 
@@ -27,7 +30,7 @@ object UserRouting {
             class Me(val parent: User = User())
 
             @Resource("/me")
-            class PutUser(val parent: User = User())
+            class Edit(val parent: User = User())
         }
     }
 }

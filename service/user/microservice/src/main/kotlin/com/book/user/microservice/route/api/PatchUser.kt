@@ -1,8 +1,8 @@
 package com.book.user.microservice.route.api
 
+import com.book.core.domain.entity.SimpleServerError
 import com.book.core.service.applyMediaType
 import com.book.core.service.auth.AppPrincipal
-import com.book.core.service.enity.SimpleServerError
 import com.book.core.service.enity.respondWith
 import com.book.user.domain.api.entity.ShortUserEditModel
 import com.book.user.domain.api.operation.EditUser
@@ -57,8 +57,6 @@ internal fun Route.withPatchUserDocumentation() {
                 responseType<SimpleServerError>(ObjectEnrichment(id = "EditUser") {
                     SimpleServerError::errorCode {
                         NumberEnrichment("errorCode") {
-                            minimum = 1
-                            maximum = 1
                             description = buildString {
                                 append("${EditUser.Error.UserNotFound.code} - ${EditUser.Error.UserNotFound.message}\n")
                             }

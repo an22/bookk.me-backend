@@ -5,9 +5,9 @@ import com.book.auth.domain.api.token.entity.RefreshTokenInfo
 import com.book.auth.domain.api.token.operation.RefreshToken
 import com.book.auth.domain.api.token.operation.RefreshToken.Error.InvalidRefreshToken
 import com.book.auth.microservice.route.AuthRouting.Api
+import com.book.core.domain.entity.SimpleServerError
 import com.book.core.service.applyMediaType
 import com.book.core.service.auth.RefreshPrincipal
-import com.book.core.service.enity.SimpleServerError
 import com.book.core.service.enity.respondWith
 import io.bkbn.kompendium.core.metadata.PostInfo
 import io.bkbn.kompendium.enrichment.NumberEnrichment

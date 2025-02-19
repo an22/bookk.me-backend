@@ -8,7 +8,6 @@ import com.book.auth.domain.datasource.AccountDataSource
 import com.book.core.data.DataSource
 import kotlinx.datetime.Clock
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.update
 
 internal class AccountDataSourceImpl : DataSource(), AccountDataSource {
 
@@ -16,7 +15,7 @@ internal class AccountDataSourceImpl : DataSource(), AccountDataSource {
         transaction {
             AuthenticationEntity.new {
                 userId = info.userId
-                email = info.email
+                uuid = info.uuid
                 updatedAt = Clock.System.now()
             }.toDomain()
         }
@@ -28,10 +27,10 @@ internal class AccountDataSourceImpl : DataSource(), AccountDataSource {
         }
     }
 
-    override suspend fun getAuthRecordByEmail(email: String): Authentication? = mapExceptions {
+    override suspend fun getAuthRecordByUUID(uuid: String): Authentication? = mapExceptions {
         transaction {
             AuthenticationEntity.find {
-                AuthenticationTable.email eq email
+                AuthenticationTable.uuid eq uuid
             }
                 .map(AuthenticationEntity::toDomain)
                 .firstOrNull()
@@ -45,16 +44,6 @@ internal class AccountDataSourceImpl : DataSource(), AccountDataSource {
             }
                 .map(AuthenticationEntity::toDomain)
                 .firstOrNull()
-        }
-    }
-
-    override suspend fun setNewEmail(authId: Long, newEmail: String) {
-        mapExceptions {
-            transaction {
-                AuthenticationTable.update(where = { AuthenticationTable.id eq authId }) {
-                    it[email] = newEmail
-                }
-            }
         }
     }
 

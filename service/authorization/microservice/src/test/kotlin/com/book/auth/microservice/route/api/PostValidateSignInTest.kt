@@ -8,7 +8,7 @@ import com.book.auth.domain.api.authentication.operation.SignIn.Error.Verificati
 import com.book.auth.domain.api.error.AuthErrorCodes
 import com.book.auth.domain.api.token.entity.AuthTokens
 import com.book.auth.microservice.route.AuthRouting
-import com.book.core.service.enity.SimpleServerError
+import com.book.core.domain.entity.SimpleServerError
 import com.bookk.core.service.test.createTestClient
 import com.bookk.core.service.test.routeTest
 import com.bookk.core.service.test.setupApplication

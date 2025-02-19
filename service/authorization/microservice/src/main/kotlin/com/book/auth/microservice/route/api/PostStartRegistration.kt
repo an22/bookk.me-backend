@@ -6,8 +6,8 @@ import com.book.auth.domain.api.registration.operation.StartRegistration
 import com.book.auth.domain.api.registration.operation.StartRegistration.Error.EmailAlreadyExist
 import com.book.auth.domain.api.registration.operation.StartRegistration.Error.InvalidEmailFormat
 import com.book.auth.microservice.route.AuthRouting.Api
+import com.book.core.domain.entity.SimpleServerError
 import com.book.core.service.applyMediaType
-import com.book.core.service.enity.SimpleServerError
 import com.book.core.service.enity.respondWith
 import io.bkbn.kompendium.core.metadata.PostInfo
 import io.bkbn.kompendium.enrichment.NumberEnrichment
@@ -54,8 +54,6 @@ internal fun Route.withStartRegistrationDocumentation() {
                 responseType<SimpleServerError>(ObjectEnrichment(id = "GetSignUpChallenge") {
                     SimpleServerError::errorCode {
                         NumberEnrichment("errorCode") {
-                            minimum = 1
-                            maximum = 2
                             description = buildString {
                                 append("${EmailAlreadyExist.code} - ${EmailAlreadyExist.message}\n")
                                 append("${InvalidEmailFormat.code} - ${InvalidEmailFormat.message}\n")

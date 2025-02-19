@@ -7,8 +7,6 @@ import com.book.auth.domain.api.registration.entity.VerifyAccountCreationRequest
 import com.book.auth.domain.api.registration.entity.VerifyAccountCreationRequest.UserInfo
 import com.book.auth.domain.api.registration.operation.FinishRegistration
 import com.book.auth.domain.api.registration.operation.FinishRegistration.Error.AccountCreationFailed
-import com.book.auth.domain.api.registration.operation.FinishRegistration.Error.InvalidEmailFormat
-import com.book.auth.domain.api.registration.operation.FinishRegistration.Error.UserAlreadyExist
 import com.book.auth.domain.api.registration.operation.FinishRegistration.Error.VerificationFailed
 import com.book.auth.domain.api.token.entity.AuthTokens
 import com.book.auth.domain.api.token.operation.GenerateAuthToken
@@ -27,7 +25,6 @@ import com.yubico.webauthn.CredentialRepository
 import com.yubico.webauthn.FinishRegistrationOptions
 import com.yubico.webauthn.RegistrationResult
 import com.yubico.webauthn.data.AuthenticatorAttestationResponse
-import com.yubico.webauthn.data.ByteArray
 import com.yubico.webauthn.data.ClientRegistrationExtensionOutputs
 import com.yubico.webauthn.data.PublicKeyCredential
 import com.yubico.webauthn.data.PublicKeyCredentialCreationOptions
@@ -48,17 +45,16 @@ internal class FinishRegistrationImpl(
     private val transactionManager: TransactionManager
 ) : FinishRegistration {
 
-    private val emailRegex = Regex(RegistrationConstants.EMAIL_REGEX)
-
     override suspend fun invoke(request: VerifyAccountCreationRequest) = runCatching {
-        if (!emailRegex.matches(request.userInfo.email)) throw InvalidEmailFormat
-        verifyUserDoesNotExist(request)
         val pkc = PublicKeyCredential.parseRegistrationResponseJson(request.publicKeyCredentialJson)
-        val result = validateRegistrationChallenge(request, pkc)
+        val challengeJson = passKeyDataSource.getCachedChallenge(request.userInfo.userId)
+        if (challengeJson == null) throw FinishRegistration.Error.ChallengeWindowExpired
+        val challenge = PublicKeyCredentialCreationOptions.fromJson(challengeJson)
+        val result = validateRegistrationChallenge(request, challenge, pkc)
         val userId = saveUserExternal(request)
         transactionManager.runInTransaction {
             val ownerId = saveAuthorizationOwner(userId, request.userInfo)
-            val passkeyIdentityId = savePasskeyIdentity(ownerId, request)
+            val passkeyIdentityId = passKeyDataSource.savePasskeyHandle(ownerId, challenge.user.id.bytes)
             savePasskeyCredentials(passkeyIdentityId, result, pkc)
             createAndSaveAuthCredentials(ownerId, request)
         }.onFailure {
@@ -72,11 +68,6 @@ internal class FinishRegistrationImpl(
         }
     }
 
-    private suspend fun savePasskeyIdentity(
-        ownerId: Long,
-        request: VerifyAccountCreationRequest
-    ): Long = passKeyDataSource.savePasskeyHandle(ownerId, ByteArray.fromBase64(request.userInfo.userId).bytes)
-
     private suspend fun createAndSaveAuthCredentials(ownerId: Long, request: VerifyAccountCreationRequest): AuthTokens {
         deviceDataSource.createDeviceIfNotExist(
             authId = ownerId,
@@ -84,10 +75,6 @@ internal class FinishRegistrationImpl(
             name = request.deviceInfo.deviceName
         )
         return generateAuthToken(Source.FromAuthDevice(ownerId, request.deviceInfo.deviceUUID)).getOrThrow()
-    }
-
-    private suspend fun verifyUserDoesNotExist(request: VerifyAccountCreationRequest) {
-        if (accountDataSource.getAuthRecordByEmail(request.userInfo.email) != null) throw UserAlreadyExist
     }
 
     private suspend fun saveUserExternal(request: VerifyAccountCreationRequest): Long {
@@ -98,7 +85,7 @@ internal class FinishRegistrationImpl(
         val authentication = Authentication(
             id = 0,
             userId = userId,
-            email = userInfo.email
+            uuid = userInfo.userId
         )
         return accountDataSource.createAuthorization(authentication).id
     }
@@ -114,15 +101,14 @@ internal class FinishRegistrationImpl(
 
     private suspend fun validateRegistrationChallenge(
         request: VerifyAccountCreationRequest,
-        pkc: PKS
+        challenge: PublicKeyCredentialCreationOptions,
+        response: PKS
     ): RegistrationResult {
-        val challengeJson = passKeyDataSource.getCachedChallenge(request.userInfo.userId)
-        if (challengeJson == null) throw FinishRegistration.Error.ChallengeWindowExpired
         passKeyDataSource.deleteCachedChallenge(request.userInfo.userId)
         return createRelyingParty(credentialRepository).finishRegistration(
             FinishRegistrationOptions.builder()
-                .request(PublicKeyCredentialCreationOptions.fromJson(challengeJson))
-                .response(pkc)
+                .request(challenge)
+                .response(response)
                 .build()
         )
     }
@@ -132,8 +118,8 @@ internal class FinishRegistrationImpl(
         return PasskeyCredential(
             id = 0,
             userIdentityId = identityId,
-            authInfo = Authentication(0, 0, ""),
-            handle = ByteArray(0),
+            authInfo = Authentication(0, 0, ""), //Ignored
+            handle = ByteArray(0), //Ignored
             credDescriptor = CredentialDescriptor(
                 id = keyId.id.bytes,
                 type = keyId.type.id,

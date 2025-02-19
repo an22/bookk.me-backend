@@ -1,6 +1,5 @@
 package com.book.auth.domain.impl.di
 
-import com.book.auth.domain.api.authentication.operation.EditEmail
 import com.book.auth.domain.api.authentication.operation.FinishAssertion
 import com.book.auth.domain.api.authentication.operation.SignIn
 import com.book.auth.domain.api.authentication.operation.StartAssertion
@@ -12,7 +11,6 @@ import com.book.auth.domain.api.token.operation.GenerateAuthToken
 import com.book.auth.domain.api.token.operation.RefreshToken
 import com.book.auth.domain.impl.operation.DeleteAccountImpl
 import com.book.auth.domain.impl.operation.SignOutImpl
-import com.book.auth.domain.impl.operation.authentication.EditEmailImpl
 import com.book.auth.domain.impl.operation.authentication.FinishAssertionImpl
 import com.book.auth.domain.impl.operation.authentication.SignInImpl
 import com.book.auth.domain.impl.operation.authentication.StartAssertionImpl
@@ -35,5 +33,4 @@ fun authDomainModule() = module {
     singleOf(::StartAssertionImpl) bind StartAssertion::class
     singleOf(::FinishAssertionImpl) bind FinishAssertion::class
     singleOf(::SignInImpl) bind SignIn::class
-    singleOf(::EditEmailImpl) bind EditEmail::class
 }

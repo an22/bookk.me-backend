@@ -19,7 +19,7 @@ object AuthRouting {
             class Email(val parent: Auth = Auth())
 
             @Resource("/passkey")
-            class PassKey(val parent: SignIn = SignIn()) {
+            class PassKey(val parent: Auth = Auth()) {
                 @Resource("/challenge")
                 class Challenge(val parent: PassKey = PassKey())
             }

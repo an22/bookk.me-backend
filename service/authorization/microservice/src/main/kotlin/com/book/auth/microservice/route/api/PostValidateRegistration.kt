@@ -8,8 +8,8 @@ import com.book.auth.domain.api.registration.operation.FinishRegistration.Error.
 import com.book.auth.domain.api.registration.operation.FinishRegistration.Error.VerificationFailed
 import com.book.auth.domain.api.token.entity.AuthTokens
 import com.book.auth.microservice.route.AuthRouting.Api
+import com.book.core.domain.entity.SimpleServerError
 import com.book.core.service.applyMediaType
-import com.book.core.service.enity.SimpleServerError
 import com.book.core.service.enity.respondWith
 import io.bkbn.kompendium.core.metadata.PostInfo
 import io.bkbn.kompendium.enrichment.NumberEnrichment
@@ -55,8 +55,6 @@ internal fun Route.withValidateRegistrationDocumentation() {
                 responseType<SimpleServerError>(ObjectEnrichment(id = "FinishRegistration") {
                     SimpleServerError::errorCode {
                         NumberEnrichment("errorCode") {
-                            minimum = 1
-                            maximum = 4
                             description = buildString {
                                 append("${InvalidEmailFormat.code} - ${InvalidEmailFormat.message}\n")
                                 append("${UserAlreadyExist.code} - ${UserAlreadyExist.message}\n")

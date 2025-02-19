@@ -1,0 +1,32 @@
+package com.bookk.server.user.client.impl.operation
+
+import com.book.core.domain.entity.SimpleServerError
+import com.book.user.domain.api.entity.EmailBody
+import com.book.user.domain.api.entity.User
+import com.book.user.domain.api.error.UserErrorCodes
+import com.book.user.domain.api.operation.GetUserByEmail
+import com.book.user.domain.api.operation.GetUserByEmail.Error
+import com.bookk.server.user.client.impl.UserRouting
+import io.ktor.client.HttpClient
+import io.ktor.client.call.body
+import io.ktor.client.plugins.resources.get
+import io.ktor.client.request.setBody
+import io.ktor.http.isSuccess
+
+internal class GetUserByEmailClientImpl(
+    private val httpClient: HttpClient
+) : GetUserByEmail {
+    override suspend fun invoke(body: EmailBody): Result<User> = runCatching {
+        val response = httpClient.get(UserRouting.Api.Internal.User.Email()) {
+            setBody(body)
+        }
+        if (response.status.isSuccess()) {
+            response.body<User>()
+        } else {
+            when (response.body<SimpleServerError>().errorCode) {
+                UserErrorCodes.USER_NOT_EXIST -> throw Error.UserNotFound
+                else -> throw UnsupportedOperationException()
+            }
+        }
+    }
+}

@@ -18,7 +18,7 @@ internal class YubicoCredentialRepository(
 
     override fun getCredentialIdsForUsername(username: String): MutableSet<PublicKeyCredentialDescriptor> {
         return runBlocking {
-            passKeyDataSource.getCredentialsByEmail(username)
+            passKeyDataSource.getCredentialsByUUID(username)
                 .map(PasskeyCredential::asPublicKeyCredentialDescriptor)
                 .toMutableSet()
         }
@@ -26,13 +26,13 @@ internal class YubicoCredentialRepository(
 
     override fun getUserHandleForUsername(username: String): Optional<YubicoByteArray> {
         return runBlocking {
-            Optional.ofNullable(passKeyDataSource.getHandleByEmail(username)?.let { YubicoByteArray(it) })
+            Optional.ofNullable(passKeyDataSource.getHandleByUUID(username)?.let { YubicoByteArray(it) })
         }
     }
 
     override fun getUsernameForUserHandle(handle: YubicoByteArray): Optional<String> {
         return runBlocking {
-            Optional.ofNullable(passKeyDataSource.getEmailByHandle(handle.bytes))
+            Optional.ofNullable(passKeyDataSource.getUUIDByHandle(handle.bytes))
         }
     }
 

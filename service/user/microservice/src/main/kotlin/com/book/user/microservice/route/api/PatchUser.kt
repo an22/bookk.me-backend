@@ -4,7 +4,7 @@ import com.book.core.domain.entity.SimpleServerError
 import com.book.core.service.applyMediaType
 import com.book.core.service.auth.AppPrincipal
 import com.book.core.service.enity.respondWith
-import com.book.user.domain.api.entity.ShortUserEditModel
+import com.book.user.domain.api.entity.UserEditModel
 import com.book.user.domain.api.operation.EditUser
 import com.book.user.microservice.route.UserRouting.Api
 import io.bkbn.kompendium.core.metadata.PatchInfo
@@ -25,10 +25,10 @@ internal fun Route.patchUser() {
     authenticate {
         patch<Api.User.Me> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
-            val body = call.receive<ShortUserEditModel>()
+            val body = call.receive<UserEditModel>()
             val editUser by application.inject<EditUser>()
 
-            call.respondWith(editUser(principal.userId, body.expand()))
+            call.respondWith(editUser(principal.userId, body))
         }
     }
 }
@@ -42,7 +42,7 @@ internal fun Route.withPatchUserDocumentation() {
             description("Update current user")
             request {
                 required(true)
-                requestType<ShortUserEditModel>()
+                requestType<UserEditModel>()
                 description("Fields that needs to be updated")
             }
             response {

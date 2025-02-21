@@ -1,6 +1,7 @@
-package com.book.core.data.eventstreaming.impl
+package com.book.core.data.eventstreaming.impl.kafka
 
 import com.book.core.data.eventstreaming.EventStreaming
+import io.ktor.util.collections.ConcurrentMap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.currentCoroutineContext
@@ -26,7 +27,7 @@ class KafkaEventConsumer(
     private val protoBuf: ProtoBuf
 ) : EventStreaming.Consumer<String> {
 
-    private val receivers = mutableMapOf<String, suspend (ByteArray) -> Unit>()
+    private val receivers = ConcurrentMap<String, suspend (ByteArray) -> Unit>()
     private val consumer = KafkaConsumer(
         mutableMapOf<String, Any>(
             ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to servers.joinToString { it },

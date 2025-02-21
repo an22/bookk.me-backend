@@ -10,7 +10,6 @@ class UserEntity(id: EntityID<Long>) : LongEntity(id) {
     var name by UserTable.name
     var lastName by UserTable.lastName
     var email by UserTable.email
-    var phone by UserTable.phone
     var createdAt by UserTable.createdAt
     var updatedAt by UserTable.updatedAt
 

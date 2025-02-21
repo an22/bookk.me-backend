@@ -20,7 +20,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/com.book.core.service.enity.SimpleServerError"
+                $ref: "#/components/schemas/com.book.core.domain.entity.SimpleServerError"
       requestBody:
         required: true
         content:
@@ -29,7 +29,7 @@ paths:
               $ref: "#/components/schemas/com.book.user.domain.api.entity.Credentials"
 components:
   schemas:
-    com.book.core.service.enity.SimpleServerError:
+    com.book.core.domain.entity.SimpleServerError:
       type: "object"
       properties:
         errorCode:

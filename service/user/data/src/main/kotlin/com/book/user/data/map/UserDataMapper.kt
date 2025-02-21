@@ -8,7 +8,6 @@ fun UserEntity.toDomain(): User {
         id = id.value,
         name = name,
         lastName = lastName,
-        phone = phone,
         email = email
     )
 }

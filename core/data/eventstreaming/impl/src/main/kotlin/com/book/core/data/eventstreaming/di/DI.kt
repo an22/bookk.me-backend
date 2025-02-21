@@ -2,8 +2,8 @@ package com.book.core.data.eventstreaming.di
 
 import com.book.core.data.eventstreaming.StandardEventConsumer
 import com.book.core.data.eventstreaming.StandardEventProducer
-import com.book.core.data.eventstreaming.impl.KafkaEventConsumer
-import com.book.core.data.eventstreaming.impl.KafkaEventProducer
+import com.book.core.data.eventstreaming.impl.kafka.KafkaEventConsumer
+import com.book.core.data.eventstreaming.impl.kafka.KafkaEventProducer
 import kotlinx.serialization.protobuf.ProtoBuf
 import org.koin.dsl.module
 import kotlin.uuid.ExperimentalUuidApi

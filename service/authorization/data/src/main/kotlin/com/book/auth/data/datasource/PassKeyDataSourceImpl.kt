@@ -82,17 +82,17 @@ internal class PassKeyDataSourceImpl(
         }
     }
 
-    override suspend fun getEmailByHandle(userHandle: ByteArray): String? = mapExceptions {
+    override suspend fun getUUIDByHandle(userHandle: ByteArray): String? = mapExceptions {
         transaction {
             AuthToHandleEntity.find {
                 AuthToHandleTable.userHandle eq userHandle
             }
-                .map { it.authentication.email }
+                .map { it.authentication.uuid }
                 .firstOrNull()
         }
     }
 
-    override suspend fun getCredentialsByEmail(email: String): Set<PasskeyCredential> {
+    override suspend fun getCredentialsByUUID(uuid: String): Set<PasskeyCredential> {
         return mapExceptions {
             transaction {
                 PasskeyCredentialEntity.wrapRows(
@@ -108,7 +108,7 @@ internal class PassKeyDataSourceImpl(
                             otherColumn = { identityId }
                         )
                         .select(PasskeyCredentialTable.columns)
-                        .where { AuthenticationTable.email eq email }
+                        .where { AuthenticationTable.uuid eq uuid }
                 )
                     .map(PasskeyCredentialEntity::toDomain)
                     .toSet()
@@ -116,10 +116,10 @@ internal class PassKeyDataSourceImpl(
         }
     }
 
-    override suspend fun getHandleByEmail(email: String): ByteArray? = mapExceptions {
+    override suspend fun getHandleByUUID(uuid: String): ByteArray? = mapExceptions {
         transaction {
             AuthToHandleEntity.find {
-                AuthenticationTable.email eq email
+                AuthenticationTable.uuid eq uuid
             }
                 .map { it.userHandle }
                 .firstOrNull()

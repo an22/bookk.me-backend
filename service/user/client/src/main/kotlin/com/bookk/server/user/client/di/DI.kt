@@ -2,6 +2,7 @@ package com.bookk.server.user.client.di
 
 import com.book.user.domain.api.operation.CreateUser
 import com.book.user.domain.api.operation.DeleteUser
+import com.book.user.domain.api.operation.GetUserByEmail
 import com.book.user.domain.api.operation.GetUserById
 import com.bookk.core.AppLevelConstants
 import com.bookk.core.AppLevelConstants.SupportedSerializers
@@ -10,6 +11,7 @@ import com.bookk.server.user.client.UserClient
 import com.bookk.server.user.client.impl.UserClientImpl
 import com.bookk.server.user.client.impl.operation.CreateUserClientImpl
 import com.bookk.server.user.client.impl.operation.DeleteUserClientImpl
+import com.bookk.server.user.client.impl.operation.GetUserByEmailClientImpl
 import com.bookk.server.user.client.impl.operation.GetUserByIdClientImpl
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
@@ -53,6 +55,7 @@ fun userClientModule(clientTag: String) = module {
                             explicitNulls = false
                         })
                     }
+
                     SupportedSerializers.PROTOBUF.STR -> {
                         protobuf(ProtoBuf { encodeDefaults = true })
                     }
@@ -60,7 +63,7 @@ fun userClientModule(clientTag: String) = module {
             }
             install(Logging) {
                 logger = Logger.DEFAULT
-                level = when(AppLevelConstants.BUILD_TYPE) {
+                level = when (AppLevelConstants.BUILD_TYPE) {
                     AppLevelConstants.BuildType.DEBUG.STR -> LogLevel.ALL
                     else -> LogLevel.INFO
                 }
@@ -70,7 +73,6 @@ fun userClientModule(clientTag: String) = module {
                     trustManager = SslSettings.getTrustManager()
                 }
             }
-            expectSuccess = true
             defaultRequest {
                 host = System.getenv("BOOKK_ME_USER_SERVICE_HOSTNAME")
 
@@ -88,5 +90,6 @@ fun userClientModule(clientTag: String) = module {
     single<GetUserById> { GetUserByIdClientImpl(get()) }
     single<CreateUser> { CreateUserClientImpl(get()) }
     single<DeleteUser> { DeleteUserClientImpl(get()) }
-    single<UserClient> { UserClientImpl(get(), get(), get()) }
+    single<GetUserByEmail> { GetUserByEmailClientImpl(get()) }
+    single<UserClient> { UserClientImpl(get(), get(), get(), get()) }
 }

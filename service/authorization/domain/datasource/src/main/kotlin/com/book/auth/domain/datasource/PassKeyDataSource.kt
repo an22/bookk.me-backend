@@ -9,9 +9,9 @@ interface PassKeyDataSource {
 
     suspend fun createPasskeyCredential(credential: PasskeyCredential)
     suspend fun getCredentialBy(userHandle: ByteArray, credentialId: ByteArray): PasskeyCredential?
-    suspend fun getEmailByHandle(userHandle: ByteArray): String?
-    suspend fun getCredentialsByEmail(email: String): Set<PasskeyCredential>
+    suspend fun getUUIDByHandle(userHandle: ByteArray): String?
+    suspend fun getCredentialsByUUID(uuid: String): Set<PasskeyCredential>
 
-    suspend fun getHandleByEmail(email: String): ByteArray?
+    suspend fun getHandleByUUID(uuid: String): ByteArray?
     suspend fun savePasskeyHandle(authenticationId: Long, handle: ByteArray): Long
 }

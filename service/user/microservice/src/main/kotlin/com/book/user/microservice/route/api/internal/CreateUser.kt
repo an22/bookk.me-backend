@@ -1,4 +1,4 @@
-package com.book.user.microservice.route.api
+package com.book.user.microservice.route.api.internal
 
 import com.book.core.service.applyMediaType
 import com.book.core.service.enity.respondWith
@@ -26,10 +26,15 @@ internal fun Route.postCreateUser() {
 
 internal fun Route.withCreateUserDocumentation() {
     install(NotarizedResource<Api.Internal.User>()) {
-        tags = setOf("internal", "user")
+        tags = setOf("internal")
         post = PostInfo.builder {
             summary("Create new user")
             description("Create new user from provided info")
+            request {
+                applyMediaType()
+                requestType<User>()
+                description("User to create, id can be anything, it's ignored")
+            }
             response {
                 applyMediaType()
                 responseCode(HttpStatusCode.Created)

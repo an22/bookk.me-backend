@@ -2,7 +2,7 @@ package com.book.user.microservice.route.api
 
 
 import com.book.user.microservice.route.UserRouting.Api
-import io.bkbn.kompendium.core.metadata.PostInfo
+import io.bkbn.kompendium.core.metadata.GetInfo
 import io.bkbn.kompendium.resources.NotarizedResource
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.resources.get
@@ -19,7 +19,7 @@ internal fun Route.getHealthCheck() {
 internal fun Route.withHealthCheckDocumentation() {
     install(NotarizedResource<Api.User.HealthCheck>()) {
         tags = setOf("user")
-        post = PostInfo.builder {
+        get = GetInfo.builder {
             summary("Healthcheck")
             description("Check service health")
             response {

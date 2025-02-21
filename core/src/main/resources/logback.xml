@@ -1,39 +1,24 @@
 <configuration>
-    <!-- Properties -->
-    <property name="LOG_DIR" value="/var/log/bookk_me_logs" />
 
-    <!-- Appender config -->
-    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${LOG_DIR}/${BOOKK_ME_SERVICE_NAME}.log</file>
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <!-- daily rollover -->
-            <fileNamePattern>${LOG_DIR}/${BOOKK_ME_SERVICE_NAME}.%d{yyyy-MM-dd}.gz</fileNamePattern>
-
-            <!-- keep 10 days worth of history capped at 256MB total size -->
-            <maxHistory>10</maxHistory>
-            <totalSizeCap>256MB</totalSizeCap>
-        </rollingPolicy>
-        <encoder>
-            <pattern>%d{ISO8601} [%level] [${BOOKK_ME_SERVICE_NAME}: ${BOOKK_ME_SERVICE_VERSION}] [%logger{35}]: %msg%n</pattern>
-        </encoder>
-    </appender>
+    <!-- Rolling and compressing are done on the Dockers side-->
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%d{ISO8601} [%level] [${BOOKK_ME_SERVICE_NAME}: ${BOOKK_ME_SERVICE_VERSION}] [%logger{35}]: %msg%n</pattern>
+            <pattern>%d{ISO8601} [%level] [${BOOKK_ME_SERVICE_NAME}:${BOOKK_ME_SERVICE_VERSION}] [%logger{35}]: %msg%n
+            </pattern>
         </encoder>
     </appender>
 
     <!-- Root -->
     <root level="info">
         <appender-ref ref="STDOUT"/>
-        <appender-ref ref="FILE"/>
     </root>
     <root level="debug">
         <appender-ref ref="STDOUT"/>
     </root>
 
     <!-- Logger levels -->
-    <logger name="com.zaxxer.hikari" level="info" />
-    <logger name="org.apache.kafka" level="info" />
-    <logger name="io.netty" level="info" />
+    <logger name="com.zaxxer.hikari" level="info"/>
+    <logger name="org.apache.kafka" level="info"/>
+    <logger name="io.netty" level="info"/>
+    <logger name="com.wolt" level="error"/>
 </configuration>

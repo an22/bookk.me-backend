@@ -5,15 +5,17 @@ import com.book.auth.domain.api.token.entity.RefreshTokenInfo
 import com.book.auth.domain.api.token.operation.RefreshToken
 import com.book.auth.domain.api.token.operation.RefreshToken.Error.InvalidRefreshToken
 import com.book.auth.microservice.route.AuthRouting.Api
+import com.book.core.domain.entity.SimpleServerError
 import com.book.core.service.applyMediaType
-import com.book.core.service.enity.SimpleServerError
+import com.book.core.service.auth.RefreshPrincipal
 import com.book.core.service.enity.respondWith
 import io.bkbn.kompendium.core.metadata.PostInfo
 import io.bkbn.kompendium.enrichment.NumberEnrichment
 import io.bkbn.kompendium.enrichment.ObjectEnrichment
 import io.bkbn.kompendium.resources.NotarizedResource
 import io.ktor.http.HttpStatusCode
-import io.ktor.server.request.receive
+import io.ktor.server.auth.authenticate
+import io.ktor.server.auth.principal
 import io.ktor.server.resources.post
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.application
@@ -21,10 +23,12 @@ import org.koin.ktor.ext.inject
 
 internal fun Route.postRefreshToken() {
     withRefreshDocumentation()
-    post<Api.Auth.Refresh> {
-        val info = call.receive<RefreshTokenInfo>()
-        val refreshToken by application.inject<RefreshToken>()
-        call.respondWith(refreshToken(info))
+    authenticate("refresh") {
+        post<Api.Auth.Refresh> {
+            val principal = requireNotNull(call.principal<RefreshPrincipal>())
+            val refreshToken by application.inject<RefreshToken>()
+            call.respondWith(refreshToken(RefreshTokenInfo(principal.tokenId, principal.deviceId)))
+        }
     }
 }
 

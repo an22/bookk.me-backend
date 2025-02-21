@@ -12,6 +12,7 @@ import com.book.auth.domain.datasource.DeviceDataSource
 import com.bookk.core.AppLevelConstants.Claim
 import kotlinx.datetime.Clock
 import kotlinx.datetime.toJavaInstant
+import java.util.UUID
 import kotlin.time.Duration.Companion.milliseconds
 
 internal class GenerateAuthTokenImpl(
@@ -20,32 +21,45 @@ internal class GenerateAuthTokenImpl(
     private val deviceDataSource: DeviceDataSource,
 ) : GenerateAuthToken {
 
-    override suspend fun invoke(params: Source): Result<AuthTokens> = runCatching {
-        val deviceRecord = params.getDevice() ?: throw InvalidCredentials
-        val accessToken = createToken(deviceRecord, ACCESS_EXPIRATION_TIME, false)
-        val refreshToken = createToken(deviceRecord, REFRESH_EXPIRATION_TIME, true)
-        deviceDataSource.attachRefreshTokenToDevice(deviceRecord.deviceInfo.id, refreshToken)
+    override suspend fun invoke(source: Source): Result<AuthTokens> = runCatching {
+        val deviceRecord = source.getDevice() ?: throw InvalidCredentials
+        val accessToken = createAccessToken(deviceRecord)
+        val refreshId = UUID.randomUUID().toString()
+        val refreshToken = createRefreshToken(refreshId, deviceRecord)
+        deviceDataSource.attachRefreshTokenToDevice(deviceRecord.deviceInfo.id, refreshId)
         AuthTokens(accessToken, refreshToken)
     }
 
-    private fun createToken(record: Device, expirationMs: Long, isRefresh: Boolean): String {
+    private fun createAccessToken(record: Device): String {
         return JWT.create()
             .withAudience(serviceUrl)
             .withIssuer(ISSUER)
-            .withClaim(Claim.IS_REFRESH.key, isRefresh)
+            .withJWTId(UUID.randomUUID().toString())
             .withClaim(Claim.AUTH_ID.key, record.authRecord.id)
             .withClaim(Claim.USER_ID.key, record.authRecord.userId)
             .withClaim(Claim.DEVICE_ID.key, record.deviceInfo.id)
             .withIssuedAt(Clock.System.now().toJavaInstant())
             .withNotBefore(Clock.System.now().toJavaInstant())
-            .withExpiresAt(Clock.System.now().plus(expirationMs.milliseconds).toJavaInstant())
+            .withExpiresAt(Clock.System.now().plus(ACCESS_EXPIRATION_TIME.milliseconds).toJavaInstant())
+            .sign(Algorithm.RSA256(keyProvider))
+    }
+
+    private fun createRefreshToken(tokenId: String, record: Device): String {
+        return JWT.create()
+            .withAudience(serviceUrl)
+            .withIssuer(REFRESH_ISSUER)
+            .withJWTId(tokenId)
+            .withClaim(Claim.DEVICE_ID.key, record.deviceInfo.id)
+            .withIssuedAt(Clock.System.now().toJavaInstant())
+            .withNotBefore(Clock.System.now().toJavaInstant())
+            .withExpiresAt(Clock.System.now().plus(REFRESH_EXPIRATION_TIME.milliseconds).toJavaInstant())
             .sign(Algorithm.RSA256(keyProvider))
     }
 
     private suspend fun Source.getDevice(): Device? {
         return when (this) {
-            is Source.FromRefresh -> JWT.decode(refreshToken).claims[Claim.DEVICE_ID.key]?.asLong()?.let { deviceId ->
-                deviceDataSource.getDeviceById(deviceId)
+            is Source.FromRefresh -> deviceDataSource.getDeviceById(deviceId)?.also {
+                if (it.deviceInfo.refreshTokenId != tokenId) throw InvalidCredentials
             }
 
             is Source.FromAuthDevice -> deviceDataSource.getDeviceByAuthIdAndUUID(authId, deviceUUID)
@@ -56,5 +70,6 @@ internal class GenerateAuthTokenImpl(
         private const val ACCESS_EXPIRATION_TIME = 1000L * 60 * 60
         private const val REFRESH_EXPIRATION_TIME = ACCESS_EXPIRATION_TIME * 24
         private const val ISSUER = "com.bookk.server"
+        private const val REFRESH_ISSUER = "com.bookk.server.refresh"
     }
 }

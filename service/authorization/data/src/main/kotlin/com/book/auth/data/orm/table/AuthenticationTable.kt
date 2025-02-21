@@ -6,7 +6,7 @@ import org.jetbrains.exposed.sql.kotlin.datetime.timestamp
 
 internal object AuthenticationTable : LongIdTable("authentication") {
     val userId = long("user_id").uniqueIndex()
-    val email = varchar("email", 320)
+    val uuid = varchar("uuid", 36)
     val createdAt = timestamp("created_at").clientDefault { Clock.System.now() }
     val updatedAt = timestamp("updated_at")
 }

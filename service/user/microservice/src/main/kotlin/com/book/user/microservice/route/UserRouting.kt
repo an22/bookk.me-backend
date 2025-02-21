@@ -14,6 +14,9 @@ object UserRouting {
 
                 @Resource("/{id}")
                 class Delete(val parent: User = User(), val id: Long)
+
+                @Resource("/email")
+                class Email(val parent: User = User())
             }
         }
 
@@ -25,6 +28,9 @@ object UserRouting {
 
             @Resource("/me")
             class Me(val parent: User = User())
+
+            @Resource("/me")
+            class Edit(val parent: User = User())
         }
     }
 }

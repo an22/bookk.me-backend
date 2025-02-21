@@ -4,6 +4,6 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 class RefreshTokenInfo(
-    val userId: Long,
-    val refreshToken: String
+    val tokenId: String,
+    val deviceId: Long
 )

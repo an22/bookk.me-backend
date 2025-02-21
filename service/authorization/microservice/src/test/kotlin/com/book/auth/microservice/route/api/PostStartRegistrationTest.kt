@@ -7,7 +7,7 @@ import com.book.auth.domain.api.registration.operation.StartRegistration
 import com.book.auth.domain.api.registration.operation.StartRegistration.Error.EmailAlreadyExist
 import com.book.auth.domain.api.registration.operation.StartRegistration.Error.InvalidEmailFormat
 import com.book.auth.microservice.route.AuthRouting
-import com.book.core.service.enity.SimpleServerError
+import com.book.core.domain.entity.SimpleServerError
 import com.bookk.core.service.test.createTestClient
 import com.bookk.core.service.test.routeTest
 import com.bookk.core.service.test.setupApplication

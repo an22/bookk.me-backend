@@ -2,15 +2,7 @@
 
 package com.book.core.service.auth
 
-import com.auth0.jwt.JWT
-import com.auth0.jwt.JWTVerifier
-import com.auth0.jwt.algorithms.Algorithm
 import com.auth0.jwt.interfaces.RSAKeyProvider
-import com.bookk.core.AppLevelConstants
-import com.bookk.core.AppLevelConstants.Claim
-import io.ktor.server.application.ApplicationCall
-import io.ktor.server.auth.jwt.JWTCredential
-import kotlinx.datetime.Clock
 import java.io.File
 import java.nio.charset.Charset
 import java.security.KeyFactory
@@ -24,27 +16,8 @@ import kotlin.io.encoding.ExperimentalEncodingApi
 
 @OptIn(ExperimentalEncodingApi::class)
 object JwtConfig {
-    private const val ISSUER = "com.bookk.server"
 
-    val verifier: JWTVerifier = JWT
-        .require(Algorithm.RSA256(createPublicKeyProvider()))
-        .withIssuer(ISSUER)
-        .withAudience(AppLevelConstants.DOMAIN_NAME)
-        .build()
-
-    val validator: ApplicationCall.(JWTCredential) -> AppPrincipal? = { credentials ->
-        val isNotExpired = credentials.payload.expiresAt.time > Clock.System.now().toEpochMilliseconds()
-        val isRefresh = credentials.payload.getClaim(Claim.IS_REFRESH.key).asBoolean()
-        if (isNotExpired && !isRefresh) {
-            AppPrincipal(
-                authId = credentials.payload.getClaim(Claim.AUTH_ID.key).asLong(),
-                userId = credentials.payload.getClaim(Claim.USER_ID.key).asLong(),
-                deviceId = credentials.payload.getClaim(Claim.DEVICE_ID.key).asLong()
-            )
-        } else null
-    }
-
-    private fun createPublicKeyProvider(): RSAKeyProvider {
+    fun createPublicKeyProvider(): RSAKeyProvider {
         val store = KeyFactory.getInstance("RSA")
         val public = store.generatePublic(X509EncodedKeySpec(readPublicPemFile()))
         return object : RSAKeyProvider {

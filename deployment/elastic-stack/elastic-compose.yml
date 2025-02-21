@@ -15,22 +15,24 @@ volumes:
     driver: local
   kibanadata:
     driver: local
+  filebeatdata:
+    driver: local
 
 configs:
   jvm-options-master:
-    name: jvm-options-master
+    name: jvm-options-master-v1
     file: elasticsearch/jvm.master.options
   logstash-config:
-    name: logstash-config-v2
+    name: logstash-config-v4
     file: logstash/logstash.yml
   logstash-pipeline-config:
-    name: logstash-pipeline-config-v6
+    name: logstash-pipeline-config-v9
     file: logstash/logstash.conf
   logstash-pipelines:
     name: logstash-pipelines-v1
     file: logstash/pipelines.yml
   filebeat:
-    name: filebeat-config-v1
+    name: filebeat-config-v15
     file: filebeats/filebeat.yml
 
 secrets:
@@ -237,11 +239,21 @@ services:
 
   filebeat:
     image: docker.elastic.co/beats/filebeat:${ELASTIC_STACK_VERSION}
+    command: ["filebeat", "-e", "--strict.perms=false"]
+    user: root
     configs:
       - source: filebeat
-        target: /etc/filebeat/filebeat.yml
+        target: /usr/share/filebeat/filebeat.yml
     networks:
       - bookk-me
+    volumes:
+      - filebeatdata:/usr/share/filebeat/data
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
     deploy:
       mode: global
       resources:
@@ -251,6 +263,8 @@ services:
   logstash:
     <<: *replicated
     image: docker.elastic.co/logstash/logstash:${ELASTIC_STACK_VERSION}
+    labels:
+      co.elastic.logs/enabled: "true"
     configs:
       - source: logstash-config
         target: /usr/share/logstash/config/logstash.yml

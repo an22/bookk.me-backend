@@ -18,7 +18,7 @@ internal fun AuthenticationEntity.toDomain(): Authentication {
     return Authentication(
         id = id.value,
         userId = userId,
-        email = email
+        uuid = uuid
     )
 }
 
@@ -28,7 +28,7 @@ internal fun AuthDeviceEntity.toDomain(): Device {
         deviceInfo = DeviceInfo(
             id = id.value,
             deviceUUID = deviceUUID,
-            refreshToken = refreshToken,
+            refreshTokenId = refreshTokenId,
             deviceName = deviceName,
             isSignedIn = isSignedIn
         )

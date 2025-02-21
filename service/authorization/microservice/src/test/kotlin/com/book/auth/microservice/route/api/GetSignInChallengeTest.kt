@@ -37,7 +37,7 @@ internal class GetSignInChallengeTest {
         coEvery { useCase.invoke() } returns Result.success(answer)
 
         whenn()
-        val response = client.get(AuthRouting.Api.Auth.SignIn.PassKey.Challenge())
+        val response = client.get(AuthRouting.Api.Auth.PassKey.Challenge())
         val body = response.body<AssertionStartResponse>()
 
         then()

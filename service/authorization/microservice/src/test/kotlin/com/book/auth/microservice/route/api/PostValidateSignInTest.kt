@@ -1,10 +1,10 @@
 package com.book.auth.microservice.route.api
 
 import com.book.auth.domain.api.authentication.entity.VerifySignInRequest
+import com.book.auth.domain.api.authentication.operation.FinishAssertion.Error.ChallengeWindowExpired
+import com.book.auth.domain.api.authentication.operation.FinishAssertion.Error.PasskeyOwnerNotFound
+import com.book.auth.domain.api.authentication.operation.FinishAssertion.Error.VerificationFailed
 import com.book.auth.domain.api.authentication.operation.SignIn
-import com.book.auth.domain.api.authentication.operation.SignIn.Error.ChallengeWindowExpired
-import com.book.auth.domain.api.authentication.operation.SignIn.Error.PasskeyOwnerNotFound
-import com.book.auth.domain.api.authentication.operation.SignIn.Error.VerificationFailed
 import com.book.auth.domain.api.error.AuthErrorCodes
 import com.book.auth.domain.api.token.entity.AuthTokens
 import com.book.auth.microservice.route.AuthRouting
@@ -52,7 +52,7 @@ internal class PostValidateSignInTest {
         coEvery { useCase.invoke(any()) } returns Result.success(answer)
 
         whenn()
-        val response = client.post(AuthRouting.Api.Auth.SignIn.PassKey.Validate()) {
+        val response = client.post(AuthRouting.Api.Auth.SignIn()) {
             setBody(request)
         }
         val body = response.body<AuthTokens>()
@@ -85,7 +85,7 @@ internal class PostValidateSignInTest {
         coEvery { useCase.invoke(any()) } returns Result.failure(PasskeyOwnerNotFound)
 
         whenn()
-        val response = client.post(AuthRouting.Api.Auth.SignIn.PassKey.Validate()) {
+        val response = client.post(AuthRouting.Api.Auth.SignIn()) {
             setBody(request)
         }
         val body = response.body<SimpleServerError>()
@@ -118,7 +118,7 @@ internal class PostValidateSignInTest {
         coEvery { useCase.invoke(any()) } returns Result.failure(ChallengeWindowExpired)
 
         whenn()
-        val response = client.post(AuthRouting.Api.Auth.SignIn.PassKey.Validate()) {
+        val response = client.post(AuthRouting.Api.Auth.SignIn()) {
             setBody(request)
         }
         val body = response.body<SimpleServerError>()
@@ -151,7 +151,7 @@ internal class PostValidateSignInTest {
         coEvery { useCase.invoke(any()) } returns Result.failure(VerificationFailed)
 
         whenn()
-        val response = client.post(AuthRouting.Api.Auth.SignIn.PassKey.Validate()) {
+        val response = client.post(AuthRouting.Api.Auth.SignIn()) {
             setBody(request)
         }
         val body = response.body<SimpleServerError>()

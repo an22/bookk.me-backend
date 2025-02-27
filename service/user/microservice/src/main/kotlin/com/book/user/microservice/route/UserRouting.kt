@@ -31,6 +31,9 @@ object UserRouting {
 
             @Resource("/me")
             class Edit(val parent: User = User())
+
+            @Resource("/contactus")
+            class ContactUs(val parent: User = User())
         }
     }
 }

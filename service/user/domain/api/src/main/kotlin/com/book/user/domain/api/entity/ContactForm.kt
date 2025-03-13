@@ -4,17 +4,25 @@ package com.book.user.domain.api.entity
 data class ContactForm(
     val userId: Long,
     val text: String,
-    val usageLogs: String?
+    val usageLogs: String?,
+    val status: ContactFormStatus
 ) {
 
-    val isTextOutOfBounds: Boolean
+    internal val isBoundCapRequired: Boolean
+        get() = isTextOutOfBounds || isLogsOutOfBounds
+
+    private val isTextOutOfBounds: Boolean
         get() = text.length > UShort.MAX_VALUE.toInt()
 
-    val isLogsOutOfBounds: Boolean
+    private val isLogsOutOfBounds: Boolean
         get() = usageLogs.orEmpty().length > UShort.MAX_VALUE.toInt()
 
-    val isBoundCapRequired: Boolean
-        get() = isTextOutOfBounds || isLogsOutOfBounds
+    enum class ContactFormStatus(val id: Byte) {
+        NEW(0),
+        PROCESSING(1),
+        BLOCKED(2),
+        DONE(30)
+    }
 
     companion object {
         const val TEXT_UPPER_BOUND = UShort.MAX_VALUE

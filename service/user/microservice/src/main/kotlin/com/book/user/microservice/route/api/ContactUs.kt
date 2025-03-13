@@ -27,7 +27,8 @@ private class ContactFormBody(
         return ContactForm(
             userId = userId,
             text = text,
-            usageLogs = usageLogs
+            usageLogs = usageLogs,
+            status = ContactForm.ContactFormStatus.NEW
         )
     }
 }

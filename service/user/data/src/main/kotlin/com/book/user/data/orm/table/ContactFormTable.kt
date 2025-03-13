@@ -11,4 +11,5 @@ object ContactFormTable: LongIdTable("contact_form") {
     val usageLogs = text("usage_logs").nullable()
     val createdAt = timestamp("created_at").clientDefault { System.now() }
     val updatedAt = timestamp("updated_at")
+    val status = byte("status")
 }

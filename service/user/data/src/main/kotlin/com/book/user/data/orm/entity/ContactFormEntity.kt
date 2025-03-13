@@ -12,6 +12,7 @@ internal class ContactFormEntity(id: EntityID<Long>) : LongEntity(id) {
     var text by ContactFormTable.text
     var createdAt by ContactFormTable.createdAt
     var updatedAt by ContactFormTable.updatedAt
+    var status by ContactFormTable.status
 
     companion object : LongEntityClass<ContactFormEntity>(ContactFormTable)
 }

@@ -17,6 +17,7 @@ internal class CommunicationDataSourceImpl : DataSource(), CommunicationDataSour
                     it[text] = form.text
                     it[usageLogs] = form.usageLogs
                     it[updatedAt] = Clock.System.now()
+                    it[status] = form.status.id
                 }
             }
         }

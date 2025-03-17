@@ -8,7 +8,7 @@ data class ContactForm(
     val status: ContactFormStatus
 ) {
 
-    internal val isBoundCapRequired: Boolean
+    val isBoundCapRequired: Boolean
         get() = isTextOutOfBounds || isLogsOutOfBounds
 
     private val isTextOutOfBounds: Boolean

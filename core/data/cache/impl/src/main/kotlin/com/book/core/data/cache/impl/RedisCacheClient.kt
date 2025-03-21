@@ -33,8 +33,9 @@ class RedisCacheClient(
             .withTimeout(5.seconds.toJavaDuration())
             .build()
     )
-    private val connectionPool =
-        ConnectionPoolSupport.createSoftReferenceObjectPool { client.connect(ProtobufRedisCodec()) }
+    private val connectionPool = ConnectionPoolSupport.createSoftReferenceObjectPool {
+        client.connect(ProtobufRedisCodec())
+    }
 
     override suspend fun <V : Any> set(key: String, value: V, kType: KType) {
         with(connectionPool.borrowObject()) {

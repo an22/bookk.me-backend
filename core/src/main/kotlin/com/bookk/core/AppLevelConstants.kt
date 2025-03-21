@@ -4,7 +4,7 @@ object AppLevelConstants {
     const val DOMAIN_NAME = "bookkk.me"
     const val APP_NAME = "BookkMe"
     const val SERIALIZER = SupportedSerializers.PROTOBUF.STR
-    const val BUILD_TYPE = BuildType.RELEASE.STR
+    const val BUILD_TYPE = BuildType.DEBUG.STR
 
     sealed interface SupportedSerializers {
         data object JSON : SupportedSerializers {

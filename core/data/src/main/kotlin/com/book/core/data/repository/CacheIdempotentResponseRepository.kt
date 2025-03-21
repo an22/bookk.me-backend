@@ -3,6 +3,7 @@ package com.book.core.data.repository
 import com.book.core.data.cache.CacheClient
 import com.book.core.data.cache.get
 import com.book.core.data.cache.set
+import com.book.core.data.eventstreaming.EventIdempotencyStorage
 import com.wolt.utils.ktor.idempotency.IdempotencyKey
 import com.wolt.utils.ktor.idempotency.IdempotencyResponse
 import com.wolt.utils.ktor.idempotency.IdempotentResponseRepository
@@ -18,7 +19,7 @@ private class SerializableIdempotencyResponse(
 
 class CacheIdempotentResponseRepository(
     private val cacheClient: CacheClient<String>
-) : IdempotentResponseRepository {
+) : IdempotentResponseRepository, EventIdempotencyStorage {
 
 
     override suspend fun storeResponse(
@@ -56,5 +57,14 @@ class CacheIdempotentResponseRepository(
     }
 
     override suspend fun deleteExpiredResponses(lastValidDate: OffsetDateTime) {
+        //Responses are deleted automatically
+    }
+
+    override suspend fun markEventAsProcessed(resource: String, idempotencyKey: String) {
+        storeResponse(resource, IdempotencyKey(idempotencyKey), ByteArray(0))
+    }
+
+    override suspend fun isEventProcessed(resource: String, idempotencyKey: String): Boolean {
+        return getResponseOrLock(resource, IdempotencyKey(idempotencyKey)) != null
     }
 }

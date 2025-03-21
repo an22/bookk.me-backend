@@ -17,8 +17,12 @@
     </root>
 
     <!-- Logger levels -->
-    <logger name="com.zaxxer.hikari" level="info"/>
-    <logger name="org.apache.kafka" level="info"/>
+    <logger name="com.zaxxer.hikari" level="warn"/>
+    <logger name="org.apache.kafka" level="warn"/>
+    <logger name="org.mariadb.jdbc" level="warn"/>
+    <logger name="org.flywaydb" level="warn"/>
+    <logger name="io.lettuce.core" level="warn"/>
     <logger name="io.netty" level="info"/>
-    <logger name="com.wolt" level="error"/>
+    <logger name="com.wolt" level="warn"/>
+    <logger name="Exposed" level="warn" />
 </configuration>

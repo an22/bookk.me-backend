@@ -1,7 +1,10 @@
 package com.book.core.data.eventstreaming.impl.kafka
 
+import com.book.core.data.eventstreaming.EventIdempotencyStorage
 import com.book.core.data.eventstreaming.EventStreaming
+import com.book.core.data.eventstreaming.EventStreaming.Event
 import io.ktor.util.collections.ConcurrentMap
+import io.ktor.util.logging.KtorSimpleLogger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.currentCoroutineContext
@@ -24,9 +27,11 @@ import kotlin.reflect.KType
 class KafkaEventConsumer(
     servers: List<String>,
     consumerGroup: String,
+    private val eventIdempotencyStorage: EventIdempotencyStorage,
     private val protoBuf: ProtoBuf
 ) : EventStreaming.Consumer<String> {
 
+    private val logger = KtorSimpleLogger("KafkaEventConsumer")
     private val receivers = ConcurrentMap<String, suspend (ByteArray) -> Unit>()
     private val consumer = KafkaConsumer(
         mutableMapOf<String, Any>(
@@ -39,14 +44,23 @@ class KafkaEventConsumer(
     )
 
     @Suppress("UNCHECKED_CAST")
-    override fun <T> registerReceiver(
+    override fun <T : Event<String>> registerReceiver(
         topic: String,
         type: KType,
         onEvent: suspend (T) -> Unit
     ): EventStreaming.Consumer<String> {
         receivers[topic] = {
             val serializer = protoBuf.serializersModule.serializer(type)
-            onEvent(protoBuf.decodeFromByteArray(serializer, it) as T)
+            val event = protoBuf.decodeFromByteArray(serializer, it) as T
+            if (!eventIdempotencyStorage.isEventProcessed(event.topic, event.idempotencyKey)) {
+                runCatching { onEvent(event) }
+                    .onSuccess {
+                        eventIdempotencyStorage.markEventAsProcessed(event.topic, event.idempotencyKey)
+                    }
+                    .onFailure {
+                        logger.error("Error while processing event for topic: ${event.topic}. Event: $event")
+                    }
+            }
         }
         return this
     }

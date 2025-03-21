@@ -22,6 +22,8 @@ class KafkaEventProducer(
         mapOf(
             ProducerConfig.CLIENT_ID_CONFIG to client,
             ProducerConfig.BOOTSTRAP_SERVERS_CONFIG to servers.joinToString { it },
+            ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG to "true",
+            ProducerConfig.ACKS_CONFIG to "all"
         ),
         StringSerializer(),
         ByteArraySerializer()

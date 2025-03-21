@@ -10,7 +10,7 @@ import kotlin.reflect.typeOf
 
 interface EventStreaming {
     interface Consumer<K> {
-        fun <T> registerReceiver(
+        fun <T : Event<K>> registerReceiver(
             topic: K,
             type: KType,
             onEvent: suspend (T) -> Unit

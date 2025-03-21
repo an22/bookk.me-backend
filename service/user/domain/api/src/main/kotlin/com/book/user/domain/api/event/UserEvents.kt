@@ -19,17 +19,4 @@ sealed interface UserEvents : EventStreaming.Event<String> {
             const val TOPIC = "user.delete_user"
         }
     }
-
-    @Serializable
-    class UpdateEmailEvent(
-        val userId: Long,
-        val email: String,
-        override val idempotencyKey: String = Uuid.random().toString()
-    ) : UserEvents {
-        override val topic: String = TOPIC
-
-        companion object {
-            const val TOPIC = "user.update_user"
-        }
-    }
 }

@@ -20,13 +20,16 @@ class EmbeddedEventConsumer(
     private val receivers = ConcurrentMap<String, suspend (Event<String>) -> Unit>()
 
     @Suppress("UNCHECKED_CAST")
-    override fun <T> registerReceiver(
+    override fun <T : Event<String>> registerReceiver(
         topic: String,
         type: KType,
         onEvent: suspend (T) -> Unit
     ): Consumer<String> {
-        receivers[topic] = {
-            onEvent(it as T)
+        receivers[topic] = { event ->
+            runCatching { onEvent(event as T) }
+                .onFailure {
+                    logger.error("Error while processing event for topic: ${event.topic}. Event: $event")
+                }
         }
         return this
     }

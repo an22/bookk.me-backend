@@ -20,7 +20,7 @@ import org.koin.ktor.ext.inject
 internal fun Route.deleteAccount() {
     withDeleteAccountDocumentation()
     authenticate {
-        delete<Api.Auth.DeleteAccount> {
+        delete<Api.Auth.Account> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
             val body = call.receive<VerifyDeleteAccRequest>()
             val deleteAccount by application.inject<DeleteAccount>()
@@ -31,7 +31,7 @@ internal fun Route.deleteAccount() {
 }
 
 internal fun Route.withDeleteAccountDocumentation() {
-    install(NotarizedResource<Api.Auth.DeleteAccount>()) {
+    install(NotarizedResource<Api.Auth.Account>()) {
         tags = setOf("auth")
         security = mapOf("jwt" to emptyList())
         delete = DeleteInfo.builder {

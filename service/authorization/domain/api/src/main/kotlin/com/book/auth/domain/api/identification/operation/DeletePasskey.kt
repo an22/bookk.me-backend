@@ -1,12 +1,11 @@
 package com.book.auth.domain.api.identification.operation
 
 import com.book.auth.domain.api.error.AuthErrorCodes
-import com.book.auth.domain.api.identification.entity.DeletePasskeyRequest
 import com.book.core.domain.entity.BusinessError
 import io.ktor.http.HttpStatusCode
 
 interface DeletePasskey {
-    suspend operator fun invoke(body: DeletePasskeyRequest): Result<Unit>
+    suspend operator fun invoke(id: Long): Result<Unit>
 
     sealed interface Error {
         data object LastPasskey : BusinessError(

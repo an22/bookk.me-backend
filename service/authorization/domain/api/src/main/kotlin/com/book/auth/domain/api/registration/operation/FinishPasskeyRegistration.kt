@@ -8,7 +8,7 @@ import io.ktor.http.HttpStatusCode
 
 interface FinishPasskeyRegistration {
     suspend fun verifyRequest(request: FinishRegistrationRequest): Result<PasskeyCredential>
-    suspend fun attachOwner(ownerId: Long, passkey: PasskeyCredential)
+    suspend fun attachOwner(ownerId: Long, passkey: PasskeyCredential): Result<Unit>
 
     sealed interface Error {
         data object ChallengeWindowExpired : BusinessError(

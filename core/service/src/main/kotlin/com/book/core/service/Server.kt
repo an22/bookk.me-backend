@@ -73,7 +73,7 @@ fun startServer(
         module = {
             install(Koin) { modules(*diModules.toTypedArray(), commonModule()) }
             install(CallLogging) {
-                level = when(AppLevelConstants.BUILD_TYPE) {
+                level = when (AppLevelConstants.BUILD_TYPE) {
                     AppLevelConstants.BuildType.DEBUG.STR -> Level.DEBUG
                     else -> Level.INFO
                 }

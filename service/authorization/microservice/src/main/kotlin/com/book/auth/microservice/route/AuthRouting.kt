@@ -15,28 +15,25 @@ object AuthRouting {
             @Resource("/sign_in")
             class SignIn(val parent: Auth = Auth())
 
-            @Resource("/email")
-            class Email(val parent: Auth = Auth())
+            @Resource("/sign_up")
+            class SignUp(val parent: Auth = Auth())
 
             @Resource("/passkey")
             class PassKey(val parent: Auth = Auth()) {
-                @Resource("/challenge")
-                class Challenge(val parent: PassKey = PassKey())
+                @Resource("/sign_in/challenge")
+                class SignInChallenge(val parent: PassKey = PassKey())
+
+                @Resource("/sign_up/challenge")
+                class SignUpChallenge(val parent: PassKey = PassKey())
+
+                @Resource("/add/challenge")
+                class AddChallenge(val parent: PassKey = PassKey())
+
+                @Resource("/add/finish")
+                class AddFinish(val parent: PassKey = PassKey())
 
                 @Resource("{id}")
                 class Id(val parent: PassKey = PassKey(), val id: Long)
-            }
-
-            @Resource("/sign_up")
-            class SignUp(val parent: Auth = Auth()) {
-                @Resource("/passkey")
-                class PassKey(val parent: SignUp = SignUp()) {
-                    @Resource("/challenge")
-                    class Challenge(val parent: PassKey = PassKey())
-
-                    @Resource("/validate")
-                    class Validate(val parent: PassKey = PassKey())
-                }
             }
 
             @Resource("/refresh")
@@ -46,7 +43,7 @@ object AuthRouting {
             class SignOut(val parent: Auth = Auth())
 
             @Resource("/account")
-            class DeleteAccount(val parent: Auth = Auth())
+            class Account(val parent: Auth = Auth())
         }
     }
 

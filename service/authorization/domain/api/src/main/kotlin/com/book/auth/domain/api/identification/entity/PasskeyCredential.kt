@@ -13,6 +13,7 @@ data class PasskeyCredential(
     val authId: Long,
     val authInfo: Authentication,
     val handle: String,
+    val name: String,
     val credDescriptor: CredentialDescriptor,
     val publicKey: String,
     val signatureCount: Long,

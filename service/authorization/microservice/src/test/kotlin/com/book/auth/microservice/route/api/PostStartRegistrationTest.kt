@@ -38,7 +38,7 @@ class PostStartRegistrationTest {
             diModule = module {
                 single<StartRegistration> { useCase }
             },
-            routeUnderTest = { postStartRegistration() }
+            routeUnderTest = { registration() }
         )
 
         whenn()
@@ -65,7 +65,7 @@ class PostStartRegistrationTest {
             diModule = module {
                 single<StartRegistration> { useCase }
             },
-            routeUnderTest = { postStartRegistration() }
+            routeUnderTest = { registration() }
         )
         whenn()
         val response = client.post(AuthRouting.Api.Auth.SignUp.PassKey.Challenge()) {
@@ -91,7 +91,7 @@ class PostStartRegistrationTest {
             diModule = module {
                 single<StartRegistration> { useCase }
             },
-            routeUnderTest = { postStartRegistration() }
+            routeUnderTest = { registration() }
         )
         whenn()
         val response = client.post(AuthRouting.Api.Auth.SignUp.PassKey.Challenge()) {

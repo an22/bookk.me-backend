@@ -13,7 +13,9 @@ import com.book.core.data.cache.set
 import com.bookk.core.toHexUUID
 import com.bookk.core.toUUIDBytes
 import kotlinx.datetime.Clock
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.innerJoin
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -44,6 +46,7 @@ internal class PassKeyDataSourceImpl(
             transaction {
                 PasskeyCredentialTable.insert {
                     it[authUUID] = credential.handle
+                    it[name] = credential.name
                     it[credDescriptorId] = credential.credDescriptor.id
                     it[credDescriptorType] = credential.credDescriptor.type
                     it[credDescriptorTransports] =
@@ -67,7 +70,7 @@ internal class PassKeyDataSourceImpl(
                 PasskeyCredentialEntity
                     .find {
                         (PasskeyCredentialTable.authUUID eq userHandle.toHexUUID()) and
-                            (PasskeyCredentialTable.credDescriptorId eq credentialId)
+                                (PasskeyCredentialTable.credDescriptorId eq credentialId)
                     }
                     .map(PasskeyCredentialEntity::toDomain)
                     .firstOrNull()
@@ -99,6 +102,7 @@ internal class PassKeyDataSourceImpl(
                 .select(AuthenticationTable.id)
                 .where { AuthenticationTable.uuid eq strRepresentation }
                 .empty()
+                .not()
 
             strRepresentation.takeIf { exists }
         }
@@ -133,6 +137,7 @@ internal class PassKeyDataSourceImpl(
                 .select(AuthenticationTable.id)
                 .where { AuthenticationTable.uuid eq username }
                 .empty()
+                .not()
 
             username.toUUIDBytes().takeIf { exists }
         }
@@ -144,6 +149,14 @@ internal class PassKeyDataSourceImpl(
                 PasskeyCredentialTable.update(where = { PasskeyCredentialTable.id eq passkeyCredentialId }) {
                     it[lastUsedAt] = Clock.System.now()
                 }
+            }
+        }
+    }
+
+    override suspend fun deletePasskey(id: Long) {
+        mapExceptions {
+            transaction {
+                PasskeyCredentialTable.deleteWhere { PasskeyCredentialTable.id eq id }
             }
         }
     }

@@ -31,7 +31,7 @@ internal fun AuthDeviceEntity.toDomain(): Device {
             deviceUUID = deviceUUID,
             refreshTokenId = refreshTokenId,
             deviceName = deviceName,
-            isSignedIn = isSignedIn
+            isSignedIn = isSignedIn,
         )
     )
 }
@@ -42,6 +42,7 @@ internal fun PasskeyCredentialEntity.toDomain(): PasskeyCredential {
         authId = authorization.id.value,
         authInfo = authorization.toDomain(),
         handle = authorization.uuid,
+        name = name,
         credDescriptor = CredentialDescriptor(
             id = credDescriptorId,
             type = credDescriptorType,
@@ -72,7 +73,7 @@ internal fun PasskeyCredential.asRegisteredCredential(): RegisteredCredential {
     return RegisteredCredential.builder()
         .credentialId(YubicoByteArray(credDescriptor.id))
         .userHandle(YubicoByteArray(handle.toUUIDBytes()))
-        .publicKeyCose(YubicoByteArray(publicKey.encodeToByteArray()))
+        .publicKeyCose(YubicoByteArray.fromBase64(publicKey))
         .signatureCount(signatureCount)
         .backupEligible(isBackupEligible)
         .backupState(isBackedUp)

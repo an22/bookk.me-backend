@@ -12,7 +12,7 @@ internal class GetAvailablePasskeysImpl(
             .map {
                 PasskeyResponse(
                     id = it.id,
-                    name = it.,
+                    name = it.name,
                     createdAt = it.createdAt,
                     lastUsedAt = it.lastUsedAt,
                     isBackedUp = it.isBackedUp

@@ -10,6 +10,7 @@ internal class PasskeyCredentialEntity(id: EntityID<Long>) : LongEntity(id) {
     var credDescriptorId by PasskeyCredentialTable.credDescriptorId
     var credDescriptorType by PasskeyCredentialTable.credDescriptorType
     var credDescriptorTransports by PasskeyCredentialTable.credDescriptorTransports
+    var name by PasskeyCredentialTable.name
     var publicKey by PasskeyCredentialTable.publicKey
     var signatureCount by PasskeyCredentialTable.signatureCount
     var isDiscoverable by PasskeyCredentialTable.isDiscoverable

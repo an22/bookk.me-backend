@@ -37,7 +37,7 @@ internal class PostValidateSignInTest {
             diModule = module {
                 single { useCase }
             },
-            routeUnderTest = { postSignIn() }
+            routeUnderTest = { signIn() }
         )
         val client = createTestClient()
         val answer = AuthTokens(accessToken = "token1", refreshToken = "token2")
@@ -71,7 +71,7 @@ internal class PostValidateSignInTest {
             diModule = module {
                 single { useCase }
             },
-            routeUnderTest = { postSignIn() }
+            routeUnderTest = { signIn() }
         )
         val client = createTestClient()
         val request = VerifySignInRequest(
@@ -104,7 +104,7 @@ internal class PostValidateSignInTest {
             diModule = module {
                 single { useCase }
             },
-            routeUnderTest = { postSignIn() }
+            routeUnderTest = { signIn() }
         )
         val client = createTestClient()
         val request = VerifySignInRequest(
@@ -137,7 +137,7 @@ internal class PostValidateSignInTest {
             diModule = module {
                 single { useCase }
             },
-            routeUnderTest = { postSignIn() }
+            routeUnderTest = { signIn() }
         )
         val client = createTestClient()
         val request = VerifySignInRequest(

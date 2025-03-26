@@ -32,7 +32,7 @@ internal class FinishPasskeyRegistrationImpl(
         val pkc = PublicKeyCredential.parseRegistrationResponseJson(request.publicKeyCredentialJson)
         val challengeJson = passKeyDataSource.getCachedChallenge(request.requestId) ?: throw ChallengeWindowExpired
         val challenge = PublicKeyCredentialCreationOptions.fromJson(challengeJson)
-        validateRegistrationChallenge(request, challenge, pkc).asPasskeyCredential(pkc, challenge.user.id.bytes)
+        validateRegistrationChallenge(request, challenge, pkc).asPasskeyCredential(pkc, challenge)
     }.recoverCatching {
         when (it) {
             is RegistrationFailedException -> throw VerificationFailed
@@ -40,7 +40,7 @@ internal class FinishPasskeyRegistrationImpl(
         }
     }
 
-    override suspend fun attachOwner(ownerId: Long, passkey: PasskeyCredential) {
+    override suspend fun attachOwner(ownerId: Long, passkey: PasskeyCredential) = runCatching {
         val passkeyWithOwner = passkey.copy(authId = ownerId)
         passKeyDataSource.createPasskeyCredential(passkeyWithOwner)
     }
@@ -61,24 +61,25 @@ internal class FinishPasskeyRegistrationImpl(
     }
 
     @Suppress("DEPRECATION")
-    private fun RegistrationResult.asPasskeyCredential(pkc: PKS, userHandle: ByteArray): PasskeyCredential {
+    private fun RegistrationResult.asPasskeyCredential(pkc: PKS, challenge: PublicKeyCredentialCreationOptions): PasskeyCredential {
         return PasskeyCredential(
             id = 0,
             authId = 0,
             authInfo = Authentication(0, 0, ""), //Ignored
+            name = challenge.user.displayName,
             credDescriptor = CredentialDescriptor(
                 id = keyId.id.bytes,
                 type = keyId.type.id,
                 transports = keyId.transports.getOrNull()?.map { it.id }.orEmpty().toSet()
             ),
-            publicKey = publicKeyCose.bytes.decodeToString(),
+            publicKey = publicKeyCose.base64,
             signatureCount = signatureCount,
             isDiscoverable = isDiscoverable.getOrElse { false },
             isBackupEligible = isBackupEligible,
             isBackedUp = isBackedUp,
             attestationObject = pkc.response.attestationObject.bytes,
             clientData = pkc.response.clientDataJSON.bytes.decodeToString(),
-            handle = userHandle.toHexUUID(),
+            handle = challenge.user.id.bytes.toHexUUID(),
             createdAt = Clock.System.now(),
             lastUsedAt = Clock.System.now()
         )

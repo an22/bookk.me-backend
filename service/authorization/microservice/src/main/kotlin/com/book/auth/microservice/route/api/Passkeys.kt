@@ -1,11 +1,13 @@
 package com.book.auth.microservice.route.api
 
 import com.book.auth.domain.api.identification.entity.AddPasskeyRequest
-import com.book.auth.domain.api.identification.entity.DeletePasskeyRequest
 import com.book.auth.domain.api.identification.entity.PasskeyResponse
-import com.book.auth.domain.api.identification.operation.AddPasskey
 import com.book.auth.domain.api.identification.operation.DeletePasskey
+import com.book.auth.domain.api.identification.operation.GetAttachPasskeyToAccountChallenge
+import com.book.auth.domain.api.identification.operation.GetAttachPasskeyToAccountChallenge.Error.UnableToGeneratePasskeyChallenge
 import com.book.auth.domain.api.identification.operation.GetAvailablePasskeys
+import com.book.auth.domain.api.registration.entity.RegistrationChallengeResponse
+import com.book.auth.domain.api.registration.operation.AttachNewPasskeyToAccount
 import com.book.auth.microservice.route.AuthRouting.Api
 import com.book.auth.microservice.route.api.documentation.common.challengeVerificationEnrichment
 import com.book.core.domain.entity.SimpleServerError
@@ -30,28 +32,38 @@ import io.ktor.server.routing.application
 import org.koin.ktor.ext.inject
 
 internal fun Route.passkeyOperations() {
-    withPasskeysDocumentation()
     authenticate {
+        withPasskeyListDocumentation()
         get<Api.Auth.PassKey> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
             val getPasskeys by application.inject<GetAvailablePasskeys>()
 
             call.respondWith(getPasskeys(principal.authId))
         }
-        post<Api.Auth.PassKey> {
-            val body = call.receive<AddPasskeyRequest>()
-            val addPasskey by application.inject<AddPasskey>()
+        withAddPasskeyChallengeDocumentation()
+        get<Api.Auth.PassKey.AddChallenge> {
+            val principal = requireNotNull(call.principal<AppPrincipal>())
+            val getChallenge by application.inject<GetAttachPasskeyToAccountChallenge>()
 
-            call.respondWith(addPasskey(body))
+            call.respondWith(getChallenge(principal.authId, principal.deviceId, principal.userId))
         }
+        withAddPasskeyChallengeVerificationDocumentation()
+        post<Api.Auth.PassKey.AddFinish> {
+            val body = call.receive<AddPasskeyRequest>()
+            val principal = requireNotNull(call.principal<AppPrincipal>())
+            val attachPasskey by application.inject<AttachNewPasskeyToAccount>()
+
+            call.respondWith(attachPasskey(principal.authId, body))
+        }
+        withDeletePasskeyDocumentation()
         delete<Api.Auth.PassKey.Id> { path ->
             val deletePasskey by application.inject<DeletePasskey>()
-            call.respondWith(deletePasskey(DeletePasskeyRequest(path.id)))
+            call.respondWith(deletePasskey(path.id))
         }
     }
 }
 
-private fun Route.withPasskeysDocumentation() {
+private fun Route.withPasskeyListDocumentation() {
     install(NotarizedResource<Api.Auth.PassKey>()) {
         tags = setOf("auth")
         security = mapOf("jwt" to emptyList())
@@ -65,25 +77,10 @@ private fun Route.withPasskeysDocumentation() {
                 description("List of passkeys")
             }
         }
-        post = PostInfo.builder {
-            summary("Add new passkey")
-            description("Adds new passkey to account represented by current auth method")
-            request {
-                applyMediaType()
-                requestType<AddPasskeyRequest>()
-                description("Passkey verification payload")
-            }
-            response {
-                applyMediaType()
-                responseCode(HttpStatusCode.Created)
-                responseType<Unit>()
-                description("Passkey created")
-            }
-            canRespond {
-                challengeVerificationEnrichment()
-            }
-        }
     }
+}
+
+private fun Route.withDeletePasskeyDocumentation() {
     install(NotarizedResource<Api.Auth.PassKey.Id>()) {
         tags = setOf("auth")
         security = mapOf("jwt" to emptyList())
@@ -109,6 +106,62 @@ private fun Route.withPasskeysDocumentation() {
                     }
                 })
                 description("Passkey deleted")
+            }
+        }
+    }
+}
+
+private fun Route.withAddPasskeyChallengeDocumentation() {
+    install(NotarizedResource<Api.Auth.PassKey.AddChallenge>()) {
+        tags = setOf("auth")
+        security = mapOf("jwt" to emptyList())
+        get = GetInfo.builder {
+            summary("Get challenge for new passkey")
+            description("Creates challenge for process of attaching passkey to current account")
+            response {
+                applyMediaType()
+                responseCode(HttpStatusCode.OK)
+                responseType<RegistrationChallengeResponse>()
+                description("New challenge")
+            }
+            canRespond {
+                applyMediaType()
+                responseCode(HttpStatusCode.UnprocessableEntity)
+                responseType<SimpleServerError>(ObjectEnrichment(id = "AddPasskeyChallenge") {
+                    SimpleServerError::errorCode {
+                        NumberEnrichment("errorCode") {
+                            description = buildString {
+                                append("${UnableToGeneratePasskeyChallenge.code} - ${UnableToGeneratePasskeyChallenge.message}\n")
+                            }
+                        }
+                    }
+                })
+                description("Unprocessable entity")
+            }
+        }
+    }
+}
+
+private fun Route.withAddPasskeyChallengeVerificationDocumentation() {
+    install(NotarizedResource<Api.Auth.PassKey.AddFinish>()) {
+        tags = setOf("auth")
+        security = mapOf("jwt" to emptyList())
+        post = PostInfo.builder {
+            summary("Add new passkey")
+            description("Adds new passkey to account represented by current auth method")
+            request {
+                applyMediaType()
+                requestType<AddPasskeyRequest>()
+                description("Passkey verification payload")
+            }
+            response {
+                applyMediaType()
+                responseCode(HttpStatusCode.Created)
+                responseType<Unit>()
+                description("Passkey created")
+            }
+            canRespond {
+                challengeVerificationEnrichment()
             }
         }
     }

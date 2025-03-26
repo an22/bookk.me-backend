@@ -14,7 +14,7 @@ import io.ktor.server.routing.Route
 import io.ktor.server.routing.application
 import org.koin.ktor.ext.inject
 
-internal fun Route.deleteLogOut() {
+internal fun Route.logOut() {
     withSignOutDocumentation()
     authenticate {
         delete<Api.Auth.SignOut> {

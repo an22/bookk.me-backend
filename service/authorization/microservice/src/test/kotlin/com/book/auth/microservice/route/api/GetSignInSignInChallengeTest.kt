@@ -20,7 +20,7 @@ import org.koin.dsl.module
 import java.util.UUID
 import kotlin.test.Test
 
-internal class GetSignInChallengeTest {
+internal class GetSignInSignInChallengeTest {
 
     @Test
     fun verifyAnswerOnSuccess() = routeTest {
@@ -37,7 +37,7 @@ internal class GetSignInChallengeTest {
         coEvery { useCase.invoke() } returns Result.success(answer)
 
         whenn()
-        val response = client.get(AuthRouting.Api.Auth.PassKey.Challenge())
+        val response = client.get(AuthRouting.Api.Auth.PassKey.SignInChallenge())
         val body = response.body<AssertionStartResponse>()
 
         then()

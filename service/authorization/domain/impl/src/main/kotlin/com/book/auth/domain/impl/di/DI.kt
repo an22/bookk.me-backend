@@ -4,9 +4,10 @@ import com.book.auth.domain.api.authentication.operation.FinishAssertion
 import com.book.auth.domain.api.authentication.operation.SignIn
 import com.book.auth.domain.api.authentication.operation.StartAssertion
 import com.book.auth.domain.api.delete_account.operation.DeleteAccount
-import com.book.auth.domain.api.identification.operation.AddPasskey
 import com.book.auth.domain.api.identification.operation.DeletePasskey
+import com.book.auth.domain.api.identification.operation.GetAttachPasskeyToAccountChallenge
 import com.book.auth.domain.api.identification.operation.GetAvailablePasskeys
+import com.book.auth.domain.api.registration.operation.AttachNewPasskeyToAccount
 import com.book.auth.domain.api.registration.operation.FinishPasskeyRegistration
 import com.book.auth.domain.api.registration.operation.FinishRegistration
 import com.book.auth.domain.api.registration.operation.StartPasskeyRegistration
@@ -19,9 +20,10 @@ import com.book.auth.domain.impl.operation.SignOutImpl
 import com.book.auth.domain.impl.operation.authentication.FinishAssertionImpl
 import com.book.auth.domain.impl.operation.authentication.SignInImpl
 import com.book.auth.domain.impl.operation.authentication.StartAssertionImpl
-import com.book.auth.domain.impl.operation.identification.AddPasskeyImpl
 import com.book.auth.domain.impl.operation.identification.DeletePasskeyImpl
+import com.book.auth.domain.impl.operation.identification.GetAttachPasskeyToAccountChallengeImpl
 import com.book.auth.domain.impl.operation.identification.GetAvailablePasskeysImpl
+import com.book.auth.domain.impl.operation.registration.AttachNewPasskeyToAccountImpl
 import com.book.auth.domain.impl.operation.registration.FinishPasskeyRegistrationImpl
 import com.book.auth.domain.impl.operation.registration.FinishRegistrationImpl
 import com.book.auth.domain.impl.operation.registration.StartPasskeyRegistrationImpl
@@ -45,7 +47,8 @@ fun authDomainModule() = module {
     singleOf(::SignInImpl) bind SignIn::class
     singleOf(::GetAvailablePasskeysImpl) bind GetAvailablePasskeys::class
     singleOf(::DeletePasskeyImpl) bind DeletePasskey::class
-    singleOf(::AddPasskeyImpl) bind AddPasskey::class
+    singleOf(::GetAttachPasskeyToAccountChallengeImpl) bind GetAttachPasskeyToAccountChallenge::class
     singleOf(::StartPasskeyRegistrationImpl) bind StartPasskeyRegistration::class
     singleOf(::FinishPasskeyRegistrationImpl) bind FinishPasskeyRegistration::class
+    singleOf(::AttachNewPasskeyToAccountImpl) bind AttachNewPasskeyToAccount::class
 }

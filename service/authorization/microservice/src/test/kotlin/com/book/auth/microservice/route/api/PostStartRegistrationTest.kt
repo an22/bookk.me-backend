@@ -42,7 +42,7 @@ class PostStartRegistrationTest {
         )
 
         whenn()
-        val response = client.post(AuthRouting.Api.Auth.SignUp.PassKey.Challenge()) {
+        val response = client.post(AuthRouting.Api.Auth.PassKey.SignUpChallenge()) {
             setBody(request)
         }
         val body = response.body<SimpleServerError>()
@@ -68,7 +68,7 @@ class PostStartRegistrationTest {
             routeUnderTest = { registration() }
         )
         whenn()
-        val response = client.post(AuthRouting.Api.Auth.SignUp.PassKey.Challenge()) {
+        val response = client.post(AuthRouting.Api.Auth.PassKey.SignUpChallenge()) {
             setBody(request)
         }
         val body = response.body<SimpleServerError>()
@@ -94,7 +94,7 @@ class PostStartRegistrationTest {
             routeUnderTest = { registration() }
         )
         whenn()
-        val response = client.post(AuthRouting.Api.Auth.SignUp.PassKey.Challenge()) {
+        val response = client.post(AuthRouting.Api.Auth.PassKey.SignUpChallenge()) {
             setBody(request)
         }
         val actual = response.body<RegistrationChallengeResponse>()

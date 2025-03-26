@@ -30,7 +30,7 @@ internal class GetSignInSignInChallengeTest {
             diModule = module {
                 single { useCase }
             },
-            routeUnderTest = { getVerificationChallenge() }
+            routeUnderTest = { signIn() }
         )
         val client = createTestClient()
         val answer = AssertionStartResponse(UUID.randomUUID().toString(), "mock")

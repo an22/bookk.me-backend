@@ -18,7 +18,7 @@ internal class YubicoCredentialRepository(
 
     override fun getCredentialIdsForUsername(username: String): MutableSet<PublicKeyCredentialDescriptor> {
         return runBlocking {
-            passKeyDataSource.getCredentialsByUUID(username)
+            passKeyDataSource.getCredentialsByUsername(username)
                 .map(PasskeyCredential::asPublicKeyCredentialDescriptor)
                 .toMutableSet()
         }
@@ -26,13 +26,13 @@ internal class YubicoCredentialRepository(
 
     override fun getUserHandleForUsername(username: String): Optional<YubicoByteArray> {
         return runBlocking {
-            Optional.ofNullable(passKeyDataSource.getHandleByUUID(username)?.let { YubicoByteArray(it) })
+            Optional.ofNullable(passKeyDataSource.getHandleByUsername(username)?.let { YubicoByteArray(it) })
         }
     }
 
     override fun getUsernameForUserHandle(handle: YubicoByteArray): Optional<String> {
         return runBlocking {
-            Optional.ofNullable(passKeyDataSource.getUUIDByHandle(handle.bytes))
+            Optional.ofNullable(passKeyDataSource.getUsernameByHandle(handle.bytes))
         }
     }
 
@@ -45,6 +45,8 @@ internal class YubicoCredentialRepository(
     }
 
     override fun lookupAll(credentialId: YubicoByteArray): MutableSet<RegisteredCredential> {
-        return mutableSetOf()
+        return runBlocking { passKeyDataSource.getCredentialsByCredentialId(credentialId.bytes) }
+            .map(PasskeyCredential::asRegisteredCredential)
+            .toMutableSet()
     }
 }

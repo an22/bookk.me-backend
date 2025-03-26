@@ -1,17 +1,15 @@
 package com.book.user.domain.api.event
 
 import com.book.core.data.eventstreaming.EventStreaming
+import com.bookk.core.newRandomUUIDString
 import kotlinx.serialization.Serializable
-import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
 
-@OptIn(ExperimentalUuidApi::class)
 sealed interface UserEvents : EventStreaming.Event<String> {
 
     @Serializable
     class DeleteUserEvent(
         val userId: Long,
-        override val idempotencyKey: String = Uuid.random().toString()
+        override val idempotencyKey: String = newRandomUUIDString()
     ) : UserEvents {
         override val topic: String = TOPIC
 

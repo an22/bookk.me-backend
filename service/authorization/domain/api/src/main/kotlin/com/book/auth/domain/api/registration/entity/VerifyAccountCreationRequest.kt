@@ -1,16 +1,17 @@
 package com.book.auth.domain.api.registration.entity
 
+import com.book.auth.domain.api.authentication.entity.FinishRegistrationRequest
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class VerifyAccountCreationRequest(
+    override val requestId: String,
     val deviceInfo: DeviceInfo,
     val userInfo: UserInfo,
-    val publicKeyCredentialJson: String
-) {
+    override val publicKeyCredentialJson: String
+) : FinishRegistrationRequest {
     @Serializable
     data class UserInfo(
-        val userId: String,
         val name: String,
         val lastName: String,
         val email: String

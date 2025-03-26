@@ -11,4 +11,5 @@ object AuthErrorCodes {
     const val CHALLENGE_WINDOW_EXPIRED = BASE + 6
     const val PASSKEY_OWNER_NOT_FOUND = BASE + 7
     const val INVALID_CREDENTIALS = BASE + 8
+    const val LAST_PASSKEY = BASE + 9
 }

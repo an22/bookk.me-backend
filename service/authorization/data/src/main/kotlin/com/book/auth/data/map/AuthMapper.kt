@@ -8,6 +8,7 @@ import com.book.auth.domain.api.identification.entity.Device
 import com.book.auth.domain.api.identification.entity.DeviceInfo
 import com.book.auth.domain.api.identification.entity.PasskeyCredential
 import com.book.auth.domain.api.identification.entity.PasskeyCredential.CredentialDescriptor
+import com.bookk.core.toUUIDBytes
 import com.yubico.webauthn.RegisteredCredential
 import com.yubico.webauthn.data.AuthenticatorTransport
 import com.yubico.webauthn.data.PublicKeyCredentialDescriptor
@@ -38,9 +39,9 @@ internal fun AuthDeviceEntity.toDomain(): Device {
 internal fun PasskeyCredentialEntity.toDomain(): PasskeyCredential {
     return PasskeyCredential(
         id = id.value,
-        userIdentityId = identity.id.value,
-        authInfo = identity.authentication.toDomain(),
-        handle = identity.userHandle,
+        authId = authorization.id.value,
+        authInfo = authorization.toDomain(),
+        handle = authorization.uuid,
         credDescriptor = CredentialDescriptor(
             id = credDescriptorId,
             type = credDescriptorType,
@@ -52,7 +53,9 @@ internal fun PasskeyCredentialEntity.toDomain(): PasskeyCredential {
         isBackupEligible = isBackupEligible,
         isBackedUp = isBackedUp,
         attestationObject = attestationObject,
-        clientData = clientData
+        clientData = clientData,
+        lastUsedAt = lastUsedAt,
+        createdAt = createdAt
     )
 }
 
@@ -68,8 +71,8 @@ internal fun PasskeyCredential.asPublicKeyCredentialDescriptor(): PublicKeyCrede
 internal fun PasskeyCredential.asRegisteredCredential(): RegisteredCredential {
     return RegisteredCredential.builder()
         .credentialId(YubicoByteArray(credDescriptor.id))
-        .userHandle(YubicoByteArray(handle))
-        .publicKeyCose(YubicoByteArray(publicKey))
+        .userHandle(YubicoByteArray(handle.toUUIDBytes()))
+        .publicKeyCose(YubicoByteArray(publicKey.encodeToByteArray()))
         .signatureCount(signatureCount)
         .backupEligible(isBackupEligible)
         .backupState(isBackedUp)

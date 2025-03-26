@@ -1,7 +1,7 @@
 package com.book.auth.microservice.route.api
 
 import com.book.auth.domain.api.registration.entity.CreateAccountRequest
-import com.book.auth.domain.api.registration.entity.SignUpChallengeResponse
+import com.book.auth.domain.api.registration.entity.RegistrationChallengeResponse
 import com.book.auth.domain.api.registration.operation.StartRegistration
 import com.book.auth.domain.api.registration.operation.StartRegistration.Error.EmailAlreadyExist
 import com.book.auth.domain.api.registration.operation.StartRegistration.Error.InvalidEmailFormat
@@ -45,7 +45,7 @@ internal fun Route.withStartRegistrationDocumentation() {
             response {
                 applyMediaType()
                 responseCode(HttpStatusCode.OK)
-                responseType(typeOf<SignUpChallengeResponse>())
+                responseType(typeOf<RegistrationChallengeResponse>())
                 description("Validation challenge returned")
             }
             canRespond {

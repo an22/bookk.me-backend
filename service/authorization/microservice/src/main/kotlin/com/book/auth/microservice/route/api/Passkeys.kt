@@ -49,16 +49,17 @@ internal fun Route.passkeyOperations() {
         }
         withAddPasskeyChallengeVerificationDocumentation()
         post<Api.Auth.PassKey.AddFinish> {
-            val body = call.receive<AddPasskeyRequest>()
             val principal = requireNotNull(call.principal<AppPrincipal>())
+            val body = call.receive<AddPasskeyRequest>()
             val attachPasskey by application.inject<AttachNewPasskeyToAccount>()
 
             call.respondWith(attachPasskey(principal.authId, body))
         }
         withDeletePasskeyDocumentation()
         delete<Api.Auth.PassKey.Id> { path ->
+            val principal = requireNotNull(call.principal<AppPrincipal>())
             val deletePasskey by application.inject<DeletePasskey>()
-            call.respondWith(deletePasskey(path.id))
+            call.respondWith(deletePasskey(path.id, principal.userId))
         }
     }
 }

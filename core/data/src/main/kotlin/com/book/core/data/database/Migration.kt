@@ -6,12 +6,10 @@ import org.flywaydb.core.Flyway
 import org.flywaydb.core.api.Location
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.DatabaseConfig
-import org.jetbrains.exposed.sql.ExperimentalDatabaseMigrationApi
 import org.jetbrains.exposed.sql.Schema
 import org.jetbrains.exposed.sql.transactions.TransactionManager
 import javax.sql.DataSource
 
-@OptIn(ExperimentalDatabaseMigrationApi::class)
 fun createDatabase(
     schemaName: String,
     driver: String,

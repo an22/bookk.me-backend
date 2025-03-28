@@ -5,7 +5,7 @@ import com.book.core.domain.entity.BusinessError
 import io.ktor.http.HttpStatusCode
 
 interface DeletePasskey {
-    suspend operator fun invoke(id: Long): Result<Unit>
+    suspend operator fun invoke(id: Long, authId: Long): Result<Unit>
 
     sealed interface Error {
         data object LastPasskey : BusinessError(

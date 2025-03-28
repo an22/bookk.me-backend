@@ -14,5 +14,5 @@ interface PassKeyDataSource {
     suspend fun getCredentialsByUsername(username: String): Set<PasskeyCredential>
     suspend fun getCredentialsByCredentialId(credentialId: ByteArray): Set<PasskeyCredential>
     suspend fun markAsUsed(passkeyCredentialId: Long)
-    suspend fun deletePasskey(id: Long)
+    suspend fun deletePasskey(id: Long, authId: Long): Int
 }

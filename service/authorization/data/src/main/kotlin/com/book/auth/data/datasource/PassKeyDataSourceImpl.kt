@@ -14,12 +14,16 @@ import com.bookk.core.toHexUUID
 import com.bookk.core.toUUIDBytes
 import kotlinx.datetime.Clock
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.greater
 import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.count
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.innerJoin
 import org.jetbrains.exposed.sql.insert
+import org.jetbrains.exposed.sql.longLiteral
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
+import org.jetbrains.exposed.sql.wrapAsExpression
 import kotlin.time.Duration.Companion.minutes
 
 internal class PassKeyDataSourceImpl(
@@ -153,10 +157,21 @@ internal class PassKeyDataSourceImpl(
         }
     }
 
-    override suspend fun deletePasskey(id: Long) {
-        mapExceptions {
+    override suspend fun deletePasskey(id: Long, authId: Long): Int {
+        return mapExceptions {
             transaction {
-                PasskeyCredentialTable.deleteWhere { PasskeyCredentialTable.id eq id }
+                val existingPasskeys = AuthenticationTable
+                    .innerJoin(
+                        otherTable = PasskeyCredentialTable,
+                        onColumn = { uuid },
+                        otherColumn = { authUUID }
+                    )
+                    .select(PasskeyCredentialTable.id.count())
+                    .where { AuthenticationTable.id eq authId }
+                    .let { wrapAsExpression<Long>(it) }
+                PasskeyCredentialTable.deleteWhere {
+                    (PasskeyCredentialTable.id eq id) and (existingPasskeys greater longLiteral(1L))
+                }
             }
         }
     }

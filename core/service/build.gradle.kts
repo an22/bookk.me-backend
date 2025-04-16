@@ -1,3 +1,5 @@
+import com.bookk.build_src.tools.libs
+
 plugins {
     alias(libs.plugins.bookk.microservice)
 }
@@ -20,5 +22,10 @@ dependencies {
     implementation(projects.core.data.eventstreaming.api)
     implementation(projects.core.domain)
     implementation(projects.core.domain.datasource)
+    testFixturesImplementation(libs.ktor.server.resources)
+    testFixturesImplementation(libs.ktor.protobuf)
+    testFixturesImplementation(platform(libs.koin.bom))
+    testFixturesImplementation(libs.koin.core)
+    testFixturesImplementation(libs.koin.ktor)
     testFixturesImplementation(testFixtures(projects.core))
 }

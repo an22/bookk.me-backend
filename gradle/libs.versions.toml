@@ -4,11 +4,11 @@ apache-common-pool = "2.4.3"
 bookkPlugins = "1.0"
 boringssl = "2.0.65.Final"
 coroutines = "1.9.0-RC"
-flyway = "10.17.1"
+flyway = "11.4.1"
 hikari = "5.1.0"
 kafka = "3.8.0"
 koin-bom = "4.1.0-Beta1"
-kotlin = "2.0.0"
+kotlin = "2.0.21"
 kotlin-datetime = "0.6.0"
 ktor = "3.0.0"
 ktor-doc = "4.0.3"
@@ -31,6 +31,7 @@ koin-ktor = { module = "io.insert-koin:koin-ktor" }
 kotlin-coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 kotlin-coroutines-reactive = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-reactive", version.ref = "coroutines" }
 kotlin-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlin-datetime" }
+kotlin-std = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
 kotlin-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 ktor-auth = { module = "io.ktor:ktor-server-auth", version.ref = "ktor" }

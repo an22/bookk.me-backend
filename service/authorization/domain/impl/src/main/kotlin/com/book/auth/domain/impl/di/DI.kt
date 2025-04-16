@@ -4,7 +4,13 @@ import com.book.auth.domain.api.authentication.operation.FinishAssertion
 import com.book.auth.domain.api.authentication.operation.SignIn
 import com.book.auth.domain.api.authentication.operation.StartAssertion
 import com.book.auth.domain.api.delete_account.operation.DeleteAccount
+import com.book.auth.domain.api.identification.operation.DeletePasskey
+import com.book.auth.domain.api.identification.operation.GetAttachPasskeyToAccountChallenge
+import com.book.auth.domain.api.identification.operation.GetAvailablePasskeys
+import com.book.auth.domain.api.registration.operation.AttachNewPasskeyToAccount
+import com.book.auth.domain.api.registration.operation.FinishPasskeyRegistration
 import com.book.auth.domain.api.registration.operation.FinishRegistration
+import com.book.auth.domain.api.registration.operation.StartPasskeyRegistration
 import com.book.auth.domain.api.registration.operation.StartRegistration
 import com.book.auth.domain.api.signout.operation.SignOut
 import com.book.auth.domain.api.token.operation.GenerateAuthToken
@@ -14,7 +20,13 @@ import com.book.auth.domain.impl.operation.SignOutImpl
 import com.book.auth.domain.impl.operation.authentication.FinishAssertionImpl
 import com.book.auth.domain.impl.operation.authentication.SignInImpl
 import com.book.auth.domain.impl.operation.authentication.StartAssertionImpl
+import com.book.auth.domain.impl.operation.identification.DeletePasskeyImpl
+import com.book.auth.domain.impl.operation.identification.GetAttachPasskeyToAccountChallengeImpl
+import com.book.auth.domain.impl.operation.identification.GetAvailablePasskeysImpl
+import com.book.auth.domain.impl.operation.registration.AttachNewPasskeyToAccountImpl
+import com.book.auth.domain.impl.operation.registration.FinishPasskeyRegistrationImpl
 import com.book.auth.domain.impl.operation.registration.FinishRegistrationImpl
+import com.book.auth.domain.impl.operation.registration.StartPasskeyRegistrationImpl
 import com.book.auth.domain.impl.operation.registration.StartRegistrationImpl
 import com.book.auth.domain.impl.operation.token.GenerateAuthTokenImpl
 import com.book.auth.domain.impl.operation.token.RefreshTokenImpl
@@ -33,4 +45,10 @@ fun authDomainModule() = module {
     singleOf(::StartAssertionImpl) bind StartAssertion::class
     singleOf(::FinishAssertionImpl) bind FinishAssertion::class
     singleOf(::SignInImpl) bind SignIn::class
+    singleOf(::GetAvailablePasskeysImpl) bind GetAvailablePasskeys::class
+    singleOf(::DeletePasskeyImpl) bind DeletePasskey::class
+    singleOf(::GetAttachPasskeyToAccountChallengeImpl) bind GetAttachPasskeyToAccountChallenge::class
+    singleOf(::StartPasskeyRegistrationImpl) bind StartPasskeyRegistration::class
+    singleOf(::FinishPasskeyRegistrationImpl) bind FinishPasskeyRegistration::class
+    singleOf(::AttachNewPasskeyToAccountImpl) bind AttachNewPasskeyToAccount::class
 }

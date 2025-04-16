@@ -1,0 +1,2 @@
+#!/bin/sh
+openssl req -x509 -newkey rsa:4096 -keyout nginx-selfsigned.key -out nginx-selfsigned.crt -sha256 -days 365 -nodes -subj "/C=JP/ST=Hokkaido/L=Hokkaido/O=BlankCompany/OU=BlankSectionName/CN=localhost"

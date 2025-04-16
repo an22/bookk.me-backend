@@ -35,6 +35,7 @@ internal class FinishAssertionImpl(
                 credentialId = result.credential.credentialId.bytes
             )
             if (credentials == null) throw Error.PasskeyOwnerNotFound
+            passKeyDataSource.markAsUsed(credentials.id)
             return@runCatching credentials
         } else {
             throw Error.PasskeyOwnerNotFound

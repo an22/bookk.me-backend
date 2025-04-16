@@ -10,15 +10,16 @@ import kotlinx.datetime.Clock
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.insertIgnore
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.sql.update
 
 internal class DeviceDataSourceImpl : DataSource(), DeviceDataSource {
     override suspend fun attachRefreshTokenToDevice(deviceId: Long, tokenId: String) {
         mapExceptions {
             transaction {
-                AuthDeviceEntity.findByIdAndUpdate(deviceId) {
-                    it.isSignedIn = true
-                    it.refreshTokenId = tokenId
-                    it.updatedAt = Clock.System.now()
+                AuthDeviceTable.update(where = { AuthDeviceTable.id eq deviceId }) {
+                    it[isSignedIn] = true
+                    it[refreshTokenId] = tokenId
+                    it[updatedAt] = Clock.System.now()
                 }
             }
         }

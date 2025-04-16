@@ -2,11 +2,11 @@ package com.book.auth.microservice.route.api
 
 import com.book.auth.domain.api.error.AuthErrorCodes
 import com.book.auth.domain.api.registration.entity.VerifyAccountCreationRequest
+import com.book.auth.domain.api.registration.operation.FinishPasskeyRegistration.Error.VerificationFailed
 import com.book.auth.domain.api.registration.operation.FinishRegistration
 import com.book.auth.domain.api.registration.operation.FinishRegistration.Error.AccountCreationFailed
 import com.book.auth.domain.api.registration.operation.FinishRegistration.Error.InvalidEmailFormat
 import com.book.auth.domain.api.registration.operation.FinishRegistration.Error.UserAlreadyExist
-import com.book.auth.domain.api.registration.operation.FinishRegistration.Error.VerificationFailed
 import com.book.auth.domain.api.token.entity.AuthTokens
 import com.book.auth.microservice.route.AuthRouting
 import com.book.core.domain.entity.SimpleServerError
@@ -27,16 +27,16 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.koin.dsl.module
 
-class PostValidateRegistrationTest {
+class registrationTest {
 
     private fun createSimpleRequest(): VerifyAccountCreationRequest {
         return VerifyAccountCreationRequest(
+            requestId = "user_id",
             deviceInfo = VerifyAccountCreationRequest.DeviceInfo(
                 deviceUUID = "uuid",
                 deviceName = "example_device_name"
             ),
             userInfo = VerifyAccountCreationRequest.UserInfo(
-                userId = "user_id",
                 name = "name",
                 lastName = "lastName",
                 email = "email"
@@ -56,10 +56,10 @@ class PostValidateRegistrationTest {
             diModule = module {
                 single<FinishRegistration> { useCase }
             },
-            routeUnderTest = { postValidateRegistration() }
+            routeUnderTest = { registration() }
         )
         whenn()
-        val response = client.post(AuthRouting.Api.Auth.SignUp.PassKey.Validate()) {
+        val response = client.post(AuthRouting.Api.Auth.SignUp()) {
             setBody(request)
         }
         val body = response.body<SimpleServerError>()
@@ -81,10 +81,10 @@ class PostValidateRegistrationTest {
             diModule = module {
                 single<FinishRegistration> { useCase }
             },
-            routeUnderTest = { postValidateRegistration() }
+            routeUnderTest = { registration() }
         )
         whenn()
-        val response = client.post(AuthRouting.Api.Auth.SignUp.PassKey.Validate()) {
+        val response = client.post(AuthRouting.Api.Auth.SignUp()) {
             setBody(request)
         }
         val body = response.body<SimpleServerError>()
@@ -106,10 +106,10 @@ class PostValidateRegistrationTest {
             diModule = module {
                 single<FinishRegistration> { useCase }
             },
-            routeUnderTest = { postValidateRegistration() }
+            routeUnderTest = { registration() }
         )
         whenn()
-        val response = client.post(AuthRouting.Api.Auth.SignUp.PassKey.Validate()) {
+        val response = client.post(AuthRouting.Api.Auth.SignUp()) {
             setBody(request)
         }
         val body = response.body<SimpleServerError>()
@@ -131,10 +131,10 @@ class PostValidateRegistrationTest {
             diModule = module {
                 single<FinishRegistration> { useCase }
             },
-            routeUnderTest = { postValidateRegistration() }
+            routeUnderTest = { registration() }
         )
         whenn()
-        val response = client.post(AuthRouting.Api.Auth.SignUp.PassKey.Validate()) {
+        val response = client.post(AuthRouting.Api.Auth.SignUp()) {
             setBody(request)
         }
         val body = response.body<SimpleServerError>()
@@ -157,10 +157,10 @@ class PostValidateRegistrationTest {
             diModule = module {
                 single<FinishRegistration> { useCase }
             },
-            routeUnderTest = { postValidateRegistration() }
+            routeUnderTest = { registration() }
         )
         whenn()
-        val response = client.post(AuthRouting.Api.Auth.SignUp.PassKey.Validate()) {
+        val response = client.post(AuthRouting.Api.Auth.SignUp()) {
             setBody(request)
         }
         val body = response.body<AuthTokens>()

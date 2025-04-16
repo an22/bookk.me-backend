@@ -6,6 +6,8 @@ plugins {
 }
 
 dependencies {
+    api(libs.kotlin.datetime)
     implementation(libs.kotlin.coroutines)
+    implementation(libs.kotlin.std)
     testImplementation(libs.kotlin.test)
 }

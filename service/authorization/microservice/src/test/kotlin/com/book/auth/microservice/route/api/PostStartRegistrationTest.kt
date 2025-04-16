@@ -2,7 +2,7 @@ package com.book.auth.microservice.route.api
 
 import com.book.auth.domain.api.error.AuthErrorCodes
 import com.book.auth.domain.api.registration.entity.CreateAccountRequest
-import com.book.auth.domain.api.registration.entity.SignUpChallengeResponse
+import com.book.auth.domain.api.registration.entity.RegistrationChallengeResponse
 import com.book.auth.domain.api.registration.operation.StartRegistration
 import com.book.auth.domain.api.registration.operation.StartRegistration.Error.EmailAlreadyExist
 import com.book.auth.domain.api.registration.operation.StartRegistration.Error.InvalidEmailFormat
@@ -38,11 +38,11 @@ class PostStartRegistrationTest {
             diModule = module {
                 single<StartRegistration> { useCase }
             },
-            routeUnderTest = { postStartRegistration() }
+            routeUnderTest = { registration() }
         )
 
         whenn()
-        val response = client.post(AuthRouting.Api.Auth.SignUp.PassKey.Challenge()) {
+        val response = client.post(AuthRouting.Api.Auth.PassKey.SignUpChallenge()) {
             setBody(request)
         }
         val body = response.body<SimpleServerError>()
@@ -65,10 +65,10 @@ class PostStartRegistrationTest {
             diModule = module {
                 single<StartRegistration> { useCase }
             },
-            routeUnderTest = { postStartRegistration() }
+            routeUnderTest = { registration() }
         )
         whenn()
-        val response = client.post(AuthRouting.Api.Auth.SignUp.PassKey.Challenge()) {
+        val response = client.post(AuthRouting.Api.Auth.PassKey.SignUpChallenge()) {
             setBody(request)
         }
         val body = response.body<SimpleServerError>()
@@ -85,19 +85,19 @@ class PostStartRegistrationTest {
         val useCase: StartRegistration = mockk()
         val client = createTestClient()
         val request = CreateAccountRequest("firstName", "lastName", "email")
-        val expected = SignUpChallengeResponse("example_challenge", "display_name", "userId")
+        val expected = RegistrationChallengeResponse("example_challenge", "display_name", "userId")
         coEvery { useCase.invoke(any()) } returns Result.success(expected)
         setupApplication(
             diModule = module {
                 single<StartRegistration> { useCase }
             },
-            routeUnderTest = { postStartRegistration() }
+            routeUnderTest = { registration() }
         )
         whenn()
-        val response = client.post(AuthRouting.Api.Auth.SignUp.PassKey.Challenge()) {
+        val response = client.post(AuthRouting.Api.Auth.PassKey.SignUpChallenge()) {
             setBody(request)
         }
-        val actual = response.body<SignUpChallengeResponse>()
+        val actual = response.body<RegistrationChallengeResponse>()
         then()
         coVerify { useCase.invoke(eq(request)) }
         assertEquals(HttpStatusCode.OK, response.status)

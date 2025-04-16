@@ -10,9 +10,9 @@ import com.book.auth.domain.api.token.operation.GenerateAuthToken.Error.InvalidC
 import com.book.auth.domain.api.token.operation.GenerateAuthToken.Source
 import com.book.auth.domain.datasource.DeviceDataSource
 import com.bookk.core.AppLevelConstants.Claim
+import com.bookk.core.newRandomUUIDString
 import kotlinx.datetime.Clock
 import kotlinx.datetime.toJavaInstant
-import java.util.UUID
 import kotlin.time.Duration.Companion.milliseconds
 
 internal class GenerateAuthTokenImpl(
@@ -24,7 +24,7 @@ internal class GenerateAuthTokenImpl(
     override suspend fun invoke(source: Source): Result<AuthTokens> = runCatching {
         val deviceRecord = source.getDevice() ?: throw InvalidCredentials
         val accessToken = createAccessToken(deviceRecord)
-        val refreshId = UUID.randomUUID().toString()
+        val refreshId = newRandomUUIDString()
         val refreshToken = createRefreshToken(refreshId, deviceRecord)
         deviceDataSource.attachRefreshTokenToDevice(deviceRecord.deviceInfo.id, refreshId)
         AuthTokens(accessToken, refreshToken)
@@ -34,7 +34,7 @@ internal class GenerateAuthTokenImpl(
         return JWT.create()
             .withAudience(serviceUrl)
             .withIssuer(ISSUER)
-            .withJWTId(UUID.randomUUID().toString())
+            .withJWTId(newRandomUUIDString())
             .withClaim(Claim.AUTH_ID.key, record.authRecord.id)
             .withClaim(Claim.USER_ID.key, record.authRecord.userId)
             .withClaim(Claim.DEVICE_ID.key, record.deviceInfo.id)
@@ -67,8 +67,8 @@ internal class GenerateAuthTokenImpl(
     }
 
     companion object {
-        private const val ACCESS_EXPIRATION_TIME = 1000L * 60 * 60
-        private const val REFRESH_EXPIRATION_TIME = ACCESS_EXPIRATION_TIME * 24
+        private const val ACCESS_EXPIRATION_TIME = 1000L * 60 * 5 // 5 Minutes
+        private const val REFRESH_EXPIRATION_TIME = 1000L * 60 * 60 * 24 * 7 // 1 Week
         private const val ISSUER = "com.bookk.server"
         private const val REFRESH_ISSUER = "com.bookk.server.refresh"
     }

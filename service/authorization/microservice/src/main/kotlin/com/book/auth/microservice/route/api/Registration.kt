@@ -1,11 +1,16 @@
 package com.book.auth.microservice.route.api
 
+import com.book.auth.domain.api.registration.entity.CreateAccountRequest
+import com.book.auth.domain.api.registration.entity.RegistrationChallengeResponse
 import com.book.auth.domain.api.registration.entity.VerifyAccountCreationRequest
+import com.book.auth.domain.api.registration.operation.FinishPasskeyRegistration.Error.VerificationFailed
 import com.book.auth.domain.api.registration.operation.FinishRegistration
+import com.book.auth.domain.api.registration.operation.FinishRegistration.Error
 import com.book.auth.domain.api.registration.operation.FinishRegistration.Error.AccountCreationFailed
-import com.book.auth.domain.api.registration.operation.FinishRegistration.Error.InvalidEmailFormat
 import com.book.auth.domain.api.registration.operation.FinishRegistration.Error.UserAlreadyExist
-import com.book.auth.domain.api.registration.operation.FinishRegistration.Error.VerificationFailed
+import com.book.auth.domain.api.registration.operation.StartRegistration
+import com.book.auth.domain.api.registration.operation.StartRegistration.Error.EmailAlreadyExist
+import com.book.auth.domain.api.registration.operation.StartRegistration.Error.InvalidEmailFormat
 import com.book.auth.domain.api.token.entity.AuthTokens
 import com.book.auth.microservice.route.AuthRouting.Api
 import com.book.core.domain.entity.SimpleServerError
@@ -23,17 +28,60 @@ import io.ktor.server.routing.application
 import org.koin.ktor.ext.inject
 import kotlin.reflect.typeOf
 
-internal fun Route.postValidateRegistration() {
+internal fun Route.registration() {
+    withStartRegistrationDocumentation()
     withValidateRegistrationDocumentation()
-    post<Api.Auth.SignUp.PassKey.Validate> {
+    post<Api.Auth.PassKey.SignUpChallenge> {
+        val info = call.receive<CreateAccountRequest>()
+        val startRegistration by application.inject<StartRegistration>()
+
+        call.respondWith(startRegistration(info))
+    }
+    post<Api.Auth.SignUp> {
         val info = call.receive<VerifyAccountCreationRequest>()
         val finishRegistration by application.inject<FinishRegistration>()
         call.respondWith(finishRegistration(info))
     }
 }
 
-internal fun Route.withValidateRegistrationDocumentation() {
-    install(NotarizedResource<Api.Auth.SignUp.PassKey.Validate>()) {
+private fun Route.withStartRegistrationDocumentation() {
+    install(NotarizedResource<Api.Auth.PassKey.SignUpChallenge>()) {
+        tags = setOf("auth")
+        post = PostInfo.builder {
+            summary("Get sign up challenge")
+            description("Get sign up challenge for passkey creation.")
+            request {
+                applyMediaType()
+                requestType<CreateAccountRequest>()
+                description("User parameters")
+            }
+            response {
+                applyMediaType()
+                responseCode(HttpStatusCode.OK)
+                responseType(typeOf<RegistrationChallengeResponse>())
+                description("Validation challenge returned")
+            }
+            canRespond {
+                applyMediaType()
+                responseCode(HttpStatusCode.UnprocessableEntity)
+                responseType<SimpleServerError>(ObjectEnrichment(id = "GetSignUpChallenge") {
+                    SimpleServerError::errorCode {
+                        NumberEnrichment("errorCode") {
+                            description = buildString {
+                                append("${EmailAlreadyExist.code} - ${EmailAlreadyExist.message}\n")
+                                append("${InvalidEmailFormat.code} - ${InvalidEmailFormat.message}\n")
+                            }
+                        }
+                    }
+                })
+                description("Unprocessable entity")
+            }
+        }
+    }
+}
+
+private fun Route.withValidateRegistrationDocumentation() {
+    install(NotarizedResource<Api.Auth.SignUp>()) {
         tags = setOf("auth")
         post = PostInfo.builder {
             summary("Validate passkey data")
@@ -56,7 +104,7 @@ internal fun Route.withValidateRegistrationDocumentation() {
                     SimpleServerError::errorCode {
                         NumberEnrichment("errorCode") {
                             description = buildString {
-                                append("${InvalidEmailFormat.code} - ${InvalidEmailFormat.message}\n")
+                                append("${Error.InvalidEmailFormat.code} - ${Error.InvalidEmailFormat.message}\n")
                                 append("${UserAlreadyExist.code} - ${UserAlreadyExist.message}\n")
                                 append("${VerificationFailed.code} - ${VerificationFailed.message}\n")
                                 append("${AccountCreationFailed.code} - ${AccountCreationFailed.message}\n")

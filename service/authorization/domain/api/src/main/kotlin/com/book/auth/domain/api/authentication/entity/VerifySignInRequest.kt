@@ -11,6 +11,6 @@ class VerifySignInRequest(
     @Serializable
     data class DeviceInfo(
         val deviceUUID: String,
-        val deviceName: String,
+        val deviceName: String
     )
 }

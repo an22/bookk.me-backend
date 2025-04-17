@@ -23,7 +23,7 @@ services:
     env_file:
       - service/user.env
     environment:
-      GRADLE_OPTS: "-agentlib:jdwp=transport=dt_socket,address=*:8001,server=y,suspend=n"
+      JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,address=*:8001,server=y,suspend=n"
     volumes:
       - './security/test.jks:/etc/service/keystore.jks:ro'
       - './security/private.pem:/etc/service/private.pem:ro'

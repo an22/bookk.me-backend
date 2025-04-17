@@ -48,7 +48,6 @@ import org.slf4j.event.Level
 import java.io.File
 import java.security.KeyStore
 
-@Suppress("KotlinConstantConditions")
 fun startServer(
     diModules: List<Module> = emptyList(),
     modules: Application.() -> Unit

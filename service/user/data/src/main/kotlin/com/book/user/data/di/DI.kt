@@ -10,12 +10,5 @@ import org.koin.dsl.module
 fun userDataModule() = module {
     single<UserDataSource> { UserDataSourceImpl(get()) }
     single<CommunicationDataSource> { CommunicationDataSourceImpl() }
-    createDatabase(
-        schemaName = System.getenv("BOOKK_ME_DB_SCHEME"),
-        driver = System.getenv("BOOKK_ME_DB_DRIVER"),
-        dbUrl = System.getenv("BOOKK_ME_DB_URL"),
-        dbPort = System.getenv("BOOKK_ME_DB_PORT"),
-        dbUsername = System.getenv("BOOKK_ME_DB_USER"),
-        dbPassword = System.getenv("BOOKK_ME_DB_PASSWORD")
-    )
+    createDatabase()
 }

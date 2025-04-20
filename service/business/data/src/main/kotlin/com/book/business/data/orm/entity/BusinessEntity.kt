@@ -1,0 +1,15 @@
+package com.book.business.data.orm.entity
+
+import com.book.business.data.orm.table.BusinessTable
+import org.jetbrains.exposed.dao.LongEntity
+import org.jetbrains.exposed.dao.LongEntityClass
+import org.jetbrains.exposed.dao.id.EntityID
+
+internal class BusinessEntity(id: EntityID<Long>) : LongEntity(id) {
+    var userId by BusinessTable.userId
+    var name by BusinessTable.name
+    var createdAt by BusinessTable.createdAt
+    var updatedAt by BusinessTable.updatedAt
+
+    companion object : LongEntityClass<BusinessEntity>(BusinessTable)
+}

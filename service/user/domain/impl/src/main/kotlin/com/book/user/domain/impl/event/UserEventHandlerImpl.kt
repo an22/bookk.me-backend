@@ -3,8 +3,8 @@ package com.book.user.domain.impl.event
 import com.book.core.data.eventstreaming.StandardEventConsumer
 import com.book.core.data.eventstreaming.registerReceiver
 import com.book.user.domain.api.event.UserEventHandler
-import com.book.user.domain.api.event.UserEvents.DeleteUserEvent
 import com.book.user.domain.api.operation.DeleteUser
+import com.bookk.server.user.client.api.event.UserEvents.DeleteUserEvent
 import kotlinx.coroutines.CoroutineScope
 
 class UserEventHandlerImpl(

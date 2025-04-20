@@ -12,7 +12,7 @@ internal object AuthDeviceTable : LongIdTable("auth_device") {
     val refreshTokenId = varchar("refresh_token_id", 36).nullable()
     val isSignedIn = bool("is_signed_in")
     val createdAt = timestamp("created_at").clientDefault { Clock.System.now() }
-    val updatedAt = timestamp("updated_at")
+    val updatedAt = timestamp("updated_at").clientDefault { Clock.System.now() }
 
     init {
         uniqueIndex(userAuthId, deviceUUID)

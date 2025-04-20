@@ -13,9 +13,9 @@ import com.book.auth.domain.datasource.DeviceDataSource
 import com.book.core.data.eventstreaming.StandardEventProducer
 import com.book.core.data.eventstreaming.send
 import com.book.core.domain.transaction.TransactionManager
-import com.book.user.domain.api.entity.User
-import com.book.user.domain.api.event.UserEvents.DeleteUserEvent
 import com.bookk.server.user.client.UserClient
+import com.bookk.server.user.client.api.CreateUserRequest
+import com.bookk.server.user.client.api.event.UserEvents.DeleteUserEvent
 
 internal class FinishRegistrationImpl(
     private val accountDataSource: AccountDataSource,
@@ -49,7 +49,7 @@ internal class FinishRegistrationImpl(
     }
 
     private suspend fun saveUserExternal(request: VerifyAccountCreationRequest): Long {
-        return userClient.createUser(createUserFrom(request.userInfo)).getOrThrow().id
+        return userClient.createUser(createUserFrom(request.userInfo)).getOrThrow()
     }
 
     private suspend fun saveAuthorizationOwner(userId: Long, handle: String): Long {
@@ -61,9 +61,8 @@ internal class FinishRegistrationImpl(
         return accountDataSource.createAuthorization(authentication).id
     }
 
-    private fun createUserFrom(info: UserInfo): User {
-        return User(
-            id = 0,
+    private fun createUserFrom(info: UserInfo): CreateUserRequest {
+        return CreateUserRequest(
             name = info.name,
             lastName = info.lastName,
             email = info.email

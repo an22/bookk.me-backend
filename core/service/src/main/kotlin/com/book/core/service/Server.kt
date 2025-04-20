@@ -55,18 +55,18 @@ fun startServer(
     embeddedServer(
         factory = Netty,
         configure = {
-            val keystoreFile = File(System.getenv("BOOKK_ME_SERVICE_SSL_FILE"))
-            val keyStorePass = System.getenv("BOOKK_ME_SERVICE_SSL_PASSWORD")
+            val keystoreFile = File(AppLevelConstants.sslFile)
+            val keyStorePass = AppLevelConstants.sslPass
             sslConnector(
                 keyStore = KeyStore.getInstance(
                     keystoreFile,
                     keyStorePass.toCharArray()
                 ),
-                keyAlias = System.getenv("BOOKK_ME_SERVICE_SSL_ALIAS"),
+                keyAlias = AppLevelConstants.sslAlias,
                 keyStorePassword = { keyStorePass.toCharArray() },
                 privateKeyPassword = { keyStorePass.toCharArray() }
             ) {
-                port = System.getenv("BOOKK_ME_SERVICE_PORT").toInt()
+                port = AppLevelConstants.sslPort.toInt()
             }
         },
         module = {
@@ -123,7 +123,7 @@ fun Application.installDocumentationPlugin() {
         }
         specRoute = { _: OpenApiSpec, _: Routing ->
             routing {
-                route("/api/${System.getenv("BOOKK_ME_SERVICE_NAME")}/openapi.json") {
+                route("/api/${AppLevelConstants.serviceName}/openapi.json") {
                     install(ContentNegotiation) {
                         json(Json {
                             serializersModule = KompendiumSerializersModule.module
@@ -139,12 +139,12 @@ fun Application.installDocumentationPlugin() {
                     }
                 }
                 redoc(
-                    path = "/api/${System.getenv("BOOKK_ME_SERVICE_NAME")}/redoc",
-                    specUrl = "/api/${System.getenv("BOOKK_ME_SERVICE_NAME")}/openapi.json"
+                    path = "/api/${AppLevelConstants.serviceName}/redoc",
+                    specUrl = "/api/${AppLevelConstants.serviceName}/openapi.json"
                 )
                 swagger(
-                    path = "/api/${System.getenv("BOOKK_ME_SERVICE_NAME")}/swagger",
-                    specUrl = "/api/${System.getenv("BOOKK_ME_SERVICE_NAME")}/openapi.json"
+                    path = "/api/${AppLevelConstants.serviceName}/swagger",
+                    specUrl = "/api/${AppLevelConstants.serviceName}/openapi.json"
                 )
             }
         }

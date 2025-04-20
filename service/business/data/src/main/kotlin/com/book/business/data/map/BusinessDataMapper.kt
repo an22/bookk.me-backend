@@ -1,13 +1,11 @@
 package com.book.business.data.map
 
-import com.book.user.data.orm.entity.UserEntity
-import com.book.user.domain.api.entity.User
+import com.book.business.data.orm.entity.BusinessEntity
+import com.book.business.domain.api.entity.Business
 
-fun UserEntity.toDomain(): User {
-    return User(
+internal fun BusinessEntity.toDomain(): Business {
+    return Business(
         id = id.value,
-        name = name,
-        lastName = lastName,
-        email = email
+        name = name
     )
 }

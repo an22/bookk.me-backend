@@ -3,6 +3,7 @@ plugins {
 }
 
 dependencies {
+    implementation(projects.core)
     implementation(projects.core.domain)
     implementation(projects.core.domain.datasource)
     implementation(projects.core.data.cache.api)

@@ -7,8 +7,8 @@ import javax.net.ssl.X509TrustManager
 
 object SslSettings {
     private fun getKeyStore(): KeyStore {
-        val keystoreFile = File(System.getenv("BOOKK_ME_SERVICE_SSL_FILE"))
-        val keyStorePass = System.getenv("BOOKK_ME_SERVICE_SSL_PASSWORD")
+        val keystoreFile = File(AppLevelConstants.sslFile)
+        val keyStorePass = AppLevelConstants.sslPass
         return KeyStore.getInstance(
             keystoreFile,
             keyStorePass.toCharArray()

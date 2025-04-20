@@ -56,4 +56,5 @@ include(":service:business:domain:api")
 include(":service:business:domain:impl")
 include(":service:business:domain:datasource")
 include(":service:business:data")
+include(":service:business:client")
 

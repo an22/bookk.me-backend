@@ -1,0 +1,31 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="BusinessMicroservice" type="JetRunConfigurationType">
+    <envs>
+      <env name="BOOKK_ME_DB_DRIVER" value="org.mariadb.jdbc.Driver" />
+      <env name="BOOKK_ME_DB_PASSWORD" value="4FB3P4y3mbRKAxASQjM6cBA52qKMFDqW" />
+      <env name="BOOKK_ME_DB_PORT" value="3307" />
+      <env name="BOOKK_ME_DB_SCHEME" value="authorization" />
+      <env name="BOOKK_ME_DB_URL" value="jdbc:mariadb://127.0.0.1" />
+      <env name="BOOKK_ME_DB_USER" value="root" />
+      <env name="BOOKK_ME_JWT_PRIVATE_KEY_FILE" value="core/service/secure/jwtRSA256-private.pem" />
+      <env name="BOOKK_ME_JWT_PUBLIC_KEY_FILE" value="core/service/secure/jwtRSA256-public.pem" />
+      <env name="BOOKK_ME_KAFKA_CLUSTER_ID" value="R6YjCd49YUUaN6hC4tFH4Ljy" />
+      <env name="BOOKK_ME_KAFKA_HOSTS" value="localhost:9092 #Should be separated with ',' sign" />
+      <env name="BOOKK_ME_REDIS_HOSTS" value="localhost" />
+      <env name="BOOKK_ME_REDIS_PASSWORD" value="R6YjCd49YUUaN6hC4tFH4Ljy" />
+      <env name="BOOKK_ME_REDIS_PORT" value="6379" />
+      <env name="BOOKK_ME_SERVICE_NAME" value="authorization" />
+      <env name="BOOKK_ME_SERVICE_PORT" value="443" />
+      <env name="BOOKK_ME_SERVICE_SSL_ALIAS" value="prod_ssl" />
+      <env name="BOOKK_ME_SERVICE_SSL_FILE" value="core/service/secure/prod.jks" />
+      <env name="BOOKK_ME_SERVICE_SSL_PASSWORD" value="*_S\o?I!9StR2\&quot;-aL{D2aJ933L1uLt" />
+      <env name="BOOKK_ME_SERVICE_VERSION" value="0.0.1" />
+    </envs>
+    <option name="MAIN_CLASS_NAME" value="com.book.business.microservice.BusinessMicroserviceKt" />
+    <module name="bookk-server.service.business.microservice.main" />
+    <shortenClasspath name="NONE" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

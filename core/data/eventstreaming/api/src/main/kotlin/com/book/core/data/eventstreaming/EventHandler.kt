@@ -1,7 +1,7 @@
-package com.book.user.domain.api.event
+package com.book.core.data.eventstreaming
 
 import kotlinx.coroutines.CoroutineScope
 
-interface UserEventHandler {
+interface EventHandler {
     fun start(scope: CoroutineScope)
 }

@@ -23,6 +23,8 @@ dependencyResolutionManagement {
 
 rootProject.name = "bookk-server"
 
+include(":deployment")
+
 //Core
 include(":core")
 include(":core:domain")

@@ -10,6 +10,7 @@ services:
       - service/auth.env
     environment:
       JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:8000"
+      TZ: "UTC"
     volumes:
       - './security/test.jks:/etc/service/keystore.jks:ro'
       - './security/private.pem:/etc/service/private.pem:ro'
@@ -24,6 +25,22 @@ services:
       - service/user.env
     environment:
       JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,address=*:8001,server=y,suspend=n"
+      TZ: "UTC"
+    volumes:
+      - './security/test.jks:/etc/service/keystore.jks:ro'
+      - './security/private.pem:/etc/service/private.pem:ro'
+      - './security/public.pem:/etc/service/public.pem:ro'
+
+  business:
+    image: com.bookk.server.microservice.business
+    hostname: business.service.bookk.me
+    ports:
+      - '8002:8002'
+    env_file:
+      - service/business.env
+    environment:
+      JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,address=*:8002,server=y,suspend=n"
+      TZ: "UTC"
     volumes:
       - './security/test.jks:/etc/service/keystore.jks:ro'
       - './security/private.pem:/etc/service/private.pem:ro'

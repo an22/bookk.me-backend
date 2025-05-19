@@ -10,8 +10,6 @@ object AppLevelConstants {
     val cacheHost: String = System.getenv("BOOKK_ME_REDIS_HOSTS")
     val cachePort: String = System.getenv("BOOKK_ME_REDIS_PORT")
     val cachePass: String = System.getenv("BOOKK_ME_REDIS_PASSWORD")
-    val pubKeyFilename: String = System.getenv("BOOKK_ME_JWT_PUBLIC_KEY_FILE")
-    val privateKeyFilename: String = System.getenv("BOOKK_ME_JWT_PRIVATE_KEY_FILE")
     val eventStreamingHost: String = System.getenv("BOOKK_ME_KAFKA_HOSTS")
     val sslFile: String = System.getenv("BOOKK_ME_SERVICE_SSL_FILE")
     val sslPass: String = System.getenv("BOOKK_ME_SERVICE_SSL_PASSWORD")
@@ -23,6 +21,9 @@ object AppLevelConstants {
     val dbPort: String = System.getenv("BOOKK_ME_DB_PORT")
     val dbUsername: String = System.getenv("BOOKK_ME_DB_USER")
     val dbPassword: String = System.getenv("BOOKK_ME_DB_PASSWORD")
+    val pubKeyFilename: String = System.getenv("BOOKK_ME_JWT_PUBLIC_KEY_FILE")
+    val privateKeyFilename: String
+        get() = System.getenv("BOOKK_ME_JWT_PRIVATE_KEY_FILE")
 
     sealed interface SupportedSerializers {
         data object JSON : SupportedSerializers {

@@ -93,10 +93,16 @@ fun startServer(
 private fun Application.installAuthPlugin() {
     install(Authentication) {
         jwt {
+            challenge { defaultScheme, realm ->
+                call.respond(HttpStatusCode.Unauthorized, "Unauthorized")
+            }
             verifier(AccessVerifier.verifier)
             validate(AccessVerifier.validator)
         }
         jwt("refresh") {
+            challenge { defaultScheme, realm ->
+                call.respond(HttpStatusCode.Unauthorized, "Unauthorized")
+            }
             verifier(RefreshVerifier.verifier)
             validate(RefreshVerifier.validator)
         }

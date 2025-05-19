@@ -53,6 +53,7 @@ ktor-protobuf = { module = "io.ktor:ktor-serialization-kotlinx-protobuf", versio
 ktor-server-resources = { module = "io.ktor:ktor-server-resources", version.ref = "ktor" }
 ktor-client-resources = { module = "io.ktor:ktor-client-resources", version.ref = "ktor" }
 ktor-test = { module = "io.ktor:ktor-server-test-host", version.ref = "ktor" }
+ktor-status = { module = "io.ktor:ktor-server-status-pages", version.ref = "ktor" }
 ktor-idempotency = { module = "com.wolt:ktor-idempotency", version.ref = "idempotency" }
 mariadb = { module = "org.mariadb.jdbc:mariadb-java-client", version.ref = "mariadb" }
 netty-boringssl = { module = "io.netty:netty-tcnative-boringssl-static", version.ref = "boringssl" }

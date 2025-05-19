@@ -9,5 +9,6 @@ dependencies {
     implementation(projects.core.domain)
     implementation(projects.core.data.eventstreaming.api)
     implementation(projects.service.business.domain.api)
+    implementation(projects.service.business.client)
     implementation(projects.service.business.domain.datasource)
 }

@@ -14,6 +14,7 @@ application {
 dependencies {
     implementation(libs.ktor.json)
     implementation(libs.ktor.logging)
+    implementation(libs.ktor.status)
     implementation(libs.ktor.logging.call)
     implementation(libs.ktor.idempotency)
     implementation(projects.core)

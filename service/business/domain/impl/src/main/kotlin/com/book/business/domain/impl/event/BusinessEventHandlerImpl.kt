@@ -1,20 +1,17 @@
-package com.book.user.domain.impl.event
+package com.book.business.domain.impl.event
 
 import com.book.core.data.eventstreaming.EventHandler
 import com.book.core.data.eventstreaming.StandardEventConsumer
 import com.book.core.data.eventstreaming.registerReceiver
-import com.book.user.domain.api.operation.DeleteUser
-import com.bookk.server.user.client.api.event.UserEvents.DeleteUserEvent
+import com.bookk.server.business.client.api.event.BusinessEvent.DeleteBusinessesForUserEvent
 import kotlinx.coroutines.CoroutineScope
 
-class UserEventHandlerImpl(
+internal class BusinessEventHandlerImpl(
     private val consumer: StandardEventConsumer,
-    private val deleteUser: DeleteUser
 ) : EventHandler {
     override fun start(scope: CoroutineScope) {
         consumer
-            .registerReceiver(DeleteUserEvent.TOPIC) { event: DeleteUserEvent ->
-                deleteUser(event.userId)
+            .registerReceiver(DeleteBusinessesForUserEvent.TOPIC) { event: DeleteBusinessesForUserEvent ->
             }
             .start(scope)
     }

@@ -1,5 +1,6 @@
 package com.book.business.data.orm
 
+import com.book.business.data.orm.table.BusinessDashboardTable
 import com.book.business.data.orm.table.BusinessTable
 import com.book.core.data.database.createMigrationScriptFor
 import org.jetbrains.exposed.sql.Table
@@ -15,6 +16,7 @@ fun main() {
 
 private fun tables(): Array<Table> {
     return arrayOf(
-        BusinessTable
+        BusinessTable,
+        BusinessDashboardTable
     )
 }

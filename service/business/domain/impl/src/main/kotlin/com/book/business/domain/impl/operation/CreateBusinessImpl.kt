@@ -10,6 +10,6 @@ internal class CreateBusinessImpl(
     override suspend fun invoke(userId: Long, name: String): Result<Business> = runCatching {
         if (name.length !in 2..512) throw CreateBusiness.Error.BusinessValidationError
         if (businessDataSource.isBusinessExist(userId)) throw CreateBusiness.Error.BusinessExist
-        businessDataSource.createBusiness(name)
+        businessDataSource.createBusiness(userId, name)
     }
 }

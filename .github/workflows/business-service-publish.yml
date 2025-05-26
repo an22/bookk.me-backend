@@ -1,0 +1,29 @@
+name: Publish business service
+on:
+  push:
+    tags:
+      - 'business/*'
+
+jobs:
+  publish:
+    name: Publish Business Microservice
+    uses: ./.github/workflows/service-publish-template.yml
+    secrets:
+      gradleEncryption: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
+    with:
+      module: "service:business:microservice"
+      serviceName: "com.bookk.server.microservice.business"
+
+  deploy:
+    needs: publish
+    name: Deploy Business Microservice
+    uses: ./.github/workflows/service-deploy-template.yml
+    secrets:
+      envFile: ${{ secrets.BUSINESS_ENV_FILE }}
+      privateKey: ${{ secrets.SSH_PRIVATE_KEY }}
+      remoteUri: ${{ secrets.SWARM_MANAGER }}
+      knownHosts: ${{ secrets.SSH_KNOWN_HOSTS }}
+    with:
+      image: "ghcr.io/an22/com.bookk.server.microservice.business"
+      stackName: "business"
+      version: ${{ needs.publish.outputs.version }}

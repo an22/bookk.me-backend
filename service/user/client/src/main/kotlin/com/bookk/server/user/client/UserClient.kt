@@ -1,13 +1,11 @@
 package com.bookk.server.user.client
 
-import com.book.user.domain.api.operation.CreateUser
-import com.book.user.domain.api.operation.DeleteUser
-import com.book.user.domain.api.operation.GetUserByEmail
-import com.book.user.domain.api.operation.GetUserById
+import com.bookk.server.user.client.api.CreateUserRequest
+import com.bookk.server.user.client.api.UserSnapshot
 
 interface UserClient {
-    val getUserById: GetUserById
-    val getUserByEmail: GetUserByEmail
-    val createUser: CreateUser
-    val deleteUser: DeleteUser
+    suspend fun getUserById(userId: Long): Result<UserSnapshot>
+    suspend fun getUserByEmail(email: String): Result<UserSnapshot>
+    suspend fun createUser(request: CreateUserRequest): Result<Long>
+    suspend fun deleteUser(userId: Long): Result<Unit>
 }

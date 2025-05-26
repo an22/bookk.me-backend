@@ -1,5 +1,6 @@
 package com.book.user.data.orm.table
 
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Clock.System
 import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.ReferenceOption
@@ -10,6 +11,6 @@ object ContactFormTable: LongIdTable("contact_form") {
     val text = text("text")
     val usageLogs = text("usage_logs").nullable()
     val createdAt = timestamp("created_at").clientDefault { System.now() }
-    val updatedAt = timestamp("updated_at")
+    val updatedAt = timestamp("updated_at").clientDefault { Clock.System.now() }
     val status = byte("status")
 }

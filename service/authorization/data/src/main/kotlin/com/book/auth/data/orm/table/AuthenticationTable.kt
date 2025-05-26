@@ -8,5 +8,5 @@ internal object AuthenticationTable : LongIdTable("authentication") {
     val userId = long("user_id").uniqueIndex()
     val uuid = varchar("uuid", 32).uniqueIndex()
     val createdAt = timestamp("created_at").clientDefault { Clock.System.now() }
-    val updatedAt = timestamp("updated_at")
+    val updatedAt = timestamp("updated_at").clientDefault { Clock.System.now() }
 }

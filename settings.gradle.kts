@@ -23,6 +23,8 @@ dependencyResolutionManagement {
 
 rootProject.name = "bookk-server"
 
+include(":deployment")
+
 //Core
 include(":core")
 include(":core:domain")
@@ -49,4 +51,12 @@ include(":service:user:domain:impl")
 include(":service:user:domain:datasource")
 include(":service:user:data")
 include(":service:user:client")
+
+//Business
+include(":service:business:microservice")
+include(":service:business:domain:api")
+include(":service:business:domain:impl")
+include(":service:business:domain:datasource")
+include(":service:business:data")
+include(":service:business:client")
 

@@ -1,6 +1,6 @@
 package com.book.user.domain.impl.di
 
-import com.book.user.domain.api.event.UserEventHandler
+import com.book.core.data.eventstreaming.EventHandler
 import com.book.user.domain.api.operation.CreateContactForm
 import com.book.user.domain.api.operation.CreateUser
 import com.book.user.domain.api.operation.DeleteUser
@@ -14,14 +14,18 @@ import com.book.user.domain.impl.operation.DeleteUserImpl
 import com.book.user.domain.impl.operation.EditUserImpl
 import com.book.user.domain.impl.operation.GetUserByEmailImpl
 import com.book.user.domain.impl.operation.GetUserByIdImpl
+import org.koin.core.module.dsl.factoryOf
+import org.koin.core.module.dsl.singleOf
+import org.koin.dsl.bind
 import org.koin.dsl.module
 
 fun userDomainModule() = module {
-    single<GetUserById> { GetUserByIdImpl(get()) }
-    single<CreateUser> { CreateUserImpl(get()) }
-    single<DeleteUser> { DeleteUserImpl(get()) }
-    single<EditUser> { EditUserImpl(get()) }
-    single<CreateContactForm> { CreateContactFormImpl(get()) }
-    single<GetUserByEmail> { GetUserByEmailImpl(get()) }
-    single<UserEventHandler> { UserEventHandlerImpl(get(), get()) }
+    singleOf(::GetUserByIdImpl) bind GetUserById::class
+    singleOf(::CreateUserImpl) bind CreateUser::class
+    singleOf(::DeleteUserImpl) bind DeleteUser::class
+    singleOf(::EditUserImpl) bind EditUser::class
+    singleOf(::CreateContactFormImpl) bind CreateContactForm::class
+    singleOf(::GetUserByEmailImpl) bind GetUserByEmail::class
+    singleOf(::GetUserByIdImpl) bind GetUserById::class
+    factoryOf(::UserEventHandlerImpl) bind EventHandler::class
 }

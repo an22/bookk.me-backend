@@ -7,7 +7,8 @@ import com.book.auth.domain.api.delete_account.operation.DeleteAccount.Error.Inv
 import com.book.auth.domain.datasource.AccountDataSource
 import com.book.core.data.eventstreaming.StandardEventProducer
 import com.book.core.data.eventstreaming.send
-import com.book.user.domain.api.event.UserEvents.DeleteUserEvent
+import com.bookk.server.business.client.api.event.BusinessEvent.DeleteBusinessesForUserEvent
+import com.bookk.server.user.client.api.event.UserEvents.DeleteUserEvent
 
 internal class DeleteAccountImpl(
     private val finishAssertion: FinishAssertion,
@@ -19,6 +20,7 @@ internal class DeleteAccountImpl(
         finishAssertion(request).getOrThrow()
         val authRecord = accountDataSource.getAuthRecordByUserId(userId) ?: throw InvalidCredentials
         eventProducer.send(DeleteUserEvent(authRecord.userId))
+        eventProducer.send(DeleteBusinessesForUserEvent(authRecord.userId))
         accountDataSource.deleteAuthorization(authRecord.userId)
     }
 

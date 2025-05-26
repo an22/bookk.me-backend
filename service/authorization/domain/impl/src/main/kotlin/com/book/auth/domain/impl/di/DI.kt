@@ -31,11 +31,15 @@ import com.book.auth.domain.impl.operation.registration.StartRegistrationImpl
 import com.book.auth.domain.impl.operation.token.GenerateAuthTokenImpl
 import com.book.auth.domain.impl.operation.token.RefreshTokenImpl
 import com.bookk.core.AppLevelConstants
+import com.bookk.server.business.client.di.businessClientModule
+import com.bookk.server.user.client.di.userClientModule
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.bind
 import org.koin.dsl.module
 
 fun authDomainModule() = module {
+    includes(userClientModule(AppLevelConstants.serviceName))
+    includes(businessClientModule(AppLevelConstants.serviceName))
     single<GenerateAuthToken> { GenerateAuthTokenImpl(AppLevelConstants.DOMAIN_NAME, get(), get()) }
     singleOf(::RefreshTokenImpl) bind RefreshToken::class
     singleOf(::SignOutImpl) bind SignOut::class

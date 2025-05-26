@@ -1,22 +1,21 @@
 [versions]
-apache-codec = "1.17.1"
 apache-common-pool = "2.4.3"
 bookkPlugins = "1.0"
 boringssl = "2.0.65.Final"
-coroutines = "1.9.0-RC"
-flyway = "11.4.1"
+coroutines = "1.9.0"
+flyway = "11.7.2"
 hikari = "5.1.0"
 kafka = "3.8.0"
-koin-bom = "4.1.0-Beta1"
+koin-bom = "4.1.0-Beta7"
 kotlin = "2.0.21"
 kotlin-datetime = "0.6.0"
-ktor = "3.0.0"
+ktor = "3.0.3"
 ktor-doc = "4.0.3"
 logback = "1.5.6"
 mariadb = "3.4.1"
 redis = "6.4.0.RELEASE"
 passkey = "2.5.4"
-exposed = "0.57.0"
+exposed = "0.61.0"
 idempotency = "0.2.0"
 mockk = "1.13.6"
 
@@ -54,6 +53,7 @@ ktor-protobuf = { module = "io.ktor:ktor-serialization-kotlinx-protobuf", versio
 ktor-server-resources = { module = "io.ktor:ktor-server-resources", version.ref = "ktor" }
 ktor-client-resources = { module = "io.ktor:ktor-client-resources", version.ref = "ktor" }
 ktor-test = { module = "io.ktor:ktor-server-test-host", version.ref = "ktor" }
+ktor-status = { module = "io.ktor:ktor-server-status-pages", version.ref = "ktor" }
 ktor-idempotency = { module = "com.wolt:ktor-idempotency", version.ref = "idempotency" }
 mariadb = { module = "org.mariadb.jdbc:mariadb-java-client", version.ref = "mariadb" }
 netty-boringssl = { module = "io.netty:netty-tcnative-boringssl-static", version.ref = "boringssl" }

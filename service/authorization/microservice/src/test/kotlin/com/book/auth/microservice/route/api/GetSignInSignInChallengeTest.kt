@@ -27,9 +27,7 @@ internal class GetSignInSignInChallengeTest {
         given()
         val useCase: StartAssertion = mockk()
         setupApplication(
-            diModule = module {
-                single { useCase }
-            },
+            diModule = module { single { useCase } },
             routeUnderTest = { signIn() }
         )
         val client = createTestClient()

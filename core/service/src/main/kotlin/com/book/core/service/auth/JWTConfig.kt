@@ -3,6 +3,7 @@
 package com.book.core.service.auth
 
 import com.auth0.jwt.interfaces.RSAKeyProvider
+import com.bookk.core.AppLevelConstants
 import java.io.File
 import java.nio.charset.Charset
 import java.security.KeyFactory
@@ -46,11 +47,11 @@ object JwtConfig {
 
     private fun readPublicPemFile(): ByteArray {
         return runCatching {
-            File(System.getenv("BOOKK_ME_JWT_PUBLIC_KEY_FILE"))
+            File(AppLevelConstants.pubKeyFilename)
                 .readBytes()
         }.getOrElse {
             javaClass.classLoader
-                .getResource(System.getenv("BOOKK_ME_JWT_PUBLIC_KEY_FILE"))!!
+                .getResource(AppLevelConstants.pubKeyFilename)!!
                 .readBytes()
         }.toString(Charset.defaultCharset())
             .replace("-----BEGIN PUBLIC KEY-----", "")
@@ -61,11 +62,11 @@ object JwtConfig {
 
     private fun readPrivatePemFile(): ByteArray {
         return runCatching {
-            File(System.getenv("BOOKK_ME_JWT_PRIVATE_KEY_FILE"))
+            File(AppLevelConstants.privateKeyFilename)
                 .readBytes()
         }.getOrElse {
             javaClass.classLoader
-                .getResource(System.getenv("BOOKK_ME_JWT_PRIVATE_KEY_FILE"))!!
+                .getResource(AppLevelConstants.privateKeyFilename)!!
                 .readBytes()
         }.toString(Charset.defaultCharset())
             .replace("-----BEGIN PRIVATE KEY-----", "")

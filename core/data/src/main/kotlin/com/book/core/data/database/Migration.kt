@@ -1,5 +1,6 @@
 package com.book.core.data.database
 
+import com.bookk.core.AppLevelConstants
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import org.flywaydb.core.Flyway
@@ -11,12 +12,12 @@ import org.jetbrains.exposed.sql.transactions.TransactionManager
 import javax.sql.DataSource
 
 fun createDatabase(
-    schemaName: String,
-    driver: String,
-    dbUrl: String,
-    dbPort: String,
-    dbUsername: String,
-    dbPassword: String
+    schemaName: String = AppLevelConstants.dbSchemaName,
+    driver: String = AppLevelConstants.dbDriver,
+    dbUrl: String = AppLevelConstants.dbUrl,
+    dbPort: String = AppLevelConstants.dbPort,
+    dbUsername: String = AppLevelConstants.dbUsername,
+    dbPassword: String = AppLevelConstants.dbPassword
 ) {
     val dataSource: DataSource = HikariDataSource(
         HikariConfig().apply {

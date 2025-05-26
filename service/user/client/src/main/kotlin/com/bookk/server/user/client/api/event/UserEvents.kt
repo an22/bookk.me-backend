@@ -1,4 +1,4 @@
-package com.book.user.domain.api.event
+package com.bookk.server.user.client.api.event
 
 import com.book.core.data.eventstreaming.EventStreaming
 import com.bookk.core.newRandomUUIDString

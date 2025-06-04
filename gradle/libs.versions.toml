@@ -18,6 +18,7 @@ passkey = "2.5.4"
 exposed = "0.61.0"
 idempotency = "0.2.0"
 mockk = "1.13.6"
+money = "2.0.2"
 
 [libraries]
 flyway-core = { module = "org.flywaydb:flyway-core", version.ref = "flyway" }
@@ -66,6 +67,7 @@ exposed-jdbc = { module = "org.jetbrains.exposed:exposed-jdbc", version.ref = "e
 exposed-kotlin-datetime = { module = "org.jetbrains.exposed:exposed-kotlin-datetime", version.ref = "exposed" }
 exposed-migration = { module = "org.jetbrains.exposed:exposed-migration", version.ref = "exposed" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
+joda-money = { module = "org.joda:joda-money", version.ref = "money" }
 
 
 [plugins]

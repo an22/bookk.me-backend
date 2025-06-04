@@ -2,10 +2,41 @@ package com.book.business.data.map
 
 import com.book.business.data.orm.entity.BusinessEntity
 import com.book.business.domain.api.entity.Business
+import org.joda.money.CurrencyUnit
 
 internal fun BusinessEntity.toDomain(): Business {
     return Business(
         id = id.value,
-        name = name
+        name = name,
+        description = description,
+        location = if (latitude != null && longitude != null) {
+            Business.Location(
+                latitude ?: 0.0,
+                longitude ?: 0.0
+            )
+        } else null,
+        currency = currency?.let { CurrencyUnit.of(it) },
+        socials = listOf(
+            Business.Social(
+                Business.SocialKind.PHONE,
+                phone.orEmpty()
+            ),
+            Business.Social(
+                Business.SocialKind.INSTAGRAM,
+                instagram.orEmpty()
+            ),
+            Business.Social(
+                Business.SocialKind.TELEGRAM,
+                telegram.orEmpty()
+            ),
+            Business.Social(
+                Business.SocialKind.WHATSAPP,
+                whatsapp.orEmpty()
+            ),
+            Business.Social(
+                Business.SocialKind.VIBER,
+                viber.orEmpty()
+            )
+        )
     )
 }

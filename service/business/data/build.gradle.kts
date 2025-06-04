@@ -6,5 +6,5 @@ dependencies {
     implementation(projects.core.data)
     implementation(projects.core.data.cache.api)
     implementation(projects.service.business.domain.api)
-    implementation(projects.service.business.domain.datasource)
+    implementation(projects.service.business.data.source)
 }

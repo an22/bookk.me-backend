@@ -36,11 +36,14 @@ include(":core:data:eventstreaming:api")
 include(":core:data:eventstreaming:impl")
 include(":core:service")
 
+//Library
+include(":library:money")
+
 //Authorization
 include(":service:authorization:microservice")
 include(":service:authorization:domain:api")
 include(":service:authorization:domain:impl")
-include(":service:authorization:domain:datasource")
+include(":service:authorization:data:source")
 include(":service:authorization:data")
 include(":service:authorization:client")
 
@@ -48,7 +51,7 @@ include(":service:authorization:client")
 include(":service:user:microservice")
 include(":service:user:domain:api")
 include(":service:user:domain:impl")
-include(":service:user:domain:datasource")
+include(":service:user:data:source")
 include(":service:user:data")
 include(":service:user:client")
 
@@ -56,7 +59,7 @@ include(":service:user:client")
 include(":service:business:microservice")
 include(":service:business:domain:api")
 include(":service:business:domain:impl")
-include(":service:business:domain:datasource")
+include(":service:business:data:source")
 include(":service:business:data")
 include(":service:business:client")
 

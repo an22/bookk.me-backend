@@ -8,7 +8,7 @@ volumes:
 
 configs:
   dns-config:
-    name: dns-config-v10
+    name: dns-config-v11
     file: dns-config.conf
 
 services:

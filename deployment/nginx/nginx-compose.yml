@@ -1,13 +1,16 @@
 version: "3.9"
 
 networks:
+  agent_network:
+    driver: overlay
+    external: true
   bookk-me:
     driver: overlay
     external: true
 
 configs:
   nginx_config:
-    name: nginx-v31
+    name: nginx-v34
     file: nginx.conf
 
   android_well_known:
@@ -25,6 +28,7 @@ services:
       co.elastic.logs/enabled: "true"
     networks:
       - bookk-me
+      - agent_network
     ports:
       - target: 443
         published: 443

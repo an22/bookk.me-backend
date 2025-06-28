@@ -17,6 +17,10 @@ services:
           - admin.bookk.me
     volumes:
       - admin_panel:/usr/app/data/
+    logging:
+      options:
+        max-size: 20m
+        max-file: 5
     deploy:
       mode: replicated
       replicas: 1

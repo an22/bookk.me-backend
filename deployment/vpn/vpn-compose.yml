@@ -41,6 +41,10 @@ services:
       WG_MTU: 1280
       WG_PERSISTENT_KEEPALIVE: 25
       WG_DEFAULT_DNS: 10.8.0.2
+    logging:
+      options:
+        max-size: 20m
+        max-file: 5
     deploy:
       mode: replicated
       replicas: 1
@@ -60,6 +64,10 @@ services:
           - dns.bookk.me
     cap_add:
       - NET_ADMIN
+    logging:
+      options:
+        max-size: 10m
+        max-file: 3
     deploy:
       mode: replicated
       replicas: 1

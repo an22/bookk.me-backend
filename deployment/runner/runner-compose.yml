@@ -16,7 +16,10 @@ services:
       CONFIGURED_ACTIONS_RUNNER_FILES_DIR: /runner/data
       RUNNER_SCOPE: 'repo'
       REPO_URL: "https://github.com/an22/bookk.me-backend"
-
+    logging:
+      options:
+        max-size: 20m
+        max-file: 5
     deploy:
       mode: replicated
       replicas: 1

@@ -18,6 +18,10 @@ volumes:
 
 x-templates:
   replicated-deploy: &replicated
+    logging:
+      options:
+        max-size: 20m
+        max-file: 5
     deploy:
       mode: replicated
       replicas: 1

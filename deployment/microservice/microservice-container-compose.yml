@@ -36,7 +36,10 @@ services:
       MYSQL_TCP_PORT: ${BOOKK_ME_DB_PORT}
     volumes:
       - database_volume:/var/lib/mysql
-
+    logging:
+      options:
+        max-size: 20m
+        max-file: 5
     deploy:
       placement:
         constraints: [ node.role == worker ]

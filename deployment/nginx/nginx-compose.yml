@@ -42,7 +42,7 @@ services:
       - '/etc/letsencrypt/live/bookkk.me-0001/privkey.pem:/etc/letsencrypt/live/bookkk.me-0001/privkey.pem:ro'
     logging:
       options:
-        max-size: 100m
+        max-size: 20m
         max-file: 5
     deploy:
       placement:

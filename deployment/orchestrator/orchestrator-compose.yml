@@ -12,6 +12,10 @@ services:
       mode: global
       placement:
         constraints: [node.platform.os == linux]
+    logging:
+      options:
+        max-size: 20m
+        max-file: 5
 
   portainer:
     image: portainer/portainer-ce:2.22.0
@@ -28,6 +32,10 @@ services:
       replicas: 1
       placement:
         constraints: [node.role == manager]
+    logging:
+      options:
+        max-size: 20m
+        max-file: 5
 
 networks:
   agent_network:

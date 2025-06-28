@@ -57,6 +57,10 @@ secrets:
 
 x-templates:
   replicated-deploy: &replicated
+    logging:
+      options:
+        max-size: 20m
+        max-file: 5
     deploy:
       mode: replicated
       replicas: 1
@@ -86,6 +90,10 @@ x-templates:
     configs:
       - source: jvm-options-master
         target: /usr/share/elasticsearch/config/jvm.options
+    logging:
+      options:
+        max-size: 20m
+        max-file: 5
     deploy:
       endpoint_mode: dnsrr
       placement:
@@ -117,6 +125,10 @@ services:
       KIBANA_PASSWORD: ${KIBANA_PASSWORD}
     command: >
       -S -X POST --cacert /var/tmp/ca.crt --user "elastic:${ELASTIC_PASSWORD}" -H "Content-Type: application/json" https://master1.elastic.bookk.me:9200/_security/user/kibana_system/_password -d "{\"password\":\"${KIBANA_PASSWORD}\"}"
+    logging:
+      options:
+        max-size: 20m
+        max-file: 5
     deploy:
       placement:
         constraints: [ node.role == worker ]
@@ -254,6 +266,10 @@ services:
       memlock:
         soft: -1
         hard: -1
+    logging:
+      options:
+        max-size: 20m
+        max-file: 5
     deploy:
       mode: global
       resources:

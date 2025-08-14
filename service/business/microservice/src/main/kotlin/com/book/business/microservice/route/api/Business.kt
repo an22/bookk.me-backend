@@ -2,9 +2,10 @@ package com.book.business.microservice.route.api
 
 import com.book.business.domain.api.entity.Business
 import com.book.business.domain.api.entity.BusinessUpdateModel
+import com.book.business.domain.api.entity.UserBusinesses
 import com.book.business.domain.api.operation.CreateBusiness
 import com.book.business.domain.api.operation.GetBusinessById
-import com.book.business.domain.api.operation.GetDashboardBusiness
+import com.book.business.domain.api.operation.GetUserBusinesses
 import com.book.business.domain.api.operation.UpdateBusiness
 import com.book.business.microservice.route.BusinessRouting.Api
 import com.book.core.service.applyMediaType
@@ -28,7 +29,8 @@ import org.koin.ktor.ext.inject
 
 @Serializable
 class BusinessCreateRequest(
-    val name: String
+    val name: String,
+    val currencyCode: String
 )
 
 fun Route.businessCrud() {
@@ -39,7 +41,13 @@ fun Route.businessCrud() {
             val body = call.receive<BusinessCreateRequest>()
             val createBusiness by application.inject<CreateBusiness>()
 
-            call.respondWith(createBusiness(userId = principal.userId, name = body.name))
+            call.respondWith(
+                createBusiness(
+                    userId = principal.userId,
+                    name = body.name,
+                    currencyCode = body.currencyCode
+                )
+            )
         }
         put<Api.Business> {
             val body = call.receive<BusinessUpdateModel>()
@@ -48,10 +56,10 @@ fun Route.businessCrud() {
             call.respondWith(updateBusiness(body))
         }
         get<Api.Business> { path ->
-            val getDashboardBusiness by application.inject<GetDashboardBusiness>()
+            val getUserBusinesses by application.inject<GetUserBusinesses>()
             val principal = requireNotNull(call.principal<AppPrincipal>())
 
-            call.respondWith(getDashboardBusiness(userId = principal.userId))
+            call.respondWith(getUserBusinesses(userId = principal.userId))
         }
         get<Api.Business.Id> { path ->
             val getBusinessById by application.inject<GetBusinessById>()
@@ -65,12 +73,12 @@ internal fun Route.withBusinessDocumentation() {
     install(NotarizedResource<Api.Business>()) {
         tags = setOf("business")
         get = GetInfo.builder {
-            summary("Get dashboard business")
-            description("Get business that user selected to be displayed as main business")
+            summary("Get dashboard business info")
+            description("Get all user business and dashboard business id. Dashboard business is a business that user selected to be displayed as main business")
             response {
                 responseCode(HttpStatusCode.OK)
-                responseType<Business>()
-                description("Dashboard business")
+                responseType<UserBusinesses>()
+                description("User business info")
             }
         }
         put = PutInfo.builder {
@@ -82,6 +90,7 @@ internal fun Route.withBusinessDocumentation() {
                 description("Non-null fields will be updated")
             }
             response {
+                responseType<Unit>()
                 responseCode(HttpStatusCode.NoContent)
                 description("Success")
             }

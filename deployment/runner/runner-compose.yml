@@ -1,12 +1,15 @@
 volumes:
   docker-runner:
     driver: local
+  docker-data:
+    driver: local
 
 services:
   github-runner:
     image: myoung34/github-runner:2.320.0
     volumes:
       - docker-runner:/tmp/runner
+      - docker-data:/runner/data
       - '/var/run/docker.sock:/var/run/docker.sock'
     environment:
       RUN_AS_ROOT: "true"

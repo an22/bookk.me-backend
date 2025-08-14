@@ -7,9 +7,9 @@ import com.book.business.domain.datasource.BusinessDataSource
 internal class CreateBusinessImpl(
     private val businessDataSource: BusinessDataSource
 ) : CreateBusiness {
-    override suspend fun invoke(userId: Long, name: String): Result<Business> = runCatching {
+    override suspend fun invoke(userId: Long, name: String, currencyCode: String): Result<Business> = runCatching {
         if (name.length !in 2..512) throw CreateBusiness.Error.BusinessValidationError
         if (businessDataSource.isBusinessExist(userId)) throw CreateBusiness.Error.BusinessExist
-        businessDataSource.createBusiness(userId, name)
+        businessDataSource.createBusiness(userId, name, currencyCode)
     }
 }

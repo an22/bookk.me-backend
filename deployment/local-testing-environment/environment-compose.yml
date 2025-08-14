@@ -22,8 +22,8 @@ services:
         mode: host
     volumes:
       - './service/nginx.conf:/etc/nginx/nginx.conf'
-      - './security/local.bookkk.me.pem:/etc/service/local.bookkk.me.pem:ro'
-      - './security/local.bookkk.me.private.pem:/etc/service/local.bookkk.me.private.pem:ro'
+      - './security/server.crt:/etc/service/local.bookkk.me.crt:ro'
+      - './security/server.key:/etc/service/local.bookkk.me.key:ro'
   kafka:
     image: bitnami/kafka:3.8.0
     hostname: kafka_local

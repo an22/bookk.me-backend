@@ -6,7 +6,7 @@ import com.book.core.domain.entity.BusinessError
 import io.ktor.http.HttpStatusCode
 
 interface CreateBusiness {
-    suspend operator fun invoke(userId: Long, name: String): Result<Business>
+    suspend operator fun invoke(userId: Long, name: String, currencyCode: String): Result<Business>
 
     sealed interface Error {
         data object BusinessExist : BusinessError(

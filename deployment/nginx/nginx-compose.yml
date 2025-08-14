@@ -10,7 +10,7 @@ networks:
 
 configs:
   nginx_config:
-    name: nginx-v34
+    name: nginx-v35
     file: nginx.conf
 
   android_well_known:
@@ -42,8 +42,8 @@ services:
       - source: ios_well_known
         target: '/srv/static/ios_well_known.json'
     volumes:
-      - '/etc/letsencrypt/live/bookkk.me-0001/fullchain.pem:/etc/letsencrypt/live/bookkk.me-0001/fullchain.pem:ro'
-      - '/etc/letsencrypt/live/bookkk.me-0001/privkey.pem:/etc/letsencrypt/live/bookkk.me-0001/privkey.pem:ro'
+      - '/etc/letsencrypt/live/bookkk.me/fullchain.pem:/etc/letsencrypt/live/bookkk.me/fullchain.pem:ro'
+      - '/etc/letsencrypt/live/bookkk.me/privkey.pem:/etc/letsencrypt/live/bookkk.me/privkey.pem:ro'
     logging:
       options:
         max-size: 20m

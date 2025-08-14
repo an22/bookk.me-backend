@@ -9,6 +9,7 @@ internal class BusinessEntity(id: EntityID<Long>) : LongEntity(id) {
     var userId by BusinessTable.userId
     var name by BusinessTable.name
     var description by BusinessTable.description
+    var address by BusinessTable.address
     var latitude by BusinessTable.latitude
     var longitude by BusinessTable.longitude
     var currency by BusinessTable.currency

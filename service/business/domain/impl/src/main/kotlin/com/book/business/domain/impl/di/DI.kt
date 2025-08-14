@@ -4,12 +4,14 @@ import com.book.business.domain.api.operation.CreateBusiness
 import com.book.business.domain.api.operation.DeleteBusiness
 import com.book.business.domain.api.operation.GetBusinessById
 import com.book.business.domain.api.operation.GetDashboardBusiness
+import com.book.business.domain.api.operation.GetUserBusinesses
 import com.book.business.domain.api.operation.UpdateBusiness
 import com.book.business.domain.impl.event.BusinessEventHandlerImpl
 import com.book.business.domain.impl.operation.CreateBusinessImpl
 import com.book.business.domain.impl.operation.DeleteBusinessImpl
 import com.book.business.domain.impl.operation.GetBusinessByIdImpl
 import com.book.business.domain.impl.operation.GetDashboardBusinessImpl
+import com.book.business.domain.impl.operation.GetUserBusinessesImpl
 import com.book.business.domain.impl.operation.UpdateBusinessImpl
 import com.book.core.data.eventstreaming.EventHandler
 import org.koin.core.module.dsl.factoryOf
@@ -23,5 +25,6 @@ fun businessDomainModule() = module {
     singleOf(::DeleteBusinessImpl) bind DeleteBusiness::class
     singleOf(::GetDashboardBusinessImpl) bind GetDashboardBusiness::class
     singleOf(::UpdateBusinessImpl) bind UpdateBusiness::class
+    singleOf(::GetUserBusinessesImpl) bind GetUserBusinesses::class
     factoryOf(::BusinessEventHandlerImpl) bind EventHandler::class
 }

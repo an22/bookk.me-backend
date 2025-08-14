@@ -43,7 +43,7 @@ docker run ghcr.io/wg-easy/wg-easy:nightly wgpw {your password}
 3. Create docker stack
 
 ```
-export VPN_PASSWORD_HASH={your hash from step 2}
+export VPN_PASSWORD_HASH={your hash from step 2, do not forget to escape dollar sign char}
 docker stack deploy vpn --compose-file deployment/vpn/vpn-compose.yml
 ```
 
@@ -66,6 +66,7 @@ docker stack deploy nginx --compose-file deployment/nginx/nginx-compose.yml
 #### Deploy container manager
 
 ```
+docker secret create dozzle-auth orchestrator/dozzle/users.actual.yaml
 docker stack deploy orchestrator --compose-file deployment/orchestrator/orchestrator-compose.yml
 ```
 
@@ -75,10 +76,16 @@ TODO
 #### Deploy Github runner
 ```
 export RUNNER_ACCESS_TOKEN={get access token from github}
-docker stack deploy vpn --compose-file deployment/vpn/vpn-compose.yml
+docker stack deploy runner --compose-file deployment/runner/runner-compose.yml
 ```
+#### Get worker token
+
+TODO
 
 #### Add worker nodes
+
+IP address can be incorrect since subnet IP is used, so make sure you use correct manager IP
+
 ```
 docker swarm join --token {token from manager} {subnet ip}:2377
 ```

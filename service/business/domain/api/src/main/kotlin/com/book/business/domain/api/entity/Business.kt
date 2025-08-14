@@ -1,17 +1,15 @@
 package com.book.business.domain.api.entity
 
-import com.book.library.serializer.MoneySerializer
 import kotlinx.serialization.Serializable
-import org.joda.money.CurrencyUnit
 
 @Serializable
 class Business(
     val id: Long,
     val name: String,
-    val description: String?,
+    val description: String,
+    val address: String,
     val location: Location?,
-    @Serializable(with = MoneySerializer::class)
-    val currency: CurrencyUnit?,
+    val currencyCode: String,
     val socials: List<Social>
 ) {
     @Serializable

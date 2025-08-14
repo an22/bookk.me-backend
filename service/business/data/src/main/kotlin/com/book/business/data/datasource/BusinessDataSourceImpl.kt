@@ -7,6 +7,7 @@ import com.book.business.data.orm.table.BusinessDashboardTable
 import com.book.business.data.orm.table.BusinessTable
 import com.book.business.domain.api.entity.Business
 import com.book.business.domain.api.entity.BusinessUpdateModel
+import com.book.business.domain.api.entity.UserBusinesses
 import com.book.business.domain.datasource.BusinessDataSource
 import com.book.core.data.DataSource
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
@@ -16,12 +17,15 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
 
 internal class BusinessDataSourceImpl : DataSource(), BusinessDataSource {
-    override suspend fun createBusiness(userId: Long, name: String): Business {
+    override suspend fun createBusiness(userId: Long, name: String, currencyCode: String): Business {
         return mapExceptions {
             transaction {
                 val business = BusinessEntity.new {
                     this.name = name
                     this.userId = userId
+                    this.currency = currencyCode
+                    this.description = ""
+                    this.address = ""
                 }.toDomain()
                 BusinessDashboardTable.insert {
                     it[this.userId] = userId
@@ -40,11 +44,12 @@ internal class BusinessDataSourceImpl : DataSource(), BusinessDataSource {
                 ) { statement ->
                     model.name?.let { statement[name] = it }
                     model.description?.let { statement[description] = it }
+                    model.address?.let { statement[address] = it }
                     model.location?.let {
                         statement[latitude] = it.lat
                         statement[longitude] = it.lng
                     }
-                    model.currencyUnit?.let { statement[currency] = it.code }
+                    model.currencyCode?.let { statement[currency] = it }
                     model.socials?.let {
                         for (social in it) {
                             when (social.kind) {
@@ -99,6 +104,26 @@ internal class BusinessDataSourceImpl : DataSource(), BusinessDataSource {
                     .firstOrNull()
                     ?.business
                     ?.toDomain()
+            }
+        }
+    }
+
+    override suspend fun getUserBusinesses(userId: Long): UserBusinesses {
+        return mapExceptions {
+            transaction {
+                val dashboardId = BusinessDashboardTable
+                    .select(BusinessDashboardTable.businessId)
+                    .where { BusinessDashboardTable.userId eq userId }
+                    .firstOrNull()
+                    ?.getOrNull(BusinessDashboardTable.businessId)
+                    ?.value ?: -1L
+                val businesses = BusinessEntity
+                    .find { BusinessTable.userId eq userId }
+                    .map(BusinessEntity::toDomain)
+                UserBusinesses(
+                    dashboardId = dashboardId,
+                    businesses = businesses
+                )
             }
         }
     }

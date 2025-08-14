@@ -2,7 +2,6 @@ package com.book.business.data.map
 
 import com.book.business.data.orm.entity.BusinessEntity
 import com.book.business.domain.api.entity.Business
-import org.joda.money.CurrencyUnit
 
 internal fun BusinessEntity.toDomain(): Business {
     return Business(
@@ -15,7 +14,8 @@ internal fun BusinessEntity.toDomain(): Business {
                 longitude ?: 0.0
             )
         } else null,
-        currency = currency?.let { CurrencyUnit.of(it) },
+        currencyCode = currency,
+        address = address,
         socials = listOf(
             Business.Social(
                 Business.SocialKind.PHONE,

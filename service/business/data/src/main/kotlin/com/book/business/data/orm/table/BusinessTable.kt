@@ -7,10 +7,11 @@ import org.jetbrains.exposed.sql.kotlin.datetime.timestamp
 object BusinessTable: LongIdTable("business") {
     val userId = long("user_id").uniqueIndex()
     val name = varchar("device_name", 512)
-    val description = varchar("description", 512).nullable()
+    val description = varchar("description", 512)
+    val address = varchar("address", 512)
     val latitude = double("latitude").nullable()
     val longitude = double("longitude").nullable()
-    val currency = varchar("currency", 3).nullable()
+    val currency = varchar("currency", 3)
     val instagram = varchar("instagram", 255).nullable()
     val telegram = varchar("telegram", 255).nullable()
     val viber = varchar("viber", 255).nullable()

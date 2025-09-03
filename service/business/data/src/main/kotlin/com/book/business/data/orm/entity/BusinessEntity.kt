@@ -1,11 +1,12 @@
 package com.book.business.data.orm.entity
 
 import com.book.business.data.orm.table.BusinessTable
-import org.jetbrains.exposed.dao.LongEntity
-import org.jetbrains.exposed.dao.LongEntityClass
-import org.jetbrains.exposed.dao.id.EntityID
+import org.jetbrains.exposed.v1.core.dao.id.EntityID
+import org.jetbrains.exposed.v1.dao.UUIDEntity
+import org.jetbrains.exposed.v1.dao.UUIDEntityClass
+import java.util.UUID
 
-internal class BusinessEntity(id: EntityID<Long>) : LongEntity(id) {
+internal class BusinessEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var userId by BusinessTable.userId
     var name by BusinessTable.name
     var description by BusinessTable.description
@@ -21,5 +22,5 @@ internal class BusinessEntity(id: EntityID<Long>) : LongEntity(id) {
     var createdAt by BusinessTable.createdAt
     var updatedAt by BusinessTable.updatedAt
 
-    companion object : LongEntityClass<BusinessEntity>(BusinessTable)
+    companion object : UUIDEntityClass<BusinessEntity>(BusinessTable)
 }

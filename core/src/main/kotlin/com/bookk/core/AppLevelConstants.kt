@@ -30,6 +30,8 @@ object AppLevelConstants {
         get() = System.getenv("BOOKK_ME_DB_DRIVER")
     val dbUrl: String
         get() = System.getenv("BOOKK_ME_DB_URL")
+    val legacyDbUrl: String
+        get() = System.getenv("BOOKK_ME_LEGACY_DB_URL")
     val dbPort: String
         get() = System.getenv("BOOKK_ME_DB_PORT")
     val dbUsername: String

@@ -10,10 +10,10 @@ import com.book.auth.domain.api.token.operation.GenerateAuthToken.Error.InvalidC
 import com.book.auth.domain.api.token.operation.GenerateAuthToken.Source
 import com.book.auth.domain.datasource.DeviceDataSource
 import com.bookk.core.AppLevelConstants.Claim
-import com.bookk.core.newRandomUUIDString
-import kotlinx.datetime.Clock
-import kotlinx.datetime.toJavaInstant
+import kotlin.time.Clock
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.toJavaInstant
+import kotlin.uuid.Uuid
 
 internal class GenerateAuthTokenImpl(
     private val serviceUrl: String,
@@ -24,7 +24,7 @@ internal class GenerateAuthTokenImpl(
     override suspend fun invoke(source: Source): Result<AuthTokens> = runCatching {
         val deviceRecord = source.getDevice() ?: throw InvalidCredentials
         val accessToken = createAccessToken(deviceRecord)
-        val refreshId = newRandomUUIDString()
+        val refreshId = Uuid.random()
         val refreshToken = createRefreshToken(refreshId, deviceRecord)
         deviceDataSource.attachRefreshTokenToDevice(deviceRecord.deviceInfo.id, refreshId)
         AuthTokens(accessToken, refreshToken)
@@ -34,22 +34,22 @@ internal class GenerateAuthTokenImpl(
         return JWT.create()
             .withAudience(serviceUrl)
             .withIssuer(ISSUER)
-            .withJWTId(newRandomUUIDString())
-            .withClaim(Claim.AUTH_ID.key, record.authRecord.id)
-            .withClaim(Claim.USER_ID.key, record.authRecord.userId)
-            .withClaim(Claim.DEVICE_ID.key, record.deviceInfo.id)
+            .withJWTId(Uuid.random().toString())
+            .withClaim(Claim.AUTH_ID.key, record.authRecord.id.toString())
+            .withClaim(Claim.USER_ID.key, record.authRecord.userId.toString())
+            .withClaim(Claim.DEVICE_ID.key, record.deviceInfo.id.toString())
             .withIssuedAt(Clock.System.now().toJavaInstant())
             .withNotBefore(Clock.System.now().toJavaInstant())
             .withExpiresAt(Clock.System.now().plus(ACCESS_EXPIRATION_TIME.milliseconds).toJavaInstant())
             .sign(Algorithm.RSA256(keyProvider))
     }
 
-    private fun createRefreshToken(tokenId: String, record: Device): String {
+    private fun createRefreshToken(tokenId: Uuid, record: Device): String {
         return JWT.create()
             .withAudience(serviceUrl)
             .withIssuer(REFRESH_ISSUER)
-            .withJWTId(tokenId)
-            .withClaim(Claim.DEVICE_ID.key, record.deviceInfo.id)
+            .withJWTId(tokenId.toString())
+            .withClaim(Claim.DEVICE_ID.key, record.deviceInfo.id.toString())
             .withIssuedAt(Clock.System.now().toJavaInstant())
             .withNotBefore(Clock.System.now().toJavaInstant())
             .withExpiresAt(Clock.System.now().plus(REFRESH_EXPIRATION_TIME.milliseconds).toJavaInstant())

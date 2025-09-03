@@ -11,31 +11,42 @@ import com.book.user.data.orm.table.UserTable
 import com.book.user.domain.api.entity.User
 import com.book.user.domain.api.entity.UserEditModel
 import com.book.user.domain.datasource.UserDataSource
-import kotlinx.datetime.Clock
-import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.update
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.map
+import org.jetbrains.exposed.v1.core.statements.UpsertSqlExpressionBuilder.eq
+import org.jetbrains.exposed.v1.r2dbc.deleteWhere
+import org.jetbrains.exposed.v1.r2dbc.insertAndGetId
+import org.jetbrains.exposed.v1.r2dbc.selectAll
+import org.jetbrains.exposed.v1.r2dbc.transactions.suspendTransaction
+import org.jetbrains.exposed.v1.r2dbc.update
+import kotlin.time.Clock
+import kotlin.uuid.Uuid
+import kotlin.uuid.toJavaUuid
+import kotlin.uuid.toKotlinUuid
 
 internal class UserDataSourceImpl(
     private val cacheClient: CacheClient<String>
 ) : DataSource(), UserDataSource {
 
     override suspend fun insertNewUser(user: User) = mapExceptions {
-        val createdUser = transaction {
-            UserEntity.new {
-                name = user.name
-                lastName = user.lastName
-                email = user.email
-                updatedAt = Clock.System.now()
-            }.toDomain()
+        val createdUser = suspendTransaction {
+            UserTable.insertAndGetId {
+                it[name] = user.name
+                it[lastName] = user.lastName
+                it[email] = user.email
+                it[updatedAt] = Clock.System.now()
+            }.let {
+                user.copy(id = it.value.toKotlinUuid())
+            }
         }
-        cacheClient.save(user)
+        cacheClient.save(createdUser)
         return@mapExceptions createdUser
     }
 
-    override suspend fun updateUser(id: Long, user: UserEditModel): Boolean {
+    override suspend fun updateUser(id: Uuid, user: UserEditModel): Boolean {
         return mapExceptions {
-            val updatedRowCount = transaction {
-                UserTable.update(where = { UserTable.id eq id }) {
+            val updatedRowCount = suspendTransaction {
+                UserTable.update(where = { UserTable.id eq id.toJavaUuid() }) {
                     user.firstName?.let { firstName ->
                         it[name] = firstName
                     }
@@ -55,10 +66,15 @@ internal class UserDataSourceImpl(
         }
     }
 
-    override suspend fun getUserById(id: Long): User? = mapExceptions {
+    override suspend fun getUserById(id: Uuid): User? = mapExceptions {
         val cached: User? = cacheClient.getUser(id)
         if (cached != null) return@mapExceptions cached
-        val user = transaction { UserEntity.findById(id)?.toDomain() }
+        val user = suspendTransaction {
+            UserTable.selectAll()
+                .where { UserTable.id eq id.toJavaUuid() }
+                .map { UserEntity.wrapRow(it).toDomain() }
+                .firstOrNull()
+        }
         if (user != null) {
             cacheClient.save(user)
         }
@@ -66,15 +82,20 @@ internal class UserDataSourceImpl(
     }
 
     override suspend fun getUserByEmail(email: String): User? = mapExceptions {
-         transaction {
-            UserEntity.find { UserTable.email eq email }
-                .map(UserEntity::toDomain)
+        suspendTransaction {
+            UserTable.selectAll()
+                .where { UserTable.email eq email }
+                .map { UserEntity.wrapRow(it).toDomain() }
                 .firstOrNull()
         }
     }
 
-    override suspend fun deleteUser(id: Long) = mapExceptions {
-        transaction { UserEntity.findById(id)?.delete() }
-        cacheClient.deleteUser(id)
+    override suspend fun deleteUser(id: Uuid) {
+        mapExceptions {
+            suspendTransaction {
+                UserTable.deleteWhere { UserTable.id eq id.toJavaUuid() }
+            }
+            runCatching { cacheClient.deleteUser(id) }
+        }
     }
 }

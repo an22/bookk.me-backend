@@ -9,6 +9,7 @@ import com.book.core.data.eventstreaming.StandardEventProducer
 import com.book.core.data.eventstreaming.send
 import com.bookk.server.business.client.api.event.BusinessEvent.DeleteBusinessesForUserEvent
 import com.bookk.server.user.client.api.event.UserEvents.DeleteUserEvent
+import kotlin.uuid.Uuid
 
 internal class DeleteAccountImpl(
     private val finishAssertion: FinishAssertion,
@@ -16,7 +17,7 @@ internal class DeleteAccountImpl(
     private val eventProducer: StandardEventProducer
 ) : DeleteAccount {
 
-    override suspend fun invoke(userId: Long, request: FinishAssertionRequest): Result<Unit> = runCatching {
+    override suspend fun invoke(userId: Uuid, request: FinishAssertionRequest): Result<Unit> = runCatching {
         finishAssertion(request).getOrThrow()
         val authRecord = accountDataSource.getAuthRecordByUserId(userId) ?: throw InvalidCredentials
         eventProducer.send(DeleteUserEvent(authRecord.userId))

@@ -9,7 +9,7 @@ import com.book.auth.domain.api.registration.operation.FinishPasskeyRegistration
 import com.book.auth.domain.api.registration.operation.FinishPasskeyRegistration.Error.VerificationFailed
 import com.book.auth.domain.datasource.PassKeyDataSource
 import com.book.auth.domain.impl.passkey.createRelyingParty
-import com.bookk.core.toHexUUID
+import com.bookk.core.toUUID
 import com.yubico.webauthn.CredentialRepository
 import com.yubico.webauthn.FinishRegistrationOptions
 import com.yubico.webauthn.RegistrationResult
@@ -18,9 +18,10 @@ import com.yubico.webauthn.data.ClientRegistrationExtensionOutputs
 import com.yubico.webauthn.data.PublicKeyCredential
 import com.yubico.webauthn.data.PublicKeyCredentialCreationOptions
 import com.yubico.webauthn.exception.RegistrationFailedException
-import kotlinx.datetime.Clock
 import kotlin.jvm.optionals.getOrElse
 import kotlin.jvm.optionals.getOrNull
+import kotlin.time.Clock
+import kotlin.uuid.Uuid
 
 private typealias PKS = PublicKeyCredential<AuthenticatorAttestationResponse, ClientRegistrationExtensionOutputs>
 
@@ -40,7 +41,7 @@ internal class FinishPasskeyRegistrationImpl(
         }
     }
 
-    override suspend fun attachOwner(ownerId: Long, passkey: PasskeyCredential) = runCatching {
+    override suspend fun attachOwner(ownerId: Uuid, passkey: PasskeyCredential): Result<Unit> = runCatching {
         val passkeyWithOwner = passkey.copy(authId = ownerId)
         passKeyDataSource.createPasskeyCredential(passkeyWithOwner)
     }
@@ -63,9 +64,9 @@ internal class FinishPasskeyRegistrationImpl(
     @Suppress("DEPRECATION")
     private fun RegistrationResult.asPasskeyCredential(pkc: PKS, challenge: PublicKeyCredentialCreationOptions): PasskeyCredential {
         return PasskeyCredential(
-            id = 0,
-            authId = 0,
-            authInfo = Authentication(0, 0, ""), //Ignored
+            id = Uuid.random(),
+            authId = Uuid.random(),
+            authInfo = Authentication(Uuid.random(), Uuid.random(), Uuid.random()), //Ignored
             name = challenge.user.displayName,
             credDescriptor = CredentialDescriptor(
                 id = keyId.id.bytes,
@@ -79,7 +80,7 @@ internal class FinishPasskeyRegistrationImpl(
             isBackedUp = isBackedUp,
             attestationObject = pkc.response.attestationObject.bytes,
             clientData = pkc.response.clientDataJSON.bytes.decodeToString(),
-            handle = challenge.user.id.bytes.toHexUUID(),
+            handle = challenge.user.id.bytes.toUUID(),
             createdAt = Clock.System.now(),
             lastUsedAt = Clock.System.now()
         )

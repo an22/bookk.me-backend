@@ -1,12 +1,12 @@
 package com.book.business.data.orm.table
 
-import kotlinx.datetime.Clock
-import org.jetbrains.exposed.dao.id.LongIdTable
-import org.jetbrains.exposed.sql.kotlin.datetime.timestamp
+import org.jetbrains.exposed.v1.core.dao.id.UUIDTable
+import org.jetbrains.exposed.v1.datetime.timestamp
+import kotlin.time.Clock
 
-object BusinessTable: LongIdTable("business") {
-    val userId = long("user_id").uniqueIndex()
-    val name = varchar("device_name", 512)
+object BusinessTable: UUIDTable("business") {
+    val userId = uuid("user_id").uniqueIndex()
+    val name = varchar("name", 512)
     val description = varchar("description", 512)
     val address = varchar("address", 512)
     val latitude = double("latitude").nullable()

@@ -5,10 +5,11 @@ import com.book.auth.domain.api.error.AuthErrorCodes
 import com.book.auth.domain.api.identification.entity.PasskeyCredential
 import com.book.core.domain.entity.BusinessError
 import io.ktor.http.HttpStatusCode
+import kotlin.uuid.Uuid
 
 interface FinishPasskeyRegistration {
     suspend fun verifyRequest(request: FinishRegistrationRequest): Result<PasskeyCredential>
-    suspend fun attachOwner(ownerId: Long, passkey: PasskeyCredential): Result<Unit>
+    suspend fun attachOwner(ownerId: Uuid, passkey: PasskeyCredential): Result<Unit>
 
     sealed interface Error {
         data object ChallengeWindowExpired : BusinessError(

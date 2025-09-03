@@ -1,6 +1,7 @@
 package com.book.auth.microservice.route
 
 import io.ktor.resources.Resource
+import kotlin.uuid.Uuid
 
 object AuthRouting {
     @Resource("api")
@@ -33,7 +34,7 @@ object AuthRouting {
                 class AddFinish(val parent: PassKey = PassKey())
 
                 @Resource("{id}")
-                class Id(val parent: PassKey = PassKey(), val id: Long)
+                class Id(val parent: PassKey = PassKey(), val id: Uuid)
             }
 
             @Resource("/refresh")

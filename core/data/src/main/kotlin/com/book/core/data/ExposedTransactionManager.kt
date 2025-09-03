@@ -2,13 +2,13 @@ package com.book.core.data
 
 
 import com.book.core.domain.transaction.TransactionManager
-import org.jetbrains.exposed.sql.SchemaUtils
-import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
+import org.jetbrains.exposed.v1.r2dbc.SchemaUtils
+import org.jetbrains.exposed.v1.r2dbc.transactions.suspendTransaction
 
 class ExposedTransactionManager: TransactionManager {
     override suspend fun <T> runInTransaction(transaction: suspend () -> T): Result<T> {
         return runCatching {
-            newSuspendedTransaction {
+            suspendTransaction {
                 db.config.defaultSchema?.let { SchemaUtils.setSchema(it) }
                 transaction()
             }

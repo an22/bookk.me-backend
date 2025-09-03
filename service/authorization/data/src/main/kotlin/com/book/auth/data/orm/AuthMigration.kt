@@ -4,15 +4,18 @@ import com.book.auth.data.orm.table.AuthDeviceTable
 import com.book.auth.data.orm.table.AuthenticationTable
 import com.book.auth.data.orm.table.PasskeyCredentialTable
 import com.book.core.data.database.createMigrationScriptFor
-import org.jetbrains.exposed.sql.Table
+import kotlinx.coroutines.runBlocking
+import org.jetbrains.exposed.v1.core.Table
 
 fun main() {
-    createMigrationScriptFor(
-        referenceVersion = 0,
-        targetVersion = 1,
-        schemaName = "authorization",
-        tables = authTables()
-    )
+    runBlocking {
+        createMigrationScriptFor(
+            referenceVersion = 0,
+            targetVersion = 1,
+            schemaName = "authorization",
+            tables = authTables()
+        )
+    }
 }
 
 private fun authTables(): Array<Table> = arrayOf(

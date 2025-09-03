@@ -7,5 +7,7 @@ internal fun KotlinJvmProjectExtension.applyConvention() {
     sourceSets.all {
         languageSettings.optIn("kotlinx.serialization.ExperimentalSerializationApi")
         languageSettings.optIn("kotlinx.coroutines.ExperimentalCoroutinesApi")
+        languageSettings.optIn("kotlin.uuid.ExperimentalUuidApi")
+        languageSettings.optIn("kotlin.time.ExperimentalTime")
     }
 }

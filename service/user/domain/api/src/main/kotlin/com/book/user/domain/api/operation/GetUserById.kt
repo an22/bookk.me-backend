@@ -4,10 +4,11 @@ import com.book.core.domain.entity.BusinessError
 import com.book.user.domain.api.entity.User
 import com.book.user.domain.api.error.UserErrorCodes
 import io.ktor.http.HttpStatusCode
+import kotlin.uuid.Uuid
 
 interface GetUserById {
 
-    suspend operator fun invoke(userId: Long): Result<User>
+    suspend operator fun invoke(userId: Uuid): Result<User>
 
     sealed interface Error {
         data object UserNotFound : BusinessError(

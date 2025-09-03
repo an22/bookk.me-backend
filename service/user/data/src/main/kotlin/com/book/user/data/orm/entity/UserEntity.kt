@@ -1,11 +1,12 @@
 package com.book.user.data.orm.entity
 
 import com.book.user.data.orm.table.UserTable
-import org.jetbrains.exposed.dao.LongEntity
-import org.jetbrains.exposed.dao.LongEntityClass
-import org.jetbrains.exposed.dao.id.EntityID
+import org.jetbrains.exposed.v1.core.dao.id.EntityID
+import org.jetbrains.exposed.v1.dao.UUIDEntity
+import org.jetbrains.exposed.v1.dao.UUIDEntityClass
+import java.util.UUID
 
-class UserEntity(id: EntityID<Long>) : LongEntity(id) {
+class UserEntity(id: EntityID<UUID>) : UUIDEntity(id) {
 
     var name by UserTable.name
     var lastName by UserTable.lastName
@@ -13,5 +14,5 @@ class UserEntity(id: EntityID<Long>) : LongEntity(id) {
     var createdAt by UserTable.createdAt
     var updatedAt by UserTable.updatedAt
 
-    companion object : LongEntityClass<UserEntity>(UserTable)
+    companion object : UUIDEntityClass<UserEntity>(UserTable)
 }

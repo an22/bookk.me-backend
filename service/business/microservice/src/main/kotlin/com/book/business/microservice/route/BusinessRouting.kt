@@ -1,6 +1,7 @@
 package com.book.business.microservice.route
 
 import io.ktor.resources.Resource
+import kotlin.uuid.Uuid
 
 object BusinessRouting {
     @Resource("api")
@@ -13,7 +14,7 @@ object BusinessRouting {
             class HealthCheck(val parent: Business = Business())
 
             @Resource("/{id}")
-            class Id(val parent: Business = Business(), val id: Long)
+            class Id(val parent: Business = Business(), val id: Uuid)
         }
     }
 }

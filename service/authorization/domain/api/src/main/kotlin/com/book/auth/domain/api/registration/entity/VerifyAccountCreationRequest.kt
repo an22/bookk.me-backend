@@ -2,6 +2,7 @@ package com.book.auth.domain.api.registration.entity
 
 import com.book.auth.domain.api.authentication.entity.FinishRegistrationRequest
 import kotlinx.serialization.Serializable
+import kotlin.uuid.Uuid
 
 @Serializable
 data class VerifyAccountCreationRequest(
@@ -19,7 +20,7 @@ data class VerifyAccountCreationRequest(
 
     @Serializable
     data class DeviceInfo(
-        val deviceUUID: String,
+        val deviceUUID: Uuid,
         val deviceName: String,
     )
 }

@@ -6,9 +6,10 @@ import com.auth0.jwt.algorithms.Algorithm
 import com.book.core.service.auth.JwtConfig.createPublicKeyProvider
 import com.bookk.core.AppLevelConstants
 import com.bookk.core.AppLevelConstants.Claim
+import com.bookk.core.toUUID
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.auth.jwt.JWTCredential
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 
 object RefreshVerifier {
 
@@ -24,8 +25,8 @@ object RefreshVerifier {
         val isNotExpired = credentials.payload.expiresAt.time > Clock.System.now().toEpochMilliseconds()
         if (isNotExpired) {
             RefreshPrincipal(
-                deviceId = credentials.payload.getClaim(Claim.DEVICE_ID.key).asLong(),
-                tokenId = credentials.jwtId.orEmpty()
+                deviceId = credentials.payload.getClaim(Claim.DEVICE_ID.key).asString().toUUID(),
+                tokenId = requireNotNull(credentials.jwtId).toUUID()
             )
         } else null
     }

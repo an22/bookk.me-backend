@@ -10,21 +10,27 @@ import com.book.core.data.DataSource
 import com.book.core.data.cache.CacheClient
 import com.book.core.data.cache.get
 import com.book.core.data.cache.set
-import com.bookk.core.toHexUUID
-import com.bookk.core.toUUIDBytes
-import kotlinx.datetime.Clock
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.greater
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.count
-import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.innerJoin
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.longLiteral
-import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.update
-import org.jetbrains.exposed.sql.wrapAsExpression
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.flow.toSet
+import org.jetbrains.exposed.v1.core.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.v1.core.SqlExpressionBuilder.greater
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.count
+import org.jetbrains.exposed.v1.core.innerJoin
+import org.jetbrains.exposed.v1.core.longLiteral
+import org.jetbrains.exposed.v1.core.wrapAsExpression
+import org.jetbrains.exposed.v1.r2dbc.deleteWhere
+import org.jetbrains.exposed.v1.r2dbc.insert
+import org.jetbrains.exposed.v1.r2dbc.select
+import org.jetbrains.exposed.v1.r2dbc.selectAll
+import org.jetbrains.exposed.v1.r2dbc.transactions.suspendTransaction
+import org.jetbrains.exposed.v1.r2dbc.update
+import kotlin.time.Clock
 import kotlin.time.Duration.Companion.minutes
+import kotlin.uuid.Uuid
+import kotlin.uuid.toJavaUuid
 
 internal class PassKeyDataSourceImpl(
     private val cacheClient: CacheClient<String>
@@ -47,9 +53,9 @@ internal class PassKeyDataSourceImpl(
 
     override suspend fun createPasskeyCredential(credential: PasskeyCredential) {
         mapExceptions {
-            transaction {
+            suspendTransaction {
                 PasskeyCredentialTable.insert {
-                    it[authUUID] = credential.handle
+                    it[authUUID] = credential.handle.toJavaUuid()
                     it[name] = credential.name
                     it[credDescriptorId] = credential.credDescriptor.id
                     it[credDescriptorType] = credential.credDescriptor.type
@@ -68,56 +74,64 @@ internal class PassKeyDataSourceImpl(
         }
     }
 
-    override suspend fun getCredentialBy(userHandle: ByteArray, credentialId: ByteArray): PasskeyCredential? {
+    override suspend fun getCredentialBy(userHandle: Uuid, credentialId: ByteArray): PasskeyCredential? {
         return mapExceptions {
-            transaction {
-                PasskeyCredentialEntity
-                    .find {
-                        (PasskeyCredentialTable.authUUID eq userHandle.toHexUUID()) and
-                                (PasskeyCredentialTable.credDescriptorId eq credentialId)
-                    }
-                    .map(PasskeyCredentialEntity::toDomain)
+            suspendTransaction {
+                PasskeyCredentialTable
+                    .innerJoin(
+                        AuthenticationTable,
+                        onColumn = { authUUID },
+                        otherColumn = { id },
+                        additionalConstraint = { PasskeyCredentialTable.authUUID eq userHandle.toJavaUuid() }
+                    )
+                    .selectAll()
+                    .map { PasskeyCredentialEntity.wrapRow(it).toDomain() }
                     .firstOrNull()
             }
         }
     }
 
-    override suspend fun getCredentialBy(authId: Long): List<PasskeyCredential> {
+    override suspend fun getCredentialBy(authId: Uuid): List<PasskeyCredential> {
         return mapExceptions {
-            transaction {
-                PasskeyCredentialEntity.wrapRows(
-                    AuthenticationTable
-                        .innerJoin(
-                            otherTable = PasskeyCredentialTable,
-                            onColumn = { uuid },
-                            otherColumn = { authUUID }
-                        )
-                        .select(PasskeyCredentialTable.columns)
-                        .where { AuthenticationTable.id eq authId }
-                ).map(PasskeyCredentialEntity::toDomain)
+            suspendTransaction {
+                AuthenticationTable
+                    .innerJoin(
+                        otherTable = PasskeyCredentialTable,
+                        onColumn = { uuid },
+                        otherColumn = { authUUID },
+                    )
+                    .select(PasskeyCredentialTable.columns)
+                    .where { AuthenticationTable.id eq authId.toJavaUuid() }
+                    .map { PasskeyCredentialEntity.wrapRow(it).toDomain() }
+                    .toList()
             }
         }
     }
 
-    override suspend fun getUsernameByHandle(userHandle: ByteArray): String? = mapExceptions {
-        transaction {
-            val strRepresentation = userHandle.toHexUUID()
+    override suspend fun getUsernameByHandle(userHandle: Uuid): String? = mapExceptions {
+        suspendTransaction {
             val exists = AuthenticationTable
                 .select(AuthenticationTable.id)
-                .where { AuthenticationTable.uuid eq strRepresentation }
+                .where { AuthenticationTable.uuid eq userHandle.toJavaUuid() }
                 .empty()
                 .not()
 
-            strRepresentation.takeIf { exists }
+            userHandle.toString().takeIf { exists }
         }
     }
 
-    override suspend fun getCredentialsByUsername(username: String): Set<PasskeyCredential> {
+    override suspend fun getCredentialsByUsername(username: Uuid): Set<PasskeyCredential> {
         return mapExceptions {
-            transaction {
-                PasskeyCredentialEntity
-                    .find { PasskeyCredentialTable.authUUID eq username }
-                    .map(PasskeyCredentialEntity::toDomain)
+            suspendTransaction {
+                PasskeyCredentialTable
+                    .innerJoin(
+                        otherTable = PasskeyCredentialTable,
+                        onColumn = { AuthenticationTable.uuid },
+                        otherColumn = { authUUID },
+                        additionalConstraint = { PasskeyCredentialTable.authUUID eq username.toJavaUuid() }
+                    )
+                    .selectAll()
+                    .map { PasskeyCredentialEntity.wrapRow(it).toDomain() }
                     .toSet()
             }
         }
@@ -125,41 +139,46 @@ internal class PassKeyDataSourceImpl(
 
     override suspend fun getCredentialsByCredentialId(credentialId: ByteArray): Set<PasskeyCredential> {
         return mapExceptions {
-            transaction {
-                PasskeyCredentialEntity.find {
-                    PasskeyCredentialTable.credDescriptorId eq credentialId
-                }
-                    .map(PasskeyCredentialEntity::toDomain)
+            suspendTransaction {
+                PasskeyCredentialTable
+                    .innerJoin(
+                        otherTable = PasskeyCredentialTable,
+                        onColumn = { AuthenticationTable.uuid },
+                        otherColumn = { authUUID },
+                    )
+                    .selectAll()
+                    .where { PasskeyCredentialTable.credDescriptorId eq credentialId }
+                    .map { PasskeyCredentialEntity.wrapRow(it).toDomain() }
                     .toSet()
             }
         }
     }
 
-    override suspend fun getHandleByUsername(username: String): ByteArray? = mapExceptions {
-        transaction {
+    override suspend fun getHandleByUsername(username: Uuid): Uuid? = mapExceptions {
+        suspendTransaction {
             val exists = AuthenticationTable
                 .select(AuthenticationTable.id)
-                .where { AuthenticationTable.uuid eq username }
+                .where { AuthenticationTable.uuid eq username.toJavaUuid() }
                 .empty()
                 .not()
 
-            username.toUUIDBytes().takeIf { exists }
+            username.takeIf { exists }
         }
     }
 
-    override suspend fun markAsUsed(passkeyCredentialId: Long) {
+    override suspend fun markAsUsed(passkeyCredentialId: Uuid) {
         mapExceptions {
-            transaction {
-                PasskeyCredentialTable.update(where = { PasskeyCredentialTable.id eq passkeyCredentialId }) {
+            suspendTransaction {
+                PasskeyCredentialTable.update(where = { PasskeyCredentialTable.id eq passkeyCredentialId.toJavaUuid() }) {
                     it[lastUsedAt] = Clock.System.now()
                 }
             }
         }
     }
 
-    override suspend fun deletePasskey(id: Long, authId: Long): Int {
+    override suspend fun deletePasskey(id: Uuid, authId: Uuid): Int {
         return mapExceptions {
-            transaction {
+            suspendTransaction {
                 val existingPasskeys = AuthenticationTable
                     .innerJoin(
                         otherTable = PasskeyCredentialTable,
@@ -167,10 +186,10 @@ internal class PassKeyDataSourceImpl(
                         otherColumn = { authUUID }
                     )
                     .select(PasskeyCredentialTable.id.count())
-                    .where { AuthenticationTable.id eq authId }
+                    .where { AuthenticationTable.id eq authId.toJavaUuid() }
                     .let { wrapAsExpression<Long>(it) }
                 PasskeyCredentialTable.deleteWhere {
-                    (PasskeyCredentialTable.id eq id) and (existingPasskeys greater longLiteral(1L))
+                    (PasskeyCredentialTable.id eq id.toJavaUuid()) and (existingPasskeys greater longLiteral(1L))
                 }
             }
         }

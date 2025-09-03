@@ -1,6 +1,8 @@
 package com.book.core.service.auth
 
+import kotlin.uuid.Uuid
+
 class RefreshPrincipal(
-    val tokenId: String,
-    val deviceId: Long
+    val tokenId: Uuid,
+    val deviceId: Uuid
 )

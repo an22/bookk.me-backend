@@ -1,7 +1,8 @@
 package com.book.auth.domain.api.identification.entity
 
 import com.book.auth.domain.api.authentication.entity.Authentication
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
+import kotlin.uuid.Uuid
 
 /**
  * Entity is immutable and byte arrays expected to never be touched
@@ -9,10 +10,10 @@ import kotlinx.datetime.Instant
  */
 @Suppress("ArrayInDataClass")
 data class PasskeyCredential(
-    val id: Long,
-    val authId: Long,
+    val id: Uuid,
+    val authId: Uuid,
     val authInfo: Authentication,
-    val handle: String,
+    val handle: Uuid,
     val name: String,
     val credDescriptor: CredentialDescriptor,
     val publicKey: String,

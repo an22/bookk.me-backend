@@ -3,11 +3,12 @@ package com.book.auth.domain.impl.operation.identification
 import com.book.auth.domain.api.identification.entity.PasskeyResponse
 import com.book.auth.domain.api.identification.operation.GetAvailablePasskeys
 import com.book.auth.domain.datasource.PassKeyDataSource
+import kotlin.uuid.Uuid
 
 internal class GetAvailablePasskeysImpl(
     private val passKeyDataSource: PassKeyDataSource
 ) : GetAvailablePasskeys {
-    override suspend fun invoke(authId: Long): Result<List<PasskeyResponse>> = runCatching {
+    override suspend fun invoke(authId: Uuid): Result<List<PasskeyResponse>> = runCatching {
         passKeyDataSource.getCredentialBy(authId)
             .map {
                 PasskeyResponse(

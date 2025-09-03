@@ -17,13 +17,14 @@ import io.ktor.server.routing.Route
 import io.ktor.server.routing.application
 import kotlinx.serialization.Serializable
 import org.koin.ktor.ext.inject
+import kotlin.uuid.Uuid
 
 @Serializable
 private class ContactFormBody(
     val text: String,
     val usageLogs: String?
 ) {
-    fun asForm(userId: Long): ContactForm {
+    fun asForm(userId: Uuid): ContactForm {
         return ContactForm(
             userId = userId,
             text = text,

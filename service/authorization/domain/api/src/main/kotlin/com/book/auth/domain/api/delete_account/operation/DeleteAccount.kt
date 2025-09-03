@@ -4,10 +4,11 @@ import com.book.auth.domain.api.authentication.entity.FinishAssertionRequest
 import com.book.auth.domain.api.error.AuthErrorCodes
 import com.book.core.domain.entity.BusinessError
 import io.ktor.http.HttpStatusCode
+import kotlin.uuid.Uuid
 
 interface DeleteAccount {
 
-    suspend operator fun invoke(userId: Long, request: FinishAssertionRequest): Result<Unit>
+    suspend operator fun invoke(userId: Uuid, request: FinishAssertionRequest): Result<Unit>
 
     sealed interface Error {
         data object InvalidCredentials : BusinessError(

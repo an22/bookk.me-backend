@@ -4,9 +4,10 @@ import com.book.business.domain.api.entity.Business
 import com.book.business.domain.api.error.BusinessErrorCodes
 import com.book.core.domain.entity.BusinessError
 import io.ktor.http.HttpStatusCode
+import kotlin.uuid.Uuid
 
 interface CreateBusiness {
-    suspend operator fun invoke(userId: Long, name: String, currencyCode: String): Result<Business>
+    suspend operator fun invoke(userId: Uuid, name: String, currencyCode: String): Result<Business>
 
     sealed interface Error {
         data object BusinessExist : BusinessError(

@@ -1,6 +1,7 @@
 package com.book.auth.domain.api.authentication.entity
 
 import kotlinx.serialization.Serializable
+import kotlin.uuid.Uuid
 
 @Serializable
 class VerifySignInRequest(
@@ -10,7 +11,7 @@ class VerifySignInRequest(
 ): FinishAssertionRequest {
     @Serializable
     data class DeviceInfo(
-        val deviceUUID: String,
+        val deviceUUID: Uuid,
         val deviceName: String
     )
 }

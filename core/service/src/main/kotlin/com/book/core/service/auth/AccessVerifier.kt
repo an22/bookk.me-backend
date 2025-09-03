@@ -8,7 +8,8 @@ import com.bookk.core.AppLevelConstants
 import com.bookk.core.AppLevelConstants.Claim
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.auth.jwt.JWTCredential
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
+import kotlin.uuid.Uuid
 
 object AccessVerifier {
 
@@ -24,9 +25,9 @@ object AccessVerifier {
         val isNotExpired = credentials.payload.expiresAt.time > Clock.System.now().toEpochMilliseconds()
         if (isNotExpired) {
             AppPrincipal(
-                authId = credentials.payload.getClaim(Claim.AUTH_ID.key).asLong(),
-                userId = credentials.payload.getClaim(Claim.USER_ID.key).asLong(),
-                deviceId = credentials.payload.getClaim(Claim.DEVICE_ID.key).asLong()
+                authId = Uuid.parse(credentials.payload.getClaim(Claim.AUTH_ID.key).asString()),
+                userId = Uuid.parse(credentials.payload.getClaim(Claim.USER_ID.key).asString()),
+                deviceId = Uuid.parse(credentials.payload.getClaim(Claim.DEVICE_ID.key).asString())
             )
         } else null
     }

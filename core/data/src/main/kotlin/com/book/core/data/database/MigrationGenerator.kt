@@ -1,22 +1,23 @@
 package com.book.core.data.database
 
-import MigrationUtils
 import org.flywaydb.core.Flyway
-import org.jetbrains.exposed.sql.Database
-import org.jetbrains.exposed.sql.ExperimentalDatabaseMigrationApi
-import org.jetbrains.exposed.sql.Schema
-import org.jetbrains.exposed.sql.SchemaUtils
-import org.jetbrains.exposed.sql.Table
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.core.ExperimentalDatabaseMigrationApi
+import org.jetbrains.exposed.v1.core.Schema
+import org.jetbrains.exposed.v1.core.Table
+import org.jetbrains.exposed.v1.migration.MigrationUtils
+import org.jetbrains.exposed.v1.r2dbc.R2dbcDatabase
+import org.jetbrains.exposed.v1.r2dbc.SchemaUtils
+import org.jetbrains.exposed.v1.r2dbc.transactions.suspendTransaction
 import java.io.File
 
 private const val URL = "jdbc:mariadb://127.0.0.1:3308"
+private const val R2DBC_URL = "r2dbc:mariadb://127.0.0.1:3308"
 private const val USER = "root"
 private const val PASS = "migration"
 private const val DRIVER = "org.mariadb.jdbc.Driver"
 
 @OptIn(ExperimentalDatabaseMigrationApi::class)
-fun createMigrationScriptFor(
+suspend fun createMigrationScriptFor(
     referenceVersion: Int,
     targetVersion: Int,
     schemaName: String,
@@ -27,7 +28,7 @@ fun createMigrationScriptFor(
         migrationDir.mkdirs()
     }
     moveDBWithVersion(referenceVersion, migrationDir.path, schemaName)
-    transaction {
+    suspendTransaction {
         SchemaUtils.setSchema(Schema(schemaName))
         val file = MigrationUtils.generateMigrationScript(
             tables = tables,
@@ -47,18 +48,17 @@ fun createMigrationScriptFor(
     }
 }
 
-private fun moveDBWithVersion(
+private suspend fun moveDBWithVersion(
     schemaVersion: Int,
     migrationsFolderPath: String,
     schemaName: String
 ) {
-    Database.connect(
-        url = URL,
+    R2dbcDatabase.connect(
+        url = R2DBC_URL,
         user = USER,
-        driver = DRIVER,
         password = PASS
     )
-    transaction {
+    suspendTransaction {
         SchemaUtils.dropSchema(Schema(schemaName))
     }
     if (schemaVersion != 0) {
@@ -73,7 +73,7 @@ private fun moveDBWithVersion(
             .load()
             .migrate()
     } else {
-        transaction {
+        suspendTransaction {
             SchemaUtils.createSchema(Schema(schemaName))
             SchemaUtils.setSchema(Schema(schemaName))
         }

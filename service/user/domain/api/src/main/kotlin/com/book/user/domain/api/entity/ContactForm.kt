@@ -1,8 +1,10 @@
 package com.book.user.domain.api.entity
 
+import kotlin.uuid.Uuid
+
 
 data class ContactForm(
-    val userId: Long,
+    val userId: Uuid,
     val text: String,
     val usageLogs: String?,
     val status: ContactFormStatus

@@ -5,6 +5,7 @@ import com.book.core.data.cache.get
 import com.book.core.data.cache.set
 import com.book.user.domain.api.entity.User
 import kotlin.time.Duration.Companion.minutes
+import kotlin.uuid.Uuid
 
 object UserCacheStrategy {
     private val cacheExpiration = 10.minutes
@@ -17,11 +18,11 @@ object UserCacheStrategy {
         }
     }
 
-    suspend fun CacheClient<String>.getUser(id: Long): User? {
+    suspend fun CacheClient<String>.getUser(id: Uuid): User? {
         return get(cacheKeyFrom(id))
     }
 
-    suspend fun CacheClient<String>.deleteUser(id: Long) {
+    suspend fun CacheClient<String>.deleteUser(id: Uuid) {
         delete(cacheKeyFrom(id))
     }
 
@@ -29,7 +30,7 @@ object UserCacheStrategy {
         return cacheKeyFrom(user.id)
     }
 
-    private fun cacheKeyFrom(id: Long): String {
+    private fun cacheKeyFrom(id: Uuid): String {
         return "user_$id"
     }
 }

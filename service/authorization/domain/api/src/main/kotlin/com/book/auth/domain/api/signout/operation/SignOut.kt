@@ -1,7 +1,9 @@
 package com.book.auth.domain.api.signout.operation
 
+import kotlin.uuid.Uuid
+
 interface SignOut {
 
-    suspend operator fun invoke(deviceId: Long): Result<Unit>
+    suspend operator fun invoke(deviceId: Uuid): Result<Unit>
 
 }

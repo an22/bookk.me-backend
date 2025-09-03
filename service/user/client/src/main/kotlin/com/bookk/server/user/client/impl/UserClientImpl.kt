@@ -9,6 +9,7 @@ import com.book.user.domain.api.operation.GetUserById
 import com.bookk.server.user.client.UserClient
 import com.bookk.server.user.client.api.CreateUserRequest
 import com.bookk.server.user.client.api.UserSnapshot
+import kotlin.uuid.Uuid
 
 internal class UserClientImpl(
     private val getUserById: GetUserById,
@@ -16,7 +17,7 @@ internal class UserClientImpl(
     private val createUser: CreateUser,
     private val deleteUser: DeleteUser
 ) : UserClient {
-    override suspend fun getUserById(userId: Long): Result<UserSnapshot> {
+    override suspend fun getUserById(userId: Uuid): Result<UserSnapshot> {
         return getUserById.invoke(userId)
             .map { UserSnapshot.fromUser(it) }
     }
@@ -26,10 +27,10 @@ internal class UserClientImpl(
             .map { UserSnapshot.fromUser(it) }
     }
 
-    override suspend fun createUser(request: CreateUserRequest): Result<Long> {
+    override suspend fun createUser(request: CreateUserRequest): Result<Uuid> {
         return createUser.invoke(
             user = User(
-                id = 0,
+                id = Uuid.random(),
                 name = request.name,
                 email = request.email,
                 lastName = request.lastName
@@ -37,7 +38,7 @@ internal class UserClientImpl(
         ).map { it.id }
     }
 
-    override suspend fun deleteUser(userId: Long): Result<Unit> {
+    override suspend fun deleteUser(userId: Uuid): Result<Unit> {
         return deleteUser.invoke(userId)
     }
 

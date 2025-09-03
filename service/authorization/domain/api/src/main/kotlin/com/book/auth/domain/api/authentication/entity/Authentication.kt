@@ -1,7 +1,9 @@
 package com.book.auth.domain.api.authentication.entity
 
-class Authentication(
-    val id: Long,
-    val userId: Long,
-    val uuid: String
+import kotlin.uuid.Uuid
+
+data class Authentication(
+    val id: Uuid,
+    val userId: Uuid,
+    val uuid: Uuid
 )

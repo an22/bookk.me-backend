@@ -1,14 +1,14 @@
 package com.bookk.server.business.client.api.event
 
 import com.book.core.data.eventstreaming.EventStreaming
-import com.bookk.core.newRandomUUIDString
 import kotlinx.serialization.Serializable
+import kotlin.uuid.Uuid
 
 interface BusinessEvent : EventStreaming.Event<String> {
     @Serializable
     class DeleteBusinessesForUserEvent(
-        val userId: Long,
-        override val idempotencyKey: String = newRandomUUIDString()
+        val userId: Uuid,
+        override val idempotencyKey: String = Uuid.random().toString()
     ) : BusinessEvent {
         override val topic: String = TOPIC
 

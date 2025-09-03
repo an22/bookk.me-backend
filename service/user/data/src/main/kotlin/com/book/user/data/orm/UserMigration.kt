@@ -3,15 +3,18 @@ package com.book.user.data.orm
 import com.book.core.data.database.createMigrationScriptFor
 import com.book.user.data.orm.table.ContactFormTable
 import com.book.user.data.orm.table.UserTable
-import org.jetbrains.exposed.sql.Table
+import kotlinx.coroutines.runBlocking
+import org.jetbrains.exposed.v1.core.Table
 
 fun main() {
-    createMigrationScriptFor(
-        referenceVersion = 0,
-        targetVersion = 1,
-        schemaName = "user",
-        tables = userTables()
-    )
+    runBlocking {
+        createMigrationScriptFor(
+            referenceVersion = 0,
+            targetVersion = 1,
+            schemaName = "user",
+            tables = userTables()
+        )
+    }
 }
 
 private fun userTables(): Array<Table> {

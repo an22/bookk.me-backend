@@ -8,18 +8,18 @@ import com.book.auth.domain.api.identification.entity.Device
 import com.book.auth.domain.api.identification.entity.DeviceInfo
 import com.book.auth.domain.api.identification.entity.PasskeyCredential
 import com.book.auth.domain.api.identification.entity.PasskeyCredential.CredentialDescriptor
-import com.bookk.core.toUUIDBytes
 import com.yubico.webauthn.RegisteredCredential
 import com.yubico.webauthn.data.AuthenticatorTransport
 import com.yubico.webauthn.data.PublicKeyCredentialDescriptor
 import com.yubico.webauthn.data.PublicKeyCredentialType
+import kotlin.uuid.toKotlinUuid
 import com.yubico.webauthn.data.ByteArray as YubicoByteArray
 
 internal fun AuthenticationEntity.toDomain(): Authentication {
     return Authentication(
-        id = id.value,
-        userId = userId,
-        uuid = uuid
+        id = id.value.toKotlinUuid(),
+        userId = userId.toKotlinUuid(),
+        uuid = uuid.toKotlinUuid()
     )
 }
 
@@ -27,9 +27,9 @@ internal fun AuthDeviceEntity.toDomain(): Device {
     return Device(
         authRecord = userAuth.toDomain(),
         deviceInfo = DeviceInfo(
-            id = id.value,
-            deviceUUID = deviceUUID,
-            refreshTokenId = refreshTokenId,
+            id = id.value.toKotlinUuid(),
+            deviceUUID = deviceUUID.toKotlinUuid(),
+            refreshTokenId = refreshTokenId?.toKotlinUuid(),
             deviceName = deviceName,
             isSignedIn = isSignedIn,
         )
@@ -38,10 +38,10 @@ internal fun AuthDeviceEntity.toDomain(): Device {
 
 internal fun PasskeyCredentialEntity.toDomain(): PasskeyCredential {
     return PasskeyCredential(
-        id = id.value,
-        authId = authorization.id.value,
+        id = id.value.toKotlinUuid(),
+        authId = authorization.id.value.toKotlinUuid(),
         authInfo = authorization.toDomain(),
-        handle = authorization.uuid,
+        handle = authorization.uuid.toKotlinUuid(),
         name = name,
         credDescriptor = CredentialDescriptor(
             id = credDescriptorId,
@@ -72,7 +72,7 @@ internal fun PasskeyCredential.asPublicKeyCredentialDescriptor(): PublicKeyCrede
 internal fun PasskeyCredential.asRegisteredCredential(): RegisteredCredential {
     return RegisteredCredential.builder()
         .credentialId(YubicoByteArray(credDescriptor.id))
-        .userHandle(YubicoByteArray(handle.toUUIDBytes()))
+        .userHandle(YubicoByteArray(handle.toByteArray()))
         .publicKeyCose(YubicoByteArray.fromBase64(publicKey))
         .signatureCount(signatureCount)
         .backupEligible(isBackupEligible)

@@ -4,14 +4,13 @@ import com.book.auth.domain.api.registration.entity.RegistrationChallengeRespons
 import com.book.auth.domain.api.registration.operation.StartPasskeyRegistration
 import com.book.auth.domain.datasource.PassKeyDataSource
 import com.book.auth.domain.impl.passkey.createRelyingParty
-import com.bookk.core.newRandomUUIDString
 import com.yubico.webauthn.CredentialRepository
 import com.yubico.webauthn.StartRegistrationOptions
 import com.yubico.webauthn.data.AuthenticatorSelectionCriteria
 import com.yubico.webauthn.data.PublicKeyCredentialCreationOptions
 import com.yubico.webauthn.data.ResidentKeyRequirement
 import com.yubico.webauthn.data.UserIdentity
-import kotlin.ByteArray
+import kotlin.uuid.Uuid
 import com.yubico.webauthn.data.ByteArray as YubicoByteArray
 
 internal class StartPasskeyRegistrationImpl(
@@ -19,12 +18,9 @@ internal class StartPasskeyRegistrationImpl(
     private val credentialRepository: CredentialRepository
 ) : StartPasskeyRegistration {
 
-    override suspend fun invoke(
-        userHandle: ByteArray,
-        passkeyDisplayName: String
-    ): Result<RegistrationChallengeResponse> = runCatching {
-        val requestId = newRandomUUIDString()
-        val challenge = createChallenge(requestId, passkeyDisplayName, YubicoByteArray(userHandle))
+    override suspend fun invoke(userHandle: Uuid, passkeyDisplayName: String): Result<RegistrationChallengeResponse> = runCatching {
+        val requestId = Uuid.random().toString()
+        val challenge = createChallenge(requestId, passkeyDisplayName, YubicoByteArray(userHandle.toByteArray()))
         passKeyDataSource.saveChallengeToCache(requestId, challenge.toJson())
         RegistrationChallengeResponse(
             requestId = requestId,

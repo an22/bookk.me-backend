@@ -4,9 +4,10 @@ import com.book.auth.domain.api.error.AuthErrorCodes
 import com.book.auth.domain.api.registration.entity.RegistrationChallengeResponse
 import com.book.core.domain.entity.BusinessError
 import io.ktor.http.HttpStatusCode
+import kotlin.uuid.Uuid
 
 interface GetAttachPasskeyToAccountChallenge {
-    suspend operator fun invoke(authId: Long, deviceId: Long, userId: Long): Result<RegistrationChallengeResponse>
+    suspend operator fun invoke(authId: Uuid, deviceId: Uuid, userId: Uuid): Result<RegistrationChallengeResponse>
 
     sealed interface Error {
         data object UnableToGeneratePasskeyChallenge : BusinessError(

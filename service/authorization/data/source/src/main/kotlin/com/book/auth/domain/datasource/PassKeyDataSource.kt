@@ -1,18 +1,19 @@
 package com.book.auth.domain.datasource
 
 import com.book.auth.domain.api.identification.entity.PasskeyCredential
+import kotlin.uuid.Uuid
 
 interface PassKeyDataSource {
     suspend fun saveChallengeToCache(requestId: String, challenge: String)
     suspend fun getCachedChallenge(requestId: String): String?
     suspend fun deleteCachedChallenge(requestId: String)
     suspend fun createPasskeyCredential(credential: PasskeyCredential)
-    suspend fun getCredentialBy(userHandle: ByteArray, credentialId: ByteArray): PasskeyCredential?
-    suspend fun getCredentialBy(authId: Long): List<PasskeyCredential>
-    suspend fun getHandleByUsername(username: String): ByteArray?
-    suspend fun getUsernameByHandle(userHandle: ByteArray): String?
-    suspend fun getCredentialsByUsername(username: String): Set<PasskeyCredential>
+    suspend fun getCredentialBy(userHandle: Uuid, credentialId: ByteArray): PasskeyCredential?
+    suspend fun getCredentialBy(authId: Uuid): List<PasskeyCredential>
+    suspend fun getHandleByUsername(username: Uuid): Uuid?
+    suspend fun getUsernameByHandle(userHandle: Uuid): String?
+    suspend fun getCredentialsByUsername(username: Uuid): Set<PasskeyCredential>
     suspend fun getCredentialsByCredentialId(credentialId: ByteArray): Set<PasskeyCredential>
-    suspend fun markAsUsed(passkeyCredentialId: Long)
-    suspend fun deletePasskey(id: Long, authId: Long): Int
+    suspend fun markAsUsed(passkeyCredentialId: Uuid)
+    suspend fun deletePasskey(id: Uuid, authId: Uuid): Int
 }

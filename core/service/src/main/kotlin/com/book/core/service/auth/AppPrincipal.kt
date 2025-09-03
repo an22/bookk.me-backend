@@ -1,7 +1,9 @@
 package com.book.core.service.auth
 
+import kotlin.uuid.Uuid
+
 class AppPrincipal(
-    val authId: Long,
-    val userId: Long,
-    val deviceId: Long
+    val authId: Uuid,
+    val userId: Uuid,
+    val deviceId: Uuid
 )

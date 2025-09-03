@@ -5,5 +5,5 @@ plugins {
 
 dependencies {
     implementation(libs.kotlin.coroutines)
-    implementation(libs.ktor.protobuf)
+    implementation(libs.kotlin.serialization.core)
 }

@@ -2,10 +2,11 @@ package com.book.business.data.map
 
 import com.book.business.data.orm.entity.BusinessEntity
 import com.book.business.domain.api.entity.Business
+import kotlin.uuid.toKotlinUuid
 
 internal fun BusinessEntity.toDomain(): Business {
     return Business(
-        id = id.value,
+        id = id.value.toKotlinUuid(),
         name = name,
         description = description,
         location = if (latitude != null && longitude != null) {

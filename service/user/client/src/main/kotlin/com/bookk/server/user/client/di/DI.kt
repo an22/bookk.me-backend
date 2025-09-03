@@ -7,7 +7,6 @@ import com.book.user.domain.api.operation.GetUserById
 import com.bookk.core.AppLevelConstants
 import com.bookk.core.AppLevelConstants.SupportedSerializers
 import com.bookk.core.SslSettings
-import com.bookk.core.newRandomUUIDString
 import com.bookk.server.user.client.UserClient
 import com.bookk.server.user.client.impl.UserClientImpl
 import com.bookk.server.user.client.impl.operation.CreateUserClientImpl
@@ -33,6 +32,7 @@ import io.ktor.serialization.kotlinx.protobuf.protobuf
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.protobuf.ProtoBuf
 import org.koin.dsl.module
+import kotlin.uuid.Uuid
 
 @Suppress("KotlinConstantConditions")
 fun userClientModule(clientTag: String) = module {
@@ -74,7 +74,7 @@ fun userClientModule(clientTag: String) = module {
             defaultRequest {
                 host = System.getenv("BOOKK_ME_USER_SERVICE_HOSTNAME")
 
-                headers["Idempotency-Key"] = newRandomUUIDString()
+                headers["Idempotency-Key"] = Uuid.random().toString()
 
                 url { protocol = URLProtocol.HTTPS }
 

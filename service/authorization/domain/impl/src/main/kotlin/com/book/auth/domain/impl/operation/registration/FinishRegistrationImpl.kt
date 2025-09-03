@@ -16,6 +16,7 @@ import com.book.core.domain.transaction.TransactionManager
 import com.bookk.server.user.client.UserClient
 import com.bookk.server.user.client.api.CreateUserRequest
 import com.bookk.server.user.client.api.event.UserEvents.DeleteUserEvent
+import kotlin.uuid.Uuid
 
 internal class FinishRegistrationImpl(
     private val accountDataSource: AccountDataSource,
@@ -39,7 +40,7 @@ internal class FinishRegistrationImpl(
         }.getOrThrow()
     }
 
-    private suspend fun createAndSaveAuthCredentials(ownerId: Long, request: VerifyAccountCreationRequest): AuthTokens {
+    private suspend fun createAndSaveAuthCredentials(ownerId: Uuid, request: VerifyAccountCreationRequest): AuthTokens {
         deviceDataSource.createDeviceIfNotExist(
             authId = ownerId,
             uuid = request.deviceInfo.deviceUUID,
@@ -48,13 +49,13 @@ internal class FinishRegistrationImpl(
         return generateAuthToken(Source.FromAuthDevice(ownerId, request.deviceInfo.deviceUUID)).getOrThrow()
     }
 
-    private suspend fun saveUserExternal(request: VerifyAccountCreationRequest): Long {
+    private suspend fun saveUserExternal(request: VerifyAccountCreationRequest): Uuid {
         return userClient.createUser(createUserFrom(request.userInfo)).getOrThrow()
     }
 
-    private suspend fun saveAuthorizationOwner(userId: Long, handle: String): Long {
+    private suspend fun saveAuthorizationOwner(userId: Uuid, handle: Uuid): Uuid {
         val authentication = Authentication(
-            id = 0,
+            id = Uuid.random(),
             userId = userId,
             uuid = handle
         )

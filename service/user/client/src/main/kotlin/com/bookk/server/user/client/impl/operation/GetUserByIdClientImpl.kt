@@ -6,12 +6,13 @@ import com.bookk.server.user.client.impl.UserRouting
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.resources.get
+import kotlin.uuid.Uuid
 
 internal class GetUserByIdClientImpl(
     private val httpClient: HttpClient
 ) : GetUserById {
 
-    override suspend fun invoke(userId: Long): Result<User> = runCatching {
+    override suspend fun invoke(userId: Uuid): Result<User> = runCatching {
         httpClient.get(UserRouting.Api.Internal.User.Id(id = userId)).body()
     }
 

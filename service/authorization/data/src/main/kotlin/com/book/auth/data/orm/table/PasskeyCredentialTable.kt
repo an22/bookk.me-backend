@@ -1,11 +1,11 @@
 package com.book.auth.data.orm.table
 
-import kotlinx.datetime.Clock
-import org.jetbrains.exposed.dao.id.LongIdTable
-import org.jetbrains.exposed.sql.ReferenceOption
-import org.jetbrains.exposed.sql.kotlin.datetime.timestamp
+import org.jetbrains.exposed.v1.core.ReferenceOption
+import org.jetbrains.exposed.v1.core.dao.id.UUIDTable
+import org.jetbrains.exposed.v1.datetime.timestamp
+import kotlin.time.Clock
 
-internal object PasskeyCredentialTable: LongIdTable("passkey_credentials") {
+internal object PasskeyCredentialTable: UUIDTable("passkey_credentials") {
     val authUUID = reference("auth_uuid", AuthenticationTable.uuid, onDelete = ReferenceOption.CASCADE)
     val name = varchar("name", 255)
     val credDescriptorId = binary("cred_descriptor_id", 24)

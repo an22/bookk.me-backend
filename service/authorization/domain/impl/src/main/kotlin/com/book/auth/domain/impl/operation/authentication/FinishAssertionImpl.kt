@@ -6,6 +6,7 @@ import com.book.auth.domain.api.authentication.operation.FinishAssertion.Error
 import com.book.auth.domain.api.identification.entity.PasskeyCredential
 import com.book.auth.domain.datasource.PassKeyDataSource
 import com.book.auth.domain.impl.passkey.createRelyingParty
+import com.bookk.core.toUUID
 import com.yubico.webauthn.AssertionRequest
 import com.yubico.webauthn.AssertionResult
 import com.yubico.webauthn.CredentialRepository
@@ -31,7 +32,7 @@ internal class FinishAssertionImpl(
             )
         if (result.isSuccess) {
             val credentials = passKeyDataSource.getCredentialBy(
-                userHandle = result.credential.userHandle.bytes,
+                userHandle = result.credential.userHandle.bytes.toUUID(),
                 credentialId = result.credential.credentialId.bytes
             )
             if (credentials == null) throw Error.PasskeyOwnerNotFound

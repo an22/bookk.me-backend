@@ -8,6 +8,7 @@ import com.book.auth.domain.api.token.entity.AuthTokens
 import com.book.auth.domain.api.token.operation.GenerateAuthToken
 import com.book.auth.domain.api.token.operation.GenerateAuthToken.Source
 import com.book.auth.domain.datasource.DeviceDataSource
+import kotlin.uuid.Uuid
 
 internal class SignInImpl(
     private val finishAssertion: FinishAssertion,
@@ -25,7 +26,7 @@ internal class SignInImpl(
         ).getOrThrow()
     }
 
-    private suspend fun createDeviceIfNotExist(ownerId: Long, deviceInfo: DeviceInfo) {
+    private suspend fun createDeviceIfNotExist(ownerId: Uuid, deviceInfo: DeviceInfo) {
         deviceDataSource.createDeviceIfNotExist(
             authId = ownerId,
             uuid = deviceInfo.deviceUUID,

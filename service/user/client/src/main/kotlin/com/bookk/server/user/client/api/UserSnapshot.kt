@@ -2,10 +2,11 @@ package com.bookk.server.user.client.api
 
 import com.book.user.domain.api.entity.User
 import kotlinx.serialization.Serializable
+import kotlin.uuid.Uuid
 
 @Serializable
 class UserSnapshot(
-    val id: Long,
+    val id: Uuid,
     val name: String,
     val lastName: String,
     val email: String

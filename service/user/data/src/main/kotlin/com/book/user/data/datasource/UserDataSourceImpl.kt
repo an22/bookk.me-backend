@@ -13,11 +13,10 @@ import com.book.user.domain.api.entity.UserEditModel
 import com.book.user.domain.datasource.UserDataSource
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
-import org.jetbrains.exposed.v1.core.statements.UpsertSqlExpressionBuilder.eq
+import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.r2dbc.deleteWhere
 import org.jetbrains.exposed.v1.r2dbc.insertAndGetId
 import org.jetbrains.exposed.v1.r2dbc.selectAll
-import org.jetbrains.exposed.v1.r2dbc.transactions.suspendTransaction
 import org.jetbrains.exposed.v1.r2dbc.update
 import kotlin.time.Clock
 import kotlin.uuid.Uuid
@@ -29,7 +28,7 @@ internal class UserDataSourceImpl(
 ) : DataSource(), UserDataSource {
 
     override suspend fun insertNewUser(user: User) = mapExceptions {
-        val createdUser = suspendTransaction {
+        val createdUser = dbQuery {
             UserTable.insertAndGetId {
                 it[name] = user.name
                 it[lastName] = user.lastName
@@ -45,7 +44,7 @@ internal class UserDataSourceImpl(
 
     override suspend fun updateUser(id: Uuid, user: UserEditModel): Boolean {
         return mapExceptions {
-            val updatedRowCount = suspendTransaction {
+            val updatedRowCount = dbQuery {
                 UserTable.update(where = { UserTable.id eq id.toJavaUuid() }) {
                     user.firstName?.let { firstName ->
                         it[name] = firstName
@@ -69,10 +68,10 @@ internal class UserDataSourceImpl(
     override suspend fun getUserById(id: Uuid): User? = mapExceptions {
         val cached: User? = cacheClient.getUser(id)
         if (cached != null) return@mapExceptions cached
-        val user = suspendTransaction {
+        val user = dbQuery {
             UserTable.selectAll()
                 .where { UserTable.id eq id.toJavaUuid() }
-                .map { UserEntity.wrapRow(it).toDomain() }
+                .map { UserEntity.wrapRowR2dbc(it).toDomain() }
                 .firstOrNull()
         }
         if (user != null) {
@@ -82,17 +81,17 @@ internal class UserDataSourceImpl(
     }
 
     override suspend fun getUserByEmail(email: String): User? = mapExceptions {
-        suspendTransaction {
+        dbQuery {
             UserTable.selectAll()
                 .where { UserTable.email eq email }
-                .map { UserEntity.wrapRow(it).toDomain() }
+                .map { UserEntity.wrapRowR2dbc(it).toDomain() }
                 .firstOrNull()
         }
     }
 
     override suspend fun deleteUser(id: Uuid) {
         mapExceptions {
-            suspendTransaction {
+            dbQuery {
                 UserTable.deleteWhere { UserTable.id eq id.toJavaUuid() }
             }
             runCatching { cacheClient.deleteUser(id) }

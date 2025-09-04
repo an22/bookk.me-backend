@@ -13,14 +13,13 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
-import org.jetbrains.exposed.v1.core.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.innerJoin
 import org.jetbrains.exposed.v1.r2dbc.deleteWhere
 import org.jetbrains.exposed.v1.r2dbc.insert
 import org.jetbrains.exposed.v1.r2dbc.insertAndGetId
 import org.jetbrains.exposed.v1.r2dbc.select
 import org.jetbrains.exposed.v1.r2dbc.selectAll
-import org.jetbrains.exposed.v1.r2dbc.transactions.suspendTransaction
 import org.jetbrains.exposed.v1.r2dbc.update
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
@@ -30,7 +29,7 @@ internal class BusinessDataSourceImpl : DataSource(), BusinessDataSource {
     override suspend fun createBusiness(userId: Uuid, name: String, currencyCode: String): Business {
         val javaUserId = userId.toJavaUuid()
         return mapExceptions {
-            suspendTransaction {
+            dbQuery {
                 val id = BusinessTable.insertAndGetId {
                     it[this.name] = name
                     it[this.userId] = javaUserId
@@ -44,7 +43,7 @@ internal class BusinessDataSourceImpl : DataSource(), BusinessDataSource {
                 }
                 BusinessTable.selectAll()
                     .where { BusinessTable.id eq id.value }
-                    .map { BusinessEntity.wrapRow(it).toDomain() }
+                    .map { BusinessEntity.wrapRowR2dbc(it).toDomain() }
                     .first()
             }
         }
@@ -52,7 +51,7 @@ internal class BusinessDataSourceImpl : DataSource(), BusinessDataSource {
 
     override suspend fun updateBusiness(model: BusinessUpdateModel) {
         return mapExceptions {
-            suspendTransaction {
+            dbQuery {
                 BusinessTable.update(
                     where = { BusinessTable.id eq model.id.toJavaUuid() }
                 ) { statement ->
@@ -82,10 +81,10 @@ internal class BusinessDataSourceImpl : DataSource(), BusinessDataSource {
 
     override suspend fun getBusinessById(id: Uuid): Business? {
         return mapExceptions {
-            suspendTransaction {
+            dbQuery {
                 BusinessTable.selectAll()
                     .where { BusinessTable.id eq id.toJavaUuid() }
-                    .map { BusinessEntity.wrapRow(it).toDomain() }
+                    .map { BusinessEntity.wrapRowR2dbc(it).toDomain() }
                     .firstOrNull()
             }
         }
@@ -93,7 +92,7 @@ internal class BusinessDataSourceImpl : DataSource(), BusinessDataSource {
 
     override suspend fun isBusinessExist(userId: Uuid): Boolean {
         return mapExceptions {
-            suspendTransaction {
+            dbQuery {
                 BusinessTable.select(BusinessTable.id)
                     .where { BusinessTable.userId eq userId.toJavaUuid() }
                     .empty()
@@ -104,7 +103,7 @@ internal class BusinessDataSourceImpl : DataSource(), BusinessDataSource {
 
     override suspend fun deleteUserBusinesses(userId: Uuid) {
         return mapExceptions {
-            suspendTransaction {
+            dbQuery {
                 BusinessTable.deleteWhere {
                     BusinessTable.userId eq userId.toJavaUuid()
                 }
@@ -114,7 +113,7 @@ internal class BusinessDataSourceImpl : DataSource(), BusinessDataSource {
 
     override suspend fun getDashboardBusiness(userId: Uuid): Business? {
         return mapExceptions {
-            suspendTransaction {
+            dbQuery {
                 BusinessDashboardTable
                     .innerJoin(
                         BusinessTable,
@@ -123,7 +122,7 @@ internal class BusinessDataSourceImpl : DataSource(), BusinessDataSource {
                     )
                     .select(BusinessTable.columns)
                     .where { BusinessDashboardTable.userId eq userId.toJavaUuid() }
-                    .map { BusinessEntity.wrapRow(it).toDomain() }
+                    .map { BusinessEntity.wrapRowR2dbc(it).toDomain() }
                     .firstOrNull()
             }
         }
@@ -131,7 +130,7 @@ internal class BusinessDataSourceImpl : DataSource(), BusinessDataSource {
 
     override suspend fun getUserBusinesses(userId: Uuid): UserBusinesses {
         return mapExceptions {
-            suspendTransaction {
+            dbQuery {
                 val dashboardId = BusinessDashboardTable
                     .select(BusinessDashboardTable.businessId)
                     .where { BusinessDashboardTable.userId eq userId.toJavaUuid() }
@@ -141,7 +140,7 @@ internal class BusinessDataSourceImpl : DataSource(), BusinessDataSource {
                 val businesses = BusinessTable
                     .selectAll()
                     .where { BusinessTable.userId eq userId.toJavaUuid() }
-                    .map { BusinessEntity.wrapRow(it).toDomain() }
+                    .map { BusinessEntity.wrapRowR2dbc(it).toDomain() }
                     .toList()
                 UserBusinesses(
                     dashboardId = dashboardId?.toKotlinUuid(),

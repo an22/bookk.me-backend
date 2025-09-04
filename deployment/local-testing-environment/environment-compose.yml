@@ -78,7 +78,7 @@ services:
       - '5540:5540'
 
   database:
-    image: mariadb:11.5.2-ubi9
+    image: mariadb:11.8.3-ubi9
     hostname: mariadb_local
     ports:
       - '127.0.0.1:3307:3307'
@@ -95,7 +95,7 @@ services:
       retries: 10
 
   migration-database:
-    image: mariadb:11.5.2-ubi9
+    image: mariadb:11.8.3-ubi9
     hostname: mariadb_local_migration
     ports:
       - '127.0.0.1:3308:3308'
@@ -105,6 +105,6 @@ services:
       MARIADB_PASSWORD: "migration"
       MYSQL_TCP_PORT: 3308
     healthcheck:
-      test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost" ]
+      test: mysqladmin ping -h 127.0.0.1 -u root --password=$$MARIADB_ROOT_PASSWORD
       timeout: 10s
       retries: 10

@@ -14,10 +14,10 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.flow.toSet
-import org.jetbrains.exposed.v1.core.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.v1.core.SqlExpressionBuilder.greater
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.count
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.greater
 import org.jetbrains.exposed.v1.core.innerJoin
 import org.jetbrains.exposed.v1.core.longLiteral
 import org.jetbrains.exposed.v1.core.wrapAsExpression
@@ -25,7 +25,6 @@ import org.jetbrains.exposed.v1.r2dbc.deleteWhere
 import org.jetbrains.exposed.v1.r2dbc.insert
 import org.jetbrains.exposed.v1.r2dbc.select
 import org.jetbrains.exposed.v1.r2dbc.selectAll
-import org.jetbrains.exposed.v1.r2dbc.transactions.suspendTransaction
 import org.jetbrains.exposed.v1.r2dbc.update
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.minutes
@@ -53,9 +52,9 @@ internal class PassKeyDataSourceImpl(
 
     override suspend fun createPasskeyCredential(credential: PasskeyCredential) {
         mapExceptions {
-            suspendTransaction {
+            dbQuery {
                 PasskeyCredentialTable.insert {
-                    it[authUUID] = credential.handle.toJavaUuid()
+                    it[authId] = credential.authId.toJavaUuid()
                     it[name] = credential.name
                     it[credDescriptorId] = credential.credDescriptor.id
                     it[credDescriptorType] = credential.credDescriptor.type
@@ -76,16 +75,16 @@ internal class PassKeyDataSourceImpl(
 
     override suspend fun getCredentialBy(userHandle: Uuid, credentialId: ByteArray): PasskeyCredential? {
         return mapExceptions {
-            suspendTransaction {
+            dbQuery {
                 PasskeyCredentialTable
                     .innerJoin(
                         AuthenticationTable,
-                        onColumn = { authUUID },
-                        otherColumn = { id },
-                        additionalConstraint = { PasskeyCredentialTable.authUUID eq userHandle.toJavaUuid() }
+                        onColumn = { authId },
+                        otherColumn = { uuid },
+                        additionalConstraint = { AuthenticationTable.uuid eq userHandle.toJavaUuid() }
                     )
                     .selectAll()
-                    .map { PasskeyCredentialEntity.wrapRow(it).toDomain() }
+                    .map { PasskeyCredentialEntity.wrapRowR2dbc(it).toDomain() }
                     .firstOrNull()
             }
         }
@@ -93,23 +92,23 @@ internal class PassKeyDataSourceImpl(
 
     override suspend fun getCredentialBy(authId: Uuid): List<PasskeyCredential> {
         return mapExceptions {
-            suspendTransaction {
+            dbQuery {
                 AuthenticationTable
                     .innerJoin(
                         otherTable = PasskeyCredentialTable,
                         onColumn = { uuid },
-                        otherColumn = { authUUID },
+                        otherColumn = { this.authId },
                     )
                     .select(PasskeyCredentialTable.columns)
                     .where { AuthenticationTable.id eq authId.toJavaUuid() }
-                    .map { PasskeyCredentialEntity.wrapRow(it).toDomain() }
+                    .map { PasskeyCredentialEntity.wrapRowR2dbc(it).toDomain() }
                     .toList()
             }
         }
     }
 
     override suspend fun getUsernameByHandle(userHandle: Uuid): String? = mapExceptions {
-        suspendTransaction {
+        dbQuery {
             val exists = AuthenticationTable
                 .select(AuthenticationTable.id)
                 .where { AuthenticationTable.uuid eq userHandle.toJavaUuid() }
@@ -122,16 +121,16 @@ internal class PassKeyDataSourceImpl(
 
     override suspend fun getCredentialsByUsername(username: Uuid): Set<PasskeyCredential> {
         return mapExceptions {
-            suspendTransaction {
+            dbQuery {
                 PasskeyCredentialTable
                     .innerJoin(
-                        otherTable = PasskeyCredentialTable,
-                        onColumn = { AuthenticationTable.uuid },
-                        otherColumn = { authUUID },
-                        additionalConstraint = { PasskeyCredentialTable.authUUID eq username.toJavaUuid() }
+                        otherTable = AuthenticationTable,
+                        onColumn = { authId },
+                        otherColumn = { uuid },
+                        additionalConstraint = { AuthenticationTable.uuid eq username.toJavaUuid() }
                     )
                     .selectAll()
-                    .map { PasskeyCredentialEntity.wrapRow(it).toDomain() }
+                    .map { PasskeyCredentialEntity.wrapRowR2dbc(it).toDomain() }
                     .toSet()
             }
         }
@@ -139,23 +138,23 @@ internal class PassKeyDataSourceImpl(
 
     override suspend fun getCredentialsByCredentialId(credentialId: ByteArray): Set<PasskeyCredential> {
         return mapExceptions {
-            suspendTransaction {
+            dbQuery {
                 PasskeyCredentialTable
                     .innerJoin(
-                        otherTable = PasskeyCredentialTable,
-                        onColumn = { AuthenticationTable.uuid },
-                        otherColumn = { authUUID },
+                        otherTable = AuthenticationTable,
+                        onColumn = { authId },
+                        otherColumn = { uuid },
                     )
                     .selectAll()
                     .where { PasskeyCredentialTable.credDescriptorId eq credentialId }
-                    .map { PasskeyCredentialEntity.wrapRow(it).toDomain() }
+                    .map { PasskeyCredentialEntity.wrapRowR2dbc(it).toDomain() }
                     .toSet()
             }
         }
     }
 
     override suspend fun getHandleByUsername(username: Uuid): Uuid? = mapExceptions {
-        suspendTransaction {
+        dbQuery {
             val exists = AuthenticationTable
                 .select(AuthenticationTable.id)
                 .where { AuthenticationTable.uuid eq username.toJavaUuid() }
@@ -168,7 +167,7 @@ internal class PassKeyDataSourceImpl(
 
     override suspend fun markAsUsed(passkeyCredentialId: Uuid) {
         mapExceptions {
-            suspendTransaction {
+            dbQuery {
                 PasskeyCredentialTable.update(where = { PasskeyCredentialTable.id eq passkeyCredentialId.toJavaUuid() }) {
                     it[lastUsedAt] = Clock.System.now()
                 }
@@ -178,12 +177,12 @@ internal class PassKeyDataSourceImpl(
 
     override suspend fun deletePasskey(id: Uuid, authId: Uuid): Int {
         return mapExceptions {
-            suspendTransaction {
+            dbQuery {
                 val existingPasskeys = AuthenticationTable
                     .innerJoin(
                         otherTable = PasskeyCredentialTable,
                         onColumn = { uuid },
-                        otherColumn = { authUUID }
+                        otherColumn = { this.authId }
                     )
                     .select(PasskeyCredentialTable.id.count())
                     .where { AuthenticationTable.id eq authId.toJavaUuid() }

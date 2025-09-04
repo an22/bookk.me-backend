@@ -6,7 +6,7 @@ import org.jetbrains.exposed.v1.datetime.timestamp
 import kotlin.time.Clock
 
 internal object PasskeyCredentialTable: UUIDTable("passkey_credentials") {
-    val authUUID = reference("auth_uuid", AuthenticationTable.uuid, onDelete = ReferenceOption.CASCADE)
+    val authId = reference("auth_id", AuthenticationTable, onDelete = ReferenceOption.CASCADE)
     val name = varchar("name", 255)
     val credDescriptorId = binary("cred_descriptor_id", 24)
     val credDescriptorType = varchar("cred_descriptor_type", 255)
@@ -23,6 +23,6 @@ internal object PasskeyCredentialTable: UUIDTable("passkey_credentials") {
     val lastUsedAt = timestamp("last_used_at").clientDefault { Clock.System.now() }
 
     init {
-        uniqueIndex(authUUID, credDescriptorId)
+        uniqueIndex(authId, credDescriptorId)
     }
 }

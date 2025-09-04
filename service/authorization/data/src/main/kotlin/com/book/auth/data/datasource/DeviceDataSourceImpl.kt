@@ -10,10 +10,10 @@ import com.book.core.data.DataSource
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
+import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.innerJoin
 import org.jetbrains.exposed.v1.r2dbc.insertIgnore
 import org.jetbrains.exposed.v1.r2dbc.selectAll
-import org.jetbrains.exposed.v1.r2dbc.transactions.suspendTransaction
 import org.jetbrains.exposed.v1.r2dbc.update
 import kotlin.time.Clock
 import kotlin.uuid.Uuid
@@ -22,7 +22,7 @@ import kotlin.uuid.toJavaUuid
 internal class DeviceDataSourceImpl : DataSource(), DeviceDataSource {
     override suspend fun attachRefreshTokenToDevice(deviceId: Uuid, tokenId: Uuid) {
         mapExceptions {
-            suspendTransaction {
+            dbQuery {
                 AuthDeviceTable.update(where = { AuthDeviceTable.id eq deviceId.toJavaUuid() }) {
                     it[isSignedIn] = true
                     it[refreshTokenId] = tokenId.toJavaUuid()
@@ -33,17 +33,17 @@ internal class DeviceDataSourceImpl : DataSource(), DeviceDataSource {
     }
 
     override suspend fun getDeviceById(deviceId: Uuid): Device? = mapExceptions {
-        suspendTransaction {
+        dbQuery {
             AuthDeviceTable
                 .innerJoin(AuthenticationTable, onColumn = { userAuthId }, otherColumn = { id })
                 .selectAll()
-                .map { AuthDeviceEntity.wrapRow(it).toDomain() }
+                .map { AuthDeviceEntity.wrapRowR2dbc(it).toDomain() }
                 .firstOrNull()
         }
     }
 
     override suspend fun getDeviceByAuthIdAndUUID(authId: Uuid, deviceUUID: Uuid): Device? = mapExceptions {
-        suspendTransaction {
+        dbQuery {
             AuthDeviceTable
                 .innerJoin(
                     otherTable = AuthenticationTable,
@@ -53,13 +53,13 @@ internal class DeviceDataSourceImpl : DataSource(), DeviceDataSource {
                 )
                 .selectAll()
                 .where { AuthDeviceTable.deviceUUID eq deviceUUID.toJavaUuid() }
-                .map { AuthDeviceEntity.wrapRow(it).toDomain() }
+                .map { AuthDeviceEntity.wrapRowR2dbc(it).toDomain() }
                 .firstOrNull()
         }
     }
 
     override suspend fun getDevices(authId: Uuid): List<Device> = mapExceptions {
-        suspendTransaction {
+        dbQuery {
             AuthDeviceTable
                 .innerJoin(
                     otherTable = AuthenticationTable,
@@ -68,14 +68,14 @@ internal class DeviceDataSourceImpl : DataSource(), DeviceDataSource {
                     additionalConstraint = { AuthDeviceTable.userAuthId eq authId.toJavaUuid() }
                 )
                 .selectAll()
-                .map { AuthDeviceEntity.wrapRow(it).toDomain() }
+                .map { AuthDeviceEntity.wrapRowR2dbc(it).toDomain() }
                 .toList()
         }
     }
 
     override suspend fun deleteTokenFromDevice(deviceId: Uuid) {
         mapExceptions {
-            suspendTransaction {
+            dbQuery {
                 AuthDeviceTable.update(
                     where = { AuthDeviceTable.id eq deviceId.toJavaUuid() }
                 ) {
@@ -89,7 +89,7 @@ internal class DeviceDataSourceImpl : DataSource(), DeviceDataSource {
 
     override suspend fun createDeviceIfNotExist(authId: Uuid, uuid: Uuid, name: String) {
         mapExceptions {
-            suspendTransaction {
+            dbQuery {
                 AuthDeviceTable.insertIgnore {
                     it[userAuthId] = authId.toJavaUuid()
                     it[deviceUUID] = uuid.toJavaUuid()

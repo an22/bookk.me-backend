@@ -29,6 +29,7 @@ class DataConventionPlugin : Plugin<Project> {
                 add("implementation", libs.exposed.core)
                 add("implementation", libs.exposed.dao)
                 add("implementation", libs.exposed.migration)
+                add("implementation", libs.exposed.migration.r2dbc)
                 add("implementation", libs.exposed.r2dbc)
                 add("implementation", libs.exposed.kotlin.datetime)
                 add("implementation", libs.hikari.cp)

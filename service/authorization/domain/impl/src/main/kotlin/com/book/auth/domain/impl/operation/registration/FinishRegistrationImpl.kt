@@ -12,7 +12,7 @@ import com.book.auth.domain.datasource.AccountDataSource
 import com.book.auth.domain.datasource.DeviceDataSource
 import com.book.core.data.eventstreaming.StandardEventProducer
 import com.book.core.data.eventstreaming.send
-import com.book.core.domain.transaction.TransactionManager
+import com.book.core.domain.datasource.transaction.TransactionManager
 import com.bookk.server.user.client.UserClient
 import com.bookk.server.user.client.api.CreateUserRequest
 import com.bookk.server.user.client.api.event.UserEvents.DeleteUserEvent
@@ -30,13 +30,14 @@ internal class FinishRegistrationImpl(
 
     override suspend fun invoke(request: VerifyAccountCreationRequest) = runCatching {
         val verifiedPasskey = finishPasskeyRegistration.verifyRequest(request).getOrThrow()
-        val userId = saveUserExternal(request)
+        var userId: Uuid? = null
         transactionManager.runInTransaction {
+            userId = saveUserExternal(request)
             val ownerId = saveAuthorizationOwner(userId, verifiedPasskey.handle)
-            finishPasskeyRegistration.attachOwner(ownerId, verifiedPasskey)
+            finishPasskeyRegistration.attachOwner(ownerId, verifiedPasskey).getOrThrow()
             createAndSaveAuthCredentials(ownerId, request)
         }.onFailure {
-            eventProducer.send(DeleteUserEvent(userId))
+            userId?.let { eventProducer.send(DeleteUserEvent(it)) }
         }.getOrThrow()
     }
 

@@ -1,13 +1,13 @@
 package com.book.auth.data.orm.entity
 
 import com.book.auth.data.orm.table.PasskeyCredentialTable
+import com.book.core.data.R2dbcUUIDEntityClass
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.jetbrains.exposed.v1.dao.UUIDEntity
-import org.jetbrains.exposed.v1.dao.UUIDEntityClass
 import java.util.UUID
 
 internal class PasskeyCredentialEntity(id: EntityID<UUID>) : UUIDEntity(id) {
-    var authorization by AuthenticationEntity referencedOn PasskeyCredentialTable.authUUID
+    var authorization by AuthenticationEntity referencedOn PasskeyCredentialTable.authId
     var credDescriptorId by PasskeyCredentialTable.credDescriptorId
     var credDescriptorType by PasskeyCredentialTable.credDescriptorType
     var credDescriptorTransports by PasskeyCredentialTable.credDescriptorTransports
@@ -23,5 +23,5 @@ internal class PasskeyCredentialEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var updatedAt by PasskeyCredentialTable.updatedAt
     var lastUsedAt by PasskeyCredentialTable.lastUsedAt
 
-    companion object : UUIDEntityClass<PasskeyCredentialEntity>(PasskeyCredentialTable)
+    companion object : R2dbcUUIDEntityClass<PasskeyCredentialEntity>(PasskeyCredentialTable)
 }

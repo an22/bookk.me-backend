@@ -1,7 +1,7 @@
 version: "3.9"
 
 services:
-  auth:
+  service-auth:
     image: com.bookk.server.microservice.authorization
     hostname: auth.service.bookk.me
     ports:
@@ -16,7 +16,7 @@ services:
       - './security/private.pem:/etc/service/private.pem:ro'
       - './security/public.pem:/etc/service/public.pem:ro'
 
-  user:
+  service-user:
     image: com.bookk.server.microservice.user
     hostname: user.service.bookk.me
     ports:
@@ -31,7 +31,7 @@ services:
       - './security/private.pem:/etc/service/private.pem:ro'
       - './security/public.pem:/etc/service/public.pem:ro'
 
-  business:
+  service-business:
     image: com.bookk.server.microservice.business
     hostname: business.service.bookk.me
     ports:

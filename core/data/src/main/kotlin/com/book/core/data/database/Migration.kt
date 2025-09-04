@@ -1,11 +1,11 @@
 package com.book.core.data.database
 
 import com.bookk.core.AppLevelConstants
-import io.r2dbc.spi.ConnectionFactoryOptions
 import org.flywaydb.core.Flyway
 import org.flywaydb.core.api.Location
-import org.jetbrains.exposed.v1.core.Schema
+import org.jetbrains.exposed.v1.dao.EntityLifecycleInterceptor
 import org.jetbrains.exposed.v1.r2dbc.R2dbcDatabase
+import org.jetbrains.exposed.v1.r2dbc.R2dbcTransaction
 import org.jetbrains.exposed.v1.r2dbc.transactions.TransactionManager
 
 fun createDatabase(
@@ -31,13 +31,10 @@ fun createDatabase(
         .migrate()
 
     TransactionManager.defaultDatabase = R2dbcDatabase.connect(
-        url = "r2dbc:$dbUrl:$dbPort",
-        databaseConfig = {
-            defaultSchema = Schema(schemaName)
-            connectionFactoryOptions {
-                option(ConnectionFactoryOptions.USER, dbUsername)
-                option(ConnectionFactoryOptions.PASSWORD, dbPassword)
-            }
-        }
+        url = "r2dbc:$dbUrl:$dbPort/$schemaName",
+        driver = "mariadb",
+        user = dbUsername,
+        password = dbPassword
     )
+    R2dbcTransaction.globalInterceptors.removeIf { it is EntityLifecycleInterceptor }
 }

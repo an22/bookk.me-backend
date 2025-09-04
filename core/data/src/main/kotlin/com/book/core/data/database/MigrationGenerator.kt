@@ -2,11 +2,9 @@ package com.book.core.data.database
 
 import org.flywaydb.core.Flyway
 import org.jetbrains.exposed.v1.core.ExperimentalDatabaseMigrationApi
-import org.jetbrains.exposed.v1.core.Schema
 import org.jetbrains.exposed.v1.core.Table
-import org.jetbrains.exposed.v1.migration.MigrationUtils
+import org.jetbrains.exposed.v1.migration.r2dbc.MigrationUtils
 import org.jetbrains.exposed.v1.r2dbc.R2dbcDatabase
-import org.jetbrains.exposed.v1.r2dbc.SchemaUtils
 import org.jetbrains.exposed.v1.r2dbc.transactions.suspendTransaction
 import java.io.File
 
@@ -27,55 +25,62 @@ suspend fun createMigrationScriptFor(
     if (!migrationDir.exists()) {
         migrationDir.mkdirs()
     }
-    moveDBWithVersion(referenceVersion, migrationDir.path, schemaName)
-    suspendTransaction {
-        SchemaUtils.setSchema(Schema(schemaName))
-        val file = MigrationUtils.generateMigrationScript(
+    moveDBToVersion(
+        flyway = createFlywayForVersion(
+            schemaName,
+            "${migrationDir.path}/$schemaName",
+            referenceVersion
+        ),
+        schemaVersion = referenceVersion,
+        schemaName = schemaName
+    )
+    val file = suspendTransaction {
+        MigrationUtils.generateMigrationScript(
             tables = tables,
             scriptDirectory = "${migrationDir.path}",
             scriptName = "V${targetVersion}__migration_script",
             withLogs = true
         )
-        Flyway.configure()
-            .dataSource(URL, USER, PASS)
-            .driver(DRIVER)
-            .baselineOnMigrate(true)
-            .defaultSchema(schemaName)
-            .locations("filesystem:${file.parent}")
-            .target("$targetVersion")
-            .load()
-            .migrate()
     }
+    createFlywayForVersion(
+        schemaName = schemaName,
+        location = "filesystem:${file.parent}",
+        version = targetVersion
+    ).migrate()
 }
 
-private suspend fun moveDBWithVersion(
+private fun createFlywayForVersion(
+    schemaName: String,
+    location: String,
+    version: Int
+): Flyway = Flyway.configure()
+    .dataSource(URL, USER, PASS)
+    .driver(DRIVER)
+    .baselineVersion("0")
+    .baselineOnMigrate(true)
+    .defaultSchema(schemaName)
+    .createSchemas(true)
+    .locations(location)
+    .target("$version")
+    .cleanDisabled(false)
+    .load()
+
+private fun moveDBToVersion(
+    flyway: Flyway,
     schemaVersion: Int,
-    migrationsFolderPath: String,
     schemaName: String
 ) {
+
+    flyway.clean()
+    if (schemaVersion != 0) {
+        flyway.migrate()
+    } else {
+        flyway.baseline()
+    }
     R2dbcDatabase.connect(
-        url = R2DBC_URL,
+        url = "$R2DBC_URL/$schemaName",
+        driver = "mariadb",
         user = USER,
         password = PASS
     )
-    suspendTransaction {
-        SchemaUtils.dropSchema(Schema(schemaName))
-    }
-    if (schemaVersion != 0) {
-        Flyway.configure()
-            .dataSource(URL, USER, PASS)
-            .driver(DRIVER)
-            .baselineOnMigrate(true)
-            .defaultSchema(schemaName)
-            .createSchemas(true)
-            .locations("${migrationsFolderPath}/$schemaName")
-            .target("$schemaVersion")
-            .load()
-            .migrate()
-    } else {
-        suspendTransaction {
-            SchemaUtils.createSchema(Schema(schemaName))
-            SchemaUtils.setSchema(Schema(schemaName))
-        }
-    }
 }

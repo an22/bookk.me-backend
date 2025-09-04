@@ -8,11 +8,10 @@ import com.book.auth.domain.datasource.AccountDataSource
 import com.book.core.data.DataSource
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
-import org.jetbrains.exposed.v1.core.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.r2dbc.deleteWhere
 import org.jetbrains.exposed.v1.r2dbc.insertAndGetId
 import org.jetbrains.exposed.v1.r2dbc.selectAll
-import org.jetbrains.exposed.v1.r2dbc.transactions.suspendTransaction
 import kotlin.time.Clock
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
@@ -21,7 +20,7 @@ import kotlin.uuid.toKotlinUuid
 internal class AccountDataSourceImpl : DataSource(), AccountDataSource {
 
     override suspend fun createAuthorization(info: Authentication): Authentication = mapExceptions {
-        suspendTransaction {
+        dbQuery {
             AuthenticationTable.insertAndGetId {
                 it[userId] = info.userId.toJavaUuid()
                 it[uuid] = info.uuid.toJavaUuid()
@@ -33,35 +32,35 @@ internal class AccountDataSourceImpl : DataSource(), AccountDataSource {
     }
 
     override suspend fun getAuthRecordById(id: Uuid): Authentication? = mapExceptions {
-        suspendTransaction {
+        dbQuery {
             AuthenticationTable.selectAll()
                 .where { AuthenticationTable.id eq id.toJavaUuid() }
-                .map { AuthenticationEntity.wrapRow(it).toDomain() }
+                .map { AuthenticationEntity.wrapRowR2dbc(it).toDomain() }
                 .firstOrNull()
         }
     }
 
     override suspend fun getAuthRecordByUUID(uuid: Uuid): Authentication? = mapExceptions {
-        suspendTransaction {
+        dbQuery {
             AuthenticationTable.selectAll()
-                .where  { AuthenticationTable.uuid eq uuid.toJavaUuid() }
-                .map { AuthenticationEntity.wrapRow(it).toDomain() }
+                .where { AuthenticationTable.uuid eq uuid.toJavaUuid() }
+                .map { AuthenticationEntity.wrapRowR2dbc(it).toDomain() }
                 .firstOrNull()
         }
     }
 
     override suspend fun getAuthRecordByUserId(userId: Uuid): Authentication? = mapExceptions {
-        suspendTransaction {
+        dbQuery {
             AuthenticationTable.selectAll()
-                .where  { AuthenticationTable.userId eq userId.toJavaUuid() }
-                .map { AuthenticationEntity.wrapRow(it).toDomain() }
+                .where { AuthenticationTable.userId eq userId.toJavaUuid() }
+                .map { AuthenticationEntity.wrapRowR2dbc(it).toDomain() }
                 .firstOrNull()
         }
     }
 
     override suspend fun deleteAuthorization(authId: Uuid) {
         mapExceptions {
-            suspendTransaction {
+            dbQuery {
                 AuthenticationTable.deleteWhere {
                     AuthenticationTable.id eq authId.toJavaUuid()
                 }

@@ -1,9 +1,9 @@
 package com.book.business.data.orm.entity
 
 import com.book.business.data.orm.table.BusinessDashboardTable
+import com.book.core.data.R2dbcUUIDEntityClass
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.jetbrains.exposed.v1.dao.UUIDEntity
-import org.jetbrains.exposed.v1.dao.UUIDEntityClass
 import java.util.UUID
 
 internal class DashboardBusinessEntity(id: EntityID<UUID>) : UUIDEntity(id) {
@@ -12,5 +12,5 @@ internal class DashboardBusinessEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     val createdAt by BusinessDashboardTable.createdAt
     val updatedAt by BusinessDashboardTable.updatedAt
 
-    companion object : UUIDEntityClass<DashboardBusinessEntity>(BusinessDashboardTable)
+    companion object : R2dbcUUIDEntityClass<DashboardBusinessEntity>(BusinessDashboardTable)
 }

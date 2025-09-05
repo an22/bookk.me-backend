@@ -11,8 +11,8 @@ import com.book.user.data.orm.table.UserTable
 import com.book.user.domain.api.entity.User
 import com.book.user.domain.api.entity.UserEditModel
 import com.book.user.domain.datasource.UserDataSource
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.singleOrNull
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.r2dbc.deleteWhere
 import org.jetbrains.exposed.v1.r2dbc.insertAndGetId
@@ -72,7 +72,7 @@ internal class UserDataSourceImpl(
             UserTable.selectAll()
                 .where { UserTable.id eq id.toJavaUuid() }
                 .map { UserEntity.wrapRowR2dbc(it).toDomain() }
-                .firstOrNull()
+                .singleOrNull()
         }
         if (user != null) {
             cacheClient.save(user)
@@ -85,7 +85,7 @@ internal class UserDataSourceImpl(
             UserTable.selectAll()
                 .where { UserTable.email eq email }
                 .map { UserEntity.wrapRowR2dbc(it).toDomain() }
-                .firstOrNull()
+                .singleOrNull()
         }
     }
 

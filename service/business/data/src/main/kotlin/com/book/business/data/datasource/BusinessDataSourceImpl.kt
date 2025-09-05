@@ -10,8 +10,8 @@ import com.book.business.domain.api.entity.UserBusinesses
 import com.book.business.domain.datasource.BusinessDataSource
 import com.book.core.data.DataSource
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.singleOrNull
 import kotlinx.coroutines.flow.toList
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.innerJoin
@@ -85,7 +85,7 @@ internal class BusinessDataSourceImpl : DataSource(), BusinessDataSource {
                 BusinessTable.selectAll()
                     .where { BusinessTable.id eq id.toJavaUuid() }
                     .map { BusinessEntity.wrapRowR2dbc(it).toDomain() }
-                    .firstOrNull()
+                    .singleOrNull()
             }
         }
     }
@@ -123,7 +123,7 @@ internal class BusinessDataSourceImpl : DataSource(), BusinessDataSource {
                     .select(BusinessTable.columns)
                     .where { BusinessDashboardTable.userId eq userId.toJavaUuid() }
                     .map { BusinessEntity.wrapRowR2dbc(it).toDomain() }
-                    .firstOrNull()
+                    .singleOrNull()
             }
         }
     }
@@ -134,7 +134,7 @@ internal class BusinessDataSourceImpl : DataSource(), BusinessDataSource {
                 val dashboardId = BusinessDashboardTable
                     .select(BusinessDashboardTable.businessId)
                     .where { BusinessDashboardTable.userId eq userId.toJavaUuid() }
-                    .firstOrNull()
+                    .singleOrNull()
                     ?.getOrNull(BusinessDashboardTable.businessId)
                     ?.value
                 val businesses = BusinessTable

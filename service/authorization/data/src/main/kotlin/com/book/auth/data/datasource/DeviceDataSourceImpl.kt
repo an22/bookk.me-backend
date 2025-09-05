@@ -7,8 +7,8 @@ import com.book.auth.data.orm.table.AuthenticationTable
 import com.book.auth.domain.api.identification.entity.Device
 import com.book.auth.domain.datasource.DeviceDataSource
 import com.book.core.data.DataSource
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.singleOrNull
 import kotlinx.coroutines.flow.toList
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.innerJoin
@@ -38,7 +38,7 @@ internal class DeviceDataSourceImpl : DataSource(), DeviceDataSource {
                 .innerJoin(AuthenticationTable, onColumn = { userAuthId }, otherColumn = { id })
                 .selectAll()
                 .map { AuthDeviceEntity.wrapRowR2dbc(it).toDomain() }
-                .firstOrNull()
+                .singleOrNull()
         }
     }
 
@@ -49,12 +49,12 @@ internal class DeviceDataSourceImpl : DataSource(), DeviceDataSource {
                     otherTable = AuthenticationTable,
                     onColumn = { userAuthId },
                     otherColumn = { id },
-                    additionalConstraint = { AuthDeviceTable.userAuthId eq authId.toJavaUuid() }
+                    additionalConstraint = { AuthenticationTable.id eq authId.toJavaUuid() }
                 )
                 .selectAll()
                 .where { AuthDeviceTable.deviceUUID eq deviceUUID.toJavaUuid() }
                 .map { AuthDeviceEntity.wrapRowR2dbc(it).toDomain() }
-                .firstOrNull()
+                .singleOrNull()
         }
     }
 
@@ -89,15 +89,13 @@ internal class DeviceDataSourceImpl : DataSource(), DeviceDataSource {
 
     override suspend fun createDeviceIfNotExist(authId: Uuid, uuid: Uuid, name: String) {
         mapExceptions {
-            dbQuery {
-                AuthDeviceTable.insertIgnore {
-                    it[userAuthId] = authId.toJavaUuid()
-                    it[deviceUUID] = uuid.toJavaUuid()
-                    it[deviceName] = name
-                    it[refreshTokenId] = null
-                    it[isSignedIn] = false
-                    it[updatedAt] = Clock.System.now()
-                }
+            AuthDeviceTable.insertIgnore {
+                it[userAuthId] = authId.toJavaUuid()
+                it[deviceUUID] = uuid.toJavaUuid()
+                it[deviceName] = name
+                it[refreshTokenId] = null
+                it[isSignedIn] = false
+                it[updatedAt] = Clock.System.now()
             }
         }
     }

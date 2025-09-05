@@ -9,8 +9,8 @@ import com.book.auth.domain.api.registration.operation.FinishPasskeyRegistration
 import com.book.auth.domain.api.registration.operation.FinishPasskeyRegistration.Error.VerificationFailed
 import com.book.auth.domain.datasource.PassKeyDataSource
 import com.book.auth.domain.impl.passkey.createRelyingParty
+import com.book.auth.domain.repository.CacheableCredentialRepository
 import com.bookk.core.toUUID
-import com.yubico.webauthn.CredentialRepository
 import com.yubico.webauthn.FinishRegistrationOptions
 import com.yubico.webauthn.RegistrationResult
 import com.yubico.webauthn.data.AuthenticatorAttestationResponse
@@ -27,7 +27,7 @@ private typealias PKS = PublicKeyCredential<AuthenticatorAttestationResponse, Cl
 
 internal class FinishPasskeyRegistrationImpl(
     private val passKeyDataSource: PassKeyDataSource,
-    private val credentialRepository: CredentialRepository
+    private val credentialRepository: CacheableCredentialRepository
 ) : FinishPasskeyRegistration {
     override suspend fun verifyRequest(request: FinishRegistrationRequest): Result<PasskeyCredential> = runCatching {
         val pkc = PublicKeyCredential.parseRegistrationResponseJson(request.publicKeyCredentialJson)
@@ -52,6 +52,7 @@ internal class FinishPasskeyRegistrationImpl(
         response: PKS
     ): RegistrationResult {
         passKeyDataSource.deleteCachedChallenge(request.requestId)
+        cacheRepositoryData(response)
         return createRelyingParty(credentialRepository)
             .finishRegistration(
                 FinishRegistrationOptions.builder()
@@ -59,6 +60,10 @@ internal class FinishPasskeyRegistrationImpl(
                     .response(response)
                     .build()
             )
+    }
+
+    private suspend fun cacheRepositoryData(response: PKS) {
+        credentialRepository.lookupAllCache(response.id)
     }
 
     @Suppress("DEPRECATION")

@@ -6,8 +6,8 @@ import com.book.auth.data.orm.table.AuthenticationTable
 import com.book.auth.domain.api.authentication.entity.Authentication
 import com.book.auth.domain.datasource.AccountDataSource
 import com.book.core.data.DataSource
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.singleOrNull
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.r2dbc.deleteWhere
 import org.jetbrains.exposed.v1.r2dbc.insertAndGetId
@@ -20,14 +20,12 @@ import kotlin.uuid.toKotlinUuid
 internal class AccountDataSourceImpl : DataSource(), AccountDataSource {
 
     override suspend fun createAuthorization(info: Authentication): Authentication = mapExceptions {
-        dbQuery {
-            AuthenticationTable.insertAndGetId {
-                it[userId] = info.userId.toJavaUuid()
-                it[uuid] = info.uuid.toJavaUuid()
-                it[updatedAt] = Clock.System.now()
-            }.let {
-                info.copy(id = it.value.toKotlinUuid())
-            }
+        AuthenticationTable.insertAndGetId {
+            it[userId] = info.userId.toJavaUuid()
+            it[uuid] = info.uuid.toJavaUuid()
+            it[updatedAt] = Clock.System.now()
+        }.let {
+            info.copy(id = it.value.toKotlinUuid())
         }
     }
 
@@ -36,7 +34,7 @@ internal class AccountDataSourceImpl : DataSource(), AccountDataSource {
             AuthenticationTable.selectAll()
                 .where { AuthenticationTable.id eq id.toJavaUuid() }
                 .map { AuthenticationEntity.wrapRowR2dbc(it).toDomain() }
-                .firstOrNull()
+                .singleOrNull()
         }
     }
 
@@ -45,7 +43,7 @@ internal class AccountDataSourceImpl : DataSource(), AccountDataSource {
             AuthenticationTable.selectAll()
                 .where { AuthenticationTable.uuid eq uuid.toJavaUuid() }
                 .map { AuthenticationEntity.wrapRowR2dbc(it).toDomain() }
-                .firstOrNull()
+                .singleOrNull()
         }
     }
 
@@ -54,7 +52,7 @@ internal class AccountDataSourceImpl : DataSource(), AccountDataSource {
             AuthenticationTable.selectAll()
                 .where { AuthenticationTable.userId eq userId.toJavaUuid() }
                 .map { AuthenticationEntity.wrapRowR2dbc(it).toDomain() }
-                .firstOrNull()
+                .singleOrNull()
         }
     }
 

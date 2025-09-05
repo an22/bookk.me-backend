@@ -4,7 +4,7 @@ import com.book.auth.domain.api.registration.entity.RegistrationChallengeRespons
 import com.book.auth.domain.api.registration.operation.StartPasskeyRegistration
 import com.book.auth.domain.datasource.PassKeyDataSource
 import com.book.auth.domain.impl.passkey.createRelyingParty
-import com.yubico.webauthn.CredentialRepository
+import com.book.auth.domain.repository.CacheableCredentialRepository
 import com.yubico.webauthn.StartRegistrationOptions
 import com.yubico.webauthn.data.AuthenticatorSelectionCriteria
 import com.yubico.webauthn.data.PublicKeyCredentialCreationOptions
@@ -15,7 +15,7 @@ import com.yubico.webauthn.data.ByteArray as YubicoByteArray
 
 internal class StartPasskeyRegistrationImpl(
     private val passKeyDataSource: PassKeyDataSource,
-    private val credentialRepository: CredentialRepository
+    private val credentialRepository: CacheableCredentialRepository
 ) : StartPasskeyRegistration {
 
     override suspend fun invoke(userHandle: Uuid, passkeyDisplayName: String): Result<RegistrationChallengeResponse> = runCatching {
@@ -29,11 +29,12 @@ internal class StartPasskeyRegistrationImpl(
         )
     }
 
-    private fun createChallenge(
+    private suspend fun createChallenge(
         userName: String,
         displayName: String,
         handle: YubicoByteArray
     ): PublicKeyCredentialCreationOptions {
+        credentialRepository.cacheCredentialIdsForUsername(userName)
         return createRelyingParty(credentialRepository).startRegistration(
             StartRegistrationOptions.builder()
                 .user(

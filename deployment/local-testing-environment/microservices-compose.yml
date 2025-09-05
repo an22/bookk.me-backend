@@ -9,7 +9,7 @@ services:
     env_file:
       - service/auth.env
     environment:
-      JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:8000"
+      JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:8000 -ea"
       TZ: "UTC"
     volumes:
       - './security/test.jks:/etc/service/keystore.jks:ro'
@@ -24,7 +24,7 @@ services:
     env_file:
       - service/user.env
     environment:
-      JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,address=*:8001,server=y,suspend=n"
+      JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,address=*:8001,server=y,suspend=n -ea"
       TZ: "UTC"
     volumes:
       - './security/test.jks:/etc/service/keystore.jks:ro'
@@ -39,7 +39,7 @@ services:
     env_file:
       - service/business.env
     environment:
-      JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,address=*:8002,server=y,suspend=n"
+      JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,address=*:8002,server=y,suspend=n -ea"
       TZ: "UTC"
     volumes:
       - './security/test.jks:/etc/service/keystore.jks:ro'

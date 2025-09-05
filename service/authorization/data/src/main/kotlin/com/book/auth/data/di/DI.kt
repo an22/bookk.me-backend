@@ -7,8 +7,9 @@ import com.book.auth.data.datasource.YubicoCredentialRepository
 import com.book.auth.domain.datasource.AccountDataSource
 import com.book.auth.domain.datasource.DeviceDataSource
 import com.book.auth.domain.datasource.PassKeyDataSource
+import com.book.auth.domain.repository.CacheableCredentialRepository
 import com.book.core.data.database.createDatabase
-import com.yubico.webauthn.CredentialRepository
+import org.koin.core.module.dsl.factoryOf
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.bind
 import org.koin.dsl.module
@@ -17,6 +18,6 @@ fun authDataModule() = module {
     singleOf(::AccountDataSourceImpl) bind AccountDataSource::class
     singleOf(::DeviceDataSourceImpl) bind DeviceDataSource::class
     singleOf(::PassKeyDataSourceImpl) bind PassKeyDataSource::class
-    singleOf(::YubicoCredentialRepository) bind CredentialRepository::class
+    factoryOf(::YubicoCredentialRepository) bind CacheableCredentialRepository::class
     createDatabase()
 }

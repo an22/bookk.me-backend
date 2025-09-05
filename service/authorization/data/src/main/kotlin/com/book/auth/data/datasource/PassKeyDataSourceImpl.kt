@@ -10,8 +10,8 @@ import com.book.core.data.DataSource
 import com.book.core.data.cache.CacheClient
 import com.book.core.data.cache.get
 import com.book.core.data.cache.set
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.singleOrNull
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.flow.toSet
 import org.jetbrains.exposed.v1.core.and
@@ -52,23 +52,20 @@ internal class PassKeyDataSourceImpl(
 
     override suspend fun createPasskeyCredential(credential: PasskeyCredential) {
         mapExceptions {
-            dbQuery {
-                PasskeyCredentialTable.insert {
-                    it[authId] = credential.authId.toJavaUuid()
-                    it[name] = credential.name
-                    it[credDescriptorId] = credential.credDescriptor.id
-                    it[credDescriptorType] = credential.credDescriptor.type
-                    it[credDescriptorTransports] =
-                        credential.credDescriptor.transports.joinToString(separator = ",") { it }
-                    it[publicKey] = credential.publicKey
-                    it[signatureCount] = credential.signatureCount
-                    it[isDiscoverable] = credential.isDiscoverable
-                    it[isBackupEligible] = credential.isBackupEligible
-                    it[isBackedUp] = credential.isBackedUp
-                    it[attestationObject] = credential.attestationObject
-                    it[clientDataJson] = credential.clientData
-                    it[updatedAt] = Clock.System.now()
-                }
+            PasskeyCredentialTable.insert {
+                it[authId] = credential.authId.toJavaUuid()
+                it[name] = credential.name
+                it[credDescriptorId] = credential.credDescriptor.id
+                it[credDescriptorType] = credential.credDescriptor.type
+                it[credDescriptorTransports] = credential.credDescriptor.transports.joinToString(separator = ",") { it }
+                it[publicKey] = credential.publicKey
+                it[signatureCount] = credential.signatureCount
+                it[isDiscoverable] = credential.isDiscoverable
+                it[isBackupEligible] = credential.isBackupEligible
+                it[isBackedUp] = credential.isBackedUp
+                it[attestationObject] = credential.attestationObject
+                it[clientDataJson] = credential.clientData
+                it[updatedAt] = Clock.System.now()
             }
         }
     }
@@ -85,7 +82,7 @@ internal class PassKeyDataSourceImpl(
                     )
                     .selectAll()
                     .map { PasskeyCredentialEntity.wrapRowR2dbc(it).toDomain() }
-                    .firstOrNull()
+                    .singleOrNull()
             }
         }
     }

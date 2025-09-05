@@ -1,10 +1,8 @@
 package com.book.core.data
 
 import com.book.core.data.map.toDomain
-import com.bookk.core.DispatcherProvider
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import org.jetbrains.exposed.v1.r2dbc.R2dbcTransaction
 import org.jetbrains.exposed.v1.r2dbc.transactions.suspendTransaction
@@ -34,10 +32,8 @@ abstract class DataSource {
         type: QueryType = QueryType.FAST,
         block: suspend R2dbcTransaction.() -> T
     ): T = withTimeout(timeMillis = type.limit) {
-        withContext(DispatcherProvider.io) {
-            suspendTransaction {
-                block()
-            }
+        suspendTransaction {
+            block()
         }
     }
 

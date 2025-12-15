@@ -1,0 +1,136 @@
+
+ssl_session_cache   shared:SSL:10m;
+ssl_session_timeout 10m;
+
+resolver 127.0.0.11 valid=30s;
+
+server {
+  listen 443 ssl;
+  server_name         orchestrator.${DOMAIN_NAME};
+  access_log  off;
+  http2  on;
+  ssl_certificate     /etc/nginx/ssl/${DOMAIN_NAME}/fullchain.pem;
+  ssl_certificate_key /etc/nginx/ssl/${DOMAIN_NAME}/key.pem;
+  allow 10.8.0.0/24;
+  deny all;
+
+  location / {
+      set $upstream orchestrator;
+      proxy_pass https://$upstream:9443;
+  }
+}
+
+server {
+    listen 443 ssl;
+    server_name         dozzle.${DOMAIN_NAME};
+    access_log  off;
+    http2  on;
+    ssl_certificate     /etc/nginx/ssl/${DOMAIN_NAME}/fullchain.pem;
+    ssl_certificate_key /etc/nginx/ssl/${DOMAIN_NAME}/key.pem;
+    allow 10.8.0.0/24;
+    deny all;
+
+    location / {
+        set $upstream dozzle;
+        proxy_pass http://$upstream:8080;
+    }
+  }
+
+server {
+  listen 443 ssl;
+  server_name         admin.${DOMAIN_NAME};
+  access_log  off;
+  ssl_certificate     /etc/nginx/ssl/${DOMAIN_NAME}/fullchain.pem;
+  ssl_certificate_key /etc/nginx/ssl/${DOMAIN_NAME}/key.pem;
+  allow 10.8.0.0/24;
+  deny all;
+
+  location / {
+      set $upstream admin;
+      proxy_pass http://$upstream:8080;
+  }
+}
+
+server {
+  listen 443 ssl;
+  server_name         kafka.${DOMAIN_NAME};
+  ssl_certificate     /etc/nginx/ssl/${DOMAIN_NAME}/fullchain.pem;
+  ssl_certificate_key /etc/nginx/ssl/${DOMAIN_NAME}/key.pem;
+  allow 10.8.0.0/24;
+  deny all;
+
+  location / {
+      set $upstream ui.kafka;
+      proxy_pass http://$upstream:8080;
+  }
+}
+
+server {
+  listen 443 ssl;
+  server_name         kibana.${DOMAIN_NAME};
+  access_log  off;
+  ssl_certificate     /etc/nginx/ssl/${DOMAIN_NAME}/fullchain.pem;
+  ssl_certificate_key /etc/nginx/ssl/${DOMAIN_NAME}/key.pem;
+  allow 10.8.0.0/24;
+  deny all;
+
+  location / {
+      set $upstream kibana.${DOMAIN_NAME};
+      proxy_pass http://$upstream:5601;
+  }
+}
+
+server {
+  listen 443 ssl;
+  server_name         vpn.${DOMAIN_NAME};
+  access_log  off;
+  ssl_certificate     /etc/nginx/ssl/${DOMAIN_NAME}/fullchain.pem;
+  ssl_certificate_key /etc/nginx/ssl/${DOMAIN_NAME}/key.pem;
+
+  location / {
+      set $upstream vpn;
+      proxy_pass http://$upstream:51821;
+  }
+}
+
+server {
+  listen 443 ssl;
+  server_name         local.${DOMAIN_NAME};
+  access_log  off;
+  ssl_certificate     /etc/nginx/ssl/${DOMAIN_NAME}/fullchain.pem;
+  ssl_certificate_key /etc/nginx/ssl/${DOMAIN_NAME}/key.pem;
+  allow 10.8.0.0/24;
+  deny all;
+
+  location / {
+      proxy_pass http://$remote_addr$request_uri;
+  }
+}
+
+server {
+  listen 443 ssl;
+  server_name         ${DOMAIN_NAME} www.${DOMAIN_NAME};
+  ssl_certificate     /etc/nginx/ssl/${DOMAIN_NAME}/fullchain.pem;
+  ssl_certificate_key /etc/nginx/ssl/${DOMAIN_NAME}/key.pem;
+
+  location = /.well-known/apple-app-site-association {
+     default_type application/json;
+     alias /srv/static/ios_well_known.json;
+  }
+  location = /.well-known/assetlinks.json {
+     default_type application/json;
+     alias /srv/static/android_well_known.json;
+  }
+  location /api/auth {
+      set $upstream authorization.service;
+      proxy_pass https://$upstream;
+  }
+  location /api/user {
+      set $upstream user.service;
+      proxy_pass https://$upstream;
+  }
+  location /api/business {
+      set $upstream business.service;
+      proxy_pass https://$upstream;
+  }
+}

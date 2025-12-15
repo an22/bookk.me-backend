@@ -26,7 +26,7 @@ filebeat.autodiscover:
 
 output.logstash:
   enabled: true
-  hosts: ["logstash.elastic.bookk.me:5045"]
+  hosts: ["logstash.elastic:5045"]
 
 output.console:
   enabled: false

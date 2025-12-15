@@ -16,7 +16,7 @@ Connect to remote node which will be starting point for Swarm deployment
 #### Init swarm node
 ```
 docker swarm init --advertise-addr {subnet ip}
-docker network create -d overlay bookk-me
+docker network create -d overlay operational
 docker network create -d overlay agent_network
 ```
 

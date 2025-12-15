@@ -72,7 +72,7 @@ fun userClientModule(clientTag: String) = module {
                 }
             }
             defaultRequest {
-                host = System.getenv("BOOKK_ME_USER_SERVICE_HOSTNAME")
+                host = System.getenv("APPLICATION_USER_SERVICE_HOSTNAME")
 
                 headers["Idempotency-Key"] = Uuid.random().toString()
 

@@ -22,12 +22,10 @@ services:
     networks:
       agent_network:
         aliases:
-          - dozzle.bookk.me
+          - dozzle
     deploy:
       mode: global
 
 networks:
   agent_network:
-    external: true
-  bookk-me:
     external: true

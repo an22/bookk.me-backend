@@ -1,7 +1,7 @@
 version: '3.9'
 
 networks:
-  bookk-me:
+  operational:
     external: true
 
 volumes:
@@ -100,7 +100,7 @@ x-templates:
         constraints: [ node.role == worker ]
 
   master-environments: &environments
-    cluster.name: "bookk.me-elastic-cluster"
+    cluster.name: "elastic-cluster"
     ELASTIC_PASSWORD: ${ELASTIC_PASSWORD}
     bootstrap.memory_lock: "true"
     action.destructive_requires_name: "true"
@@ -116,7 +116,7 @@ services:
   kibana-password-initializer:
     image: alpine/curl:latest
     networks:
-      - bookk-me
+      - operational
     secrets:
       - source: elastic-ca-certificate
         target: /var/tmp/ca.crt
@@ -124,7 +124,7 @@ services:
       ELASTIC_PASSWORD: ${ELASTIC_PASSWORD}
       KIBANA_PASSWORD: ${KIBANA_PASSWORD}
     command: >
-      -S -X POST --cacert /var/tmp/ca.crt --user "elastic:${ELASTIC_PASSWORD}" -H "Content-Type: application/json" https://master1.elastic.bookk.me:9200/_security/user/kibana_system/_password -d "{\"password\":\"${KIBANA_PASSWORD}\"}"
+      -S -X POST --cacert /var/tmp/ca.crt --user "elastic:${ELASTIC_PASSWORD}" -H "Content-Type: application/json" https://master1.elastic:9200/_security/user/kibana_system/_password -d "{\"password\":\"${KIBANA_PASSWORD}\"}"
     logging:
       options:
         max-size: 20m
@@ -140,9 +140,9 @@ services:
   master1:
     <<: *elastic-deployment-common
     networks:
-      bookk-me:
+      operational:
         aliases:
-          - master1.elastic.bookk.me
+          - master1.elastic
     volumes:
       - esmaster1:/usr/share/elasticsearch/data
     secrets:
@@ -155,9 +155,9 @@ services:
     environment:
       <<: *environments
       node.name: es-master1
-      discovery.seed_hosts: master2.elastic.bookk.me, master3.elastic.bookk.me
+      discovery.seed_hosts: master2.elastic, master3.elastic
       cluster.initial_master_nodes: es-master1, es-master2, es-master3
-      network.publish_host: master1.elastic.bookk.me
+      network.publish_host: master1.elastic
       xpack.security.http.ssl.key: /usr/share/elasticsearch/config/certs/master1.key
       xpack.security.http.ssl.certificate: /usr/share/elasticsearch/config/certs/master1.crt
       xpack.security.http.ssl.certificate_authorities: /usr/share/elasticsearch/config/certs/ca/ca.crt
@@ -169,9 +169,9 @@ services:
   master2:
     <<: *elastic-deployment-common
     networks:
-      bookk-me:
+      operational:
         aliases:
-          - master2.elastic.bookk.me
+          - master2.elastic
     secrets:
       - source: elastic-master2-key
         target: /usr/share/elasticsearch/config/certs/master2.key
@@ -184,9 +184,9 @@ services:
     environment:
       <<: *environments
       node.name: es-master2
-      discovery.seed_hosts: master1.elastic.bookk.me, master3.elastic.bookk.me
+      discovery.seed_hosts: master1.elastic, master3.elastic
       cluster.initial_master_nodes: es-master1, es-master2, es-master3
-      network.publish_host: master2.elastic.bookk.me
+      network.publish_host: master2.elastic
       xpack.security.http.ssl.key: /usr/share/elasticsearch/config/certs/master2.key
       xpack.security.http.ssl.certificate: /usr/share/elasticsearch/config/certs/master2.crt
       xpack.security.http.ssl.certificate_authorities: /usr/share/elasticsearch/config/certs/ca/ca.crt
@@ -197,9 +197,9 @@ services:
   master3:
     <<: *elastic-deployment-common
     networks:
-      bookk-me:
+      operational:
         aliases:
-          - master3.elastic.bookk.me
+          - master3.elastic
     secrets:
       - source: elastic-master3-key
         target: /usr/share/elasticsearch/config/certs/master3.key
@@ -212,9 +212,9 @@ services:
     environment:
       <<: *environments
       node.name: es-master3
-      discovery.seed_hosts: master1.elastic.bookk.me, master2.elastic.bookk.me
+      discovery.seed_hosts: master1.elastic, master2.elastic
       cluster.initial_master_nodes: es-master1, es-master2, es-master3
-      network.publish_host: master3.elastic.bookk.me
+      network.publish_host: master3.elastic
       xpack.security.http.ssl.key: /usr/share/elasticsearch/config/certs/master3.key
       xpack.security.http.ssl.certificate: /usr/share/elasticsearch/config/certs/master3.crt
       xpack.security.http.ssl.certificate_authorities: /usr/share/elasticsearch/config/certs/ca/ca.crt
@@ -226,9 +226,9 @@ services:
     <<: *replicated
     image: docker.elastic.co/kibana/kibana:${ELASTIC_STACK_VERSION}
     networks:
-      bookk-me:
+      operational:
         aliases:
-          - kibana.elastic.bookk.me
+          - kibana.elastic
     secrets:
       - source: elastic-ca-certificate
         target: /usr/share/elasticsearch/config/certs/ca/ca.crt
@@ -236,8 +236,8 @@ services:
       - kibanadata:/usr/share/kibana/data
     environment:
       SERVER_NAME: BookkMeKibana
-      SERVER_PUBLICBASEURL: https://kibana.bookkk.me
-      ELASTICSEARCH_HOSTS: '["https://master1.elastic.bookk.me:9200","https://master2.elastic.bookk.me:9200","https://master3.elastic.bookk.me:9200"]'
+      SERVER_PUBLICBASEURL: https://kibana.bookkme.app
+      ELASTICSEARCH_HOSTS: '["https://master1.elastic:9200","https://master2.elastic:9200","https://master3.elastic:9200"]'
       ELASTICSEARCH_USERNAME: kibana_system
       ELASTICSEARCH_PASSWORD: ${KIBANA_PASSWORD}
       XPACK_SECURITY_ENCRYPTIONKEY: ${KIBANA_ENCRYPTION_KEY}
@@ -257,7 +257,7 @@ services:
       - source: filebeat
         target: /usr/share/filebeat/filebeat.yml
     networks:
-      - bookk-me
+      - operational
     volumes:
       - filebeatdata:/usr/share/filebeat/data
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -294,9 +294,9 @@ services:
     volumes:
       - logstash:/usr/share/logstash/data
     networks:
-      bookk-me:
+      operational:
         aliases:
-          - logstash.elastic.bookk.me
+          - logstash.elastic
     environment:
       LOGSTASH_USER: elastic
       LOGSTASH_PASSWORD: ${ELASTIC_PASSWORD}

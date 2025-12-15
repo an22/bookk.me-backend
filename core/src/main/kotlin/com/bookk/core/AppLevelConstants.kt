@@ -1,47 +1,47 @@
 package com.bookk.core
 
 object AppLevelConstants {
-    const val DOMAIN_NAME = "bookkk.me"
+    const val DOMAIN_NAME = "bookkme.app"
     const val APP_NAME = "BookkMe"
     const val SERIALIZER = SupportedSerializers.PROTOBUF.STR
     const val BUILD_TYPE = BuildType.DEBUG.STR
 
     val serviceName: String
-        get() = System.getenv("BOOKK_ME_SERVICE_NAME").orEmpty()
+        get() = System.getenv("APPLICATION_SERVICE_NAME").orEmpty()
     val cacheHost: String
-        get() = System.getenv("BOOKK_ME_REDIS_HOSTS")
+        get() = System.getenv("APPLICATION_REDIS_HOSTS")
     val cachePort: String
-        get() = System.getenv("BOOKK_ME_REDIS_PORT")
+        get() = System.getenv("APPLICATION_REDIS_PORT")
     val cachePass: String
-        get() = System.getenv("BOOKK_ME_REDIS_PASSWORD")
+        get() = System.getenv("APPLICATION_REDIS_PASSWORD")
     val eventStreamingHost: String
-        get() = System.getenv("BOOKK_ME_KAFKA_HOSTS")
+        get() = System.getenv("APPLICATION_KAFKA_HOSTS")
     val sslFile: String
-        get() = System.getenv("BOOKK_ME_SERVICE_SSL_FILE")
+        get() = System.getenv("APPLICATION_SERVICE_SSL_FILE")
     val sslPass: String
-        get() = System.getenv("BOOKK_ME_SERVICE_SSL_PASSWORD")
+        get() = System.getenv("APPLICATION_SERVICE_SSL_PASSWORD")
     val sslAlias: String
-        get() = System.getenv("BOOKK_ME_SERVICE_SSL_ALIAS")
+        get() = System.getenv("APPLICATION_SERVICE_SSL_ALIAS")
     val sslPort: Int
-        get() = System.getenv("BOOKK_ME_SERVICE_PORT").toInt()
+        get() = System.getenv("APPLICATION_SERVICE_PORT").toInt()
     val dbSchemaName: String
-        get() = System.getenv("BOOKK_ME_DB_SCHEME")
+        get() = System.getenv("APPLICATION_DB_SCHEME")
     val dbDriver: String
-        get() = System.getenv("BOOKK_ME_DB_DRIVER")
+        get() = System.getenv("APPLICATION_DB_DRIVER")
     val dbUrl: String
-        get() = System.getenv("BOOKK_ME_DB_URL")
+        get() = System.getenv("APPLICATION_DB_URL")
     val legacyDbUrl: String
-        get() = System.getenv("BOOKK_ME_LEGACY_DB_URL")
+        get() = System.getenv("APPLICATION_LEGACY_DB_URL")
     val dbPort: String
-        get() = System.getenv("BOOKK_ME_DB_PORT")
+        get() = System.getenv("APPLICATION_DB_PORT")
     val dbUsername: String
-        get() = System.getenv("BOOKK_ME_DB_USER")
+        get() = System.getenv("APPLICATION_DB_USER")
     val dbPassword: String
-        get() = System.getenv("BOOKK_ME_DB_PASSWORD")
+        get() = System.getenv("APPLICATION_DB_PASSWORD")
     val pubKeyFilename: String
-        get() = System.getenv("BOOKK_ME_JWT_PUBLIC_KEY_FILE")
+        get() = System.getenv("APPLICATION_JWT_PUBLIC_KEY_FILE")
     val privateKeyFilename: String
-        get() = System.getenv("BOOKK_ME_JWT_PRIVATE_KEY_FILE")
+        get() = System.getenv("APPLICATION_JWT_PRIVATE_KEY_FILE")
 
     sealed interface SupportedSerializers {
         data object JSON : SupportedSerializers {

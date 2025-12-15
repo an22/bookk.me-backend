@@ -1,8 +1,7 @@
 version: "3.9"
 
 networks:
-  bookk-me:
-    driver: overlay
+  operational:
     external: true
 
 secrets:
@@ -25,15 +24,15 @@ services:
     labels:
       co.elastic.logs/enabled: "true"
     networks:
-      bookk-me:
+      operational:
         aliases:
-          - ${BOOKK_ME_SERVICE_NAME}.database.bookk.me
+          - ${APPLICATION_SERVICE_NAME}.database
     environment:
-      MARIADB_ROOT_PASSWORD: ${BOOKK_ME_DB_PASSWORD}
-      MARIADB_DATABASE: ${BOOKK_ME_SERVICE_NAME}
-      MARIADB_USER: ${BOOKK_ME_DB_USER}
-      MARIADB_PASSWORD: ${BOOKK_ME_DB_PASSWORD}
-      MYSQL_TCP_PORT: ${BOOKK_ME_DB_PORT}
+      MARIADB_ROOT_PASSWORD: ${APPLICATION_DB_PASSWORD}
+      MARIADB_DATABASE: ${APPLICATION_SERVICE_NAME}
+      MARIADB_USER: ${APPLICATION_DB_USER}
+      MARIADB_PASSWORD: ${APPLICATION_DB_PASSWORD}
+      MYSQL_TCP_PORT: ${APPLICATION_DB_PORT}
     volumes:
       - database_volume:/var/lib/mysql
     logging:
@@ -66,13 +65,13 @@ services:
       - redis_data:/opt/bitnami/redis/
 
     networks:
-      bookk-me:
+      operational:
         aliases:
-          - ${BOOKK_ME_SERVICE_NAME}.redis.bookk.me
+          - ${APPLICATION_SERVICE_NAME}.redis
 
     environment:
       REDIS_DISABLE_COMMANDS: FLUSHDB,FLUSHALL,CONFIG
-      REDIS_PASSWORD: ${BOOKK_ME_REDIS_PASSWORD}
+      REDIS_PASSWORD: ${APPLICATION_REDIS_PASSWORD}
 
     deploy:
       placement:
@@ -93,24 +92,24 @@ services:
         window: 120s
 
   microservice:
-    image: ${BOOKK_ME_SERVICE_IMAGE}:${BOOKK_ME_SERVICE_VERSION}
+    image: ${APPLICATION_SERVICE_IMAGE}:${APPLICATION_SERVICE_VERSION}
     labels:
       co.elastic.logs/enabled: "true"
     networks:
-      bookk-me:
+      operational:
         aliases:
-          - ${BOOKK_ME_SERVICE_NAME}.service.bookk.me
+          - ${APPLICATION_SERVICE_NAME}.service
 
     secrets:
       - source: public-jwt
-        target: ${BOOKK_ME_JWT_PUBLIC_KEY_FILE}
+        target: ${APPLICATION_JWT_PUBLIC_KEY_FILE}
       - source: private-jwt
-        target: ${BOOKK_ME_JWT_PRIVATE_KEY_FILE}
+        target: ${APPLICATION_JWT_PRIVATE_KEY_FILE}
       - source: ssl-keystore
-        target: ${BOOKK_ME_SERVICE_SSL_FILE}
+        target: ${APPLICATION_SERVICE_SSL_FILE}
     env_file: "microservice.env"
     environment:
-      BOOKK_ME_SERVICE_VERSION: ${BOOKK_ME_SERVICE_VERSION}
+      APPLICATION_SERVICE_VERSION: ${APPLICATION_SERVICE_VERSION}
     logging:
       options:
         max-size: 100m

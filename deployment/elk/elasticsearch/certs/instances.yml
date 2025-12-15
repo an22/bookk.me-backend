@@ -1,18 +1,18 @@
 instances:
   - name: master1
     dns:
-      - master1.elastic.bookk.me
+      - master1.elastic
       - localhost
   - name: master2
     dns:
-      - master2.elastic.bookk.me
+      - master2.elastic
       - localhost
   - name: master3
     dns:
-      - master3.elastic.bookk.me
+      - master3.elastic
       - localhost
   - name: logstash
     dns:
-      - logstash.elastic.bookk.me
+      - logstash.elastic
       - localhost
 

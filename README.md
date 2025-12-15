@@ -66,7 +66,6 @@ docker stack deploy nginx --compose-file deployment/nginx/nginx-compose.yml
 #### Deploy container manager
 
 ```
-docker secret create dozzle-auth orchestrator/dozzle/users.actual.yaml
 docker stack deploy orchestrator --compose-file deployment/orchestrator/orchestrator-compose.yml
 ```
 

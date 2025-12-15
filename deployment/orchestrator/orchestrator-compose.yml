@@ -2,7 +2,7 @@ version: '3.2'
 
 secrets:
   dozzle-auth:
-    external: true
+    file: dozzle/users.actual.yaml
 
 services:
   dozzle:

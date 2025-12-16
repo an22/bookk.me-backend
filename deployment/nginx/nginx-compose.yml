@@ -10,14 +10,15 @@ volumes:
   nginx-cert:
     name: nginx-cert-${DOMAIN_NAME}
     driver: local
-
+  acmesh-data:
+    driver: local
 configs:
   acme_sh_hostinger_script:
     name: acme_sh_hostinger_dns-v1
     file: certificates/dns_hostinger.sh
 
   nginx_config:
-    name: nginx-v40
+    name: nginx-v42
     file: nginx.conf.template
 
   nginx_cert_wait_script:
@@ -36,14 +37,15 @@ services:
   acme-sh:
     image: neilpang/acme.sh:3.1.2
     command: >
-      sh -c "acme.sh --register-account  --server zerossl --eab-kid ${EAB_KID} --eab-hmac-key ${EAB_HMAC} &&
-             acme.sh --issue --dns dns_hostinger -d \"${DOMAIN_NAME}\" -d \"*.${DOMAIN_NAME}\" &&
+      sh -c "acme.sh --server letsencrypt --register-account -m "antufeevmichaeloperational@gmail.com" &&
+             acme.sh --server letsencrypt --issue --dns dns_hostinger -d \"${DOMAIN_NAME}\" -d \"*.${DOMAIN_NAME}\" --dnssleep 60 &&
              acme.sh --deploy -d ${DOMAIN_NAME} --deploy-hook docker &&
              crond -n -s -m off"
     configs:
       - source: acme_sh_hostinger_script
         target: '/acmebin/dnsapi/dns_hostinger.sh'
     volumes:
+      - acmesh-data:/acmesh/${DOMAIN_NAME}_ecc
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - operational
@@ -59,6 +61,11 @@ services:
       DEPLOY_DOCKER_CONTAINER_FULLCHAIN_FILE: "/etc/nginx/ssl/${DOMAIN_NAME}/fullchain.pem"
       DEPLOY_DOCKER_CONTAINER_RELOAD_CMD: "service nginx force-reload"
     deploy:
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 64M
       placement:
         constraints: [ node.role == manager ]
       replicas: 1
@@ -106,6 +113,11 @@ services:
         max-size: 20m
         max-file: 5
     deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
       placement:
         constraints: [node.role == manager]
       replicas: 1

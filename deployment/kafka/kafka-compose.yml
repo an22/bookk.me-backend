@@ -11,10 +11,6 @@ volumes:
     driver: local
   kafka_3_volume:
     driver: local
-  elastic_1_volume:
-    driver: local
-  logstash_volume:
-    driver: local
 
 x-templates:
   replicated-deploy: &replicated

@@ -24,6 +24,11 @@ services:
         aliases:
           - dozzle
     deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
       mode: global
 
 networks:

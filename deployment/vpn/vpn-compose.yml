@@ -11,7 +11,7 @@ configs:
     name: dns-entrypoint-v5
     file: dns/entrypoint.sh
   dns-config:
-    name: dns-config-v3
+    name: dns-config-v4
     file: dns/dnsmasq.conf.template
 
 services:
@@ -49,6 +49,11 @@ services:
         max-size: 20m
         max-file: 5
     deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
       mode: replicated
       replicas: 1
       placement:
@@ -78,6 +83,11 @@ services:
         max-size: 10m
         max-file: 3
     deploy:
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 64M
       mode: replicated
       replicas: 1
       placement:

@@ -8,7 +8,7 @@ group = "com.bookk.core.service"
 version = "0.0.1"
 
 application {
-    mainClass.set("com.book.core.MockMainClassKt")
+    mainClass.set("com.bookk.core.MockMainClassKt")
 }
 
 dependencies {
@@ -17,6 +17,9 @@ dependencies {
     implementation(libs.ktor.status)
     implementation(libs.ktor.logging.call)
     implementation(libs.ktor.idempotency)
+    implementation(libs.ktor.metrics)
+    implementation(libs.ktor.swagger)
+    implementation(libs.ktor.metrics.prometheus)
     implementation(projects.core)
     implementation(projects.core.data)
     implementation(projects.core.data.cache.api)

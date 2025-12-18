@@ -6,7 +6,7 @@ group = "com.bookk.server.microservice.business"
 version = "0.0.1"
 
 application {
-    mainClass.set("com.book.business.BusinessMicroserviceKt")
+    mainClass.set("com.bookk.business.BusinessMicroserviceKt")
 }
 
 dependencies {

@@ -1,9 +1,5 @@
 package com.bookk.server.user.client.di
 
-import com.book.user.domain.api.operation.CreateUser
-import com.book.user.domain.api.operation.DeleteUser
-import com.book.user.domain.api.operation.GetUserByEmail
-import com.book.user.domain.api.operation.GetUserById
 import com.bookk.core.AppLevelConstants
 import com.bookk.core.AppLevelConstants.SupportedSerializers
 import com.bookk.core.SslSettings
@@ -13,6 +9,10 @@ import com.bookk.server.user.client.impl.operation.CreateUserClientImpl
 import com.bookk.server.user.client.impl.operation.DeleteUserClientImpl
 import com.bookk.server.user.client.impl.operation.GetUserByEmailClientImpl
 import com.bookk.server.user.client.impl.operation.GetUserByIdClientImpl
+import com.bookk.user.domain.api.operation.CreateUser
+import com.bookk.user.domain.api.operation.DeleteUser
+import com.bookk.user.domain.api.operation.GetUserByEmail
+import com.bookk.user.domain.api.operation.GetUserById
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.HttpRequestRetry

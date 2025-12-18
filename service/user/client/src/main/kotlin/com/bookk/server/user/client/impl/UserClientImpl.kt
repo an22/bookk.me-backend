@@ -1,14 +1,14 @@
 package com.bookk.server.user.client.impl
 
-import com.book.user.domain.api.entity.EmailBody
-import com.book.user.domain.api.entity.User
-import com.book.user.domain.api.operation.CreateUser
-import com.book.user.domain.api.operation.DeleteUser
-import com.book.user.domain.api.operation.GetUserByEmail
-import com.book.user.domain.api.operation.GetUserById
 import com.bookk.server.user.client.UserClient
 import com.bookk.server.user.client.api.CreateUserRequest
 import com.bookk.server.user.client.api.UserSnapshot
+import com.bookk.user.domain.api.entity.EmailBody
+import com.bookk.user.domain.api.entity.User
+import com.bookk.user.domain.api.operation.CreateUser
+import com.bookk.user.domain.api.operation.DeleteUser
+import com.bookk.user.domain.api.operation.GetUserByEmail
+import com.bookk.user.domain.api.operation.GetUserById
 import kotlin.uuid.Uuid
 
 internal class UserClientImpl(

@@ -1,7 +1,7 @@
 package com.bookk.core.service.test
 
-import com.book.core.service.installDocumentationPlugin
-import com.book.core.service.installNegotiation
+import com.bookk.core.service.installDocumentationPlugin
+import com.bookk.core.service.installNegotiation
 import com.bookk.core.test.runTest
 import io.ktor.server.application.Application
 import io.ktor.server.application.install

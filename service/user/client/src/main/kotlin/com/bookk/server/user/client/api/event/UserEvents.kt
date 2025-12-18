@@ -1,6 +1,6 @@
 package com.bookk.server.user.client.api.event
 
-import com.book.core.data.eventstreaming.EventStreaming
+import com.bookk.core.data.eventstreaming.EventStreaming
 import kotlinx.serialization.Serializable
 import kotlin.uuid.Uuid
 

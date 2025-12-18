@@ -1,3 +1,7 @@
+@file:OptIn(OpenApiPreview::class)
+
+import io.ktor.plugin.OpenApiPreview
+
 plugins {
     alias(libs.plugins.bookk.microservice)
 }
@@ -6,7 +10,17 @@ group = "com.bookk.server.microservice.authorization"
 version = "0.0.1"
 
 application {
-    mainClass.set("com.book.auth.AuthMicroserviceKt")
+    mainClass.set("com.bookk.auth.AuthMicroserviceKt")
+}
+
+ktor {
+    openApi {
+        title = "Documentation"
+        version = "${project.version}"
+        summary = "Authorization Microservice"
+        description = ""
+        contact = "antufeevmicael@gmail.com"
+    }
 }
 
 dependencies {

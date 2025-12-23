@@ -10,7 +10,7 @@ internal class RefreshTokenImpl(
     private val generateAuthToken: GenerateAuthToken
 ) : RefreshToken {
 
-    override suspend fun invoke(info: RefreshTokenInfo): Result<AuthTokens> = runCatching {
-        generateAuthToken(Source.FromRefresh(info.deviceId, info.tokenId)).getOrThrow()
+    override suspend fun invoke(info: RefreshTokenInfo): Result<AuthTokens> {
+        return generateAuthToken(Source.FromRefresh(info.deviceId, info.tokenId))
     }
 }

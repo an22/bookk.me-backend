@@ -10,6 +10,7 @@ import com.bookk.auth.domain.api.registration.operation.FinishPasskeyRegistratio
 import com.bookk.auth.domain.datasource.PassKeyDataSource
 import com.bookk.auth.domain.impl.passkey.createRelyingParty
 import com.bookk.auth.domain.repository.CacheableCredentialRepository
+import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.toUUID
 import com.yubico.webauthn.FinishRegistrationOptions
 import com.yubico.webauthn.RegistrationResult
@@ -26,24 +27,27 @@ import kotlin.uuid.Uuid
 private typealias PKS = PublicKeyCredential<AuthenticatorAttestationResponse, ClientRegistrationExtensionOutputs>
 
 internal class FinishPasskeyRegistrationImpl(
-    private val passKeyDataSource: PassKeyDataSource,
-    private val credentialRepository: CacheableCredentialRepository
+    private val passKeyDS: PassKeyDataSource,
+    private val credentialRepo: CacheableCredentialRepository,
+    private val transactionManager: TransactionManager
 ) : FinishPasskeyRegistration {
-    override suspend fun verifyRequest(request: FinishRegistrationRequest): Result<PasskeyCredential> = runCatching {
-        val pkc = PublicKeyCredential.parseRegistrationResponseJson(request.publicKeyCredentialJson)
-        val challengeJson = passKeyDataSource.getCachedChallenge(request.requestId) ?: throw ChallengeWindowExpired
-        val challenge = PublicKeyCredentialCreationOptions.fromJson(challengeJson)
-        validateRegistrationChallenge(request, challenge, pkc).asPasskeyCredential(pkc, challenge)
-    }.recoverCatching {
-        when (it) {
-            is RegistrationFailedException -> throw VerificationFailed
-            else -> throw it
+    override suspend fun verifyRequest(request: FinishRegistrationRequest): Result<PasskeyCredential> {
+        return transactionManager.transaction {
+            val pkc = PublicKeyCredential.parseRegistrationResponseJson(request.publicKeyCredentialJson)
+            val challengeJson = passKeyDS.getCachedChallenge(request.requestId) ?: throw ChallengeWindowExpired
+            val challenge = PublicKeyCredentialCreationOptions.fromJson(challengeJson)
+            validateRegistrationChallenge(request, challenge, pkc).asPasskeyCredential(pkc, challenge)
+        }.recoverCatching {
+            when (it) {
+                is RegistrationFailedException -> throw VerificationFailed
+                else -> throw it
+            }
         }
     }
 
-    override suspend fun attachOwner(ownerId: Uuid, passkey: PasskeyCredential): Result<Unit> = runCatching {
+    override suspend fun attachOwner(ownerId: Uuid, passkey: PasskeyCredential): Result<Unit> = transactionManager.transaction {
         val passkeyWithOwner = passkey.copy(authId = ownerId)
-        passKeyDataSource.createPasskeyCredential(passkeyWithOwner)
+        passKeyDS.createPasskeyCredential(passkeyWithOwner)
     }
 
     private suspend fun validateRegistrationChallenge(
@@ -51,9 +55,9 @@ internal class FinishPasskeyRegistrationImpl(
         challenge: PublicKeyCredentialCreationOptions,
         response: PKS
     ): RegistrationResult {
-        passKeyDataSource.deleteCachedChallenge(request.requestId)
+        passKeyDS.deleteCachedChallenge(request.requestId)
         cacheRepositoryData(response)
-        return createRelyingParty(credentialRepository)
+        return createRelyingParty(credentialRepo)
             .finishRegistration(
                 FinishRegistrationOptions.builder()
                     .request(challenge)
@@ -63,9 +67,10 @@ internal class FinishPasskeyRegistrationImpl(
     }
 
     private suspend fun cacheRepositoryData(response: PKS) {
-        credentialRepository.lookupAllCache(response.id)
+        credentialRepo.lookupAllCache(response.id)
     }
 
+    //This is actually OptIn for not yet mature FIDO standards
     @Suppress("DEPRECATION")
     private fun RegistrationResult.asPasskeyCredential(pkc: PKS, challenge: PublicKeyCredentialCreationOptions): PasskeyCredential {
         return PasskeyCredential(

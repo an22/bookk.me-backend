@@ -20,7 +20,6 @@
     <logger name="com.zaxxer.hikari" level="warn"/>
     <logger name="org.apache.kafka" level="warn"/>
     <logger name="org.mariadb.jdbc" level="warn"/>
-    <logger name="org.mariadb.r2dbc" level="warn"/>
     <logger name="reactor.netty" level="warn"/>
     <logger name="com.yubico.webauthn" level="warn"/>
     <logger name="org.flywaydb" level="warn"/>

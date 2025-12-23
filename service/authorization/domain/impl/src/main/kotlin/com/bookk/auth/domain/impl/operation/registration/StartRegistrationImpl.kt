@@ -13,7 +13,7 @@ import kotlin.uuid.Uuid
 
 internal class StartRegistrationImpl(
     private val userClient: UserClient,
-    private val startPasskeyRegistration: StartPasskeyRegistration
+    private val startPasskeyRegistration: StartPasskeyRegistration,
 ) : StartRegistration {
 
     private val emailRegex = Regex(RegistrationConstants.EMAIL_REGEX)

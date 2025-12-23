@@ -7,6 +7,7 @@ dependencies {
     implementation(libs.ktor.jwt)
     implementation(projects.core)
     implementation(projects.core.domain)
+    implementation(projects.core.domain.datasource)
     implementation(projects.core.data.eventstreaming.api)
     implementation(projects.service.business.domain.api)
     implementation(projects.service.business.client)

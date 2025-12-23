@@ -3,13 +3,12 @@ package com.bookk.core.data.database
 import org.flywaydb.core.Flyway
 import org.jetbrains.exposed.v1.core.ExperimentalDatabaseMigrationApi
 import org.jetbrains.exposed.v1.core.Table
-import org.jetbrains.exposed.v1.migration.r2dbc.MigrationUtils
-import org.jetbrains.exposed.v1.r2dbc.R2dbcDatabase
-import org.jetbrains.exposed.v1.r2dbc.transactions.suspendTransaction
+import org.jetbrains.exposed.v1.jdbc.Database
+import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
+import org.jetbrains.exposed.v1.migration.jdbc.MigrationUtils
 import java.io.File
 
 private const val URL = "jdbc:mariadb://127.0.0.1:3308"
-private const val R2DBC_URL = "r2dbc:mariadb://127.0.0.1:3308"
 private const val USER = "root"
 private const val PASS = "migration"
 private const val DRIVER = "org.mariadb.jdbc.Driver"
@@ -77,9 +76,8 @@ private fun moveDBToVersion(
     } else {
         flyway.baseline()
     }
-    R2dbcDatabase.connect(
-        url = "$R2DBC_URL/$schemaName",
-        driver = "mariadb",
+    Database.connect(
+        url = "$URL/$schemaName",
         user = USER,
         password = PASS
     )

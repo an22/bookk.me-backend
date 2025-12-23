@@ -26,12 +26,8 @@ object AppLevelConstants {
         get() = System.getenv("APPLICATION_SERVICE_PORT").toInt()
     val dbSchemaName: String
         get() = System.getenv("APPLICATION_DB_SCHEME")
-    val dbDriver: String
-        get() = System.getenv("APPLICATION_DB_DRIVER")
     val dbUrl: String
         get() = System.getenv("APPLICATION_DB_URL")
-    val legacyDbUrl: String
-        get() = System.getenv("APPLICATION_LEGACY_DB_URL")
     val dbPort: String
         get() = System.getenv("APPLICATION_DB_PORT")
     val dbUsername: String

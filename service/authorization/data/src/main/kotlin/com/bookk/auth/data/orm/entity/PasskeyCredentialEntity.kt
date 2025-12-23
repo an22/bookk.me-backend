@@ -1,7 +1,7 @@
 package com.bookk.auth.data.orm.entity
 
 import com.bookk.auth.data.orm.table.PasskeyCredentialTable
-import com.bookk.core.data.R2dbcUUIDEntityClass
+import com.bookk.core.data.DecoratorUUIDEntityClass
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.jetbrains.exposed.v1.dao.UUIDEntity
 import java.util.UUID
@@ -23,5 +23,5 @@ internal class PasskeyCredentialEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var updatedAt by PasskeyCredentialTable.updatedAt
     var lastUsedAt by PasskeyCredentialTable.lastUsedAt
 
-    companion object : R2dbcUUIDEntityClass<PasskeyCredentialEntity>(PasskeyCredentialTable)
+    companion object : DecoratorUUIDEntityClass<PasskeyCredentialEntity>(PasskeyCredentialTable)
 }

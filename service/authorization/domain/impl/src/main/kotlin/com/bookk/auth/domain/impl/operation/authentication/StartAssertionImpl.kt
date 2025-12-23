@@ -5,6 +5,7 @@ import com.bookk.auth.domain.api.authentication.operation.StartAssertion
 import com.bookk.auth.domain.datasource.PassKeyDataSource
 import com.bookk.auth.domain.impl.passkey.createRelyingParty
 import com.bookk.auth.domain.repository.CacheableCredentialRepository
+import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.yubico.webauthn.StartAssertionOptions
 import com.yubico.webauthn.data.UserVerificationRequirement
 import java.util.UUID
@@ -12,9 +13,10 @@ import kotlin.time.Duration.Companion.minutes
 
 internal class StartAssertionImpl(
     private val passKeyDataSource: PassKeyDataSource,
-    private val credentialsRepository: CacheableCredentialRepository
+    private val credentialsRepository: CacheableCredentialRepository,
+    private val transactionManager: TransactionManager
 ) : StartAssertion {
-    override suspend fun invoke(): Result<AssertionStartResponse> = runCatching {
+    override suspend fun invoke(): Result<AssertionStartResponse> = transactionManager.transaction {
         val requestUUID = UUID.randomUUID().toString()
         val request = createRelyingParty(credentialsRepository)
             .startAssertion(

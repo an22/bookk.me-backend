@@ -38,9 +38,13 @@ internal class YubicoCredentialRepository(
     }
 
     override suspend fun cacheUsername(handle: YubicoByteArray) {
-        usernameCache[handle] = Optional.ofNullable(
+        val username = Optional.ofNullable(
             passKeyDataSource.getUsernameByHandle(handle.bytes.toUUID())
         )
+        usernameCache[handle] = username
+        if (username.isPresent) {
+            userHandleCache[username.get()] = Optional.of(handle)
+        }
     }
 
     override suspend fun lookupCache(credentialId: YubicoByteArray, handle: YubicoByteArray) {

@@ -1,7 +1,7 @@
 package com.bookk.auth.data.orm.entity
 
 import com.bookk.auth.data.orm.table.AuthenticationTable
-import com.bookk.core.data.R2dbcUUIDEntityClass
+import com.bookk.core.data.DecoratorUUIDEntityClass
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.jetbrains.exposed.v1.dao.UUIDEntity
 import java.util.UUID
@@ -12,5 +12,5 @@ internal class AuthenticationEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var createdAt by AuthenticationTable.createdAt
     var updatedAt by AuthenticationTable.updatedAt
 
-    companion object : R2dbcUUIDEntityClass<AuthenticationEntity>(AuthenticationTable)
+    companion object : DecoratorUUIDEntityClass<AuthenticationEntity>(AuthenticationTable)
 }

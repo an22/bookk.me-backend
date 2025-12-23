@@ -5,6 +5,7 @@ import com.bookk.auth.domain.api.registration.operation.StartPasskeyRegistration
 import com.bookk.auth.domain.datasource.PassKeyDataSource
 import com.bookk.auth.domain.impl.passkey.createRelyingParty
 import com.bookk.auth.domain.repository.CacheableCredentialRepository
+import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.yubico.webauthn.StartRegistrationOptions
 import com.yubico.webauthn.data.AuthenticatorSelectionCriteria
 import com.yubico.webauthn.data.PublicKeyCredentialCreationOptions
@@ -15,18 +16,21 @@ import com.yubico.webauthn.data.ByteArray as YubicoByteArray
 
 internal class StartPasskeyRegistrationImpl(
     private val passKeyDataSource: PassKeyDataSource,
-    private val credentialRepository: CacheableCredentialRepository
+    private val credentialRepository: CacheableCredentialRepository,
+    private val transactionManager: TransactionManager
 ) : StartPasskeyRegistration {
 
-    override suspend fun invoke(userHandle: Uuid, passkeyDisplayName: String): Result<RegistrationChallengeResponse> = runCatching {
-        val requestId = Uuid.random().toString()
-        val challenge = createChallenge(requestId, passkeyDisplayName, YubicoByteArray(userHandle.toByteArray()))
-        passKeyDataSource.saveChallengeToCache(requestId, challenge.toJson())
-        RegistrationChallengeResponse(
-            requestId = requestId,
-            challenge = challenge.toCredentialsCreateJson(),
-            displayName = passkeyDisplayName
-        )
+    override suspend fun invoke(userHandle: Uuid, passkeyDisplayName: String): Result<RegistrationChallengeResponse> {
+        return transactionManager.transaction {
+            val requestId = Uuid.random().toString()
+            val challenge = createChallenge(requestId, passkeyDisplayName, YubicoByteArray(userHandle.toByteArray()))
+            passKeyDataSource.saveChallengeToCache(requestId, challenge.toJson())
+            RegistrationChallengeResponse(
+                requestId = requestId,
+                challenge = challenge.toCredentialsCreateJson(),
+                displayName = passkeyDisplayName
+            )
+        }
     }
 
     private suspend fun createChallenge(

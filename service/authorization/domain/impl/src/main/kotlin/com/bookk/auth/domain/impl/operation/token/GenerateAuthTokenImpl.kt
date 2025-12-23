@@ -10,6 +10,7 @@ import com.bookk.auth.domain.api.token.operation.GenerateAuthToken.Error.Invalid
 import com.bookk.auth.domain.api.token.operation.GenerateAuthToken.Source
 import com.bookk.auth.domain.datasource.DeviceDataSource
 import com.bookk.core.AppLevelConstants.Claim
+import com.bookk.core.domain.datasource.transaction.TransactionManager
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.toJavaInstant
@@ -19,9 +20,10 @@ internal class GenerateAuthTokenImpl(
     private val serviceUrl: String,
     private val keyProvider: RSAKeyProvider,
     private val deviceDataSource: DeviceDataSource,
+    private val transactionManager: TransactionManager
 ) : GenerateAuthToken {
 
-    override suspend fun invoke(source: Source): Result<AuthTokens> = runCatching {
+    override suspend fun invoke(source: Source): Result<AuthTokens> = transactionManager.transaction {
         val deviceRecord = source.getDevice() ?: throw InvalidCredentials
         val accessToken = createAccessToken(deviceRecord)
         val refreshId = Uuid.random()

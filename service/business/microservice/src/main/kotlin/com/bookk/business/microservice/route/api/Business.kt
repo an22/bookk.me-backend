@@ -58,7 +58,7 @@ fun Route.businessCrud() {
          * @request application/protobuf [BusinessUpdateModel] Non-null fields will be updated
          * @response 204 No content
          */
-        put<Api.Business> {
+        put<Api.Business.Id> {
             val body = call.receive<BusinessUpdateModel>()
             val updateBusiness by application.inject<UpdateBusiness>()
 

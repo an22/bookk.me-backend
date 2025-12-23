@@ -62,7 +62,7 @@ fun userClientModule(clientTag: String) = module {
             install(Logging) {
                 logger = Logger.DEFAULT
                 level = when (AppLevelConstants.BUILD_TYPE) {
-                    AppLevelConstants.BuildType.DEBUG.STR -> LogLevel.ALL
+                    AppLevelConstants.BuildType.DEBUG.STR -> LogLevel.BODY
                     else -> LogLevel.INFO
                 }
             }

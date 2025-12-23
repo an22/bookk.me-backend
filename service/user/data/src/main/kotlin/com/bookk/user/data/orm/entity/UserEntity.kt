@@ -1,6 +1,6 @@
 package com.bookk.user.data.orm.entity
 
-import com.bookk.core.data.R2dbcUUIDEntityClass
+import com.bookk.core.data.DecoratorUUIDEntityClass
 import com.bookk.user.data.orm.table.UserTable
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.jetbrains.exposed.v1.dao.UUIDEntity
@@ -14,5 +14,5 @@ class UserEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var createdAt by UserTable.createdAt
     var updatedAt by UserTable.updatedAt
 
-    companion object : R2dbcUUIDEntityClass<UserEntity>(UserTable)
+    companion object : DecoratorUUIDEntityClass<UserEntity>(UserTable)
 }

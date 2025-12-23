@@ -7,6 +7,7 @@ import com.bookk.auth.domain.api.delete_account.operation.DeleteAccount.Error.In
 import com.bookk.auth.domain.datasource.AccountDataSource
 import com.bookk.core.data.eventstreaming.StandardEventProducer
 import com.bookk.core.data.eventstreaming.send
+import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.server.business.client.api.event.BusinessEvent.DeleteBusinessesForUserEvent
 import com.bookk.server.user.client.api.event.UserEvents.DeleteUserEvent
 import kotlin.uuid.Uuid
@@ -14,10 +15,14 @@ import kotlin.uuid.Uuid
 internal class DeleteAccountImpl(
     private val finishAssertion: FinishAssertion,
     private val accountDataSource: AccountDataSource,
-    private val eventProducer: StandardEventProducer
+    private val eventProducer: StandardEventProducer,
+    private val transactionManager: TransactionManager
 ) : DeleteAccount {
 
-    override suspend fun invoke(userId: Uuid, request: FinishAssertionRequest): Result<Unit> = runCatching {
+    override suspend fun invoke(
+        userId: Uuid,
+        request: FinishAssertionRequest
+    ): Result<Unit> = transactionManager.transaction {
         finishAssertion(request).getOrThrow()
         val authRecord = accountDataSource.getAuthRecordByUserId(userId) ?: throw InvalidCredentials
         eventProducer.send(DeleteUserEvent(authRecord.userId))

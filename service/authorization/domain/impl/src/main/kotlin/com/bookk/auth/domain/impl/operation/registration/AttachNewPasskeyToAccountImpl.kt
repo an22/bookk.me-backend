@@ -8,8 +8,10 @@ import kotlin.uuid.Uuid
 internal class AttachNewPasskeyToAccountImpl(
     private val finishPasskeyRegistration: FinishPasskeyRegistration
 ) : AttachNewPasskeyToAccount {
-    override suspend fun invoke(authId: Uuid, request: AddPasskeyRequest): Result<Unit> = runCatching {
-        val passkey = finishPasskeyRegistration.verifyRequest(request).getOrThrow()
-        return finishPasskeyRegistration.attachOwner(authId, passkey)
+    override suspend fun invoke(authId: Uuid, request: AddPasskeyRequest): Result<Unit> {
+        return runCatching {
+            val passkey = finishPasskeyRegistration.verifyRequest(request).getOrThrow()
+            return finishPasskeyRegistration.attachOwner(authId, passkey)
+        }
     }
 }

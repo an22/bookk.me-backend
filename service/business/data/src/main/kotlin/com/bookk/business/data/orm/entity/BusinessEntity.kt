@@ -1,7 +1,7 @@
 package com.bookk.business.data.orm.entity
 
 import com.bookk.business.data.orm.table.BusinessTable
-import com.bookk.core.data.R2dbcUUIDEntityClass
+import com.bookk.core.data.DecoratorUUIDEntityClass
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.jetbrains.exposed.v1.dao.UUIDEntity
 import java.util.UUID
@@ -22,5 +22,5 @@ internal class BusinessEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var createdAt by BusinessTable.createdAt
     var updatedAt by BusinessTable.updatedAt
 
-    companion object : R2dbcUUIDEntityClass<BusinessEntity>(BusinessTable)
+    companion object : DecoratorUUIDEntityClass<BusinessEntity>(BusinessTable)
 }

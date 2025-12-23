@@ -1,5 +1,5 @@
 package com.bookk.core.domain.datasource.transaction
 
 interface TransactionManager {
-    suspend fun <T> runInTransaction(transaction: suspend () -> T): Result<T>
+    suspend fun <T> transaction(transaction: suspend () -> T): Result<T>
 }

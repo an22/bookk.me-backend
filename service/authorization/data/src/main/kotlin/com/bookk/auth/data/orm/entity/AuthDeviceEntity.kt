@@ -1,7 +1,7 @@
 package com.bookk.auth.data.orm.entity
 
 import com.bookk.auth.data.orm.table.AuthDeviceTable
-import com.bookk.core.data.R2dbcUUIDEntityClass
+import com.bookk.core.data.DecoratorUUIDEntityClass
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.jetbrains.exposed.v1.dao.UUIDEntity
 import java.util.UUID
@@ -16,5 +16,5 @@ internal class AuthDeviceEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var createdAt by AuthDeviceTable.createdAt
     var updatedAt by AuthDeviceTable.updatedAt
 
-    companion object : R2dbcUUIDEntityClass<AuthDeviceEntity>(AuthDeviceTable)
+    companion object : DecoratorUUIDEntityClass<AuthDeviceEntity>(AuthDeviceTable)
 }

@@ -28,17 +28,19 @@ internal class FinishRegistrationImpl(
     private val finishPasskeyRegistration: FinishPasskeyRegistration
 ) : FinishRegistration {
 
-    override suspend fun invoke(request: VerifyAccountCreationRequest) = runCatching {
-        val verifiedPasskey = finishPasskeyRegistration.verifyRequest(request).getOrThrow()
-        var userId: Uuid? = null
-        transactionManager.runInTransaction {
-            userId = saveUserExternal(request)
-            val ownerId = saveAuthorizationOwner(userId, verifiedPasskey.handle)
-            finishPasskeyRegistration.attachOwner(ownerId, verifiedPasskey).getOrThrow()
-            createAndSaveAuthCredentials(ownerId, request)
-        }.onFailure {
-            userId?.let { eventProducer.send(DeleteUserEvent(it)) }
-        }.getOrThrow()
+    override suspend fun invoke(request: VerifyAccountCreationRequest): Result<AuthTokens> {
+        return runCatching {
+            val verifiedPasskey = finishPasskeyRegistration.verifyRequest(request).getOrThrow()
+            var userId: Uuid? = null
+            return transactionManager.transaction {
+                userId = saveUserExternal(request)
+                val ownerId = saveAuthorizationOwner(userId, verifiedPasskey.handle)
+                finishPasskeyRegistration.attachOwner(ownerId, verifiedPasskey).getOrThrow()
+                createAndSaveAuthCredentials(ownerId, request)
+            }.onFailure {
+                userId?.let { eventProducer.send(DeleteUserEvent(it)) }
+            }
+        }
     }
 
     private suspend fun createAndSaveAuthCredentials(ownerId: Uuid, request: VerifyAccountCreationRequest): AuthTokens {

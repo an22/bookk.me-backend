@@ -20,6 +20,8 @@ import io.ktor.server.netty.Netty
 import io.ktor.server.plugins.calllogging.CallLogging
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.plugins.swagger.swaggerUI
+import io.ktor.server.request.httpMethod
+import io.ktor.server.request.path
 import io.ktor.server.resources.Resources
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Routing
@@ -67,6 +69,12 @@ fun startServer(
                 level = when (AppLevelConstants.BUILD_TYPE) {
                     AppLevelConstants.BuildType.DEBUG.STR -> Level.DEBUG
                     else -> Level.INFO
+                }
+                format { call ->
+                    val status = call.response.status()
+                    val httpMethod = call.request.httpMethod.value
+                    val path = call.request.path()
+                    "[$status], $httpMethod $path"
                 }
             }
             install(Resources)

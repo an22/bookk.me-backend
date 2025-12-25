@@ -6,7 +6,6 @@ import com.bookk.core.service.installNegotiation
 import com.bookk.core.service.startServer
 import com.bookk.user.microservice.route.userRoute
 import com.bookk.user.microservice.userModule
-import io.ktor.server.routing.routing
 
 
 private fun diModules() = listOf(
@@ -18,10 +17,8 @@ fun main() {
     startServer(
         diModules = diModules()
     ) {
-        routing {
-            installNegotiation()
-            authRoute()
-            userRoute()
-        }
+        installNegotiation()
+        authRoute()
+        userRoute()
     }
 }

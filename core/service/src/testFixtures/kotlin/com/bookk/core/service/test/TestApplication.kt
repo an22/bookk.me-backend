@@ -1,6 +1,5 @@
 package com.bookk.core.service.test
 
-import com.bookk.core.service.installDocumentationPlugin
 import com.bookk.core.service.installNegotiation
 import com.bookk.core.test.runTest
 import io.ktor.server.application.Application
@@ -14,7 +13,6 @@ import org.koin.core.module.Module
 import org.koin.ktor.plugin.Koin
 
 fun Application.installTestPlugins() {
-    installDocumentationPlugin()
     install(Resources)
 }
 

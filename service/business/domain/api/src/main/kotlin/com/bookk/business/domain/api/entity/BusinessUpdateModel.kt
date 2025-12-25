@@ -4,7 +4,7 @@ import kotlinx.serialization.Serializable
 import kotlin.uuid.Uuid
 
 @Serializable
-class BusinessUpdateModel(
+data class BusinessUpdateModel(
     val id: Uuid,
     val name: String?,
     val description: String?,

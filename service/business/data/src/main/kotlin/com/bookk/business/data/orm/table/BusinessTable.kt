@@ -7,7 +7,7 @@ import kotlin.time.Clock
 object BusinessTable: UUIDTable("business") {
     val userId = uuid("user_id").uniqueIndex()
     val name = varchar("name", 512)
-    val description = varchar("description", 512)
+    val description = varchar("description", 1024)
     val address = varchar("address", 512)
     val latitude = double("latitude").nullable()
     val longitude = double("longitude").nullable()

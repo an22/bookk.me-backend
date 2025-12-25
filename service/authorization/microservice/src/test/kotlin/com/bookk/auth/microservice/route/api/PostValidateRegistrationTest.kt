@@ -26,14 +26,15 @@ import io.mockk.mockk
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.koin.dsl.module
+import kotlin.uuid.Uuid
 
-class registrationTest {
+class PostValidateRegistrationTest {
 
     private fun createSimpleRequest(): VerifyAccountCreationRequest {
         return VerifyAccountCreationRequest(
             requestId = "user_id",
             deviceInfo = VerifyAccountCreationRequest.DeviceInfo(
-                deviceUUID = "uuid",
+                deviceUUID = Uuid.random(),
                 deviceName = "example_device_name"
             ),
             userInfo = VerifyAccountCreationRequest.UserInfo(
@@ -140,7 +141,7 @@ class registrationTest {
         val body = response.body<SimpleServerError>()
         then()
         coVerify { useCase.invoke(eq(request)) }
-        assertEquals(HttpStatusCode.InternalServerError, response.status)
+        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
         assertEquals(AuthErrorCodes.ACCOUNT_CREATION_FAILED, body.errorCode)
         assertEquals(AccountCreationFailed.message, body.message)
     }

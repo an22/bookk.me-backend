@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.koin.dsl.module
 import java.util.UUID
+import kotlin.uuid.Uuid
 
 internal class PostValidateSignInTest {
 
@@ -44,7 +45,7 @@ internal class PostValidateSignInTest {
         val request = VerifySignInRequest(
             requestId = UUID.randomUUID().toString(),
             deviceInfo = VerifySignInRequest.DeviceInfo(
-                deviceUUID = UUID.randomUUID().toString(),
+                deviceUUID = Uuid.random(),
                 deviceName = ""
             ),
             publicKeyCredentialJson = "mock"
@@ -77,7 +78,7 @@ internal class PostValidateSignInTest {
         val request = VerifySignInRequest(
             requestId = UUID.randomUUID().toString(),
             deviceInfo = VerifySignInRequest.DeviceInfo(
-                deviceUUID = UUID.randomUUID().toString(),
+                deviceUUID = Uuid.random(),
                 deviceName = ""
             ),
             publicKeyCredentialJson = "mock"
@@ -110,7 +111,7 @@ internal class PostValidateSignInTest {
         val request = VerifySignInRequest(
             requestId = UUID.randomUUID().toString(),
             deviceInfo = VerifySignInRequest.DeviceInfo(
-                deviceUUID = UUID.randomUUID().toString(),
+                deviceUUID = Uuid.random(),
                 deviceName = ""
             ),
             publicKeyCredentialJson = "mock"
@@ -143,7 +144,7 @@ internal class PostValidateSignInTest {
         val request = VerifySignInRequest(
             requestId = UUID.randomUUID().toString(),
             deviceInfo = VerifySignInRequest.DeviceInfo(
-                deviceUUID = UUID.randomUUID().toString(),
+                deviceUUID = Uuid.random(),
                 deviceName = ""
             ),
             publicKeyCredentialJson = "mock"

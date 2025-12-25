@@ -1,0 +1,2 @@
+node.name: core_logstash
+pipeline.id: normal-beats

@@ -1,0 +1,174 @@
+version: "3.9"
+
+volumes:
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+networks:
+  operational:
+    external: true
+  monitoring:
+    driver: overlay
+
+configs:
+  prometheus_cfg:
+    name: prometheus_cfg-v1
+    file: prometheus/prometheus.yml
+  prometheus_alerts_cfg:
+    name: prometheus_alerts_cfg-v4
+    file: prometheus/node_alerts.yml
+  alertmanager_cfg:
+    name: alertmanager_cfg-v2
+    file: alertmanager/config.yml
+  grafana_datasources:
+    name: grafana_datasources-v1
+    file: grafana/datasources.yml
+  grafana_dashboards:
+    name: grafana_dashboards-v1
+    file: grafana/dashboards.yml
+  grafana_overview:
+    name: grafana_overview-v2
+    file: grafana/system-overview.json
+
+x-templates:
+  replicated-deploy: &replicated
+    logging:
+      options:
+        max-size: 5m
+        max-file: 5
+    deploy:
+      mode: replicated
+      replicas: 1
+      update_config:
+        parallelism: 1
+        order: start-first
+        failure_action: rollback
+        delay: 10s
+      rollback_config:
+        parallelism: 0
+        order: stop-first
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+        window: 120s
+
+services:
+  prometheus:
+    <<: *replicated
+    image: prom/prometheus:v3.8.0
+    configs:
+      - source: prometheus_cfg
+        target: /etc/prometheus/prometheus.yml
+      - source: prometheus_alerts_cfg
+        target: /etc/prometheus/rules/node_alerts.yml
+    volumes:
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    networks:
+      monitoring:
+        aliases:
+          - prometheus
+      operational:
+        aliases:
+          - prometheus
+    deploy:
+      update_config:
+        order: stop-first
+
+  alertmanager:
+    <<: *replicated
+    image: prom/alertmanager:v0.30.0
+    command:
+      - '--config.file=/etc/alertmanager/config.yml'
+      - '--storage.path=/alertmanager'
+    configs:
+      - source: alertmanager_cfg
+        target: /etc/alertmanager/config.yml
+    networks:
+      monitoring:
+        aliases:
+          - alertmanager
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)'
+    networks:
+      monitoring:
+        aliases:
+          - exporter
+      operational:
+        aliases:
+          - exporter
+
+    logging:
+      options:
+        max-size: 5m
+        max-file: 5
+    deploy:
+      mode: global
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.52.0
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      monitoring:
+        aliases:
+          - cadvisor
+      operational:
+        aliases:
+          - cadvisor
+    deploy:
+      mode: global
+
+  grafana:
+    image: grafana/grafana:12.4.0-20151846001
+    user: "472"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    configs:
+      - source: grafana_dashboards
+        target: /etc/grafana/provisioning/dashboards/dashboards.yml
+      - source: grafana_datasources
+        target: /etc/grafana/provisioning/datasources/datasources.yml
+      - source: grafana_overview
+        target: /var/lib/grafana/dashboards/system-overview.json
+    environment:
+      GF_SECURITY_ADMIN_USER: "${GRAFANA_USER}"
+      GF_SECURITY_ADMIN_PASSWORD: "${GRAFANA_PASSWORD}"
+      GF_SECURITY_CSRF_TRUSTED_ORIGINS: "${DOMAIN_NAME}"
+      GF_SERVER_DOMAIN: "grafana.${DOMAIN_NAME}"
+      GF_SERVER_ROOT_URL: "https://grafana.${DOMAIN_NAME}/"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+    networks:
+      monitoring:
+        aliases:
+          - grafana
+      operational:
+        aliases:
+          - grafana
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints: [ node.role == manager ]

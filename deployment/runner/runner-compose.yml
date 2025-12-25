@@ -1,22 +1,29 @@
 volumes:
   docker-runner:
     driver: local
+  docker-data:
+    driver: local
 
 services:
   github-runner:
-    image: myoung34/github-runner:2.320.0
+    image: myoung34/github-runner:2.330.0
     volumes:
       - docker-runner:/tmp/runner
+      - docker-data:/runner/data
       - '/var/run/docker.sock:/var/run/docker.sock'
     environment:
       RUN_AS_ROOT: "true"
       RUNNER_NAME: backend-runner
-      ACCESS_TOKEN: ${RUNNER_ACCESS_TOKEN}
+      RUNNER_TOKEN: ${RUNNER_ACCESS_TOKEN}
       RUNNER_WORKDIR: /tmp/runner/work
       CONFIGURED_ACTIONS_RUNNER_FILES_DIR: /runner/data
       RUNNER_SCOPE: 'repo'
       REPO_URL: "https://github.com/an22/bookk.me-backend"
-
+      DISABLE_AUTOMATIC_DEREGISTRATION: "true"
+    logging:
+      options:
+        max-size: 20m
+        max-file: 5
     deploy:
       mode: replicated
       replicas: 1

@@ -6,7 +6,7 @@ group = "com.bookk.server.microservice.user"
 version = "0.0.1"
 
 application {
-    mainClass.set("com.book.user.UserMicroserviceKt")
+    mainClass.set("com.bookk.user.UserMicroserviceKt")
 }
 
 dependencies {

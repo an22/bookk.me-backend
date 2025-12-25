@@ -62,8 +62,8 @@ jobs:
       - name: Deploy
         shell: bash
         env:
-          BOOKK_ME_SERVICE_VERSION: ${{ inputs.version }}
-          BOOKK_ME_SERVICE_IMAGE: ${{ inputs.image }}
+          APPLICATION_SERVICE_VERSION: ${{ inputs.version }}
+          APPLICATION_SERVICE_IMAGE: ${{ inputs.image }}
         run: |
           cd deployment/microservice
           docker stack deploy --prune --with-registry-auth --resolve-image=always --compose-file microservice-container-compose.yml ${{ inputs.stackName }}

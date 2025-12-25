@@ -1,45 +1,45 @@
 version: "3.9"
 
 services:
-  auth:
+  service-auth:
     image: com.bookk.server.microservice.authorization
-    hostname: auth.service.bookk.me
+    hostname: auth.service
     ports:
       - '8000:8000'
     env_file:
       - service/auth.env
     environment:
-      JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:8000"
+      JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:8000 -ea"
       TZ: "UTC"
     volumes:
       - './security/test.jks:/etc/service/keystore.jks:ro'
       - './security/private.pem:/etc/service/private.pem:ro'
       - './security/public.pem:/etc/service/public.pem:ro'
 
-  user:
+  service-user:
     image: com.bookk.server.microservice.user
-    hostname: user.service.bookk.me
+    hostname: user.service
     ports:
       - '8001:8001'
     env_file:
       - service/user.env
     environment:
-      JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,address=*:8001,server=y,suspend=n"
+      JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,address=*:8001,server=y,suspend=n -ea"
       TZ: "UTC"
     volumes:
       - './security/test.jks:/etc/service/keystore.jks:ro'
       - './security/private.pem:/etc/service/private.pem:ro'
       - './security/public.pem:/etc/service/public.pem:ro'
 
-  business:
+  service-business:
     image: com.bookk.server.microservice.business
-    hostname: business.service.bookk.me
+    hostname: business.service
     ports:
       - '8002:8002'
     env_file:
       - service/business.env
     environment:
-      JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,address=*:8002,server=y,suspend=n"
+      JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,address=*:8002,server=y,suspend=n -ea"
       TZ: "UTC"
     volumes:
       - './security/test.jks:/etc/service/keystore.jks:ro'

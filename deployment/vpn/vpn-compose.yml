@@ -1,5 +1,5 @@
 networks:
-  bookk-me:
+  operational:
     external: true
 
 volumes:
@@ -7,9 +7,12 @@ volumes:
     driver: local
 
 configs:
+  dns-entrypoint:
+    name: dns-entrypoint-v5
+    file: dns/entrypoint.sh
   dns-config:
-    name: dns-config-v10
-    file: dns-config.conf
+    name: dns-config-v4
+    file: dns/dnsmasq.conf.template
 
 services:
   wg-easy:
@@ -27,12 +30,12 @@ services:
       - "51820:51820/udp"
       - "51821:51821/tcp"
     networks:
-      bookk-me:
+      operational:
         aliases:
-          - vpn.bookk.me
+          - vpn
     environment:
       LANG: en
-      WG_HOST: vpn.bookkk.me
+      WG_HOST: vpn.${DOMAIN_NAME}
       PASSWORD_HASH: ${VPN_PASSWORD_HASH}
       UI_TRAFFIC_STATS: "true"
       UI_CHART_TYPE: 1
@@ -41,7 +44,16 @@ services:
       WG_MTU: 1280
       WG_PERSISTENT_KEEPALIVE: 25
       WG_DEFAULT_DNS: 10.8.0.2
+    logging:
+      options:
+        max-size: 20m
+        max-file: 5
     deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
       mode: replicated
       replicas: 1
       placement:
@@ -49,18 +61,33 @@ services:
 
   dns:
     image: strm/dnsmasq:latest
+    entrypoint: ["./entrypoint.sh"]
     configs:
       - source: dns-config
-        target: /etc/dnsmasq.conf
+        target: /etc/dnsmasq.conf.template
+      - source: dns-entrypoint
+        target: /entrypoint.sh
+        mode: 0744
     ports:
       - "53:53/udp"
     networks:
-      bookk-me:
+      operational:
         aliases:
-          - dns.bookk.me
+          - dns
+    environment:
+      DOMAIN_NAME: ${DOMAIN_NAME}
     cap_add:
       - NET_ADMIN
+    logging:
+      options:
+        max-size: 10m
+        max-file: 3
     deploy:
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 64M
       mode: replicated
       replicas: 1
       placement:

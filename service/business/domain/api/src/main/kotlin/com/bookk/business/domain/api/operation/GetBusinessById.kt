@@ -1,0 +1,19 @@
+package com.bookk.business.domain.api.operation
+
+import com.bookk.business.domain.api.entity.Business
+import com.bookk.business.domain.api.error.BusinessErrorCodes
+import com.bookk.core.domain.entity.BusinessError
+import io.ktor.http.HttpStatusCode
+import kotlin.uuid.Uuid
+
+interface GetBusinessById {
+    suspend operator fun invoke(id: Uuid): Result<Business>
+
+    sealed interface Error {
+        data object NotFound : BusinessError(
+            statusCode = HttpStatusCode.NotFound.value,
+            code = BusinessErrorCodes.BUSINESS_NOT_FOUND,
+            message = "Business with this id is missing"
+        )
+    }
+}

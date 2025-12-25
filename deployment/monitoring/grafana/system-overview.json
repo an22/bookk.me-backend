@@ -1,0 +1,37 @@
+{
+  "title": "System Overview",
+  "uid": "system-overview",
+  "version": 1,
+  "panels": [
+    {
+      "title": "CPU Usage",
+      "type": "gauge",
+      "gridPos": {"h": 8, "w": 6, "x": 0, "y": 0},
+      "targets": [{"expr": "node:cpu_usage:avg5m"}]
+    },
+    {
+      "title": "Memory Usage",
+      "type": "gauge",
+      "gridPos": {"h": 8, "w": 6, "x": 6, "y": 0},
+      "targets": [{"expr": "node:memory_usage:percent"}]
+    },
+    {
+      "title": "Disk Usage",
+      "type": "gauge",
+      "gridPos": {"h": 8, "w": 6, "x": 12, "y": 0},
+      "targets": [{"expr": "node:disk_usage"}]
+    },
+    {
+      "title": "Container CPU Usage",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+      "targets": [{"expr": "container:cpu_usage:avg5m"}]
+    },
+    {
+      "title": "Container Memory Usage",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+      "targets": [{"expr": "container:memory_usage"}]
+    }
+  ]
+}

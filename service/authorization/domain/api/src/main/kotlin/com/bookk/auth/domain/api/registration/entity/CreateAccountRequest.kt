@@ -1,0 +1,10 @@
+package com.bookk.auth.domain.api.registration.entity
+
+import kotlinx.serialization.Serializable
+
+@Serializable
+data class CreateAccountRequest(
+    val firstName: String,
+    val lastName: String,
+    val email: String
+)

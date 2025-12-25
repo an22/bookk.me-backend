@@ -1,7 +1,7 @@
 version: "3.9"
 
 networks:
-  bookk-me:
+  operational:
     external: true
 
 volumes:
@@ -11,13 +11,13 @@ volumes:
     driver: local
   kafka_3_volume:
     driver: local
-  elastic_1_volume:
-    driver: local
-  logstash_volume:
-    driver: local
 
 x-templates:
   replicated-deploy: &replicated
+    logging:
+      options:
+        max-size: 20m
+        max-file: 5
     deploy:
       mode: replicated
       replicas: 1
@@ -40,9 +40,9 @@ services:
     <<: *replicated
     image: bitnami/kafka:3.8.0
     networks:
-      bookk-me:
+      operational:
         aliases:
-          - first.kafka.bookk.me
+          - first.kafka
     volumes:
       - kafka_1_volume:/bitnami/kafka
     environment:
@@ -50,7 +50,7 @@ services:
       KAFKA_CFG_NODE_ID: 1
       KAFKA_CFG_PROCESS_ROLES: broker,controller
       KAFKA_KRAFT_CLUSTER_ID: ${KAFKA_CLUSTER_ID}
-      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 1@first.kafka.bookk.me:${KAFKA_CONTROLLER_PORT},2@second.kafka.bookk.me:${KAFKA_CONTROLLER_PORT},3@third.kafka.bookk.me:${KAFKA_CONTROLLER_PORT}
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 1@first.kafka:${KAFKA_CONTROLLER_PORT},2@second.kafka:${KAFKA_CONTROLLER_PORT},3@third.kafka:${KAFKA_CONTROLLER_PORT}
       # Listeners
       KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_CFG_INTER_BROKER_LISTENER_NAME: PLAINTEXT
@@ -71,9 +71,9 @@ services:
     <<: *replicated
     image: bitnami/kafka:3.8.0
     networks:
-      bookk-me:
+      operational:
         aliases:
-          - second.kafka.bookk.me
+          - second.kafka
     volumes:
       - kafka_2_volume:/bitnami/kafka
     environment:
@@ -81,7 +81,7 @@ services:
       KAFKA_CFG_NODE_ID: 2
       KAFKA_CFG_PROCESS_ROLES: broker,controller
       KAFKA_KRAFT_CLUSTER_ID: ${KAFKA_CLUSTER_ID}
-      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 1@first.kafka.bookk.me:${KAFKA_CONTROLLER_PORT},2@second.kafka.bookk.me:${KAFKA_CONTROLLER_PORT},3@third.kafka.bookk.me:${KAFKA_CONTROLLER_PORT}
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 1@first.kafka:${KAFKA_CONTROLLER_PORT},2@second.kafka:${KAFKA_CONTROLLER_PORT},3@third.kafka:${KAFKA_CONTROLLER_PORT}
       # Listeners
       KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_CFG_INTER_BROKER_LISTENER_NAME: PLAINTEXT
@@ -102,9 +102,9 @@ services:
     <<: *replicated
     image: bitnami/kafka:3.8.0
     networks:
-      bookk-me:
+      operational:
         aliases:
-          - third.kafka.bookk.me
+          - third.kafka
     volumes:
       - kafka_3_volume:/bitnami/kafka
     environment:
@@ -112,7 +112,7 @@ services:
       KAFKA_CFG_NODE_ID: 3
       KAFKA_CFG_PROCESS_ROLES: broker,controller
       KAFKA_KRAFT_CLUSTER_ID: ${KAFKA_CLUSTER_ID}
-      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 1@first.kafka.bookk.me:${KAFKA_CONTROLLER_PORT},2@second.kafka.bookk.me:${KAFKA_CONTROLLER_PORT},3@third.kafka.bookk.me:${KAFKA_CONTROLLER_PORT}
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 1@first.kafka:${KAFKA_CONTROLLER_PORT},2@second.kafka:${KAFKA_CONTROLLER_PORT},3@third.kafka:${KAFKA_CONTROLLER_PORT}
       # Listeners
       KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_CFG_INTER_BROKER_LISTENER_NAME: PLAINTEXT
@@ -133,11 +133,11 @@ services:
     <<: *replicated
     image: provectuslabs/kafka-ui:latest
     networks:
-      bookk-me:
+      operational:
         aliases:
-          - ui.kafka.bookk.me
+          - ui.kafka
     environment:
-      KAFKA_CLUSTERS_0_BOOTSTRAP_SERVERS: first.kafka.bookk.me:9092
+      KAFKA_CLUSTERS_0_BOOTSTRAP_SERVERS: first.kafka:9092
       KAFKA_CLUSTERS_0_NAME: ${KAFKA_CLUSTER_ID}
       AUTH_TYPE: "LOGIN_FORM"
       SPRING_SECURITY_USER_NAME: ${KAFKA_UI_USERNAME}

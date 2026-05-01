@@ -2,7 +2,6 @@ package com.bookk.auth.microservice.route.api
 
 import com.bookk.auth.domain.api.authentication.entity.AssertionStartResponse
 import com.bookk.auth.domain.api.authentication.entity.VerifySignInRequest
-import com.bookk.auth.domain.api.authentication.entity.VerifySignInRequest.DeviceInfo
 import com.bookk.auth.domain.api.authentication.operation.SignIn
 import com.bookk.auth.domain.api.authentication.operation.StartAssertion
 import com.bookk.auth.domain.api.error.AuthErrorCodes
@@ -44,19 +43,5 @@ internal fun Route.signIn() {
         val request = call.receive<VerifySignInRequest>()
         val startSigningIn: SignIn by application.inject()
         call.respondWith(startSigningIn(request))
-    }
-
-    /**
-     * Verify sign in
-     * @description Verify user-signed challenge and return authentication tokens
-     * @tag *auth
-     * @request application/protobuf [DeviceInfo]
-     * @response 200 application/protobuf [AuthTokens] Authentication tokens
-     * @response 422 application/protobuf [SimpleServerError]
-     */
-    post<Api.Auth.SignIn> {
-        val deviceInfo = call.receive<DeviceInfo>()
-        val startSigningIn: SignIn by application.inject()
-        call.respondWith(startSigningIn(deviceInfo))
     }
 }

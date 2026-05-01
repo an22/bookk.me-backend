@@ -1,12 +1,29 @@
 #!/usr/bin/env sh
 
-subnet_ip=$1
 manager_ip=$2
 manager_user=$3
 wireguard_admin_password=$4
 ssh_name=${5:-id_rsa}
 
-echo "Subnet IP: $subnet_ip"
+#This environment variables should be defined for the deployment system
+#Kafka
+export KAFKA_CLUSTER_ID=
+export KAFKA_BROKER_PORT=
+export KAFKA_CONTROLLER_PORT=
+export KAFKA_UI_USERNAME=
+export KAFKA_UI_PASSWORD=
+#WireguardVPN
+export VPN_SUBNET=
+#Runner
+export RUNNER_ACCESS_TOKEN=
+export MOBILE_RUNNER_ACCESS_TOKEN=
+#Nginx
+export DOMAIN_NAME=
+export HOSTINGER_API_KEY=
+#Monitoring
+export GRAFANA_USER=
+export GRAFANA_PASSWORD=
+
 echo "Manager IP: $manager_ip"
 echo "Manager User: $manager_user"
 echo "Using ssh key: $ssh_name"

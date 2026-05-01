@@ -21,6 +21,9 @@ object AuthRouting {
 
             @Resource("/passkey")
             class PassKey(val parent: Auth = Auth()) {
+                @Resource("/sign_in/test")
+                class SignInTest(val parent: PassKey = PassKey())
+
                 @Resource("/sign_in/challenge")
                 class SignInChallenge(val parent: PassKey = PassKey())
 

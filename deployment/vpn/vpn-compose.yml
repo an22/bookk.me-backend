@@ -5,13 +5,15 @@ networks:
 volumes:
   etc_wireguard:
     driver: local
+  etc_wireguard_admin:
+    driver: local
 
 configs:
   dns-entrypoint:
     name: dns-entrypoint-v5
     file: dns/entrypoint.sh
   dns-config:
-    name: dns-config-v4
+    name: dns-config-v5
     file: dns/dnsmasq.conf.template
 
 services:
@@ -44,6 +46,51 @@ services:
       WG_MTU: 1280
       WG_PERSISTENT_KEEPALIVE: 25
       WG_DEFAULT_DNS: 10.8.0.2
+    logging:
+      options:
+        max-size: 20m
+        max-file: 5
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints: [ node.role == manager ]
+
+  wg-easy-admin:
+    image: ghcr.io/wg-easy/wg-easy
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    sysctls:
+      - net.ipv4.ip_forward=1
+      - net.ipv4.conf.all.src_valid_mark=1
+      - net.ipv4.tcp_congestion_control=bbr
+    volumes:
+      - etc_wireguard_admin:/etc/wireguard
+    ports:
+      - "51822:51820/udp"
+      - "51823:51821/tcp"
+    networks:
+      operational:
+        aliases:
+          - vpnadmin
+    environment:
+      LANG: en
+      WG_HOST: vpnadmin.${DOMAIN_NAME}
+      PASSWORD_HASH: ${VPN_PASSWORD_HASH}
+      UI_TRAFFIC_STATS: "true"
+      UI_CHART_TYPE: 1
+      UI_ENABLE_SORT_CLIENTS: "true"
+      WG_ALLOWED_IPS: 0.0.0.0/0
+      WG_MTU: 1420
+      WG_PERSISTENT_KEEPALIVE: 25
+      WG_DEFAULT_DNS: 8.8.8.8
+      WG_DEVICE: eth2
     logging:
       options:
         max-size: 20m

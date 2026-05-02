@@ -5,7 +5,7 @@ volumes:
     driver: local
 
 services:
-  github-runner:
+  linux-runner:
     image: myoung34/github-runner:2.330.0
     volumes:
       - docker-runner:/tmp/runner
@@ -29,3 +29,30 @@ services:
       replicas: 1
       placement:
         constraints: [ node.role == worker ]
+
+  macos-runner:
+    image: myoung34/github-runner:2.330.0
+    volumes:
+      - docker-runner:/tmp/runner
+      - docker-data:/runner/data
+      - '/var/run/docker.sock:/var/run/docker.sock'
+    environment:
+      RUN_AS_ROOT: "true"
+      RUNNER_NAME: mobile-runner
+      RUNNER_TOKEN: ${MOBILE_RUNNER_ACCESS_TOKEN}
+      RUNNER_WORKDIR: /tmp/runner/work
+      CONFIGURED_ACTIONS_RUNNER_FILES_DIR: /runner/data
+      RUNNER_SCOPE: 'repo'
+      REPO_URL: "https://github.com/an22/bookk.me-mobile"
+      DISABLE_AUTOMATIC_DEREGISTRATION: "true"
+    logging:
+      options:
+        max-size: 20m
+        max-file: 5
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == worker
+          - node.platform.os == darwin

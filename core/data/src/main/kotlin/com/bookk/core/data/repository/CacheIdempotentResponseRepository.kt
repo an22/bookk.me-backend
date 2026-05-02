@@ -9,7 +9,7 @@ import com.wolt.utils.ktor.idempotency.IdempotencyResponse
 import com.wolt.utils.ktor.idempotency.IdempotentResponseRepository
 import kotlinx.serialization.Serializable
 import java.time.OffsetDateTime
-import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.minutes
 
 @Serializable
 private class SerializableIdempotencyResponse(
@@ -21,17 +21,20 @@ class CacheIdempotentResponseRepository(
     private val cacheClient: CacheClient<String>
 ) : IdempotentResponseRepository, EventIdempotencyStorage {
 
+    val discardPrefix = "{\"status\":401".toByteArray()
 
     override suspend fun storeResponse(
         resource: String,
         idempotencyKey: IdempotencyKey,
         response: ByteArray
     ) {
+        val prefix = response.sliceArray(0 until (discardPrefix.size))
+        if (prefix.contentEquals(discardPrefix)) return
         val key = "$resource:$idempotencyKey"
         val value = SerializableIdempotencyResponse(isInProgress = false, response = response)
         cacheClient.withTransaction {
             set(key, value)
-            setExpiration(key, 1.days)
+            setExpiration(key, 10.minutes)
         }
     }
 
@@ -45,7 +48,7 @@ class CacheIdempotentResponseRepository(
             cacheClient.withTransaction {
                 val lock = SerializableIdempotencyResponse(isInProgress = true, response = ByteArray(0))
                 set(key, lock)
-                setExpiration(key, 1.days)
+                setExpiration(key, 10.minutes)
             }
         }
         return response?.let {

@@ -40,6 +40,7 @@ class DataConventionPlugin : Plugin<Project> {
                 add("implementation", libs.mariadb.jdbc)
                 add("implementation", libs.kotlin.coroutines)
                 add("implementation", libs.ktor.protobuf)
+                add("implementation", libs.ktor.logging)
                 add("testImplementation", libs.kotlin.test)
                 add("testImplementation", libs.mockk)
             }

@@ -14,7 +14,13 @@ object BusinessRouting {
             class HealthCheck(val parent: Business = Business())
 
             @Resource("/{id}")
-            class Id(val parent: Business = Business(), val id: Uuid)
+            class Id(val parent: Business = Business(), val id: Uuid) {
+                @Resource("/clients")
+                class Clients(val parent: Business.Id) {
+                    @Resource("/{id}")
+                    class Id(val parent: Clients, val id: Uuid)
+                }
+            }
         }
     }
 }

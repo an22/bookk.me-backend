@@ -15,11 +15,9 @@ application {
 
 ktor {
     openApi {
-        title = "Documentation"
-        version = "${project.version}"
-        summary = "Authorization Microservice"
-        description = ""
-        contact = "antufeevmicael@gmail.com"
+        enabled = true
+        codeInferenceEnabled = false
+        onlyCommented = false
     }
 }
 

@@ -17,9 +17,9 @@ internal class ClientDataSourceImpl : DataSource(), ClientDataSource {
     override suspend fun createDetachedClient(businessId: Uuid, client: Client.Detached): Client = dbQuery {
         val id = ClientTable.insertAndGetId {
             it[this.businessId] = businessId.toJavaUuid()
-            it[name] = client.name
-            it[lastName] = client.lastName
-            it[phone] = phone
+            it[name] = client.name.trim()
+            it[lastName] = client.lastName.trim()
+            it[phone] = client.phone.trim()
             it[userId] = null
         }
         client.copy(
@@ -30,9 +30,9 @@ internal class ClientDataSourceImpl : DataSource(), ClientDataSource {
     override suspend fun createIntegratedClient(businessId: Uuid, client: Client.Integrated): Client = dbQuery {
         val id = ClientTable.insertAndGetId {
             it[this.businessId] = businessId.toJavaUuid()
-            it[name] = client.name
-            it[lastName] = client.lastName
-            it[phone] = phone
+            it[name] = client.name.trim()
+            it[lastName] = client.lastName.trim()
+            it[phone] = client.phone.trim()
             it[userId] = client.userId.toJavaUuid()
         }
         client.copy(

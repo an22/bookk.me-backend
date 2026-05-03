@@ -1,13 +1,14 @@
 package com.bookk.business.domain.api.operation
 
 import com.bookk.business.domain.api.entity.Client
+import com.bookk.business.domain.api.entity.ClientRemote
 import com.bookk.business.domain.api.error.BusinessErrorCodes
 import com.bookk.core.domain.entity.BusinessError
 import io.ktor.http.HttpStatusCode
 import kotlin.uuid.Uuid
 
 interface CreateClient {
-    suspend operator fun invoke(businessId: Uuid, client: Client): Result<Client>
+    suspend operator fun invoke(businessId: Uuid, client: Client): Result<ClientRemote>
 
     sealed interface Error {
         data object ClientExist : BusinessError(

@@ -79,7 +79,7 @@ internal fun Route.passkeyOperations() {
         delete<Api.Auth.PassKey.Id> { path ->
             val principal = requireNotNull(call.principal<AppPrincipal>())
             val deletePasskey by application.inject<DeletePasskey>()
-            call.respondWith(deletePasskey(path.id, principal.userId))
+            call.respondWith(deletePasskey(path.id, principal.authId))
         }
     }
 }

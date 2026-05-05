@@ -29,6 +29,7 @@ internal class DeviceDataSourceImpl : DataSource(), DeviceDataSource {
         AuthDeviceTable
             .innerJoin(AuthenticationTable, onColumn = { userAuthId }, otherColumn = { id })
             .selectAll()
+            .where { AuthDeviceTable.id eq deviceId.toJavaUuid() }
             .map { AuthDeviceEntity.wrapRow(it).toDomain() }
             .singleOrNull()
     }

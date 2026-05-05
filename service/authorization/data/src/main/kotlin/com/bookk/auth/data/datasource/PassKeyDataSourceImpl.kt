@@ -144,14 +144,9 @@ internal class PassKeyDataSourceImpl(
     }
 
     override suspend fun deletePasskey(id: Uuid, authId: Uuid): Int = dbQuery {
-        val existingPasskeys = AuthenticationTable
-            .innerJoin(
-                otherTable = PasskeyCredentialTable,
-                onColumn = { this.id },
-                otherColumn = { this.authId }
-            )
+        val existingPasskeys = PasskeyCredentialTable
             .select(PasskeyCredentialTable.id.count())
-            .where { AuthenticationTable.id eq authId.toJavaUuid() }
+            .where { PasskeyCredentialTable.authId eq authId.toJavaUuid() }
             .let { wrapAsExpression<Long>(it) }
         PasskeyCredentialTable.deleteWhere {
             (PasskeyCredentialTable.id eq id.toJavaUuid()) and (existingPasskeys greater longLiteral(1L))

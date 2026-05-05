@@ -13,7 +13,7 @@ internal class DeletePasskeyImpl(
         return transactionManager.transaction {
             val deletedRowCount = passKeyDataSource.deletePasskey(id, authId)
             if (deletedRowCount == 0) {
-                throw DeletePasskey.Error.LastPasskey
+                throw DeletePasskey.Error.LastPasskey()
             }
         }
     }

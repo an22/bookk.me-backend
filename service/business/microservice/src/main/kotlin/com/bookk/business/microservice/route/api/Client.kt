@@ -1,6 +1,8 @@
 package com.bookk.business.microservice.route.api
 
 import com.bookk.business.domain.api.entity.Client
+import com.bookk.business.domain.api.entity.ClientRemote
+import com.bookk.business.domain.api.entity.toDomain
 import com.bookk.business.domain.api.operation.CreateClient
 import com.bookk.business.domain.api.operation.DeleteClient
 import com.bookk.business.domain.api.operation.GetClients
@@ -28,13 +30,13 @@ fun Route.clientCrud() {
          * @response 422 application/protobuf [CreateClient.Error.ClientValidationError]
          */
         post<Api.Business.Id.Clients> {
-            val body = call.receive<Client>()
+            val body = call.receive<ClientRemote>()
             val createClient by application.inject<CreateClient>()
 
             call.respondWith(
                 createClient(
                     businessId = it.parent.id,
-                    client = body
+                    client = body.toDomain()
                 )
             )
         }

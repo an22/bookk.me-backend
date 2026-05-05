@@ -43,3 +43,22 @@ fun Client.toRemote(): ClientRemote {
         userId = (this as? Client.Integrated)?.userId
     )
 }
+
+fun ClientRemote.toDomain(): Client {
+    return if (userId == null) {
+        Client.Detached(
+            id = id,
+            name = name,
+            lastName = lastName,
+            phone = phone,
+        )
+    } else {
+        Client.Integrated(
+            id = id,
+            name = name,
+            lastName = lastName,
+            phone = phone,
+            userId = userId
+        )
+    }
+}

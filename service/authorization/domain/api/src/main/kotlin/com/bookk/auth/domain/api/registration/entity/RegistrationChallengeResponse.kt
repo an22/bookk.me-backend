@@ -3,8 +3,10 @@ package com.bookk.auth.domain.api.registration.entity
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class RegistrationChallengeResponse(
+class RegistrationChallengeResponse(
     val requestId: String,
     val challenge: String,
-    val displayName: String
+    val challengeJson: String,
+    val userHandle: String,
+    val displayName: String,
 )

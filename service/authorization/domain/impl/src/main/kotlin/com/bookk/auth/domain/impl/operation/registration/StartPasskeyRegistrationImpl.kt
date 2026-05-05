@@ -27,7 +27,9 @@ internal class StartPasskeyRegistrationImpl(
             passKeyDataSource.saveChallengeToCache(requestId, challenge.toJson())
             RegistrationChallengeResponse(
                 requestId = requestId,
-                challenge = challenge.toCredentialsCreateJson(),
+                challenge = challenge.challenge.base64Url,
+                challengeJson = challenge.toCredentialsCreateJson(),
+                userHandle = challenge.user.id.base64Url,
                 displayName = passkeyDisplayName
             )
         }

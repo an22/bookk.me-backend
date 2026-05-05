@@ -5,5 +5,6 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class AssertionStartResponse(
     val requestId: String,
-    val challengeJson: String
+    val challengeJson: String,
+    val challenge: String
 )

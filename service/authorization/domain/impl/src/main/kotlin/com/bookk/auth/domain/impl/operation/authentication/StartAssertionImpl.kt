@@ -29,7 +29,8 @@ internal class StartAssertionImpl(
         passKeyDataSource.saveChallengeToCache(requestUUID, request.toJson())
         AssertionStartResponse(
             requestId = requestUUID,
-            challengeJson = request.toCredentialsGetJson()
+            challengeJson = request.toCredentialsGetJson(),
+            challenge = request.publicKeyCredentialRequestOptions.challenge.base64Url
         )
     }
 }

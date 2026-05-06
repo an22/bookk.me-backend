@@ -38,6 +38,7 @@ include(":core:service")
 
 //Library
 include(":library:money")
+include(":library:idempotency")
 
 //Authorization
 include(":service:authorization:microservice")

@@ -4,10 +4,10 @@ import com.bookk.core.data.cache.CacheClient
 import com.bookk.core.data.cache.get
 import com.bookk.core.data.cache.set
 import com.bookk.core.data.eventstreaming.EventIdempotencyStorage
-import com.wolt.utils.ktor.idempotency.IdempotencyKey
-import com.wolt.utils.ktor.idempotency.IdempotencyResponse
-import com.wolt.utils.ktor.idempotency.IdempotentResponseRepository
 import kotlinx.serialization.Serializable
+import library.idempotency.IdempotencyKey
+import library.idempotency.IdempotencyResponse
+import library.idempotency.IdempotentResponseRepository
 import java.time.OffsetDateTime
 import kotlin.time.Duration.Companion.minutes
 
@@ -21,15 +21,11 @@ class CacheIdempotentResponseRepository(
     private val cacheClient: CacheClient<String>
 ) : IdempotentResponseRepository, EventIdempotencyStorage {
 
-    val discardPrefix = "{\"status\":401".toByteArray()
-
     override suspend fun storeResponse(
         resource: String,
         idempotencyKey: IdempotencyKey,
         response: ByteArray
     ) {
-        val prefix = response.sliceArray(0 until (discardPrefix.size))
-        if (prefix.contentEquals(discardPrefix)) return
         val key = "$resource:$idempotencyKey"
         val value = SerializableIdempotencyResponse(isInProgress = false, response = response)
         cacheClient.withTransaction {

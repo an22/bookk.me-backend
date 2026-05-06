@@ -5,7 +5,6 @@ import com.bookk.core.AppLevelConstants.SupportedSerializers
 import com.bookk.core.service.auth.AccessVerifier
 import com.bookk.core.service.auth.RefreshVerifier
 import com.bookk.core.service.di.commonModule
-import com.wolt.utils.ktor.idempotency.IdempotencyPlugin
 import io.ktor.http.HttpStatusCode
 import io.ktor.openapi.OpenApiInfo
 import io.ktor.serialization.kotlinx.json.json
@@ -35,6 +34,7 @@ import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.protobuf.ProtoBuf
+import library.idempotency.IdempotencyPlugin
 import org.koin.core.module.Module
 import org.koin.ktor.ext.get
 import org.koin.ktor.plugin.Koin

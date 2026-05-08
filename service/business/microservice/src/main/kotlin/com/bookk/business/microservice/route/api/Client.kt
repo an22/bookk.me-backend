@@ -29,13 +29,13 @@ fun Route.clientCrud() {
          * @response 422 application/protobuf [CreateClient.Error.ClientExist]
          * @response 422 application/protobuf [CreateClient.Error.ClientValidationError]
          */
-        post<Api.Business.Id.Clients> {
+        post<Api.Clients> {
             val body = call.receive<ClientRemote>()
             val createClient by application.inject<CreateClient>()
 
             call.respondWith(
                 createClient(
-                    businessId = it.parent.id,
+                    businessId = it.businessId,
                     client = body.toDomain()
                 )
             )
@@ -48,10 +48,10 @@ fun Route.clientCrud() {
          * @tag *business
          * @response 200 application/protobuf [kotlin.collections.List<Client>] Created client entity
          */
-        get<Api.Business.Id.Clients> {
+        get<Api.Clients> {
             val getClients by application.inject<GetClients>()
 
-            call.respondWith(getClients(it.parent.id))
+            call.respondWith(getClients(it.businessId))
         }
 
         /**
@@ -61,10 +61,10 @@ fun Route.clientCrud() {
          * @tag *business
          * @response 204 Entity deleted
          */
-        delete<Api.Business.Id.Clients.Id> {
+        delete<Api.Clients.Id> {
             val deleteClient by application.inject<DeleteClient>()
 
-            call.respondWith(deleteClient(it.parent.parent.id, it.id))
+            call.respondWith(deleteClient(it.parent.businessId, it.id))
         }
     }
 }

@@ -9,6 +9,7 @@ class ClientRemote(
     val name: String,
     val lastName: String,
     val phone: String,
+    val email: String,
     val userId: Uuid?
 )
 
@@ -17,12 +18,14 @@ sealed interface Client {
     val name: String
     val lastName: String
     val phone: String
+    val email: String
 
     data class Detached(
         override val id: Uuid,
         override val name: String,
         override val lastName: String,
-        override val phone: String
+        override val phone: String,
+        override val email: String
     ) : Client
 
     data class Integrated(
@@ -30,6 +33,7 @@ sealed interface Client {
         override val name: String,
         override val lastName: String,
         override val phone: String,
+        override val email: String,
         val userId: Uuid
     ) : Client
 }
@@ -40,6 +44,7 @@ fun Client.toRemote(): ClientRemote {
         name = name,
         lastName = lastName,
         phone = phone,
+        email = email,
         userId = (this as? Client.Integrated)?.userId
     )
 }
@@ -51,6 +56,7 @@ fun ClientRemote.toDomain(): Client {
             name = name,
             lastName = lastName,
             phone = phone,
+            email = email
         )
     } else {
         Client.Integrated(
@@ -58,6 +64,7 @@ fun ClientRemote.toDomain(): Client {
             name = name,
             lastName = lastName,
             phone = phone,
+            email = email,
             userId = userId
         )
     }

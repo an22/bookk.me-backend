@@ -13,6 +13,7 @@ internal class ClientEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     val name by ClientTable.name
     val lastName by ClientTable.lastName
     val phone by ClientTable.phone
+    val email by ClientTable.email
     val userId by ClientTable.userId
 
     companion object : DecoratorUUIDEntityClass<ClientEntity>(ClientTable)
@@ -23,7 +24,8 @@ internal class ClientEntity(id: EntityID<UUID>) : UUIDEntity(id) {
                 id = id.value.toKotlinUuid(),
                 name = name,
                 lastName = lastName,
-                phone = phone
+                phone = phone,
+                email = email
             )
 
             else -> Client.Integrated(
@@ -31,6 +33,7 @@ internal class ClientEntity(id: EntityID<UUID>) : UUIDEntity(id) {
                 name = name,
                 lastName = lastName,
                 phone = phone,
+                email = email,
                 userId = userId.toKotlinUuid()
             )
         }

@@ -20,6 +20,7 @@ internal class ClientDataSourceImpl : DataSource(), ClientDataSource {
             it[name] = client.name.trim()
             it[lastName] = client.lastName.trim()
             it[phone] = client.phone.trim()
+            it[email] = client.email.trim()
             it[userId] = null
         }
         client.copy(
@@ -33,6 +34,7 @@ internal class ClientDataSourceImpl : DataSource(), ClientDataSource {
             it[name] = client.name.trim()
             it[lastName] = client.lastName.trim()
             it[phone] = client.phone.trim()
+            it[email] = client.email.trim()
             it[userId] = client.userId.toJavaUuid()
         }
         client.copy(

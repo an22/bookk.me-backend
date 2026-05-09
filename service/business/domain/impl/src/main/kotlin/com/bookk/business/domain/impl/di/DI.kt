@@ -1,24 +1,38 @@
 package com.bookk.business.domain.impl.di
 
-import com.bookk.business.domain.api.operation.CreateBusiness
-import com.bookk.business.domain.api.operation.CreateClient
-import com.bookk.business.domain.api.operation.DeleteBusiness
-import com.bookk.business.domain.api.operation.DeleteClient
-import com.bookk.business.domain.api.operation.GetBusinessById
-import com.bookk.business.domain.api.operation.GetClients
-import com.bookk.business.domain.api.operation.GetDashboardBusiness
-import com.bookk.business.domain.api.operation.GetUserBusinesses
-import com.bookk.business.domain.api.operation.UpdateBusiness
+import com.bookk.business.domain.api.business.operation.CreateBusiness
+import com.bookk.business.domain.api.business.operation.DeleteBusiness
+import com.bookk.business.domain.api.business.operation.GetBusinessById
+import com.bookk.business.domain.api.business.operation.GetDashboardBusiness
+import com.bookk.business.domain.api.business.operation.GetUserBusinesses
+import com.bookk.business.domain.api.business.operation.UpdateBusiness
+import com.bookk.business.domain.api.client.operation.CreateClient
+import com.bookk.business.domain.api.client.operation.DeleteClient
+import com.bookk.business.domain.api.client.operation.GetClients
+import com.bookk.business.domain.api.service.operation.CreateService
+import com.bookk.business.domain.api.service.operation.CreateServiceGroup
+import com.bookk.business.domain.api.service.operation.DeleteService
+import com.bookk.business.domain.api.service.operation.DeleteServiceGroup
+import com.bookk.business.domain.api.service.operation.GetServiceGroups
+import com.bookk.business.domain.api.service.operation.GetServices
+import com.bookk.business.domain.api.service.operation.UpdateService
 import com.bookk.business.domain.impl.event.BusinessEventHandlerImpl
-import com.bookk.business.domain.impl.operation.CreateBusinessImpl
-import com.bookk.business.domain.impl.operation.CreateClientImpl
-import com.bookk.business.domain.impl.operation.DeleteBusinessImpl
-import com.bookk.business.domain.impl.operation.DeleteClientImpl
-import com.bookk.business.domain.impl.operation.GetBusinessByIdImpl
-import com.bookk.business.domain.impl.operation.GetClientsImpl
-import com.bookk.business.domain.impl.operation.GetDashboardBusinessImpl
-import com.bookk.business.domain.impl.operation.GetUserBusinessesImpl
-import com.bookk.business.domain.impl.operation.UpdateBusinessImpl
+import com.bookk.business.domain.impl.operation.business.CreateBusinessImpl
+import com.bookk.business.domain.impl.operation.business.DeleteBusinessImpl
+import com.bookk.business.domain.impl.operation.business.GetBusinessByIdImpl
+import com.bookk.business.domain.impl.operation.business.GetDashboardBusinessImpl
+import com.bookk.business.domain.impl.operation.business.GetUserBusinessesImpl
+import com.bookk.business.domain.impl.operation.business.UpdateBusinessImpl
+import com.bookk.business.domain.impl.operation.client.CreateClientImpl
+import com.bookk.business.domain.impl.operation.client.DeleteClientImpl
+import com.bookk.business.domain.impl.operation.client.GetClientsImpl
+import com.bookk.business.domain.impl.operation.service.CreateServiceGroupImpl
+import com.bookk.business.domain.impl.operation.service.CreateServiceImpl
+import com.bookk.business.domain.impl.operation.service.DeleteServiceGroupImpl
+import com.bookk.business.domain.impl.operation.service.DeleteServiceImpl
+import com.bookk.business.domain.impl.operation.service.GetServiceGroupsImpl
+import com.bookk.business.domain.impl.operation.service.GetServicesImpl
+import com.bookk.business.domain.impl.operation.service.UpdateServiceImpl
 import com.bookk.core.data.eventstreaming.EventHandler
 import org.koin.core.module.dsl.factoryOf
 import org.koin.core.module.dsl.singleOf
@@ -36,4 +50,11 @@ fun businessDomainModule() = module {
     singleOf(::CreateClientImpl) bind CreateClient::class
     singleOf(::GetClientsImpl) bind GetClients::class
     singleOf(::DeleteClientImpl) bind DeleteClient::class
+    singleOf(::CreateServiceImpl) bind CreateService::class
+    singleOf(::DeleteServiceGroupImpl) bind DeleteServiceGroup::class
+    singleOf(::CreateServiceGroupImpl) bind CreateServiceGroup::class
+    singleOf(::DeleteServiceImpl) bind DeleteService::class
+    singleOf(::UpdateServiceImpl) bind UpdateService::class
+    singleOf(::GetServicesImpl) bind GetServices::class
+    singleOf(::GetServiceGroupsImpl) bind GetServiceGroups::class
 }

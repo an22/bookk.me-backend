@@ -2,7 +2,7 @@ package com.bookk.business.data.datasource
 
 import com.bookk.business.data.orm.entity.ClientEntity
 import com.bookk.business.data.orm.table.ClientTable
-import com.bookk.business.domain.api.entity.Client
+import com.bookk.business.domain.api.client.entity.Client
 import com.bookk.business.domain.datasource.ClientDataSource
 import com.bookk.core.data.DataSource
 import org.jetbrains.exposed.v1.core.and

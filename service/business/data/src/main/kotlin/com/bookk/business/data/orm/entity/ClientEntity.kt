@@ -1,7 +1,7 @@
 package com.bookk.business.data.orm.entity
 
 import com.bookk.business.data.orm.table.ClientTable
-import com.bookk.business.domain.api.entity.Client
+import com.bookk.business.domain.api.client.entity.Client
 import com.bookk.core.data.DecoratorUUIDEntityClass
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.jetbrains.exposed.v1.dao.UUIDEntity

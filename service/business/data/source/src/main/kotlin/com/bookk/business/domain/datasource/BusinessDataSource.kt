@@ -1,8 +1,8 @@
 package com.bookk.business.domain.datasource
 
-import com.bookk.business.domain.api.entity.Business
-import com.bookk.business.domain.api.entity.BusinessUpdateModel
-import com.bookk.business.domain.api.entity.UserBusinesses
+import com.bookk.business.domain.api.business.entity.Business
+import com.bookk.business.domain.api.business.entity.BusinessUpdateModel
+import com.bookk.business.domain.api.business.entity.UserBusinesses
 import kotlin.uuid.Uuid
 
 interface BusinessDataSource {

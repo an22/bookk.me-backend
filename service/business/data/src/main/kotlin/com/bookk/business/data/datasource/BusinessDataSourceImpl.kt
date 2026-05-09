@@ -4,9 +4,9 @@ import com.bookk.business.data.map.toDomain
 import com.bookk.business.data.orm.entity.BusinessEntity
 import com.bookk.business.data.orm.table.BusinessDashboardTable
 import com.bookk.business.data.orm.table.BusinessTable
-import com.bookk.business.domain.api.entity.Business
-import com.bookk.business.domain.api.entity.BusinessUpdateModel
-import com.bookk.business.domain.api.entity.UserBusinesses
+import com.bookk.business.domain.api.business.entity.Business
+import com.bookk.business.domain.api.business.entity.BusinessUpdateModel
+import com.bookk.business.domain.api.business.entity.UserBusinesses
 import com.bookk.business.domain.datasource.BusinessDataSource
 import com.bookk.core.data.DataSource
 import org.jetbrains.exposed.v1.core.eq

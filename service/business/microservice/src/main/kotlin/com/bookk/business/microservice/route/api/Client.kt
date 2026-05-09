@@ -1,11 +1,11 @@
 package com.bookk.business.microservice.route.api
 
-import com.bookk.business.domain.api.entity.Client
-import com.bookk.business.domain.api.entity.ClientRemote
-import com.bookk.business.domain.api.entity.toDomain
-import com.bookk.business.domain.api.operation.CreateClient
-import com.bookk.business.domain.api.operation.DeleteClient
-import com.bookk.business.domain.api.operation.GetClients
+import com.bookk.business.domain.api.client.entity.Client
+import com.bookk.business.domain.api.client.entity.ClientRemote
+import com.bookk.business.domain.api.client.entity.toDomain
+import com.bookk.business.domain.api.client.operation.CreateClient
+import com.bookk.business.domain.api.client.operation.DeleteClient
+import com.bookk.business.domain.api.client.operation.GetClients
 import com.bookk.business.microservice.route.BusinessRouting.Api
 import com.bookk.core.service.enity.respondWith
 import io.ktor.server.auth.authenticate

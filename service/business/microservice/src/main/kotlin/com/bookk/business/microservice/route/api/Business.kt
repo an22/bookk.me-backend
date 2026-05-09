@@ -33,7 +33,7 @@ fun Route.businessCrud() {
          * Create business
          * @description Create new business with specific name
          * @security jwt
-         * @tag *business
+         * @tag business
          * @request application/protobuf [BusinessCreateRequest]
          * @response 200 application/protobuf [Business] Created business entity
          */
@@ -54,7 +54,7 @@ fun Route.businessCrud() {
          * Update business
          * @description Partially update business
          * @security jwt
-         * @tag *business
+         * @tag business
          * @request application/protobuf [BusinessUpdateModel] Non-null fields will be updated
          * @response 204 No content
          */
@@ -68,7 +68,7 @@ fun Route.businessCrud() {
          * Get dashboard business info
          * @description Get all user business and dashboard business id. Dashboard business is a business that user selected to be displayed as main business
          * @security jwt
-         * @tag *business
+         * @tag business
          * @response 200 application/protobuf [UserBusinesses] User business info
          */
         get<Api.Business> { path ->
@@ -80,7 +80,7 @@ fun Route.businessCrud() {
         /**
          * Get business by id
          * @security jwt
-         * @tag *business
+         * @tag business
          * @response 200 application/protobuf [Business] Business info
          */
         get<Api.Business.Id> { path ->

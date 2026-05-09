@@ -9,6 +9,14 @@ application {
     mainClass.set("com.bookk.business.BusinessMicroserviceKt")
 }
 
+ktor {
+    openApi {
+        enabled = true
+        codeInferenceEnabled = false
+        onlyCommented = false
+    }
+}
+
 dependencies {
     implementation(projects.core)
     implementation(projects.core.service)

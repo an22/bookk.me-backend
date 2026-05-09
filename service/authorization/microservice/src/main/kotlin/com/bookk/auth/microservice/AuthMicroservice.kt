@@ -5,6 +5,7 @@ import com.bookk.auth.domain.impl.di.authDomainModule
 import com.bookk.auth.microservice.route.authRoute
 import com.bookk.core.data.cache.impl.di.cacheModule
 import com.bookk.core.data.eventstreaming.di.eventStreamingModule
+import com.bookk.core.service.ServiceConfig
 import com.bookk.core.service.auth.JwtConfig
 import com.bookk.core.service.installNegotiation
 import com.bookk.core.service.startServer
@@ -21,7 +22,14 @@ fun authModule() = module {
 }
 
 fun main() {
-    startServer(diModules = listOf(authModule())) {
+    startServer(
+        config = ServiceConfig(
+            title = "AuthMicroservice",
+            version = "0.0.1",
+            root = "api/auth"
+        ),
+        diModules = listOf(authModule())
+    ) {
         installNegotiation()
         authRoute()
     }

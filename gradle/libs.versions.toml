@@ -8,13 +8,12 @@ kafka = "3.8.0"
 koin-bom = "4.1.0"
 kotlin = "2.2.21"
 kotlin-datetime = "0.7.1"
-ktor = "3.3.3"
+ktor = "3.4.3"
 logback = "1.5.13"
 mariadb-jdbc = "3.4.1"
 redis = "6.4.0.RELEASE"
 passkey = "2.7.0"
 exposed = "1.0.0-rc-4"
-idempotency = "0.2.0"
 mockk = "1.13.6"
 money = "2.0.2"
 
@@ -40,6 +39,7 @@ ktor-client-log = { module = "io.ktor:ktor-client-logging", version.ref = "ktor"
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
 ktor-swagger = { module = "io.ktor:ktor-server-swagger", version.ref = "ktor" }
+ktor-openapi = { module = "io.ktor:ktor-server-openapi", version.ref = "ktor" }
 ktor-metrics = { module = "io.ktor:ktor-server-metrics-micrometer", version.ref = "ktor" }
 ktor-metrics-prometheus = { module = "io.micrometer:micrometer-registry-prometheus", version = "1.16.1" }
 ktor-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
@@ -55,7 +55,6 @@ ktor-server-resources = { module = "io.ktor:ktor-server-resources", version.ref 
 ktor-client-resources = { module = "io.ktor:ktor-client-resources", version.ref = "ktor" }
 ktor-test = { module = "io.ktor:ktor-server-test-host", version.ref = "ktor" }
 ktor-status = { module = "io.ktor:ktor-server-status-pages", version.ref = "ktor" }
-ktor-idempotency = { module = "com.wolt:ktor-idempotency", version.ref = "idempotency" }
 mariadb-jdbc = { module = "org.mariadb.jdbc:mariadb-java-client", version.ref = "mariadb-jdbc" }
 netty-boringssl = { module = "io.netty:netty-tcnative-boringssl-static", version.ref = "boringssl" }
 redis-client = { module = "io.lettuce:lettuce-core", version.ref = "redis" }

@@ -20,23 +20,24 @@ suspend fun createMigrationScriptFor(
     schemaName: String,
     tables: Array<Table>
 ) {
-    val migrationDir = File("src/main/resources/db/migration/${schemaName}")
+    val migrationDir = File("db/migration/${schemaName}")
     if (!migrationDir.exists()) {
         migrationDir.mkdirs()
     }
     moveDBToVersion(
         flyway = createFlywayForVersion(
             schemaName,
-            "${migrationDir.path}/$schemaName",
+            migrationDir.path,
             referenceVersion
         ),
         schemaVersion = referenceVersion,
         schemaName = schemaName
     )
+    val fileSystemTarget = File("src/main/resources/db/migration/${schemaName}")
     val file = suspendTransaction {
         MigrationUtils.generateMigrationScript(
             tables = tables,
-            scriptDirectory = "${migrationDir.path}",
+            scriptDirectory = "${fileSystemTarget.path}",
             scriptName = "V${targetVersion}__migration_script",
             withLogs = true
         )
@@ -59,6 +60,7 @@ private fun createFlywayForVersion(
     .baselineOnMigrate(true)
     .defaultSchema(schemaName)
     .createSchemas(true)
+    .failOnMissingLocations(true)
     .locations(location)
     .target("$version")
     .cleanDisabled(false)
@@ -69,7 +71,6 @@ private fun moveDBToVersion(
     schemaVersion: Int,
     schemaName: String
 ) {
-
     flyway.clean()
     if (schemaVersion != 0) {
         flyway.migrate()

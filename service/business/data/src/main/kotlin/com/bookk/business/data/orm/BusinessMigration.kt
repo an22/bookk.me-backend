@@ -2,6 +2,7 @@ package com.bookk.business.data.orm
 
 import com.bookk.business.data.orm.table.BusinessDashboardTable
 import com.bookk.business.data.orm.table.BusinessTable
+import com.bookk.business.data.orm.table.ClientTable
 import com.bookk.core.data.database.createMigrationScriptFor
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.v1.core.Table
@@ -9,8 +10,8 @@ import org.jetbrains.exposed.v1.core.Table
 fun main() {
     runBlocking {
         createMigrationScriptFor(
-            referenceVersion = 0,
-            targetVersion = 1,
+            referenceVersion = 2,
+            targetVersion = 3,
             schemaName = "business",
             tables = tables()
         )
@@ -20,6 +21,7 @@ fun main() {
 private fun tables(): Array<Table> {
     return arrayOf(
         BusinessTable,
-        BusinessDashboardTable
+        BusinessDashboardTable,
+        ClientTable
     )
 }

@@ -4,7 +4,7 @@ import com.bookk.core.data.ExposedTransactionManager
 import com.bookk.core.data.eventstreaming.EventIdempotencyStorage
 import com.bookk.core.data.repository.CacheIdempotentResponseRepository
 import com.bookk.core.domain.datasource.transaction.TransactionManager
-import com.wolt.utils.ktor.idempotency.IdempotentResponseRepository
+import library.idempotency.IdempotentResponseRepository
 import org.koin.core.module.Module
 import org.koin.dsl.binds
 import org.koin.dsl.module

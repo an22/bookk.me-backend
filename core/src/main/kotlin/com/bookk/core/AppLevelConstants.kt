@@ -8,6 +8,8 @@ object AppLevelConstants {
 
     val serviceName: String
         get() = System.getenv("APPLICATION_SERVICE_NAME").orEmpty()
+    val serviceVersion: String
+        get() = System.getenv("APPLICATION_SERVICE_VERSION").orEmpty()
     val cacheHost: String
         get() = System.getenv("APPLICATION_REDIS_HOSTS")
     val cachePort: String

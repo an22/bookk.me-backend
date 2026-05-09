@@ -3,7 +3,6 @@ package com.bookk.user.microservice
 import com.bookk.core.data.cache.impl.di.cacheModule
 import com.bookk.core.data.eventstreaming.EventHandler
 import com.bookk.core.data.eventstreaming.di.eventStreamingModule
-import com.bookk.core.service.ServiceConfig
 import com.bookk.core.service.installNegotiation
 import com.bookk.core.service.startServer
 import com.bookk.user.data.di.userDataModule
@@ -24,14 +23,7 @@ fun userModule() = module {
 }
 
 fun main() {
-    startServer(
-        config = ServiceConfig(
-            title = "UserMicroservice",
-            version = "0.0.1",
-            root = "api/user"
-        ),
-        diModules = listOf(userModule())
-    ) { application ->
+    startServer(diModules = listOf(userModule())) { application ->
         application.setupEventHandling()
         setupRouting()
     }

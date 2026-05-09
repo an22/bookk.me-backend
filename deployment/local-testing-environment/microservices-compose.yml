@@ -20,11 +20,11 @@ services:
     image: com.bookk.server.microservice.user
     hostname: user.service
     ports:
-      - '8001:8001'
+      - '8001:8000'
     env_file:
       - service/user.env
     environment:
-      JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,address=*:8001,server=y,suspend=n -ea"
+      JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,address=*:8000,server=y,suspend=n -ea"
       TZ: "UTC"
     volumes:
       - './security/test.jks:/etc/service/keystore.jks:ro'
@@ -35,11 +35,26 @@ services:
     image: com.bookk.server.microservice.business
     hostname: business.service
     ports:
-      - '8002:8002'
+      - '8002:8000'
     env_file:
       - service/business.env
     environment:
-      JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,address=*:8002,server=y,suspend=n -ea"
+      JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,address=*:8000,server=y,suspend=n -ea"
+      TZ: "UTC"
+    volumes:
+      - './security/test.jks:/etc/service/keystore.jks:ro'
+      - './security/private.pem:/etc/service/private.pem:ro'
+      - './security/public.pem:/etc/service/public.pem:ro'
+
+  service-appointments:
+    image: com.bookk.server.microservice.appointments
+    hostname: appointments.service
+    ports:
+      - '8003:8000'
+    env_file:
+      - service/appointments.env
+    environment:
+      JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,address=*:8000,server=y,suspend=n -ea"
       TZ: "UTC"
     volumes:
       - './security/test.jks:/etc/service/keystore.jks:ro'

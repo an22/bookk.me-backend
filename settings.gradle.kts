@@ -39,6 +39,7 @@ include(":core:service")
 //Library
 include(":library:money")
 include(":library:idempotency")
+include(":library:permissions")
 
 //Authorization
 include(":service:authorization:microservice")

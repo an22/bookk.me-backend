@@ -4,9 +4,10 @@ import com.bookk.business.domain.api.error.BusinessErrorCodes
 import com.bookk.business.domain.api.service.entity.Service
 import com.bookk.core.domain.entity.BusinessError
 import io.ktor.http.HttpStatusCode
+import kotlin.uuid.Uuid
 
 interface CreateService {
-    suspend operator fun invoke(service: Service): Result<Service>
+    suspend operator fun invoke(requestUserId: Uuid, service: Service): Result<Service>
 
     sealed interface Error {
         class ServiceExist : BusinessError(

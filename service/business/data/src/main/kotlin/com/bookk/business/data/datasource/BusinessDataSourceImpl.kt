@@ -3,12 +3,14 @@ package com.bookk.business.data.datasource
 import com.bookk.business.data.map.toDomain
 import com.bookk.business.data.orm.entity.BusinessEntity
 import com.bookk.business.data.orm.table.BusinessDashboardTable
+import com.bookk.business.data.orm.table.BusinessPermissionsTable
 import com.bookk.business.data.orm.table.BusinessTable
 import com.bookk.business.domain.api.business.entity.Business
 import com.bookk.business.domain.api.business.entity.BusinessUpdateModel
 import com.bookk.business.domain.api.business.entity.UserBusinesses
 import com.bookk.business.domain.datasource.BusinessDataSource
 import com.bookk.core.data.DataSource
+import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.innerJoin
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
@@ -116,5 +118,13 @@ internal class BusinessDataSourceImpl : DataSource(), BusinessDataSource {
             dashboardId = dashboardId?.toKotlinUuid(),
             businesses = businesses
         )
+    }
+
+    override suspend fun getPermission(userId: Uuid, businessId: Uuid): Int = dbQuery {
+        BusinessPermissionsTable.select(
+            BusinessPermissionsTable.permission
+        )
+            .where { (BusinessPermissionsTable.userId eq userId.toJavaUuid()) and (BusinessPermissionsTable.businessId eq businessId.toJavaUuid()) }
+            .single() [BusinessPermissionsTable.permission]
     }
 }

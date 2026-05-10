@@ -1,6 +1,7 @@
 package com.bookk.core.service.enity
 
 import com.bookk.core.domain.entity.BusinessError
+import com.bookk.core.domain.entity.Error
 import com.bookk.core.domain.entity.SimpleServerError
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.engine.logError
@@ -21,7 +22,13 @@ suspend inline fun <reified R: Any> RoutingCall.respondWith(result: Result<R>) {
                 is BusinessError -> {
                     respond(
                         status = HttpStatusCode.fromValue(error.statusCode),
-                        message = SimpleServerError(error.message, error.code)
+                        message = SimpleServerError(error.code, error.message)
+                    )
+                }
+                is Error.OperationNotAllowed -> {
+                    respond(
+                        status = HttpStatusCode.NotFound,
+                        message = "Not found"
                     )
                 }
                 else -> {

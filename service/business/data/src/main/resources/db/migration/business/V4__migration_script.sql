@@ -1,0 +1,2 @@
+CREATE TABLE IF NOT EXISTS business_permissions (id BINARY(16) PRIMARY KEY, user_id BINARY(16) NOT NULL, business_id BINARY(16) NOT NULL, permission INT NOT NULL, CONSTRAINT fk_business_permissions_business_id__id FOREIGN KEY (business_id) REFERENCES business(id) ON DELETE CASCADE ON UPDATE RESTRICT);
+ALTER TABLE business_permissions ADD CONSTRAINT business_permissions_user_id_business_id_unique UNIQUE (user_id, business_id);

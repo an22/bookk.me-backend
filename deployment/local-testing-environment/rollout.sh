@@ -4,7 +4,6 @@ docker compose -f environment-compose.yml up -d
 cd service || exit
 export $(grep -v '^#' auth.env | xargs) || exit
 cd ../../.. || exit
-./gradlew --stop || exit
 ./gradlew :service:authorization:microservice:publishImageToLocalRegistry || exit
 
 #User service

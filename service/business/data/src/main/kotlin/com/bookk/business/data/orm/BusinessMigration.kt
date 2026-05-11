@@ -4,6 +4,8 @@ import com.bookk.business.data.orm.table.BusinessDashboardTable
 import com.bookk.business.data.orm.table.BusinessPermissionsTable
 import com.bookk.business.data.orm.table.BusinessTable
 import com.bookk.business.data.orm.table.ClientTable
+import com.bookk.business.data.orm.table.ServiceGroupTable
+import com.bookk.business.data.orm.table.ServiceTable
 import com.bookk.core.data.database.createMigrationScriptFor
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.v1.core.Table
@@ -24,6 +26,8 @@ private fun tables(): Array<Table> {
         BusinessTable,
         BusinessDashboardTable,
         ClientTable,
-        BusinessPermissionsTable
+        BusinessPermissionsTable,
+        ServiceTable,
+        ServiceGroupTable
     )
 }

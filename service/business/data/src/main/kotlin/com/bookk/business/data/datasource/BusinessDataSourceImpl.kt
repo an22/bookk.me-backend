@@ -19,6 +19,7 @@ import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.update
+import org.jetbrains.exposed.v1.jdbc.upsert
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 import kotlin.uuid.toKotlinUuid
@@ -120,11 +121,19 @@ internal class BusinessDataSourceImpl : DataSource(), BusinessDataSource {
         )
     }
 
-    override suspend fun getPermission(userId: Uuid, businessId: Uuid): Int = dbQuery {
+    override suspend fun getPermission(userId: Uuid, businessId: Uuid): Int? = dbQuery {
         BusinessPermissionsTable.select(
             BusinessPermissionsTable.permission
         )
             .where { (BusinessPermissionsTable.userId eq userId.toJavaUuid()) and (BusinessPermissionsTable.businessId eq businessId.toJavaUuid()) }
             .single() [BusinessPermissionsTable.permission]
+    }
+
+    override suspend fun setUserPermissions(userId: Uuid, businessId: Uuid, permission: Int) {
+        BusinessPermissionsTable.upsert {
+            it[this.userId] = userId.toJavaUuid()
+            it[this.businessId] = businessId.toJavaUuid()
+            it[this.permission] = permission
+        }
     }
 }

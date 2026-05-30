@@ -26,6 +26,7 @@ internal class ServiceDataSourceImpl() : DataSource(), ServiceDataSource {
             it[priceCurrency] = service.price.currencyUnit.code
             it[priceUnscaled] = service.price.amount.unscaledValue().longValueExact()
             it[priceScale] = service.price.scale
+            it[available] = service.isAvailable
         }
         service.copy(id = id.value.toKotlinUuid())
     }
@@ -40,6 +41,7 @@ internal class ServiceDataSourceImpl() : DataSource(), ServiceDataSource {
             it[priceCurrency] = service.price.currencyUnit.code
             it[priceUnscaled] = service.price.amount.unscaledValue().longValueExact()
             it[priceScale] = service.price.scale
+            it[available] = service.isAvailable
         }
         service
     }

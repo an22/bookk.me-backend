@@ -15,6 +15,10 @@ services:
       - './security/test.jks:/etc/service/keystore.jks:ro'
       - './security/private.pem:/etc/service/private.pem:ro'
       - './security/public.pem:/etc/service/public.pem:ro'
+    deploy:
+      resources:
+        limits:
+          memory: 512M
 
   service-user:
     image: com.bookk.server.microservice.user
@@ -30,6 +34,10 @@ services:
       - './security/test.jks:/etc/service/keystore.jks:ro'
       - './security/private.pem:/etc/service/private.pem:ro'
       - './security/public.pem:/etc/service/public.pem:ro'
+    deploy:
+      resources:
+        limits:
+          memory: 512M
 
   service-business:
     image: com.bookk.server.microservice.business
@@ -45,6 +53,10 @@ services:
       - './security/test.jks:/etc/service/keystore.jks:ro'
       - './security/private.pem:/etc/service/private.pem:ro'
       - './security/public.pem:/etc/service/public.pem:ro'
+    deploy:
+      resources:
+        limits:
+          memory: 512M
 
   service-appointments:
     image: com.bookk.server.microservice.appointments
@@ -60,3 +72,7 @@ services:
       - './security/test.jks:/etc/service/keystore.jks:ro'
       - './security/private.pem:/etc/service/private.pem:ro'
       - './security/public.pem:/etc/service/public.pem:ro'
+    deploy:
+      resources:
+        limits:
+          memory: 512M

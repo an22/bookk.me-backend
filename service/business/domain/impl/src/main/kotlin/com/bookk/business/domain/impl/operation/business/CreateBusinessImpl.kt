@@ -4,6 +4,7 @@ import com.bookk.business.domain.api.business.entity.Business
 import com.bookk.business.domain.api.business.operation.CreateBusiness
 import com.bookk.business.domain.datasource.BusinessDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
+import library.permissions.ObjectPermission
 import kotlin.uuid.Uuid
 
 internal class CreateBusinessImpl(
@@ -17,6 +18,8 @@ internal class CreateBusinessImpl(
     ): Result<Business> = transactionManager.transaction {
         if (name.length !in 2..512) throw CreateBusiness.Error.BusinessValidationError
         if (businessDataSource.isBusinessExist(userId)) throw CreateBusiness.Error.BusinessExist
-        businessDataSource.createBusiness(userId, name, currencyCode)
+        businessDataSource.createBusiness(userId, name, currencyCode).also {
+            businessDataSource.setUserPermissions(userId, it.id, ObjectPermission.OWNER.int)
+        }
     }
 }

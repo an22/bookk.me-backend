@@ -13,5 +13,6 @@ interface BusinessDataSource {
     suspend fun deleteUserBusinesses(userId: Uuid)
     suspend fun getDashboardBusiness(userId: Uuid): Business?
     suspend fun getUserBusinesses(userId: Uuid): UserBusinesses
-    suspend fun getPermission(userId: Uuid, businessId: Uuid): Int
+    suspend fun getPermission(userId: Uuid, businessId: Uuid): Int?
+    suspend fun setUserPermissions(userId: Uuid, businessId: Uuid, permission: Int)
 }

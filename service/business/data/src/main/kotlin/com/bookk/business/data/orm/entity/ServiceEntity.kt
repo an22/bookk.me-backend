@@ -22,6 +22,9 @@ internal class ServiceEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var priceCurrency by ServiceTable.priceCurrency
     var priceUnscaled by ServiceTable.priceUnscaled
     var priceScale by ServiceTable.priceScale
+    var available by ServiceTable.available
+    var createdAt by ServiceTable.createdAt
+    var updatedAt by ServiceTable.updatedAt
 
     companion object : DecoratorUUIDEntityClass<ServiceEntity>(ServiceTable)
 
@@ -35,7 +38,9 @@ internal class ServiceEntity(id: EntityID<UUID>) : UUIDEntity(id) {
             price = Money.of(
                 CurrencyUnit.of(priceCurrency),
                 BigDecimal(BigInteger.valueOf(priceUnscaled), priceScale)
-            )
+            ),
+            isAvailable = available,
+            createdAt = createdAt
         )
     }
 }

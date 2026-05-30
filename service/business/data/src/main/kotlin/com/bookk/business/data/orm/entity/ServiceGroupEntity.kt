@@ -12,6 +12,8 @@ internal class ServiceGroupEntity(id: EntityID<UUID>) : UUIDEntity(id) {
 
     val businessId by ServiceGroupTable.businessId
     val name by ServiceGroupTable.name
+    val createdAt by ServiceGroupTable.createdAt
+    val updatedAt by ServiceGroupTable.updatedAt
 
     companion object : DecoratorUUIDEntityClass<ServiceGroupEntity>(ServiceGroupTable)
 
@@ -19,7 +21,8 @@ internal class ServiceGroupEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         return ServiceGroup(
             id = id.value.toKotlinUuid(),
             businessId = businessId.value.toKotlinUuid(),
-            name = name
+            name = name,
+            createdAt = createdAt
         )
     }
 }

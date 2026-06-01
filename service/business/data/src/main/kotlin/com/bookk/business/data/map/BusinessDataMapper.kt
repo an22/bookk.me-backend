@@ -1,7 +1,7 @@
 package com.bookk.business.data.map
 
 import com.bookk.business.data.orm.entity.BusinessEntity
-import com.bookk.business.domain.api.entity.Business
+import com.bookk.business.domain.api.business.entity.Business
 import kotlin.uuid.toKotlinUuid
 
 internal fun BusinessEntity.toDomain(): Business {

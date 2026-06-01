@@ -39,6 +39,7 @@ include(":core:service")
 //Library
 include(":library:money")
 include(":library:idempotency")
+include(":library:permissions")
 
 //Authorization
 include(":service:authorization:microservice")
@@ -63,4 +64,11 @@ include(":service:business:domain:impl")
 include(":service:business:data:source")
 include(":service:business:data")
 include(":service:business:client")
+
+//Appointments
+include(":service:appointments:microservice")
+include(":service:appointments:domain:api")
+include(":service:appointments:domain:impl")
+include(":service:appointments:data:source")
+include(":service:appointments:data")
 

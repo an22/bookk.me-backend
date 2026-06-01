@@ -1,6 +1,6 @@
 package com.bookk.business.domain.datasource
 
-import com.bookk.business.domain.api.entity.Client
+import com.bookk.business.domain.api.client.entity.Client
 import kotlin.uuid.Uuid
 
 interface ClientDataSource {

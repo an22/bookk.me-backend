@@ -3,12 +3,14 @@ package com.bookk.business.data.datasource
 import com.bookk.business.data.map.toDomain
 import com.bookk.business.data.orm.entity.BusinessEntity
 import com.bookk.business.data.orm.table.BusinessDashboardTable
+import com.bookk.business.data.orm.table.BusinessPermissionsTable
 import com.bookk.business.data.orm.table.BusinessTable
-import com.bookk.business.domain.api.entity.Business
-import com.bookk.business.domain.api.entity.BusinessUpdateModel
-import com.bookk.business.domain.api.entity.UserBusinesses
+import com.bookk.business.domain.api.business.entity.Business
+import com.bookk.business.domain.api.business.entity.BusinessUpdateModel
+import com.bookk.business.domain.api.business.entity.UserBusinesses
 import com.bookk.business.domain.datasource.BusinessDataSource
 import com.bookk.core.data.DataSource
+import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.innerJoin
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
@@ -17,6 +19,7 @@ import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.update
+import org.jetbrains.exposed.v1.jdbc.upsert
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 import kotlin.uuid.toKotlinUuid
@@ -116,5 +119,21 @@ internal class BusinessDataSourceImpl : DataSource(), BusinessDataSource {
             dashboardId = dashboardId?.toKotlinUuid(),
             businesses = businesses
         )
+    }
+
+    override suspend fun getPermission(userId: Uuid, businessId: Uuid): Int? = dbQuery {
+        BusinessPermissionsTable.select(
+            BusinessPermissionsTable.permission
+        )
+            .where { (BusinessPermissionsTable.userId eq userId.toJavaUuid()) and (BusinessPermissionsTable.businessId eq businessId.toJavaUuid()) }
+            .single() [BusinessPermissionsTable.permission]
+    }
+
+    override suspend fun setUserPermissions(userId: Uuid, businessId: Uuid, permission: Int) {
+        BusinessPermissionsTable.upsert {
+            it[this.userId] = userId.toJavaUuid()
+            it[this.businessId] = businessId.toJavaUuid()
+            it[this.permission] = permission
+        }
     }
 }

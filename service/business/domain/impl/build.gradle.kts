@@ -12,4 +12,5 @@ dependencies {
     implementation(projects.service.business.domain.api)
     implementation(projects.service.business.client)
     implementation(projects.service.business.data.source)
+    implementation(projects.library.permissions)
 }

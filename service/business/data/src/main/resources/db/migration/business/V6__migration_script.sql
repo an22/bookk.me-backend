@@ -1,0 +1,4 @@
+ALTER TABLE service ADD createdAt TIMESTAMP(6) NOT NULL;
+ALTER TABLE service ADD updatedAt TIMESTAMP(6) NULL;
+ALTER TABLE service_group ADD createdAt TIMESTAMP(6) NOT NULL;
+ALTER TABLE service_group ADD updatedAt TIMESTAMP(6) NULL;

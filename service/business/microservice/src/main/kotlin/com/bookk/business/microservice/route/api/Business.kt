@@ -1,12 +1,12 @@
 package com.bookk.business.microservice.route.api
 
-import com.bookk.business.domain.api.entity.Business
-import com.bookk.business.domain.api.entity.BusinessUpdateModel
-import com.bookk.business.domain.api.entity.UserBusinesses
-import com.bookk.business.domain.api.operation.CreateBusiness
-import com.bookk.business.domain.api.operation.GetBusinessById
-import com.bookk.business.domain.api.operation.GetUserBusinesses
-import com.bookk.business.domain.api.operation.UpdateBusiness
+import com.bookk.business.domain.api.business.entity.Business
+import com.bookk.business.domain.api.business.entity.BusinessUpdateModel
+import com.bookk.business.domain.api.business.entity.UserBusinesses
+import com.bookk.business.domain.api.business.operation.CreateBusiness
+import com.bookk.business.domain.api.business.operation.GetBusinessById
+import com.bookk.business.domain.api.business.operation.GetUserBusinesses
+import com.bookk.business.domain.api.business.operation.UpdateBusiness
 import com.bookk.business.microservice.route.BusinessRouting.Api
 import com.bookk.core.service.auth.AppPrincipal
 import com.bookk.core.service.enity.respondWith

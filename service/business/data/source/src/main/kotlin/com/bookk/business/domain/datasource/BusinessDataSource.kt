@@ -1,8 +1,8 @@
 package com.bookk.business.domain.datasource
 
-import com.bookk.business.domain.api.entity.Business
-import com.bookk.business.domain.api.entity.BusinessUpdateModel
-import com.bookk.business.domain.api.entity.UserBusinesses
+import com.bookk.business.domain.api.business.entity.Business
+import com.bookk.business.domain.api.business.entity.BusinessUpdateModel
+import com.bookk.business.domain.api.business.entity.UserBusinesses
 import kotlin.uuid.Uuid
 
 interface BusinessDataSource {
@@ -13,4 +13,6 @@ interface BusinessDataSource {
     suspend fun deleteUserBusinesses(userId: Uuid)
     suspend fun getDashboardBusiness(userId: Uuid): Business?
     suspend fun getUserBusinesses(userId: Uuid): UserBusinesses
+    suspend fun getPermission(userId: Uuid, businessId: Uuid): Int?
+    suspend fun setUserPermissions(userId: Uuid, businessId: Uuid, permission: Int)
 }

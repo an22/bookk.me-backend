@@ -43,8 +43,8 @@ import java.io.File
 import java.security.KeyStore
 
 fun startServer(
-    config: ServiceConfig,
     diModules: List<Module> = emptyList(),
+    config: ServiceConfig = ServiceConfig(),
     modules: Routing.(Application) -> Unit
 ) {
     embeddedServer(

@@ -23,11 +23,11 @@ import io.ktor.server.request.receive
 import io.ktor.server.resources.delete
 import io.ktor.server.resources.get
 import io.ktor.server.resources.post
+import io.ktor.server.resources.put
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.application
 import io.ktor.server.routing.openapi.describe
-import io.ktor.server.routing.put
 import org.koin.ktor.ext.inject
 
 fun Route.serviceCrud() {

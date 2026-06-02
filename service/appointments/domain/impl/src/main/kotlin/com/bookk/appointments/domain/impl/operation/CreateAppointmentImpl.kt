@@ -22,10 +22,11 @@ internal class CreateAppointmentImpl(
         appointmentRequestId: Uuid
     ): Result<Appointment> = transactionManager.transaction {
         val request = requestDataSource.get(appointmentRequestId) ?: throw Error.NotFound()
-        val settings = settingsDataSource.get(request.businessId) ?: throw Error.NotFound()
+        val settings = settingsDataSource.getForUpdate(request.businessId) ?: throw Error.NotFound()
         appointmentDataSource.getPermissions(userId, request.businessId).assert(ObjectPermission.WRITE)
         if (!settings.isInWorkday(request.date)) throw CreateAppointment.Error.RequestForThisDateNotAllowed()
         if (!settings.isInWorktime(request.date)) throw CreateAppointment.Error.RequestForThisTimeNotAllowed()
+        if (appointmentDataSource.hasOverlapsWith(request)) throw CreateAppointment.Error.RequestForThisTimeExists()
         appointmentDataSource.create(request)
     }
 }

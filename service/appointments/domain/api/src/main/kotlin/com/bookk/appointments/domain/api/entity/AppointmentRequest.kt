@@ -7,6 +7,7 @@ import kotlin.uuid.Uuid
 @Serializable
 data class AppointmentRequest(
     val id: Uuid,
+    val userId: Uuid,
     val businessId: Uuid,
     val client: ClientSnapshot,
     val service: ServiceSnapshot,

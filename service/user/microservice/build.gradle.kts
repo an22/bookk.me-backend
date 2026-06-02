@@ -28,4 +28,6 @@ dependencies {
     implementation(projects.service.user.data)
     implementation(projects.service.user.domain.api)
     implementation(projects.service.user.domain.impl)
+    testImplementation(testFixtures(projects.core))
+    testImplementation(testFixtures(projects.core.service))
 }

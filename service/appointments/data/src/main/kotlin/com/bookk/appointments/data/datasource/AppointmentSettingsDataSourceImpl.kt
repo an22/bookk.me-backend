@@ -17,4 +17,8 @@ internal class AppointmentSettingsDataSourceImpl : DataSource(), AppointmentSett
     override suspend fun get(businessId: Uuid): AppointmentSettings? {
         TODO("Not yet implemented")
     }
+
+    override suspend fun getForUpdate(businessId: Uuid): AppointmentSettings? {
+
+    }
 }

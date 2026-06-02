@@ -7,4 +7,5 @@ interface AppointmentSettingsDataSource {
     suspend fun create(settings: AppointmentSettings): AppointmentSettings
     suspend fun update(settings: AppointmentSettings): AppointmentSettings
     suspend fun get(businessId: Uuid): AppointmentSettings?
+    suspend fun getForUpdate(businessId: Uuid): AppointmentSettings?
 }

@@ -28,4 +28,7 @@ dependencies {
     implementation(projects.service.business.data)
     implementation(projects.service.business.domain.api)
     implementation(projects.service.business.domain.impl)
+    testImplementation(libs.joda.money)
+    testImplementation(testFixtures(projects.core))
+    testImplementation(testFixtures(projects.core.service))
 }

@@ -1,7 +1,3 @@
-@file:OptIn(OpenApiPreview::class)
-
-import io.ktor.plugin.OpenApiPreview
-
 plugins {
     alias(libs.plugins.bookk.microservice)
 }

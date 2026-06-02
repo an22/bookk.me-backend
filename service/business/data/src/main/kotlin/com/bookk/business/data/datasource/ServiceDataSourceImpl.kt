@@ -16,7 +16,7 @@ import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 import kotlin.uuid.toKotlinUuid
 
-internal class ServiceDataSourceImpl() : DataSource(), ServiceDataSource {
+internal class ServiceDataSourceImpl : DataSource(), ServiceDataSource {
     override suspend fun createService(service: Service): Service = dbQuery {
         val id = ServiceTable.insertAndGetId {
             it[businessId] = service.businessId.toJavaUuid()

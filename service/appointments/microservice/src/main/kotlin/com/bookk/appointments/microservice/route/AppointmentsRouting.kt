@@ -8,7 +8,8 @@ object AppointmentsRouting {
 
         @Resource("/appointments")
         class Appointments(val parent: Api = Api()) {
-
+            @Resource("/healthcheck")
+            class HealthCheck(val parent: Appointments = Appointments())
         }
     }
 

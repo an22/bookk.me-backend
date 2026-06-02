@@ -7,6 +7,7 @@ import java.sql.SQLIntegrityConstraintViolationException
 
 fun Throwable.toDomain(): Error {
     return when (this) {
+        is Error -> this
         is ExposedSQLException -> {
             if (cause is SQLIntegrityConstraintViolationException) {
                 Error.UniqueConstraintFailed(message.orEmpty(), this)

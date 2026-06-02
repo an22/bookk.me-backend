@@ -11,10 +11,11 @@ import kotlin.uuid.Uuid
 @Serializable
 class AppointmentSettings(
     val id: Uuid,
+    val businessId: Uuid,
     val timeZone: TimeZone,
     val workingDays: List<DayOfWeek>,
     val workingHours: List<WorkHour>,
-    val nonWorkingDays: List<LocalDate>,
+    val dayOffs: List<LocalDate>,
     val inBetweenBreakInMinutes: Int,
     val appointmentNote: String
 ) {

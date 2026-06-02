@@ -56,6 +56,7 @@ internal class AppointmentDataSourceImpl : DataSource(), AppointmentDataSource {
                         .and(AppointmentTable.dateStart.less(request.date + request.service.duration))
                         .and(AppointmentTable.dateEnd.greater(request.date))
                 }
+                .limit(1)
                 .empty()
                 .not()
         }

@@ -16,7 +16,7 @@ import org.koin.ktor.ext.inject
 import kotlin.uuid.Uuid
 
 @Serializable
-private class ContactFormBody(
+internal class ContactFormBody(
     val text: String,
     val usageLogs: String?
 ) {

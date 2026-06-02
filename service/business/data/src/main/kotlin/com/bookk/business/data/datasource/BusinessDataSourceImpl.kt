@@ -126,7 +126,8 @@ internal class BusinessDataSourceImpl : DataSource(), BusinessDataSource {
             BusinessPermissionsTable.permission
         )
             .where { (BusinessPermissionsTable.userId eq userId.toJavaUuid()) and (BusinessPermissionsTable.businessId eq businessId.toJavaUuid()) }
-            .single() [BusinessPermissionsTable.permission]
+            .singleOrNull()
+            ?.get(BusinessPermissionsTable.permission)
     }
 
     override suspend fun setUserPermissions(userId: Uuid, businessId: Uuid, permission: Int) {

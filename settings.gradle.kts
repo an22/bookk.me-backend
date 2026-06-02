@@ -2,8 +2,8 @@ enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 pluginManagement {
     includeBuild("build-src")
     repositories {
-        google()
         mavenCentral()
+        google()
         gradlePluginPortal()
     }
 }
@@ -15,8 +15,8 @@ plugins {
 dependencyResolutionManagement {
     @Suppress("UnstableApiUsage")
     repositories {
-        google()
         mavenCentral()
+        google()
         mavenLocal()
     }
 }

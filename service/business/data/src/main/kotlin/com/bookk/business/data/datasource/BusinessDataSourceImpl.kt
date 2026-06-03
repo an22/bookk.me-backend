@@ -13,7 +13,7 @@ import com.bookk.core.data.DataSource
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.innerJoin
-import org.jetbrains.exposed.v1.jdbc.deleteWhere
+import org.jetbrains.exposed.v1.jdbc.deleteReturning
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import org.jetbrains.exposed.v1.jdbc.select
@@ -84,10 +84,10 @@ internal class BusinessDataSourceImpl : DataSource(), BusinessDataSource {
             .not()
     }
 
-    override suspend fun deleteUserBusinesses(userId: Uuid) = dbQuery<Unit> {
-        BusinessTable.deleteWhere {
+    override suspend fun deleteUserBusinesses(userId: Uuid) = dbQuery {
+        BusinessTable.deleteReturning(listOf(BusinessTable.id)) {
             BusinessTable.userId eq userId.toJavaUuid()
-        }
+        }.map { it[BusinessTable.id].value.toKotlinUuid() }
     }
 
     override suspend fun getDashboardBusiness(userId: Uuid): Business? = dbQuery {
@@ -126,7 +126,8 @@ internal class BusinessDataSourceImpl : DataSource(), BusinessDataSource {
             BusinessPermissionsTable.permission
         )
             .where { (BusinessPermissionsTable.userId eq userId.toJavaUuid()) and (BusinessPermissionsTable.businessId eq businessId.toJavaUuid()) }
-            .single() [BusinessPermissionsTable.permission]
+            .singleOrNull()
+            ?.get(BusinessPermissionsTable.permission)
     }
 
     override suspend fun setUserPermissions(userId: Uuid, businessId: Uuid, permission: Int) {

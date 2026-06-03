@@ -6,14 +6,14 @@ import kotlin.uuid.Uuid
 
 interface BusinessEvent : EventStreaming.Event<String> {
     @Serializable
-    class DeleteBusinessesForUserEvent(
-        val userId: Uuid,
+    class Deleted(
+        val businessId: Uuid,
         override val idempotencyKey: String = Uuid.random().toString()
     ) : BusinessEvent {
         override val topic: String = TOPIC
 
         companion object {
-            const val TOPIC = "business.delete_for_user"
+            const val TOPIC = "business.deleted"
         }
     }
 }

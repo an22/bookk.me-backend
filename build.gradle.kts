@@ -20,6 +20,22 @@ application {
     mainClass.set("com.bookk.server.MonolithServerKt")
 }
 
+subprojects {
+    configurations.all {
+        resolutionStrategy.eachDependency {
+            if (requested.group == "com.fasterxml.jackson.core") {
+                useVersion(libs.versions.jackson.get())
+            }
+            if (requested.group == "com.fasterxml.jackson.dataformat") {
+                useVersion(libs.versions.jackson.get())
+            }
+            if (requested.group == "com.fasterxml.jackson.datatype") {
+                useVersion(libs.versions.jackson.get())
+            }
+        }
+    }
+}
+
 dependencies {
     implementation(projects.core.service)
     implementation(projects.service.authorization.microservice)

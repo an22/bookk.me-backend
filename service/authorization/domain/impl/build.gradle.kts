@@ -11,6 +11,6 @@ dependencies {
     implementation(projects.core.data.eventstreaming.api)
     implementation(projects.service.authorization.domain.api)
     implementation(projects.service.authorization.data.source)
+    implementation(projects.service.authorization.client)
     implementation(projects.service.user.client)
-    implementation(projects.service.business.client)
 }

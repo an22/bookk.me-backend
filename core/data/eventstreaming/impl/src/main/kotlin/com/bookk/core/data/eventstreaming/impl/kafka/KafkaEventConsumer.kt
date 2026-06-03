@@ -53,13 +53,15 @@ class KafkaEventConsumer(
             val serializer = protoBuf.serializersModule.serializer(type)
             val event = protoBuf.decodeFromByteArray(serializer, it) as T
             if (!eventIdempotencyStorage.isEventProcessed(event.topic, event.idempotencyKey)) {
-                runCatching { onEvent(event) }
-                    .onSuccess {
-                        eventIdempotencyStorage.markEventAsProcessed(event.topic, event.idempotencyKey)
-                    }
-                    .onFailure {
-                        logger.error("Error while processing event for topic: ${event.topic}. Event: $event")
-                    }
+                runCatching {
+                    logger.debug("Received event, Topic: {}. Event: {}", event.topic, event)
+                    onEvent(event)
+                }.onSuccess {
+                    eventIdempotencyStorage.markEventAsProcessed(event.topic, event.idempotencyKey)
+                    logger.debug("Event successfully processed for topic: {}. Event: {}", event.topic, event)
+                }.onFailure {
+                    logger.error("Error while processing event for topic: ${event.topic}. Event: $event")
+                }
             }
         }
         return this

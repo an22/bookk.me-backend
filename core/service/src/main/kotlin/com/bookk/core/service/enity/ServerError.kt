@@ -8,7 +8,7 @@ import io.ktor.server.engine.logError
 import io.ktor.server.response.respond
 import io.ktor.server.routing.RoutingCall
 
-suspend inline fun <reified R: Any> RoutingCall.respondWith(result: Result<R>) {
+suspend inline fun <reified R : Any> RoutingCall.respondWith(result: Result<R>) {
     result
         .onSuccess {
             if (it is Unit) {
@@ -25,12 +25,15 @@ suspend inline fun <reified R: Any> RoutingCall.respondWith(result: Result<R>) {
                         message = SimpleServerError(error.code, error.message)
                     )
                 }
-                is Error.OperationNotAllowed -> {
+
+                is Error.OperationNotAllowed,
+                is Error.NotFound -> {
                     respond(
                         status = HttpStatusCode.NotFound,
                         message = "Not found"
                     )
                 }
+
                 else -> {
                     logError(call = this, error)
                     respond(HttpStatusCode.InternalServerError)

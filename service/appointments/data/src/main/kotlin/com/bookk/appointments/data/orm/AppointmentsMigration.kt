@@ -1,5 +1,12 @@
 package com.bookk.appointments.data.orm
 
+import com.bookk.appointments.data.orm.table.AppointmentTable
+import com.bookk.appointments.data.orm.table.BusinessHasAppointments
+import com.bookk.appointments.data.orm.table.DayOffsTable
+import com.bookk.appointments.data.orm.table.RequestTable
+import com.bookk.appointments.data.orm.table.SettingsTable
+import com.bookk.appointments.data.orm.table.UserHasAppointmentPermissions
+import com.bookk.appointments.data.orm.table.WorkingHoursTable
 import com.bookk.core.data.database.createMigrationScriptFor
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.v1.core.Table
@@ -16,4 +23,11 @@ fun main() {
 }
 
 private fun tables(): Array<Table> = arrayOf(
+    AppointmentTable,
+    BusinessHasAppointments,
+    DayOffsTable,
+    RequestTable,
+    SettingsTable,
+    UserHasAppointmentPermissions,
+    WorkingHoursTable
 )

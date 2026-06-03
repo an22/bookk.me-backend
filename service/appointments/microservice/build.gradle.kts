@@ -1,7 +1,3 @@
-@file:OptIn(OpenApiPreview::class)
-
-import io.ktor.plugin.OpenApiPreview
-
 plugins {
     alias(libs.plugins.bookk.microservice)
 }
@@ -32,6 +28,7 @@ dependencies {
     implementation(projects.service.appointments.data)
     implementation(projects.service.appointments.domain.api)
     implementation(projects.service.appointments.domain.impl)
+    testImplementation(libs.joda.money)
     testImplementation(testFixtures(projects.core))
     testImplementation(testFixtures(projects.core.service))
 }

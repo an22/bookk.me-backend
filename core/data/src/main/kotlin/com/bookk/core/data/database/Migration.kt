@@ -28,7 +28,7 @@ fun createDatabase(
         .migrate()
 
     TransactionManager.defaultDatabase = Database.connect(
-        url = "jdbc:$dbUrl:$dbPort/$schemaName",
+        url = "jdbc:$dbUrl:$dbPort/$schemaName?rewriteBatchedStatements=true",
         user = dbUsername,
         password = dbPassword
     )

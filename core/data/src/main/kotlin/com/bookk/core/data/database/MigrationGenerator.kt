@@ -20,14 +20,10 @@ suspend fun createMigrationScriptFor(
     schemaName: String,
     tables: Array<Table>
 ) {
-    val migrationDir = File("db/migration/${schemaName}")
-    if (!migrationDir.exists()) {
-        migrationDir.mkdirs()
-    }
     moveDBToVersion(
         flyway = createFlywayForVersion(
             schemaName,
-            migrationDir.path,
+            "db/migration/${schemaName}",
             referenceVersion
         ),
         schemaVersion = referenceVersion,

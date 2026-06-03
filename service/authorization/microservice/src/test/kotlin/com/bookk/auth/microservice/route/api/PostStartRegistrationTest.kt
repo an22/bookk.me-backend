@@ -85,7 +85,7 @@ class PostStartRegistrationTest {
         val useCase: StartRegistration = mockk()
         val client = createTestClient()
         val request = CreateAccountRequest("firstName", "lastName", "email")
-        val expected = RegistrationChallengeResponse("example_challenge", "display_name", "userId")
+        val expected = RegistrationChallengeResponse("example_challenge", "display_name", "challenge", "userId", "Name")
         coEvery { useCase.invoke(any()) } returns Result.success(expected)
         setupApplication(
             diModule = module {

@@ -1,19 +1,19 @@
-package com.bookk.server.business.client.api.event
+package com.bookk.server.auth.client
 
 import com.bookk.core.data.eventstreaming.EventStreaming
 import kotlinx.serialization.Serializable
 import kotlin.uuid.Uuid
 
-interface BusinessEvent : EventStreaming.Event<String> {
+interface AuthEvent : EventStreaming.Event<String> {
     @Serializable
-    class Deleted(
-        val businessId: Uuid,
+    class UserDeleted(
+        val userId: Uuid,
         override val idempotencyKey: String = Uuid.random().toString()
-    ) : BusinessEvent {
+    ) : AuthEvent {
         override val topic: String = TOPIC
 
         companion object {
-            const val TOPIC = "business.deleted"
+            const val TOPIC = "auth.user_deleted"
         }
     }
 }

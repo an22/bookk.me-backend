@@ -1,7 +1,6 @@
 package com.bookk.appointments.data.datasource
 
 import com.bookk.appointments.data.orm.table.AppointmentTable
-import com.bookk.appointments.data.orm.table.BusinessHasAppointments
 import com.bookk.appointments.data.orm.table.UserHasAppointmentPermissions
 import com.bookk.appointments.domain.api.entity.Appointment
 import com.bookk.appointments.domain.api.entity.AppointmentRequest
@@ -17,13 +16,6 @@ import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 
 internal class AppointmentDataSourceImpl : DataSource(), AppointmentDataSource {
-    override suspend fun attachBusiness(businessId: Uuid) {
-        dbQuery {
-            BusinessHasAppointments.insertIgnore {
-                it[id] = businessId.toJavaUuid()
-            }
-        }
-    }
 
     override suspend fun initPermissions(
         userId: Uuid,

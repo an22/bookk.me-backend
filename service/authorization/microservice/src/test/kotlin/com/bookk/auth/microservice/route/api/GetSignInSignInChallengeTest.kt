@@ -31,7 +31,7 @@ internal class GetSignInSignInChallengeTest {
             routeUnderTest = { signIn() }
         )
         val client = createTestClient()
-        val answer = AssertionStartResponse(UUID.randomUUID().toString(), "mock")
+        val answer = AssertionStartResponse(UUID.randomUUID().toString(), "mock", "mock")
         coEvery { useCase.invoke() } returns Result.success(answer)
 
         whenn()

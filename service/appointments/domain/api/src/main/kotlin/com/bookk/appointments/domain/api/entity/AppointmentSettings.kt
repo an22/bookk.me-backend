@@ -19,6 +19,29 @@ class AppointmentSettings(
     val inBetweenBreakInMinutes: Int,
     val appointmentNote: String
 ) {
+
+    constructor(businessId: Uuid): this(
+        id = Uuid.random(),
+        businessId = businessId,
+        timeZone = TimeZone.of("UTC"),
+        workingDays = listOf(
+            DayOfWeek.MONDAY,
+            DayOfWeek.TUESDAY,
+            DayOfWeek.WEDNESDAY,
+            DayOfWeek.THURSDAY,
+            DayOfWeek.FRIDAY,
+        ),
+        workingHours = listOf(
+            DayOfWeek.MONDAY.nineToFive(),
+            DayOfWeek.TUESDAY.nineToFive(),
+            DayOfWeek.WEDNESDAY.nineToFive(),
+            DayOfWeek.THURSDAY.nineToFive(),
+            DayOfWeek.FRIDAY.nineToFive(),
+        ),
+        dayOffs = listOf(),
+        inBetweenBreakInMinutes = 10,
+        appointmentNote = ""
+    )
     fun isInWorkday(date: Instant): Boolean {
         return true
     }
@@ -33,4 +56,10 @@ class WorkHour(
     val dayOfWeek: DayOfWeek,
     val from: LocalTime,
     val to: LocalTime
+)
+
+fun DayOfWeek.nineToFive() = WorkHour(
+    dayOfWeek = this,
+    from = LocalTime(9, 0),
+    to = LocalTime(17, 0)
 )

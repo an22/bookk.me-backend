@@ -26,7 +26,7 @@ internal class AppointmentRequestId(
     val requestId: Uuid,
 )
 
-fun Routing.createAppointment() {
+fun Routing.appointment() {
     authenticate {
         post<Api.Appointments> {
             val principal = requireNotNull(call.principal<AppPrincipal>())

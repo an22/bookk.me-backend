@@ -2,10 +2,12 @@ package com.bookk.appointments.domain.impl.di
 
 import com.bookk.appointments.domain.api.operation.CreateAppointment
 import com.bookk.appointments.domain.api.operation.DeleteModule
+import com.bookk.appointments.domain.api.operation.EditSettings
 import com.bookk.appointments.domain.api.operation.EnableAppointmentsForBusiness
 import com.bookk.appointments.domain.impl.event.AppointmentEventHandler
 import com.bookk.appointments.domain.impl.operation.CreateAppointmentImpl
 import com.bookk.appointments.domain.impl.operation.DeleteModuleImpl
+import com.bookk.appointments.domain.impl.operation.EditSettingsImpl
 import com.bookk.appointments.domain.impl.operation.EnableAppointmentsForBusinessImpl
 import com.bookk.core.data.eventstreaming.EventHandler
 import org.koin.core.module.dsl.factoryOf
@@ -17,4 +19,5 @@ fun appointmentsDomainModule() = module {
     factoryOf(::EnableAppointmentsForBusinessImpl) bind EnableAppointmentsForBusiness::class
     factoryOf(::AppointmentEventHandler) bind EventHandler::class
     factoryOf(::DeleteModuleImpl) bind DeleteModule::class
+    factoryOf(::EditSettingsImpl) bind EditSettings::class
 }

@@ -8,4 +8,5 @@ dependencies {
     implementation(libs.kafka.client)
     implementation(projects.core.data.eventstreaming.api)
     implementation(projects.core)
+    implementation(projects.core.domain)
 }

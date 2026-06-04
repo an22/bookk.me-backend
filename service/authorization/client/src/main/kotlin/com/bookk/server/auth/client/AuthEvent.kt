@@ -6,7 +6,7 @@ import kotlin.uuid.Uuid
 
 interface AuthEvent : EventStreaming.Event<String> {
     @Serializable
-    class UserDeleted(
+    data class UserDeleted(
         val userId: Uuid,
         override val idempotencyKey: String = Uuid.random().toString()
     ) : AuthEvent {

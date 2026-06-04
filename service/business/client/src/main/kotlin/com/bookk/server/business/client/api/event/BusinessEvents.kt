@@ -6,7 +6,7 @@ import kotlin.uuid.Uuid
 
 interface BusinessEvent : EventStreaming.Event<String> {
     @Serializable
-    class Deleted(
+    data class Deleted(
         val businessId: Uuid,
         override val idempotencyKey: String = Uuid.random().toString()
     ) : BusinessEvent {

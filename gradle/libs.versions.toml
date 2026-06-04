@@ -4,7 +4,7 @@ boringssl = "2.0.65.Final"
 coroutines = "1.10.2"
 flyway = "11.11.2"
 hikari = "5.1.0"
-kafka = "3.8.0"
+kafka = "4.3.0"
 koin-bom = "4.1.0"
 kotlin = "2.3.21"
 kotlin-datetime = "0.7.1"
@@ -14,7 +14,7 @@ mariadb-jdbc = "3.4.1"
 redis = "6.4.0.RELEASE"
 passkey = "2.7.0"
 exposed = "1.0.0-rc-4"
-mockk = "1.13.6"
+mockk = "1.14.11"
 money = "2.0.2"
 jackson = "2.17.1"
 
@@ -30,6 +30,7 @@ koin-core = { module = "io.insert-koin:koin-core" }
 koin-ktor = { module = "io.insert-koin:koin-ktor" }
 kotlin-coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 kotlin-coroutines-reactive = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-reactive", version.ref = "coroutines" }
+kotlin-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
 kotlin-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlin-datetime" }
 kotlin-std = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
 kotlin-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }

@@ -51,3 +51,14 @@ tasks.withType<JibTask> {
 tasks.withType<BuildDockerTask> {
     notCompatibleWithConfigurationCache("because of https://github.com/GoogleContainerTools/jib/issues/3132")
 }
+
+subprojects {
+    tasks.withType<Test> {
+        environment(
+            mapOf(
+                "APPLICATION_SERVICE_NAME" to "test",
+                "APPLICATION_SERVICE_VERSION" to "test"
+            )
+        )
+    }
+}

@@ -1,7 +1,7 @@
 package com.bookk.core.service.test
 
 import com.bookk.core.service.installNegotiation
-import com.bookk.core.test.runTest
+import com.bookk.core.test.runUnitTest
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.resources.Resources
@@ -35,7 +35,7 @@ fun ApplicationTestBuilder.setupApplication(
 }
 
 fun routeTest(body: suspend ApplicationTestBuilder.() -> Unit) {
-    runTest {
+    runUnitTest {
         testApplication {
             body(this)
         }

@@ -1,9 +1,9 @@
 package com.bookk.appointments.data.orm
 
+import com.bookk.appointments.data.orm.table.AppointmentRequestTable
 import com.bookk.appointments.data.orm.table.AppointmentTable
 import com.bookk.appointments.data.orm.table.BusinessHasAppointments
 import com.bookk.appointments.data.orm.table.DayOffsTable
-import com.bookk.appointments.data.orm.table.RequestTable
 import com.bookk.appointments.data.orm.table.SettingsTable
 import com.bookk.appointments.data.orm.table.UserHasAppointmentPermissions
 import com.bookk.appointments.data.orm.table.WorkingHoursTable
@@ -26,7 +26,7 @@ private fun tables(): Array<Table> = arrayOf(
     AppointmentTable,
     BusinessHasAppointments,
     DayOffsTable,
-    RequestTable,
+    AppointmentRequestTable,
     SettingsTable,
     UserHasAppointmentPermissions,
     WorkingHoursTable

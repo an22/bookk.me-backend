@@ -8,5 +8,6 @@ dependencies {
     implementation(projects.core.data.cache.api)
     implementation(projects.service.appointments.domain.api)
     implementation(projects.service.appointments.data.source)
+    implementation(libs.joda.money)
     implementation(libs.passkey)
 }

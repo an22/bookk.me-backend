@@ -4,7 +4,7 @@ import com.bookk.core.data.database.BaseUUIDTable
 import org.jetbrains.exposed.v1.core.ReferenceOption
 import org.jetbrains.exposed.v1.datetime.timestamp
 
-object RequestTable : BaseUUIDTable("appointment_request") {
+object AppointmentRequestTable : BaseUUIDTable("appointment_request") {
     val userId = uuid("user_id")
     val businessId = reference("business_id", BusinessHasAppointments.id, onDelete = ReferenceOption.CASCADE)
     val clientId = uuid("client_id").index()

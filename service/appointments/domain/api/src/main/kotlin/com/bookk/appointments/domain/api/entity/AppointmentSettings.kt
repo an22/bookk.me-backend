@@ -16,11 +16,12 @@ class AppointmentSettings(
     val workingDays: List<DayOfWeek>,
     val workingHours: List<WorkHour>,
     val dayOffs: List<LocalDate>,
+    val automaticApproval: Boolean,
     val inBetweenBreakInMinutes: Int,
     val appointmentNote: String
 ) {
 
-    constructor(businessId: Uuid): this(
+    constructor(businessId: Uuid) : this(
         id = Uuid.random(),
         businessId = businessId,
         timeZone = TimeZone.of("UTC"),
@@ -38,10 +39,12 @@ class AppointmentSettings(
             DayOfWeek.THURSDAY.nineToFive(),
             DayOfWeek.FRIDAY.nineToFive(),
         ),
+        automaticApproval = false,
         dayOffs = listOf(),
         inBetweenBreakInMinutes = 10,
         appointmentNote = ""
     )
+
     fun isInWorkday(date: Instant): Boolean {
         return true
     }

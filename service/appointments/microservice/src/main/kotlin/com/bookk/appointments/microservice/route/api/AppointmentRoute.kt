@@ -59,6 +59,8 @@ fun Routing.appointment() {
                         append(CreateAppointment.Error.RequestForThisTimeExists().asServerError().toString())
                         append("\n\n")
                         append(CreateAppointment.Error.RequestForThisDateNotAllowed().asServerError().toString())
+                        append("\n\n")
+                        append(CreateAppointment.Error.RequestForThisTimeNotAllowed().asServerError().toString())
                     }
                     schema = jsonSchema<SimpleServerError>()
                     ContentType.Application.ProtoBuf()

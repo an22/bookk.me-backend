@@ -25,6 +25,7 @@ internal class SettingsEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var workingDays by SettingsTable.workingDays
     val workingHours by WorkingHourEntity referrersOn WorkingHoursTable.settingsId
     val dayOffs by DayOffEntity referrersOn DayOffsTable.settingsId
+    var automaticApproval by SettingsTable.automaticApproval
     var inBetweenBreakInMinutes by SettingsTable.inBetweenBreakInMinutes
     var appointmentNote by SettingsTable.appointmentNote
 
@@ -46,6 +47,7 @@ internal class SettingsEntity(id: EntityID<UUID>) : UUIDEntity(id) {
                 to = it.endTime
             )
         },
+        automaticApproval = automaticApproval,
         dayOffs = dayOffs.map { it.date },
         inBetweenBreakInMinutes = inBetweenBreakInMinutes,
         appointmentNote = appointmentNote,
@@ -60,10 +62,18 @@ internal class SettingsEntity(id: EntityID<UUID>) : UUIDEntity(id) {
             }
             inBetweenBreakInMinutes = settings.inBetweenBreakInMinutes
             appointmentNote = settings.appointmentNote
+            automaticApproval = settings.automaticApproval
         }
 
         fun findByIdAndUpdate(settings: AppointmentSettings) = findByIdAndUpdate(settings.id.toJavaUuid()) {
-
+            it.businessId = EntityID(id = settings.businessId.toJavaUuid(), table = BusinessHasAppointments)
+            it.timeZone = settings.timeZone.id
+            it.workingDays = settings.workingDays.fold(0) { acc, day ->
+                acc or (1 shl day.isoDayNumber).toByte()
+            }
+            it.inBetweenBreakInMinutes = settings.inBetweenBreakInMinutes
+            it.appointmentNote = settings.appointmentNote
+            it.automaticApproval = settings.automaticApproval
         }
     }
 }

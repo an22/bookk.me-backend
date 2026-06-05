@@ -13,7 +13,7 @@ internal fun Route.healthCheck() {
      * @tag *business
      * @response 200 Service is alive
      */
-    get<Api.Appointments.HealthCheck> {
+    get<Api.Appointment.HealthCheck> {
         call.respond(HttpStatusCode.OK)
     }
 }

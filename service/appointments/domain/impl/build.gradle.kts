@@ -11,4 +11,8 @@ dependencies {
     implementation(projects.service.appointments.data.source)
     implementation(projects.service.business.client)
     implementation(projects.library.permissions)
+    testImplementation(testFixtures(projects.core))
+    testImplementation(testFixtures(projects.core.domain.datasource))
+    testImplementation(libs.joda.money)
+    testImplementation(libs.kotlin.coroutines.test)
 }

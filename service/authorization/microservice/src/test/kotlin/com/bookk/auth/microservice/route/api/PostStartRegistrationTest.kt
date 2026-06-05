@@ -28,7 +28,7 @@ import org.koin.dsl.module
 class PostStartRegistrationTest {
 
     @Test
-    fun incorrectEmailFormat() = routeTest {
+    fun `should return unprocessable entity when email format is invalid`() = routeTest {
         given()
         val useCase: StartRegistration = mockk()
         val client = createTestClient()
@@ -55,7 +55,7 @@ class PostStartRegistrationTest {
     }
 
     @Test
-    fun emailAlreadyExist() = routeTest {
+    fun `should return unprocessable entity when email already exists`() = routeTest {
         given()
         val useCase: StartRegistration = mockk()
         val client = createTestClient()
@@ -80,7 +80,7 @@ class PostStartRegistrationTest {
     }
 
     @Test
-    fun successResponse() = routeTest {
+    fun `should return OK when registration challenge is successfully started`() = routeTest {
         given()
         val useCase: StartRegistration = mockk()
         val client = createTestClient()

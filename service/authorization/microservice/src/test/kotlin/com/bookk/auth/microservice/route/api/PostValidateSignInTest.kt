@@ -31,7 +31,7 @@ import kotlin.uuid.Uuid
 internal class PostValidateSignInTest {
 
     @Test
-    fun verifyAnswerOnSuccess() = routeTest {
+    fun `should return OK and tokens when sign in is successful`() = routeTest {
         given()
         val useCase: SignIn = mockk()
         setupApplication(
@@ -65,7 +65,7 @@ internal class PostValidateSignInTest {
     }
 
     @Test
-    fun verifyPasskeyOwnerNotFound() = routeTest {
+    fun `should return unprocessable entity when passkey owner is not found`() = routeTest {
         given()
         val useCase: SignIn = mockk()
         setupApplication(
@@ -98,7 +98,7 @@ internal class PostValidateSignInTest {
     }
 
     @Test
-    fun verifyChallengeWindowExpired() = routeTest {
+    fun `should return unprocessable entity when challenge window is expired`() = routeTest {
         given()
         val useCase: SignIn = mockk()
         setupApplication(
@@ -131,7 +131,7 @@ internal class PostValidateSignInTest {
     }
 
     @Test
-    fun verifyVerificationFailed() = routeTest {
+    fun `should return unprocessable entity when verification fails`() = routeTest {
         given()
         val useCase: SignIn = mockk()
         setupApplication(

@@ -20,10 +20,10 @@ import org.koin.dsl.module
 import java.util.UUID
 import kotlin.test.Test
 
-internal class GetSignInSignInChallengeTest {
+internal class StartAssertionTest {
 
     @Test
-    fun verifyAnswerOnSuccess() = routeTest {
+    fun `should return OK when sign in challenge is successfully started`() = routeTest {
         given()
         val useCase: StartAssertion = mockk()
         setupApplication(

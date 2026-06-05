@@ -26,6 +26,9 @@ interface EventStreaming {
     interface Event<K> {
         val topic: K
         val idempotencyKey: String
+
+        override fun equals(other: Any?): Boolean
+        override fun hashCode(): Int
     }
 }
 

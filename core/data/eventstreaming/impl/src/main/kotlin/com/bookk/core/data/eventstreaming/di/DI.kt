@@ -12,7 +12,7 @@ fun eventStreamingModule() = module {
     factory<StandardEventConsumer> {
         val servers = AppLevelConstants.eventStreamingHost.split(',')
         val group = "${AppLevelConstants.serviceName}_group"
-        KafkaEventConsumer(servers, group, get(), ProtoBuf { encodeDefaults = true })
+        KafkaEventConsumer(servers, group, get(), ProtoBuf { encodeDefaults = true }, get())
     }
     factory<StandardEventProducer> {
         val servers = AppLevelConstants.eventStreamingHost.split(',')

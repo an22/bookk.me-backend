@@ -12,6 +12,9 @@ object AppointmentsRouting {
             @Resource("/healthcheck")
             class HealthCheck(val parent: Appointments = Appointments())
 
+            @Resource("/request")
+            class Request(val parent: Appointments = Appointments())
+
             @Resource("/settings/{businessId}")
             class Settings(val parent: Appointments = Appointments(), val businessId: Uuid)
         }

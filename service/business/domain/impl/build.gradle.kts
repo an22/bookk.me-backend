@@ -14,4 +14,5 @@ dependencies {
     implementation(projects.service.authorization.client)
     implementation(projects.service.business.data.source)
     implementation(projects.library.permissions)
+    testImplementation(testFixtures(projects.core))
 }

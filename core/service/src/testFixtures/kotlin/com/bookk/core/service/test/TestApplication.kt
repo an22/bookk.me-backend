@@ -1,6 +1,7 @@
 package com.bookk.core.service.test
 
 import com.bookk.core.service.installNegotiation
+import com.bookk.core.test.TestHolder
 import com.bookk.core.test.runUnitTest
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
@@ -35,8 +36,9 @@ fun ApplicationTestBuilder.setupApplication(
 }
 
 fun routeTest(body: suspend ApplicationTestBuilder.() -> Unit) {
-    runUnitTest {
-        testApplication {
+    val context = TestHolder()
+    runUnitTest(context) {
+        testApplication(context) {
             body(this)
         }
     }

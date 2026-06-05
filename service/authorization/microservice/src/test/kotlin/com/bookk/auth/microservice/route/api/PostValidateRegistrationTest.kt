@@ -47,7 +47,7 @@ class PostValidateRegistrationTest {
     }
 
     @Test
-    fun invalidEmailFormat() = routeTest {
+    fun `should return unprocessable entity when email format is invalid`() = routeTest {
         given()
         val useCase: FinishRegistration = mockk()
         val client = createTestClient()
@@ -72,7 +72,7 @@ class PostValidateRegistrationTest {
     }
 
     @Test
-    fun userAlreadyExist() = routeTest {
+    fun `should return unprocessable entity when user already exists`() = routeTest {
         given()
         val useCase: FinishRegistration = mockk()
         val client = createTestClient()
@@ -97,7 +97,7 @@ class PostValidateRegistrationTest {
     }
 
     @Test
-    fun verificationFailed() = routeTest {
+    fun `should return unprocessable entity when verification fails`() = routeTest {
         given()
         val useCase: FinishRegistration = mockk()
         val client = createTestClient()
@@ -122,7 +122,7 @@ class PostValidateRegistrationTest {
     }
 
     @Test
-    fun accountCreationFailed() = routeTest {
+    fun `should return unprocessable entity when account creation fails`() = routeTest {
         given()
         val useCase: FinishRegistration = mockk()
         val client = createTestClient()
@@ -147,7 +147,7 @@ class PostValidateRegistrationTest {
     }
 
     @Test
-    fun successResponse() = routeTest {
+    fun `should return OK and tokens when registration is completed`() = routeTest {
         given()
         val useCase: FinishRegistration = mockk()
         val client = createTestClient()

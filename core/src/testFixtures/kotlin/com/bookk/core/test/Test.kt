@@ -13,7 +13,7 @@ internal class TestContext(
 )
 
 
-internal class TestHolder : AbstractCoroutineContextElement(Key) {
+class TestHolder : AbstractCoroutineContextElement(Key) {
     private val context = TestContext()
 
     fun givenCalled() {
@@ -37,7 +37,7 @@ internal class TestHolder : AbstractCoroutineContextElement(Key) {
     companion object Key : CoroutineContext.Key<TestHolder>
 }
 
-fun runUnitTest(body: suspend TestScope.() -> Unit) = runTest(TestHolder()) {
+fun runUnitTest(context: CoroutineContext = TestHolder(), body: suspend TestScope.() -> Unit) = runTest(context) {
     body()
     requireNotNull(currentCoroutineContext()[TestHolder.Key]).assertFormat()
 }

@@ -4,6 +4,7 @@ import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.Serializable
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
@@ -46,11 +47,14 @@ class AppointmentSettings(
     )
 
     fun isInWorkday(date: Instant): Boolean {
-        return true
+        return date.toLocalDateTime(timeZone).dayOfWeek in workingDays
     }
 
     fun isInWorktime(date: Instant): Boolean {
-        return true
+        val localDateTime = date.toLocalDateTime(timeZone)
+        val dayOfWeek = localDateTime.dayOfWeek
+        val workTime = workingHours.firstOrNull { it.dayOfWeek == dayOfWeek } ?: return false
+        return localDateTime.time in workTime.from..workTime.to
     }
 }
 

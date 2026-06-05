@@ -22,6 +22,12 @@ internal class AppointmentRequestDataSourceImpl : DataSource(), AppointmentReque
             ?.domain()
     }
 
+    override suspend fun getAll(businessId: Uuid): List<AppointmentRequest> = dbQuery {
+        AppointmentRequestEntity
+            .find { AppointmentRequestTable.businessId eq businessId.toJavaUuid() }
+            .map { it.domain() }
+    }
+
     override suspend fun create(request: AppointmentRequest): AppointmentRequest = dbQuery {
         AppointmentRequestEntity.new(request).domain()
     }

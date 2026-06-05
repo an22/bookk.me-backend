@@ -19,7 +19,7 @@ import org.koin.ktor.ext.inject
 
 fun Routing.settings() {
     authenticate {
-        put<Api.Appointments.Settings> {
+        put<Api.Appointment.Settings> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
             val body = call.receive<AppointmentSettings>()
             val editSettings by application.inject<EditSettings>()

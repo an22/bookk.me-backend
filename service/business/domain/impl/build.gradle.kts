@@ -15,4 +15,5 @@ dependencies {
     implementation(projects.service.business.data.source)
     implementation(projects.library.permissions)
     testImplementation(testFixtures(projects.core))
+    testImplementation(testFixtures(projects.core.domain.datasource))
 }

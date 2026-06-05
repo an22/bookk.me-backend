@@ -2,6 +2,7 @@ package com.bookk.appointments.microservice.route.api
 
 import com.bookk.appointments.domain.api.entity.Appointment
 import com.bookk.appointments.domain.api.operation.CreateAppointment
+import com.bookk.appointments.domain.api.operation.GetAppointments
 import com.bookk.appointments.microservice.route.AppointmentsRouting.Api
 import com.bookk.core.domain.entity.SimpleServerError
 import com.bookk.core.domain.entity.asServerError
@@ -13,6 +14,7 @@ import io.ktor.openapi.jsonSchema
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.principal
 import io.ktor.server.request.receive
+import io.ktor.server.resources.get
 import io.ktor.server.resources.post
 import io.ktor.server.routing.Routing
 import io.ktor.server.routing.application
@@ -28,7 +30,24 @@ internal class AppointmentRequestId(
 
 fun Routing.appointment() {
     authenticate {
-        post<Api.Appointments> {
+        get<Api.Appointments> {
+            val principal = requireNotNull(call.principal<AppPrincipal>())
+            val getAppointments by application.inject<GetAppointments>()
+
+            call.respondWith(getAppointments(principal.userId, it.businessId))
+        }.describe {
+            summary = "Get appointments"
+            tag("appointment")
+            responses {
+                HttpStatusCode.OK {
+                    description = "List of appointments"
+                    schema = jsonSchema<List<Appointment>>()
+                    ContentType.Application.ProtoBuf()
+                }
+            }
+        }
+
+        post<Api.Appointment> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
             val body = call.receive<AppointmentRequestId>()
             val createAppointment by application.inject<CreateAppointment>()

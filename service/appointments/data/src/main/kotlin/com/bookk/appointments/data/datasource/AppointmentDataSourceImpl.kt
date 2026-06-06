@@ -7,10 +7,12 @@ import com.bookk.appointments.domain.api.entity.Appointment
 import com.bookk.appointments.domain.api.entity.AppointmentRequest
 import com.bookk.appointments.domain.datasource.AppointmentDataSource
 import com.bookk.core.data.DataSource
+import com.bookk.core.domain.entity.Error
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.greater
 import org.jetbrains.exposed.v1.core.less
+import org.jetbrains.exposed.v1.core.neq
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.select
 import kotlin.uuid.Uuid
@@ -33,8 +35,29 @@ internal class AppointmentDataSourceImpl : DataSource(), AppointmentDataSource {
         }
     }
 
+    override suspend fun hasOverlapsWith(appointment: Appointment): Boolean {
+        return dbQuery {
+            AppointmentTable.select(AppointmentTable.id)
+                .where {
+                    (AppointmentTable.businessId eq appointment.businessId.toJavaUuid())
+                        .and(AppointmentTable.userId eq appointment.userId.toJavaUuid())
+                        .and(AppointmentTable.dateStart.less(appointment.date + appointment.service.duration))
+                        .and(AppointmentTable.dateEnd.greater(appointment.date))
+                        .and(AppointmentTable.id neq appointment.id.toJavaUuid())
+                }
+                .limit(1)
+                .empty()
+                .not()
+        }
+    }
+
     override suspend fun create(request: AppointmentRequest): Appointment = dbQuery {
         AppointmentEntity.new(request).domain()
+    }
+
+    override suspend fun update(appointment: Appointment): Appointment = dbQuery {
+        AppointmentEntity.findByIdAndUpdate(appointment)
+            ?.domain() ?: throw Error.NotFound()
     }
 
     override suspend fun delete(appointment: Appointment) = dbQuery<Unit> {

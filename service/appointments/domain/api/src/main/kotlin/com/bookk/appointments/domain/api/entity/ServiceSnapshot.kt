@@ -7,7 +7,7 @@ import kotlin.time.Duration
 import kotlin.uuid.Uuid
 
 @Serializable
-class ServiceSnapshot(
+data class ServiceSnapshot(
     val id: Uuid,
     val name: String,
     val groupId: Uuid,

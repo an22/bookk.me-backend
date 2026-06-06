@@ -27,6 +27,8 @@ All routes in `microservice/` must be tested using `routeTest`.
   - Use typed resource classes (e.g., `UserRouting.Api.User.Me()`) for request building.
   - DO NOT EDIT bookk-server/core/src/testFixtures/kotlin/com/bookk/core/test/Test.kt
   - To create unauthorized test, in AuthenticationPlugin use `bearer { authenticate { null } }`
+  - SUT must be created for every test instance separately, no instance sharing
+  - Do not share mocks between unit tests
 
 ### 2. Implementation & Data Tests
 - **Operations**: Test domain operation implementations using pure JUnit/MockK in `domain/impl`.
@@ -65,6 +67,14 @@ Structure every test in three clearly separated phases:
 1. **Given** — set up inputs, mocks, and preconditions
 2. **When** — call the unit under test
 3. **Then** — verify the outcome
+
+---
+
+### 1. Core Principles (Continued)
+
+#### Test Isolation Mandate
+- **No Shared State**: SUT (System Under Test) and ALL mocks MUST be initialized *within* each individual test method.
+- **No Class-Level Sharing**: DO NOT initialize SUT or mocks as class properties. Shared state between tests leads to flaky, order-dependent behavior.
 
 ---
 
@@ -443,14 +453,41 @@ class PostValidateRegistrationTest {
 
 
 
-### Ktor testing checklist
+## Mandatory Testing Strategy (Contract-First)
+
+For every new module, feature, or route, you MUST enumerate the following test scenarios BEFORE writing code:
+1.  **Success Scenarios**: The "Happy Path".
+2.  **Domain Error Scenarios (Coverage Checklist)**:
+    -   You MUST locate the `sealed interface Error` definition.
+    -   Create a **checklist** in your plan, mapping EVERY case to a test.
+        - `[ ] ErrorTypeA: Validates Status Code X and Error Code Y`
+        - `[ ] ErrorTypeB: Validates Status Code Z and Error Code W`
+    -   Do not proceed to execution until this checklist is created.
+3.  **Authentication/Authorization Scenarios**: 
+    -   Unauthenticated (401 Unauthorized).
+    -   Insufficient permissions (403 Forbidden).
+4.  **Technical Failure Scenarios**: Unexpected exceptions (500 Internal Server Error).
+
+### Final Verification Step
+BEFORE marking a task as complete, you MUST:
+1.  Review your implemented test suite against the original **Domain Error Scenarios (Coverage Checklist)**.
+2.  Explicitly confirm in the final response that **ALL** error cases have corresponding test implementations.
+3.  Report any missed coverage explicitly.
+
+Update the module's documentation or test plan file (or use an `enter_plan_mode` block) to confirm these scenarios are identified.
+
+---
+
+## 11. Ktor testing checklist
 
 - [ ] Test each route for all expected status codes (200, 201, 400, 401, 403, 404, 422, 500)
 - [ ] Test request validation — missing fields, wrong types, out-of-range values
-- [ ] Test authentication / authorization separately from business logic
+- [ ] Test authentication / authorization — specifically verify 401 Unauthorized for unauthenticated requests and 403 Forbidden for insufficient permissions
 - [ ] Mock the `Service` layer with MockK; do not mock Ktor internals
 - [ ] Assert both `response.status` AND the response body shape
+- [ ] Validate response error code against the operation's `Error` interface (for all domain errors)
 - [ ] Use `routeTest`
+
 
 ---
 

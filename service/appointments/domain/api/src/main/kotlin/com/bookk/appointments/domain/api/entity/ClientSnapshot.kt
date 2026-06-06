@@ -4,7 +4,7 @@ import kotlinx.serialization.Serializable
 import kotlin.uuid.Uuid
 
 @Serializable
-class ClientSnapshot(
+data class ClientSnapshot(
     val id: Uuid,
     val fullName: String,
     val phone: String,

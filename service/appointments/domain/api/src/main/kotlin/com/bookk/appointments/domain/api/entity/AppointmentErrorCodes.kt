@@ -5,4 +5,6 @@ object AppointmentErrorCodes {
 
     const val REQUEST_EXISTS = BASE + 1
     const val TIME_NOT_ALLOWED = BASE + 2
+    const val DATE_NOT_ALLOWED = BASE + 3
+    const val APPOINTMENT_EXISTS = BASE + 4
 }

@@ -80,19 +80,6 @@ internal class GetAppointmentsTest {
         given()
         val useCase: GetAppointments = mockk()
         val businessId = Uuid.random()
-        val userId = Uuid.random()
-        val appointments = listOf(
-            Appointment(
-                id = Uuid.random(),
-                userId = userId,
-                businessId = businessId,
-                client = ClientSnapshot(Uuid.random(), "Full Name", "123456789", "test@example.com"),
-                service = ServiceSnapshot(Uuid.random(), "Service Name", Uuid.random(), Money.parse("USD 100"), duration = 30.minutes),
-                date = Instant.fromEpochMilliseconds(0),
-                note = "test"
-            )
-        )
-        coEvery { useCase.invoke(userId, businessId) } returns Result.success(appointments)
 
         setupApplication(
             extension = {
@@ -116,5 +103,40 @@ internal class GetAppointmentsTest {
 
         then()
         assertEquals(HttpStatusCode.Unauthorized, response.status)
+    }
+
+    @Test
+    fun `should return failure when getting appointments fails`() = routeTest {
+        given()
+        val useCase: GetAppointments = mockk()
+        val businessId = Uuid.random()
+        val userId = Uuid.random()
+
+        coEvery { useCase.invoke(userId, businessId) } returns Result.failure(Exception("Database error"))
+
+        setupApplication(
+            extension = {
+                install(Authentication) {
+                    provider {
+                        authenticate { context ->
+                            context.principal(AppPrincipal(Uuid.random(), userId, Uuid.random()))
+                        }
+                    }
+                }
+            },
+            diModule = module {
+                single { useCase }
+            },
+            routeUnderTest = {
+                appointment()
+            }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.get(AppointmentsRouting.Api.Appointments(businessId = businessId))
+
+        then()
+        assertEquals(HttpStatusCode.InternalServerError, response.status)
     }
 }

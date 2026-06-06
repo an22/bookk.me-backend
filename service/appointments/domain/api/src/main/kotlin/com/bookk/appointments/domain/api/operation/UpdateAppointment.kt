@@ -1,19 +1,19 @@
 package com.bookk.appointments.domain.api.operation
 
+import com.bookk.appointments.domain.api.entity.Appointment
 import com.bookk.appointments.domain.api.entity.AppointmentErrorCodes
-import com.bookk.appointments.domain.api.entity.AppointmentRequest
 import com.bookk.core.domain.entity.BusinessError
 import io.ktor.http.HttpStatusCode
 import kotlin.uuid.Uuid
 
-interface CreateAppointmentRequest {
-    suspend operator fun invoke(userId: Uuid, request: AppointmentRequest): Result<Unit>
+interface UpdateAppointment {
+    suspend operator fun invoke(userId: Uuid, appointment: Appointment): Result<Appointment>
 
     sealed interface Error {
-        class RequestForThisTimeExists : BusinessError(
+        class AppointmentForThisTimeExists : BusinessError(
             statusCode = HttpStatusCode.UnprocessableEntity.value,
-            code = AppointmentErrorCodes.REQUEST_EXISTS,
-            message = "Request for this time already exists"
+            code = AppointmentErrorCodes.APPOINTMENT_EXISTS,
+            message = "Appointment for this time already exists"
         ), Error
 
         class RequestForThisTimeNotAllowed : BusinessError(

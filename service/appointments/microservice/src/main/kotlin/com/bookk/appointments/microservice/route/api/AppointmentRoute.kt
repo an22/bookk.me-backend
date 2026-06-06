@@ -75,7 +75,7 @@ fun Routing.appointment() {
                 }
                 HttpStatusCode.UnprocessableEntity {
                     description = buildString {
-                        append(CreateAppointment.Error.RequestForThisTimeExists().asServerError().toString())
+                        append(CreateAppointment.Error.AppointmentForThisTimeExists().asServerError().toString())
                         append("\n\n")
                         append(CreateAppointment.Error.RequestForThisDateNotAllowed().asServerError().toString())
                         append("\n\n")

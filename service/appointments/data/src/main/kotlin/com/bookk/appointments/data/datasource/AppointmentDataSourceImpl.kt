@@ -7,6 +7,7 @@ import com.bookk.appointments.domain.api.entity.Appointment
 import com.bookk.appointments.domain.api.entity.AppointmentRequest
 import com.bookk.appointments.domain.datasource.AppointmentDataSource
 import com.bookk.core.data.DataSource
+import com.bookk.core.domain.entity.Error
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.greater
@@ -35,6 +36,11 @@ internal class AppointmentDataSourceImpl : DataSource(), AppointmentDataSource {
 
     override suspend fun create(request: AppointmentRequest): Appointment = dbQuery {
         AppointmentEntity.new(request).domain()
+    }
+
+    override suspend fun update(appointment: Appointment): Appointment = dbQuery {
+        AppointmentEntity.findByIdAndUpdate(appointment)
+            ?.domain() ?: throw Error.NotFound()
     }
 
     override suspend fun delete(appointment: Appointment) = dbQuery<Unit> {

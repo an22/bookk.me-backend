@@ -84,23 +84,23 @@ internal class AppointmentEntity(id: EntityID<UUID>) : UUIDEntity(id) {
             note = request.note
         }
 
-        fun findByIdAndUpdate(request: Appointment) = findByIdAndUpdate(request.id.toJavaUuid()) {
-            it.userId = request.userId.toJavaUuid()
-            it.businessId = EntityID(request.businessId.toJavaUuid(), table = BusinessHasAppointments)
-            it.clientId = request.client.id.toJavaUuid()
-            it.clientName = request.client.fullName
-            it.clientPhone = request.client.phone
-            it.clientEmail = request.client.email
-            it.serviceId = request.service.id.toJavaUuid()
-            it.serviceName = request.service.name
-            it.serviceGroupId = request.service.groupId.toJavaUuid()
-            it.priceCurrency = request.service.price.currencyUnit.code
-            it.priceUnscaled = request.service.price.amount.unscaledValue().longValueExact()
-            it.priceScale = request.service.price.scale
-            it.durationMinutes = request.service.duration.inWholeMinutes
-            it.dateStart = request.date
-            it.dateEnd = request.date + request.service.duration
-            it.note = request.note
+        fun findByIdAndUpdate(appointment: Appointment) = findByIdAndUpdate(appointment.id.toJavaUuid()) {
+            it.userId = appointment.userId.toJavaUuid()
+            it.businessId = EntityID(appointment.businessId.toJavaUuid(), table = BusinessHasAppointments)
+            it.clientId = appointment.client.id.toJavaUuid()
+            it.clientName = appointment.client.fullName
+            it.clientPhone = appointment.client.phone
+            it.clientEmail = appointment.client.email
+            it.serviceId = appointment.service.id.toJavaUuid()
+            it.serviceName = appointment.service.name
+            it.serviceGroupId = appointment.service.groupId.toJavaUuid()
+            it.priceCurrency = appointment.service.price.currencyUnit.code
+            it.priceUnscaled = appointment.service.price.amount.unscaledValue().longValueExact()
+            it.priceScale = appointment.service.price.scale
+            it.durationMinutes = appointment.service.duration.inWholeMinutes
+            it.dateStart = appointment.date
+            it.dateEnd = appointment.date + appointment.service.duration
+            it.note = appointment.note
         }
     }
 }

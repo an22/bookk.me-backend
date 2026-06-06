@@ -25,12 +25,14 @@ internal class CreateAppointmentRequestImpl(
         request: AppointmentRequest
     ): Result<Unit> = transactionManager.transaction {
         val settings = settingsDataSource.getForUpdate(request.businessId) ?: throw Error.NotFound()
-        if (settings.automaticApproval) {
-            createAppointment(userId, request)
-        }
         permissionsDataSource.getPermissions(userId, request.businessId).assert(ObjectPermission.WRITE)
-        if (!settings.isInWorkday(request.date)) throw CreateAppointmentRequest.Error.RequestForThisDateNotAllowed()
-        if (!settings.isInWorktime(request.date)) throw CreateAppointmentRequest.Error.RequestForThisTimeNotAllowed()
+        if (settings.automaticApproval) {
+            return@transaction createAppointment(userId, request)
+                .map { Unit }
+                .getOrThrow()
+        }
+        if (settings.isInWorkday(request.date)) throw CreateAppointmentRequest.Error.RequestForThisDateNotAllowed()
+        if (settings.isInWorktime(request.date)) throw CreateAppointmentRequest.Error.RequestForThisTimeNotAllowed()
         if (requestDataSource.hasOverlapsWith(request)) throw CreateAppointmentRequest.Error.RequestForThisTimeExists()
         requestDataSource.create(request)
     }

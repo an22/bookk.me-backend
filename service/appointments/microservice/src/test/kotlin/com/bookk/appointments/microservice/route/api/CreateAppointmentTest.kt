@@ -1,10 +1,12 @@
 package com.bookk.appointments.microservice.route.api
 
 import com.bookk.appointments.domain.api.entity.Appointment
+import com.bookk.appointments.domain.api.entity.AppointmentErrorCodes
 import com.bookk.appointments.domain.api.entity.ClientSnapshot
 import com.bookk.appointments.domain.api.entity.ServiceSnapshot
 import com.bookk.appointments.domain.api.operation.CreateAppointment
 import com.bookk.appointments.microservice.route.AppointmentsRouting
+import com.bookk.core.domain.entity.SimpleServerError
 import com.bookk.core.service.auth.AppPrincipal
 import com.bookk.core.service.test.createTestClient
 import com.bookk.core.service.test.routeTest
@@ -12,11 +14,13 @@ import com.bookk.core.service.test.setupApplication
 import com.bookk.core.test.given
 import com.bookk.core.test.then
 import com.bookk.core.test.whenn
+import io.ktor.client.call.body
 import io.ktor.client.plugins.resources.post
 import io.ktor.client.request.setBody
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.install
 import io.ktor.server.auth.Authentication
+import io.ktor.server.auth.bearer
 import io.mockk.coEvery
 import io.mockk.mockk
 import org.joda.money.Money
@@ -73,5 +77,151 @@ internal class CreateAppointmentTest {
 
         then()
         assertEquals(HttpStatusCode.OK, response.status, "Response status: ${response.status}")
+    }
+
+    @Test
+    fun `should return unprocessable entity when appointment exists`() = routeTest {
+        given()
+        val useCase: CreateAppointment = mockk()
+        val requestId = Uuid.random()
+        val userId = Uuid.random()
+
+        coEvery { useCase.invoke(userId, requestId) } returns Result.failure(CreateAppointment.Error.AppointmentForThisTimeExists())
+
+        setupApplication(
+            extension = {
+                install(Authentication) {
+                    provider {
+                        authenticate { context ->
+                            context.principal(AppPrincipal(Uuid.random(), userId, Uuid.random()))
+                        }
+                    }
+                }
+            },
+            diModule = module {
+                single { useCase }
+            },
+            routeUnderTest = {
+                appointment()
+            }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.post(AppointmentsRouting.Api.Appointment()) {
+            setBody(AppointmentRequestId(requestId))
+        }
+
+        then()
+        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
+        val body = response.body<SimpleServerError>()
+        assertEquals(AppointmentErrorCodes.APPOINTMENT_EXISTS, body.errorCode)
+    }
+
+    @Test
+    fun `should return unprocessable entity when time not allowed`() = routeTest {
+        given()
+        val useCase: CreateAppointment = mockk()
+        val requestId = Uuid.random()
+        val userId = Uuid.random()
+
+        coEvery { useCase.invoke(userId, requestId) } returns Result.failure(CreateAppointment.Error.RequestForThisTimeNotAllowed())
+
+        setupApplication(
+            extension = {
+                install(Authentication) {
+                    provider {
+                        authenticate { context ->
+                            context.principal(AppPrincipal(Uuid.random(), userId, Uuid.random()))
+                        }
+                    }
+                }
+            },
+            diModule = module {
+                single { useCase }
+            },
+            routeUnderTest = {
+                appointment()
+            }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.post(AppointmentsRouting.Api.Appointment()) {
+            setBody(AppointmentRequestId(requestId))
+        }
+
+        then()
+        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
+        val body = response.body<SimpleServerError>()
+        assertEquals(AppointmentErrorCodes.TIME_NOT_ALLOWED, body.errorCode)
+    }
+
+    @Test
+    fun `should return unprocessable entity when date not allowed`() = routeTest {
+        given()
+        val useCase: CreateAppointment = mockk()
+        val requestId = Uuid.random()
+        val userId = Uuid.random()
+
+        coEvery { useCase.invoke(userId, requestId) } returns Result.failure(CreateAppointment.Error.RequestForThisDateNotAllowed())
+
+        setupApplication(
+            extension = {
+                install(Authentication) {
+                    provider {
+                        authenticate { context ->
+                            context.principal(AppPrincipal(Uuid.random(), userId, Uuid.random()))
+                        }
+                    }
+                }
+            },
+            diModule = module {
+                single { useCase }
+            },
+            routeUnderTest = {
+                appointment()
+            }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.post(AppointmentsRouting.Api.Appointment()) {
+            setBody(AppointmentRequestId(requestId))
+        }
+
+        then()
+        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
+        val body = response.body<SimpleServerError>()
+        assertEquals(AppointmentErrorCodes.DATE_NOT_ALLOWED, body.errorCode)
+    }
+
+    @Test
+    fun `should return unauthorized when creating appointment without authentication`() = routeTest {
+        given()
+        val useCase: CreateAppointment = mockk()
+
+        setupApplication(
+            extension = {
+                install(Authentication) {
+                    bearer { authenticate { null } }
+                }
+            },
+            diModule = module {
+                single { useCase }
+            },
+            routeUnderTest = {
+                appointment()
+            }
+        )
+        
+        whenn()
+        val client = createTestClient()
+        val response = client.post(AppointmentsRouting.Api.Appointment()) {
+            setBody(AppointmentRequestId(Uuid.random()))
+        }
+
+        then()
+        assertEquals(HttpStatusCode.Unauthorized, response.status)
     }
 }

@@ -8,5 +8,6 @@ interface AppointmentDataSource {
     suspend fun hasOverlapsWith(request: AppointmentRequest): Boolean
     suspend fun create(request: AppointmentRequest): Appointment
     suspend fun delete(appointment: Appointment)
+    suspend fun update(appointment: Appointment): Appointment
     suspend fun getAll(businessId: Uuid): List<Appointment>
 }

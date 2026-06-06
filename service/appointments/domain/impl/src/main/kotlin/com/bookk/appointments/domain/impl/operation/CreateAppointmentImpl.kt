@@ -36,9 +36,9 @@ internal class CreateAppointmentImpl(
     private suspend fun createAppointment(userId: Uuid, request: AppointmentRequest): Appointment {
         val settings = settingsDataSource.getForUpdate(request.businessId) ?: throw Error.NotFound()
         permissionsDataSource.getPermissions(userId, request.businessId).assert(ObjectPermission.WRITE)
-        if (!settings.isInWorkday(request.date)) throw CreateAppointment.Error.RequestForThisDateNotAllowed()
-        if (!settings.isInWorktime(request.date)) throw CreateAppointment.Error.RequestForThisTimeNotAllowed()
-        if (appointmentDataSource.hasOverlapsWith(request)) throw CreateAppointment.Error.RequestForThisTimeExists()
+        if (settings.isInWorkday(request.date)) throw CreateAppointment.Error.RequestForThisDateNotAllowed()
+        if (settings.isInWorktime(request.date)) throw CreateAppointment.Error.RequestForThisTimeNotAllowed()
+        if (appointmentDataSource.hasOverlapsWith(request)) throw CreateAppointment.Error.AppointmentForThisTimeExists()
         return appointmentDataSource.create(request)
     }
 }

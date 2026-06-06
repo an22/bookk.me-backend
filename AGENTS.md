@@ -27,6 +27,8 @@ All routes in `microservice/` must be tested using `routeTest`.
   - Use typed resource classes (e.g., `UserRouting.Api.User.Me()`) for request building.
   - DO NOT EDIT bookk-server/core/src/testFixtures/kotlin/com/bookk/core/test/Test.kt
   - To create unauthorized test, in AuthenticationPlugin use `bearer { authenticate { null } }`
+  - SUT must be created for every test instance separately, no instance sharing
+  - Do not share mocks between unit tests
 
 ### 2. Implementation & Data Tests
 - **Operations**: Test domain operation implementations using pure JUnit/MockK in `domain/impl`.
@@ -443,14 +445,30 @@ class PostValidateRegistrationTest {
 
 
 
-### Ktor testing checklist
+## Mandatory Testing Strategy (Contract-First)
+
+For every new module, feature, or route, you MUST enumerate the following test scenarios BEFORE writing code:
+1.  **Success Scenarios**: The "Happy Path".
+2.  **Domain Error Scenarios**: Explicitly list all `sealed interface Error` types defined in the operation. Each MUST have a dedicated test case that validates both the status code and the error code in the response body.
+3.  **Authentication/Authorization Scenarios**: 
+    -   Unauthenticated (401 Unauthorized).
+    -   Insufficient permissions (403 Forbidden).
+4.  **Technical Failure Scenarios**: Unexpected exceptions (500 Internal Server Error).
+
+Update the module's documentation or test plan file (or use an `enter_plan_mode` block) to confirm these scenarios are identified.
+
+---
+
+## 11. Ktor testing checklist
 
 - [ ] Test each route for all expected status codes (200, 201, 400, 401, 403, 404, 422, 500)
 - [ ] Test request validation — missing fields, wrong types, out-of-range values
-- [ ] Test authentication / authorization separately from business logic
+- [ ] Test authentication / authorization — specifically verify 401 Unauthorized for unauthenticated requests and 403 Forbidden for insufficient permissions
 - [ ] Mock the `Service` layer with MockK; do not mock Ktor internals
 - [ ] Assert both `response.status` AND the response body shape
+- [ ] Validate response error code against the operation's `Error` interface (for all domain errors)
 - [ ] Use `routeTest`
+
 
 ---
 

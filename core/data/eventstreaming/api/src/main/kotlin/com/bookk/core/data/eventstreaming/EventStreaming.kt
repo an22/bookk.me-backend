@@ -43,6 +43,13 @@ inline fun <reified T : Any, K> Consumer<K>.registerReceiver(
     return registerReceiver(topic, typeOf<T>(), onEvent)
 }
 
+inline fun <reified T : Any, K, R> Consumer<K>.registerResultReceiver(
+    topic: K,
+    noinline onEvent: suspend (T) -> Result<R>
+): Consumer<K> {
+    return registerReceiver(topic, typeOf<T>()) { it: T -> onEvent(it).getOrThrow() }
+}
+
 typealias StandardEventProducer = Producer<String>
 
 typealias StandardEventConsumer = Consumer<String>

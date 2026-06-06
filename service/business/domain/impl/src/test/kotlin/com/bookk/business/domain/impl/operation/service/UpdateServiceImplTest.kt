@@ -47,7 +47,7 @@ internal class UpdateServiceImplTest {
         val userId = Uuid.random()
         val service = createTestService()
         
-        coEvery { businessDataSource.getPermission(userId, service.businessId) } returns ObjectPermission.WRITE.int
+        coEvery { businessDataSource.getPermission(userId, service.businessId) } returns ObjectPermission.EDIT.int
         coEvery { serviceDataSource.editService(service) } returns service
 
         whenn()

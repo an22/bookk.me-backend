@@ -47,7 +47,7 @@ internal class CreateServiceImplTest {
         val userId = Uuid.random()
         val service = createTestService()
         
-        coEvery { businessDataSource.getPermission(userId, service.businessId) } returns ObjectPermission.WRITE.int
+        coEvery { businessDataSource.getPermission(userId, service.businessId) } returns ObjectPermission.EDIT.int
         coEvery { serviceDataSource.createService(service) } returns service
 
         whenn()

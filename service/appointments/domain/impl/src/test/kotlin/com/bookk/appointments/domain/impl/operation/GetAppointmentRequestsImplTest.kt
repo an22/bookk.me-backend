@@ -1,6 +1,7 @@
 package com.bookk.appointments.domain.impl.operation
 
 import com.bookk.appointments.domain.api.entity.AppointmentRequest
+import com.bookk.appointments.domain.api.entity.AppointmentRequestStatus
 import com.bookk.appointments.domain.api.entity.ClientSnapshot
 import com.bookk.appointments.domain.api.entity.ServiceSnapshot
 import com.bookk.appointments.domain.datasource.AppointmentRequestDataSource
@@ -49,7 +50,9 @@ internal class GetAppointmentRequestsImplTest {
                 client = ClientSnapshot(Uuid.random(), "Client Name", "phone", "client@example.com"),
                 service = ServiceSnapshot(Uuid.random(), "Service Name", Uuid.random(), Money.of(CurrencyUnit.of("USD"), 10.0), 30.minutes),
                 date = Instant.fromEpochMilliseconds(0),
-                note = "Note"
+                note = "Note",
+                status = AppointmentRequestStatus.PENDING,
+                declineReason = ""
             )
         )
 

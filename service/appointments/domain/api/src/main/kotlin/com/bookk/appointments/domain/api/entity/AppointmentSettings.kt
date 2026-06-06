@@ -10,7 +10,7 @@ import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
 @Serializable
-class AppointmentSettings(
+data class AppointmentSettings(
     val id: Uuid,
     val businessId: Uuid,
     val timeZone: TimeZone,
@@ -21,6 +21,9 @@ class AppointmentSettings(
     val inBetweenBreakInMinutes: Int,
     val appointmentNote: String
 ) {
+    companion object {
+        fun stub(businessId: Uuid = Uuid.random()) = AppointmentSettings(businessId)
+    }
 
     constructor(businessId: Uuid) : this(
         id = Uuid.random(),

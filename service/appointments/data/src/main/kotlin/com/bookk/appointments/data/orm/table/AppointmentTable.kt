@@ -1,5 +1,6 @@
 package com.bookk.appointments.data.orm.table
 
+import com.bookk.appointments.domain.api.entity.AppointmentStatus
 import com.bookk.core.data.database.BaseUUIDTable
 import org.jetbrains.exposed.v1.core.ReferenceOption
 import org.jetbrains.exposed.v1.datetime.timestamp
@@ -21,6 +22,8 @@ object AppointmentTable: BaseUUIDTable("appointment") {
     val dateStart = timestamp("date_start")
     val dateEnd = timestamp("date_end")
     val note = varchar("note",2048)
+    val status = enumeration("status", AppointmentStatus::class)
+    val cancellationReason = varchar("cancellation_reason",2048)
 
     init {
         index(true, userId, businessId, dateStart)

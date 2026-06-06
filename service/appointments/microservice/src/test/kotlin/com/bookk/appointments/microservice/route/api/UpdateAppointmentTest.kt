@@ -2,6 +2,7 @@ package com.bookk.appointments.microservice.route.api
 
 import com.bookk.appointments.domain.api.entity.Appointment
 import com.bookk.appointments.domain.api.entity.AppointmentErrorCodes
+import com.bookk.appointments.domain.api.entity.AppointmentStatus
 import com.bookk.appointments.domain.api.entity.ClientSnapshot
 import com.bookk.appointments.domain.api.entity.ServiceSnapshot
 import com.bookk.appointments.domain.api.operation.UpdateAppointment
@@ -40,7 +41,9 @@ internal class UpdateAppointmentTest {
         client = ClientSnapshot(Uuid.random(), "Name", "123", "a@b.com"),
         service = ServiceSnapshot(Uuid.random(), "Svc", Uuid.random(), Money.parse("USD 100"), 30.minutes),
         date = Instant.fromEpochMilliseconds(0),
-        note = "Note"
+        note = "Note",
+        status = AppointmentStatus.SCHEDULED,
+        cancellationReason = ""
     )
 
     @Test

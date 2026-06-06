@@ -3,6 +3,7 @@ package com.bookk.appointments.data.orm.entity
 import com.bookk.appointments.data.orm.table.AppointmentRequestTable
 import com.bookk.appointments.data.orm.table.BusinessHasAppointments
 import com.bookk.appointments.domain.api.entity.AppointmentRequest
+import com.bookk.appointments.domain.api.entity.AppointmentRequestStatus
 import com.bookk.appointments.domain.api.entity.ClientSnapshot
 import com.bookk.appointments.domain.api.entity.ServiceSnapshot
 import com.bookk.core.data.DecoratorUUIDEntityClass
@@ -35,6 +36,8 @@ internal class AppointmentRequestEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var dateStart by AppointmentRequestTable.dateStart
     var dateEnd by AppointmentRequestTable.dateEnd
     var note by AppointmentRequestTable.note
+    var status by AppointmentRequestTable.status
+    var declineReason by AppointmentRequestTable.declineReason
 
     fun domain(): AppointmentRequest {
         return AppointmentRequest(
@@ -58,7 +61,9 @@ internal class AppointmentRequestEntity(id: EntityID<UUID>) : UUIDEntity(id) {
                 duration = durationMinutes.minutes
             ),
             date = dateStart,
-            note = note
+            note = note,
+            status = status,
+            declineReason = declineReason
         )
     }
 
@@ -81,6 +86,8 @@ internal class AppointmentRequestEntity(id: EntityID<UUID>) : UUIDEntity(id) {
             dateStart = request.date
             dateEnd = request.date + request.service.duration
             note = request.note
+            status = AppointmentRequestStatus.PENDING
+            declineReason = request.declineReason
         }
 
         fun findByIdAndUpdate(request: AppointmentRequest) = findByIdAndUpdate(request.id.toJavaUuid()) {
@@ -100,6 +107,8 @@ internal class AppointmentRequestEntity(id: EntityID<UUID>) : UUIDEntity(id) {
             it.dateStart = request.date
             it.dateEnd = request.date + request.service.duration
             it.note = request.note
+            it.status = request.status
+            it.declineReason = request.declineReason
         }
     }
 }

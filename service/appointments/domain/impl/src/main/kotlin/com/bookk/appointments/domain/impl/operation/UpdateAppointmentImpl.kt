@@ -19,7 +19,7 @@ internal class UpdateAppointmentImpl(
 ) : UpdateAppointment {
     override suspend fun invoke(userId: Uuid, appointment: Appointment): Result<Appointment> = transactionManager.transaction {
         val settings = settingsDataSource.getForUpdate(appointment.businessId) ?: throw Error.NotFound()
-        permissionsDataSource.getPermissions(userId, appointment.businessId).assert(ObjectPermission.WRITE)
+        permissionsDataSource.getPermissions(userId, appointment.businessId).assert(ObjectPermission.EDIT)
         appointmentDataSource.update(appointment)
         if (settings.isInWorkday(appointment.date)) throw UpdateAppointment.Error.RequestForThisDateNotAllowed()
         if (settings.isInWorktime(appointment.date)) throw UpdateAppointment.Error.RequestForThisTimeNotAllowed()

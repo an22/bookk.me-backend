@@ -7,6 +7,7 @@ plugins {
 
 dependencies {
     api(libs.kotlin.datetime)
+    api(libs.ktor.logging)
     implementation(libs.kotlin.coroutines)
     implementation(libs.kotlin.std)
     testImplementation(libs.kotlin.test)

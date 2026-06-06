@@ -5,6 +5,7 @@ import com.bookk.appointments.data.orm.table.AppointmentRequestTable
 import com.bookk.appointments.data.orm.table.AppointmentTable
 import com.bookk.appointments.domain.api.entity.Appointment
 import com.bookk.appointments.domain.api.entity.AppointmentRequest
+import com.bookk.appointments.domain.api.entity.AppointmentStatus
 import com.bookk.appointments.domain.datasource.AppointmentDataSource
 import com.bookk.core.data.DataSource
 import com.bookk.core.domain.entity.Error
@@ -60,10 +61,17 @@ internal class AppointmentDataSourceImpl : DataSource(), AppointmentDataSource {
             ?.domain() ?: throw Error.NotFound()
     }
 
-    override suspend fun delete(appointment: Appointment) = dbQuery<Unit> {
+    override suspend fun delete(id: Uuid) = dbQuery<Unit> {
         AppointmentTable.deleteWhere {
-            AppointmentTable.id eq appointment.id.toJavaUuid()
+            AppointmentTable.id eq id.toJavaUuid()
         }
+    }
+
+    override suspend fun cancel(id: Uuid, reason: String): Appointment = dbQuery {
+        AppointmentEntity.findByIdAndUpdate(id.toJavaUuid()) {
+            it.status = AppointmentStatus.CANCELLED
+            it.cancellationReason = reason
+        }?.domain() ?: throw Error.NotFound()
     }
 
     override suspend fun getAll(businessId: Uuid): List<Appointment> = dbQuery {

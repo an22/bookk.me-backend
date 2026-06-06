@@ -18,7 +18,7 @@ internal class EditSettingsImpl(
         userId: Uuid,
         settings: AppointmentSettings
     ): Result<Unit> = transactionManager.transaction {
-        permissionsSource.getPermissions(userId, settings.businessId).assert(ObjectPermission.WRITE)
+        permissionsSource.getPermissions(userId, settings.businessId).assert(ObjectPermission.EDIT)
         settingsSource.update(settings)
     }
 }

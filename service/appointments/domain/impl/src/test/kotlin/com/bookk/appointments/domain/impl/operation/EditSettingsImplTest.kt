@@ -37,7 +37,7 @@ internal class EditSettingsImplTest {
         val settings = mockk<AppointmentSettings>()
 
         coEvery { settings.businessId } returns businessId
-        coEvery { permissionsSource.getPermissions(userId, businessId) } returns ObjectPermission.WRITE.int
+        coEvery { permissionsSource.getPermissions(userId, businessId) } returns ObjectPermission.EDIT.int
         coEvery { settingsSource.update(settings) } returns settings
 
         whenn()

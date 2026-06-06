@@ -71,4 +71,5 @@ include(":service:appointments:domain:api")
 include(":service:appointments:domain:impl")
 include(":service:appointments:data:source")
 include(":service:appointments:data")
+include(":service:appointments:client")
 

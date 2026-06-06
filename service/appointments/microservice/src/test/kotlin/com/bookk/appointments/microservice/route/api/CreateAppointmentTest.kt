@@ -2,6 +2,7 @@ package com.bookk.appointments.microservice.route.api
 
 import com.bookk.appointments.domain.api.entity.Appointment
 import com.bookk.appointments.domain.api.entity.AppointmentErrorCodes
+import com.bookk.appointments.domain.api.entity.AppointmentStatus
 import com.bookk.appointments.domain.api.entity.ClientSnapshot
 import com.bookk.appointments.domain.api.entity.ServiceSnapshot
 import com.bookk.appointments.domain.api.operation.CreateAppointment
@@ -46,7 +47,9 @@ internal class CreateAppointmentTest {
             client = ClientSnapshot(Uuid.random(), "Full Name", "123456789", "test@example.com"),
             service = ServiceSnapshot(Uuid.random(), "Service Name", Uuid.random(), Money.parse("USD 100"), duration = 30.minutes),
             date = Instant.fromEpochMilliseconds(0),
-            note = "test"
+            note = "test",
+            status = AppointmentStatus.SCHEDULED,
+            cancellationReason = ""
         )
 
         coEvery { useCase.invoke(userId, requestId) } returns Result.success(appointment)

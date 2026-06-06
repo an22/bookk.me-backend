@@ -31,7 +31,7 @@ internal class DeleteServiceImplTest {
         val businessId = Uuid.random()
         val id = Uuid.random()
         
-        coEvery { businessDataSource.getPermission(userId, businessId) } returns ObjectPermission.WRITE.int
+        coEvery { businessDataSource.getPermission(userId, businessId) } returns ObjectPermission.EDIT.int
 
         whenn()
         val result = sut(userId, businessId, id)

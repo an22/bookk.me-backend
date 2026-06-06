@@ -10,6 +10,7 @@ interface AppointmentRequestDataSource {
     suspend fun create(request: AppointmentRequest): AppointmentRequest
     suspend fun update(request: AppointmentRequest): AppointmentRequest
     suspend fun delete(request: AppointmentRequest)
+    suspend fun approve(request: AppointmentRequest)
 
     suspend fun hasOverlapsWith(request: AppointmentRequest): Boolean
 }

@@ -3,6 +3,7 @@ package com.bookk.appointments.microservice.route.api
 import com.bookk.appointments.domain.api.entity.Appointment
 import com.bookk.appointments.domain.api.operation.CreateAppointment
 import com.bookk.appointments.domain.api.operation.GetAppointments
+import com.bookk.appointments.domain.api.operation.UpdateAppointment
 import com.bookk.appointments.microservice.route.AppointmentsRouting.Api
 import com.bookk.core.domain.entity.SimpleServerError
 import com.bookk.core.domain.entity.asServerError
@@ -16,6 +17,8 @@ import io.ktor.server.auth.principal
 import io.ktor.server.request.receive
 import io.ktor.server.resources.get
 import io.ktor.server.resources.post
+import io.ktor.server.resources.put
+import io.ktor.server.response.respond
 import io.ktor.server.routing.Routing
 import io.ktor.server.routing.application
 import io.ktor.server.routing.openapi.describe
@@ -30,6 +33,49 @@ internal class AppointmentRequestId(
 
 fun Routing.appointment() {
     authenticate {
+        put<Api.Appointment.Id> {
+            val principal = requireNotNull(call.principal<AppPrincipal>())
+            val body = call.receive<Appointment>()
+            if (it.id != body.id) {
+                call.respond(HttpStatusCode.BadRequest, "Invalid request")
+            } else {
+                val updateAppointment by application.inject<UpdateAppointment>()
+
+                call.respondWith(
+                    updateAppointment(
+                        userId = principal.userId,
+                        appointment = body
+                    )
+                )
+            }
+        }.describe {
+            summary = "Update appointment"
+            description = "Update appointment entity(reschedule supported)"
+            tag("appointment")
+            requestBody {
+                required = true
+                schema = jsonSchema<Appointment>()
+                ContentType.Application.ProtoBuf()
+            }
+            responses {
+                HttpStatusCode.OK {
+                    description = "Updated appointment entity"
+                    schema = jsonSchema<Appointment>()
+                    ContentType.Application.ProtoBuf()
+                }
+                HttpStatusCode.UnprocessableEntity {
+                    description = buildString {
+                        append(UpdateAppointment.Error.AppointmentForThisTimeExists().asServerError().toString())
+                        append("\n\n")
+                        append(UpdateAppointment.Error.RequestForThisDateNotAllowed().asServerError().toString())
+                        append("\n\n")
+                        append(UpdateAppointment.Error.RequestForThisTimeNotAllowed().asServerError().toString())
+                    }
+                    schema = jsonSchema<SimpleServerError>()
+                    ContentType.Application.ProtoBuf()
+                }
+            }
+        }
         get<Api.Appointments> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
             val getAppointments by application.inject<GetAppointments>()

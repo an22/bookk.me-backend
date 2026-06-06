@@ -12,6 +12,7 @@ import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.greater
 import org.jetbrains.exposed.v1.core.less
+import org.jetbrains.exposed.v1.core.neq
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.select
 import kotlin.uuid.Uuid
@@ -27,6 +28,22 @@ internal class AppointmentDataSourceImpl : DataSource(), AppointmentDataSource {
                         .and(AppointmentTable.userId eq request.userId.toJavaUuid())
                         .and(AppointmentTable.dateStart.less(request.date + request.service.duration))
                         .and(AppointmentTable.dateEnd.greater(request.date))
+                }
+                .limit(1)
+                .empty()
+                .not()
+        }
+    }
+
+    override suspend fun hasOverlapsWith(appointment: Appointment): Boolean {
+        return dbQuery {
+            AppointmentTable.select(AppointmentTable.id)
+                .where {
+                    (AppointmentTable.businessId eq appointment.businessId.toJavaUuid())
+                        .and(AppointmentTable.userId eq appointment.userId.toJavaUuid())
+                        .and(AppointmentTable.dateStart.less(appointment.date + appointment.service.duration))
+                        .and(AppointmentTable.dateEnd.greater(appointment.date))
+                        .and(AppointmentTable.id neq appointment.id.toJavaUuid())
                 }
                 .limit(1)
                 .empty()

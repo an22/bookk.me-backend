@@ -70,6 +70,14 @@ Structure every test in three clearly separated phases:
 
 ---
 
+### 1. Core Principles (Continued)
+
+#### Test Isolation Mandate
+- **No Shared State**: SUT (System Under Test) and ALL mocks MUST be initialized *within* each individual test method.
+- **No Class-Level Sharing**: DO NOT initialize SUT or mocks as class properties. Shared state between tests leads to flaky, order-dependent behavior.
+
+---
+
 ## 2. Naming Conventions
 
 Use backtick test names for readable, sentence-style descriptions:
@@ -449,11 +457,22 @@ class PostValidateRegistrationTest {
 
 For every new module, feature, or route, you MUST enumerate the following test scenarios BEFORE writing code:
 1.  **Success Scenarios**: The "Happy Path".
-2.  **Domain Error Scenarios**: Explicitly list all `sealed interface Error` types defined in the operation. Each MUST have a dedicated test case that validates both the status code and the error code in the response body.
+2.  **Domain Error Scenarios (Coverage Checklist)**:
+    -   You MUST locate the `sealed interface Error` definition.
+    -   Create a **checklist** in your plan, mapping EVERY case to a test.
+        - `[ ] ErrorTypeA: Validates Status Code X and Error Code Y`
+        - `[ ] ErrorTypeB: Validates Status Code Z and Error Code W`
+    -   Do not proceed to execution until this checklist is created.
 3.  **Authentication/Authorization Scenarios**: 
     -   Unauthenticated (401 Unauthorized).
     -   Insufficient permissions (403 Forbidden).
 4.  **Technical Failure Scenarios**: Unexpected exceptions (500 Internal Server Error).
+
+### Final Verification Step
+BEFORE marking a task as complete, you MUST:
+1.  Review your implemented test suite against the original **Domain Error Scenarios (Coverage Checklist)**.
+2.  Explicitly confirm in the final response that **ALL** error cases have corresponding test implementations.
+3.  Report any missed coverage explicitly.
 
 Update the module's documentation or test plan file (or use an `enter_plan_mode` block) to confirm these scenarios are identified.
 

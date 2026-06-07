@@ -165,11 +165,9 @@ fun Routing.appointment() {
                 }
                 HttpStatusCode.UnprocessableEntity {
                     description = buildString {
-                        append(UpdateAppointment.Error.AppointmentForThisTimeExists().asServerError().toString())
+                        append(CancelAppointment.Error.AlreadyCancelled().asServerError().toString())
                         append("\n\n")
-                        append(UpdateAppointment.Error.RequestForThisDateNotAllowed().asServerError().toString())
-                        append("\n\n")
-                        append(UpdateAppointment.Error.RequestForThisTimeNotAllowed().asServerError().toString())
+                        append(CancelAppointment.Error.AlreadyCompleted().asServerError().toString())
                     }
                     schema = jsonSchema<SimpleServerError>()
                     ContentType.Application.ProtoBuf()

@@ -118,7 +118,12 @@ internal class UpdateAppointmentTest {
         val useCase: UpdateAppointment = mockk()
         val userId = Uuid.random()
 
-        coEvery { useCase.invoke(userId, any()) } returns Result.failure(UpdateAppointment.Error.AppointmentForThisTimeExists())
+        coEvery {
+            useCase.invoke(
+                userId,
+                any()
+            )
+        } returns Result.failure(UpdateAppointment.Error.AppointmentForThisTimeExists())
 
         setupApplication(
             extension = {
@@ -156,7 +161,12 @@ internal class UpdateAppointmentTest {
         val useCase: UpdateAppointment = mockk()
         val userId = Uuid.random()
 
-        coEvery { useCase.invoke(userId, any()) } returns Result.failure(UpdateAppointment.Error.RequestForThisTimeNotAllowed())
+        coEvery {
+            useCase.invoke(
+                userId,
+                any()
+            )
+        } returns Result.failure(UpdateAppointment.Error.RequestForThisTimeNotAllowed())
 
         setupApplication(
             extension = {
@@ -194,7 +204,12 @@ internal class UpdateAppointmentTest {
         val useCase: UpdateAppointment = mockk()
         val userId = Uuid.random()
 
-        coEvery { useCase.invoke(userId, any()) } returns Result.failure(UpdateAppointment.Error.RequestForThisDateNotAllowed())
+        coEvery {
+            useCase.invoke(
+                userId,
+                any()
+            )
+        } returns Result.failure(UpdateAppointment.Error.RequestForThisDateNotAllowed())
 
         setupApplication(
             extension = {

@@ -53,7 +53,7 @@ internal class CreateAppointmentRequestImpl(
     private suspend fun sendRequestCreatedNotification(request: AppointmentRequest) {
         val business = subscriptionDataSource.getBusinessSnapshot(request.businessId) ?: run {
             createAppointmentRequestLogger.error("No business with id ${request.businessId} exists")
-            return
+            throw Error.NotFound()
         }
         eventProducer.send(
             AppointmentEvent.RequestCreated(

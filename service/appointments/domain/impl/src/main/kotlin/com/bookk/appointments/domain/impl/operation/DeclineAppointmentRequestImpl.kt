@@ -1,10 +1,10 @@
 package com.bookk.appointments.domain.impl.operation
 
-import com.bookk.appointments.domain.api.entity.Appointment
 import com.bookk.appointments.domain.api.entity.AppointmentCancellation
-import com.bookk.appointments.domain.api.entity.AppointmentStatus
-import com.bookk.appointments.domain.api.operation.CancelAppointment
-import com.bookk.appointments.domain.datasource.AppointmentDataSource
+import com.bookk.appointments.domain.api.entity.AppointmentRequest
+import com.bookk.appointments.domain.api.entity.AppointmentRequestStatus
+import com.bookk.appointments.domain.api.operation.DeclineAppointmentRequest
+import com.bookk.appointments.domain.datasource.AppointmentRequestDataSource
 import com.bookk.appointments.domain.datasource.AppointmentSubscriptionDataSource
 import com.bookk.appointments.domain.datasource.PermissionsDataSource
 import com.bookk.core.data.eventstreaming.StandardEventProducer
@@ -18,41 +18,41 @@ import library.permissions.assert
 import org.slf4j.LoggerFactory
 import kotlin.uuid.Uuid
 
-private val declineAppointmentLogger = LoggerFactory.getLogger(DeclineAppointmentImpl::class.java)
+private val declineAppointmentRequestLogger = LoggerFactory.getLogger(DeclineAppointmentImpl::class.java)
 
-internal class DeclineAppointmentImpl(
-    private val appointmentDataSource: AppointmentDataSource,
+internal class DeclineAppointmentRequestImpl(
+    private val requestDataSource: AppointmentRequestDataSource,
     private val permissionsDataSource: PermissionsDataSource,
     private val subscriptionDataSource: AppointmentSubscriptionDataSource,
     private val eventProducer: StandardEventProducer,
     private val transactionManager: TransactionManager
-) : CancelAppointment {
+) : DeclineAppointmentRequest {
 
     override suspend fun invoke(userId: Uuid, cancellation: AppointmentCancellation): Result<Unit> = transactionManager.transaction {
         permissionsDataSource.getPermissions(userId, cancellation.businessId).assert(ObjectPermission.EDIT)
-        val appointment = appointmentDataSource.get(cancellation.id)
-        val cancelled = when (appointment.status) {
-            AppointmentStatus.COMPLETED -> throw CancelAppointment.Error.AlreadyCompleted()
-            AppointmentStatus.CANCELLED -> throw CancelAppointment.Error.AlreadyCancelled()
-            AppointmentStatus.SCHEDULED -> appointmentDataSource.cancel(cancellation.id, cancellation.reason)
+        val appointment = requestDataSource.get(cancellation.id) ?: throw Error.NotFound()
+        val declined = when (appointment.status) {
+            AppointmentRequestStatus.APPROVED -> throw DeclineAppointmentRequest.Error.AlreadyApproved()
+            AppointmentRequestStatus.DECLINED -> throw DeclineAppointmentRequest.Error.AlreadyDeclined()
+            AppointmentRequestStatus.PENDING -> requestDataSource.decline(cancellation.id, cancellation.reason)
         }
-        sendAppointmentCancelledEvent(cancelled)
+        sendRequestDeclinedEvent(declined)
     }
 
-    private suspend fun sendAppointmentCancelledEvent(appointment: Appointment) {
+    private suspend fun sendRequestDeclinedEvent(appointment: AppointmentRequest) {
         val business = subscriptionDataSource.getBusinessSnapshot(appointment.businessId) ?: run {
-            declineAppointmentLogger.error("No business with id ${appointment.businessId} exists")
+            declineAppointmentRequestLogger.error("No business with id ${appointment.businessId} exists")
             throw Error.NotFound()
         }
         eventProducer.send(
-            AppointmentEvent.Cancelled(
+            AppointmentEvent.RequestRejected(
                 from = appointment.date,
                 to = appointment.date + appointment.service.duration,
                 businessName = business.name,
                 executioner = "TODO",
                 address = business.address,
                 price = moneyFormatter.print(appointment.service.price),
-                reason = appointment.cancellationReason
+                declineReason = appointment.declineReason
             )
         )
     }

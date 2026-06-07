@@ -66,7 +66,7 @@ class KafkaEventConsumer(
                     eventIdempotencyStorage.markEventAsProcessed(event.topic, event.idempotencyKey)
                     logger.debug("Event successfully processed for topic: {}. Event: {}", event.topic, event)
                 }.onFailure { error ->
-                    dltProducer.send(DltEvent(event.toString(), event.topic))
+                    dltProducer.send(DltEvent(event.toString(), "${event.topic}_dlt"))
                     logger.error("Error while processing event for topic: ${event.topic}. Event: $event, $error")
                 }
             }

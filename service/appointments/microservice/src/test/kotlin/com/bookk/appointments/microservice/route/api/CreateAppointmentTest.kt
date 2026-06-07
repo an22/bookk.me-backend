@@ -45,7 +45,13 @@ internal class CreateAppointmentTest {
             userId = userId,
             businessId = Uuid.random(),
             client = ClientSnapshot(Uuid.random(), "Full Name", "123456789", "test@example.com"),
-            service = ServiceSnapshot(Uuid.random(), "Service Name", Uuid.random(), Money.parse("USD 100"), duration = 30.minutes),
+            service = ServiceSnapshot(
+                Uuid.random(),
+                "Service Name",
+                Uuid.random(),
+                Money.parse("USD 100"),
+                duration = 30.minutes
+            ),
             date = Instant.fromEpochMilliseconds(0),
             note = "test",
             status = AppointmentStatus.SCHEDULED,
@@ -71,7 +77,7 @@ internal class CreateAppointmentTest {
                 appointment()
             }
         )
-        
+
         whenn()
         val client = createTestClient()
         val response = client.post(AppointmentsRouting.Api.Appointment()) {
@@ -89,7 +95,12 @@ internal class CreateAppointmentTest {
         val requestId = Uuid.random()
         val userId = Uuid.random()
 
-        coEvery { useCase.invoke(userId, requestId) } returns Result.failure(CreateAppointment.Error.AppointmentForThisTimeExists())
+        coEvery {
+            useCase.invoke(
+                userId,
+                requestId
+            )
+        } returns Result.failure(CreateAppointment.Error.AppointmentForThisTimeExists())
 
         setupApplication(
             extension = {
@@ -128,7 +139,12 @@ internal class CreateAppointmentTest {
         val requestId = Uuid.random()
         val userId = Uuid.random()
 
-        coEvery { useCase.invoke(userId, requestId) } returns Result.failure(CreateAppointment.Error.RequestForThisTimeNotAllowed())
+        coEvery {
+            useCase.invoke(
+                userId,
+                requestId
+            )
+        } returns Result.failure(CreateAppointment.Error.RequestForThisTimeNotAllowed())
 
         setupApplication(
             extension = {
@@ -167,7 +183,12 @@ internal class CreateAppointmentTest {
         val requestId = Uuid.random()
         val userId = Uuid.random()
 
-        coEvery { useCase.invoke(userId, requestId) } returns Result.failure(CreateAppointment.Error.RequestForThisDateNotAllowed())
+        coEvery {
+            useCase.invoke(
+                userId,
+                requestId
+            )
+        } returns Result.failure(CreateAppointment.Error.RequestForThisDateNotAllowed())
 
         setupApplication(
             extension = {
@@ -217,7 +238,7 @@ internal class CreateAppointmentTest {
                 appointment()
             }
         )
-        
+
         whenn()
         val client = createTestClient()
         val response = client.post(AppointmentsRouting.Api.Appointment()) {

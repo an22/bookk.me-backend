@@ -472,7 +472,13 @@ For every new module, feature, or route, you MUST enumerate the following test s
 ### Final Verification Step
 BEFORE marking a task as complete, you MUST:
 1.  Review your implemented test suite against the original **Domain Error Scenarios (Coverage Checklist)** for BOTH domain and route tests.
-2.  Explicitly confirm in the final response that **ALL** error cases have corresponding test implementations.
+2.  Include a **Final Coverage Report** in your final response confirming that **ALL** items from the checklist have been implemented and verified.
+    Example Format:
+    ```
+    ### Final Coverage Report
+    - [x] ErrorTypeA: Validated Status Code X and Error Code Y
+    - [x] ErrorTypeB: Validated Status Code Z and Error Code W
+    ```
 3.  Report any missed coverage explicitly.
 
 Update the module's documentation or test plan file (or use an `enter_plan_mode` block) to confirm these scenarios are identified.

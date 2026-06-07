@@ -49,6 +49,7 @@ interface AppointmentEvent : EventStreaming.Event<String> {
         val businessName: String,
         val executioner: String,
         val price: String,
+        val declineReason: String,
         override val idempotencyKey: String = Uuid.random().toString()
     ) : AppointmentEvent {
         override val topic: String = TOPIC

@@ -42,7 +42,13 @@ internal class GetAppointmentsTest {
                 userId = userId,
                 businessId = businessId,
                 client = ClientSnapshot(Uuid.random(), "Full Name", "123456789", "test@example.com"),
-                service = ServiceSnapshot(Uuid.random(), "Service Name", Uuid.random(), Money.parse("USD 100"), duration = 30.minutes),
+                service = ServiceSnapshot(
+                    Uuid.random(),
+                    "Service Name",
+                    Uuid.random(),
+                    Money.parse("USD 100"),
+                    duration = 30.minutes
+                ),
                 date = Instant.fromEpochMilliseconds(0),
                 note = "test",
                 status = AppointmentStatus.SCHEDULED,

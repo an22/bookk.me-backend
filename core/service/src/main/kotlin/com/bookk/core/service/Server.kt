@@ -63,6 +63,7 @@ fun startServer(
             ) {
                 port = AppLevelConstants.sslPort
             }
+            enableHttp2 = true
         },
         module = {
             val prometheusRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)

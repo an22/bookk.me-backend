@@ -2,7 +2,7 @@ package com.bookk.appointments.microservice.route.api
 
 import com.bookk.appointments.domain.api.entity.AppointmentCancellation
 import com.bookk.appointments.domain.api.entity.AppointmentErrorCodes
-import com.bookk.appointments.domain.api.operation.CancelAppointment
+import com.bookk.appointments.domain.api.operation.DeclineAppointmentRequest
 import com.bookk.appointments.microservice.route.AppointmentsRouting.Api
 import com.bookk.core.domain.entity.SimpleServerError
 import com.bookk.core.service.auth.AppPrincipal
@@ -26,16 +26,16 @@ import org.junit.jupiter.api.Test
 import org.koin.dsl.module
 import kotlin.uuid.Uuid
 
-internal class DeclineAppointmentTest {
+internal class DeclineAppointmentRequestTest {
 
     @Test
-    fun `should cancel appointment successfully`() = routeTest {
+    fun `should decline request successfully`() = routeTest {
         given()
-        val useCase: CancelAppointment = mockk()
+        val useCase: DeclineAppointmentRequest = mockk()
         val userId = Uuid.random()
         val businessId = Uuid.random()
-        val appointmentId = Uuid.random()
-        val cancellation = AppointmentCancellation(id = appointmentId, businessId = businessId, reason = "Reason")
+        val requestId = Uuid.random()
+        val cancellation = AppointmentCancellation(id = requestId, businessId = businessId, reason = "Reason")
 
         coEvery { useCase.invoke(userId, cancellation) } returns Result.success(Unit)
 
@@ -59,7 +59,7 @@ internal class DeclineAppointmentTest {
 
         whenn()
         val client = createTestClient()
-        val response = client.post(Api.Appointment.Cancel(id = appointmentId)) {
+        val response = client.post(Api.Appointment.RequestCancel(id = requestId)) {
             setBody(cancellation)
         }
 
@@ -68,19 +68,19 @@ internal class DeclineAppointmentTest {
     }
 
     @Test
-    fun `should return unprocessable entity when already cancelled`() = routeTest {
+    fun `should return unprocessable entity when already declined`() = routeTest {
         given()
-        val useCase: CancelAppointment = mockk()
+        val useCase: DeclineAppointmentRequest = mockk()
         val userId = Uuid.random()
-        val appointmentId = Uuid.random()
-        val cancellation = AppointmentCancellation(id = appointmentId, businessId = Uuid.random(), reason = "Reason")
+        val requestId = Uuid.random()
+        val cancellation = AppointmentCancellation(id = requestId, businessId = Uuid.random(), reason = "Reason")
 
         coEvery {
             useCase.invoke(
                 userId,
                 cancellation
             )
-        } returns Result.failure(CancelAppointment.Error.AlreadyCancelled())
+        } returns Result.failure(DeclineAppointmentRequest.Error.AlreadyDeclined())
 
         setupApplication(
             extension = {
@@ -102,30 +102,30 @@ internal class DeclineAppointmentTest {
 
         whenn()
         val client = createTestClient()
-        val response = client.post(Api.Appointment.Cancel(id = appointmentId)) {
+        val response = client.post(Api.Appointment.RequestCancel(id = requestId)) {
             setBody(cancellation)
         }
 
         then()
         assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
         val body = response.body<SimpleServerError>()
-        assertEquals(AppointmentErrorCodes.APPOINTMENT_ALREADY_CANCELED, body.errorCode)
+        assertEquals(AppointmentErrorCodes.REQUEST_ALREADY_DECLINED, body.errorCode)
     }
 
     @Test
-    fun `should return unprocessable entity when already completed`() = routeTest {
+    fun `should return unprocessable entity when already approved`() = routeTest {
         given()
-        val useCase: CancelAppointment = mockk()
+        val useCase: DeclineAppointmentRequest = mockk()
         val userId = Uuid.random()
-        val appointmentId = Uuid.random()
-        val cancellation = AppointmentCancellation(id = appointmentId, businessId = Uuid.random(), reason = "Reason")
+        val requestId = Uuid.random()
+        val cancellation = AppointmentCancellation(id = requestId, businessId = Uuid.random(), reason = "Reason")
 
         coEvery {
             useCase.invoke(
                 userId,
                 cancellation
             )
-        } returns Result.failure(CancelAppointment.Error.AlreadyCompleted())
+        } returns Result.failure(DeclineAppointmentRequest.Error.AlreadyApproved())
 
         setupApplication(
             extension = {
@@ -147,20 +147,20 @@ internal class DeclineAppointmentTest {
 
         whenn()
         val client = createTestClient()
-        val response = client.post(Api.Appointment.Cancel(id = appointmentId)) {
+        val response = client.post(Api.Appointment.RequestCancel(id = requestId)) {
             setBody(cancellation)
         }
 
         then()
         assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
         val body = response.body<SimpleServerError>()
-        assertEquals(AppointmentErrorCodes.APPOINTMENT_ALREADY_COMPLETED, body.errorCode)
+        assertEquals(AppointmentErrorCodes.REQUEST_ALREADY_APPROVED, body.errorCode)
     }
 
     @Test
-    fun `should return unauthorized when cancelling appointment without authentication`() = routeTest {
+    fun `should return unauthorized when declining request without authentication`() = routeTest {
         given()
-        val useCase: CancelAppointment = mockk()
+        val useCase: DeclineAppointmentRequest = mockk()
 
         setupApplication(
             extension = {
@@ -178,10 +178,9 @@ internal class DeclineAppointmentTest {
 
         whenn()
         val client = createTestClient()
-        val response =
-            client.post(Api.Appointment.Cancel(parent = Api.Appointment(parent = Api()), id = Uuid.random())) {
-                setBody(AppointmentCancellation(id = Uuid.random(), businessId = Uuid.random(), reason = "Reason"))
-            }
+        val response = client.post(Api.Appointment.RequestCancel(id = Uuid.random())) {
+            setBody(AppointmentCancellation(id = Uuid.random(), businessId = Uuid.random(), reason = "Reason"))
+        }
 
         then()
         assertEquals(HttpStatusCode.Unauthorized, response.status)

@@ -52,6 +52,13 @@ internal class AppointmentRequestDataSourceImpl : DataSource(), AppointmentReque
         }
     }
 
+    override suspend fun decline(id: Uuid, reason: String) = dbQuery<AppointmentRequest> {
+        AppointmentRequestEntity.findByIdAndUpdate(id.toJavaUuid()) {
+            it.status = AppointmentRequestStatus.DECLINED
+            it.declineReason = reason
+        }?.domain() ?: throw Error.NotFound()
+    }
+
     override suspend fun hasOverlapsWith(request: AppointmentRequest): Boolean {
         return dbQuery {
             AppointmentRequestTable.select(AppointmentTable.id)

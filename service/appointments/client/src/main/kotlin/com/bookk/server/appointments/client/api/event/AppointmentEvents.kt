@@ -20,7 +20,7 @@ interface AppointmentEvent : EventStreaming.Event<String> {
         override val topic: String = TOPIC
 
         companion object {
-            const val TOPIC = "appointment.request_approved"
+            const val TOPIC = "appointment.request_created"
         }
     }
 

@@ -1,6 +1,8 @@
 package com.bookk.appointments.microservice.route.api
 
 import com.bookk.appointments.domain.api.entity.Appointment
+import com.bookk.appointments.domain.api.entity.AppointmentCancellation
+import com.bookk.appointments.domain.api.operation.CancelAppointment
 import com.bookk.appointments.domain.api.operation.CreateAppointment
 import com.bookk.appointments.domain.api.operation.GetAppointments
 import com.bookk.appointments.domain.api.operation.UpdateAppointment
@@ -126,6 +128,48 @@ fun Routing.appointment() {
                         append(CreateAppointment.Error.RequestForThisDateNotAllowed().asServerError().toString())
                         append("\n\n")
                         append(CreateAppointment.Error.RequestForThisTimeNotAllowed().asServerError().toString())
+                    }
+                    schema = jsonSchema<SimpleServerError>()
+                    ContentType.Application.ProtoBuf()
+                }
+            }
+        }
+
+        post<Api.Appointment.Cancel> {
+            val principal = requireNotNull(call.principal<AppPrincipal>())
+            val body = call.receive<AppointmentCancellation>()
+            if (it.id != body.id) {
+                call.respond(HttpStatusCode.BadRequest, "Invalid request")
+            } else {
+                val cancelAppointment by application.inject<CancelAppointment>()
+
+                call.respondWith(
+                    cancelAppointment(
+                        userId = principal.userId,
+                        cancellation = body
+                    )
+                )
+            }
+        }.describe {
+            summary = "Cancel appointment"
+            description = "Cancel appointment with specific reason"
+            tag("appointment")
+            requestBody {
+                required = true
+                schema = jsonSchema<AppointmentCancellation>()
+                ContentType.Application.ProtoBuf()
+            }
+            responses {
+                HttpStatusCode.NoContent {
+                    description = "Appointment canceled"
+                }
+                HttpStatusCode.UnprocessableEntity {
+                    description = buildString {
+                        append(UpdateAppointment.Error.AppointmentForThisTimeExists().asServerError().toString())
+                        append("\n\n")
+                        append(UpdateAppointment.Error.RequestForThisDateNotAllowed().asServerError().toString())
+                        append("\n\n")
+                        append(UpdateAppointment.Error.RequestForThisTimeNotAllowed().asServerError().toString())
                     }
                     schema = jsonSchema<SimpleServerError>()
                     ContentType.Application.ProtoBuf()

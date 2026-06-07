@@ -2,6 +2,7 @@ package com.bookk.appointments.domain.impl.operation
 
 import com.bookk.appointments.domain.api.entity.Appointment
 import com.bookk.appointments.domain.api.entity.AppointmentCancellation
+import com.bookk.appointments.domain.api.entity.AppointmentStatus
 import com.bookk.appointments.domain.api.operation.CancelAppointment
 import com.bookk.appointments.domain.datasource.AppointmentDataSource
 import com.bookk.appointments.domain.datasource.AppointmentSubscriptionDataSource
@@ -25,10 +26,16 @@ internal class DeclineAppointmentImpl(
     private val eventProducer: StandardEventProducer,
     private val transactionManager: TransactionManager
 ) : CancelAppointment {
+
     override suspend fun invoke(userId: Uuid, cancellation: AppointmentCancellation): Result<Unit> = transactionManager.transaction {
         permissionsDataSource.getPermissions(userId, cancellation.businessId).assert(ObjectPermission.EDIT)
-        val appointment = appointmentDataSource.cancel(cancellation.id, cancellation.reason)
-        sendAppointmentCancelledEvent(appointment)
+        val appointment = appointmentDataSource.get(cancellation.id)
+        val cancelled = when (appointment.status) {
+            AppointmentStatus.COMPLETED -> throw CancelAppointment.Error.AlreadyCompleted()
+            AppointmentStatus.CANCELLED -> throw CancelAppointment.Error.AlreadyCancelled()
+            AppointmentStatus.SCHEDULED -> appointmentDataSource.cancel(cancellation.id, cancellation.reason)
+        }
+        sendAppointmentCancelledEvent(cancelled)
     }
 
     private suspend fun sendAppointmentCancelledEvent(appointment: Appointment) {

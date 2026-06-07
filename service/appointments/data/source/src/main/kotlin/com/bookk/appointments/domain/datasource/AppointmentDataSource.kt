@@ -5,6 +5,7 @@ import com.bookk.appointments.domain.api.entity.AppointmentRequest
 import kotlin.uuid.Uuid
 
 interface AppointmentDataSource {
+    suspend fun get(id: Uuid): Appointment
     suspend fun hasOverlapsWith(request: AppointmentRequest): Boolean
     suspend fun hasOverlapsWith(appointment: Appointment): Boolean
     suspend fun create(request: AppointmentRequest): Appointment

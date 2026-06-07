@@ -21,6 +21,11 @@ import kotlin.uuid.toJavaUuid
 
 internal class AppointmentDataSourceImpl : DataSource(), AppointmentDataSource {
 
+    override suspend fun get(id: Uuid): Appointment = dbQuery {
+        AppointmentEntity.findById(id.toJavaUuid())
+            ?.domain() ?: throw Error.NotFound()
+    }
+
     override suspend fun hasOverlapsWith(request: AppointmentRequest): Boolean {
         return dbQuery {
             AppointmentTable.select(AppointmentTable.id)

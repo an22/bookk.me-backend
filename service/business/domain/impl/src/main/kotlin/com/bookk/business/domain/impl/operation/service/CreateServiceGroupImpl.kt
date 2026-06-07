@@ -18,7 +18,7 @@ internal class CreateServiceGroupImpl(
     override suspend fun invoke(requestUserId: Uuid, service: ServiceGroup): Result<ServiceGroup> {
         if (service.name.isBlank()) return Result.failure(CreateServiceGroup.Error.ValidationError())
         return transactionManager.transaction {
-            businessDataSource.getPermission(requestUserId, service.businessId).assert(ObjectPermission.WRITE)
+            businessDataSource.getPermission(requestUserId, service.businessId).assert(ObjectPermission.EDIT)
             dataSource.createServiceGroup(service)
         }.onConstraintFailure {
             throw CreateServiceGroup.Error.ServiceGroupExist()

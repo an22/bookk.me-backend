@@ -2,6 +2,7 @@ package com.bookk.appointments.domain.impl.operation
 
 import com.bookk.appointments.domain.api.entity.Appointment
 import com.bookk.appointments.domain.api.entity.AppointmentSettings
+import com.bookk.appointments.domain.api.entity.AppointmentStatus
 import com.bookk.appointments.domain.api.entity.ClientSnapshot
 import com.bookk.appointments.domain.api.entity.ServiceSnapshot
 import com.bookk.appointments.domain.api.operation.UpdateAppointment
@@ -37,7 +38,9 @@ internal class UpdateAppointmentImplTest {
         client = ClientSnapshot(Uuid.random(), "Name", "123", "a@b.com"),
         service = ServiceSnapshot(Uuid.random(), "Svc", Uuid.random(), Money.of(CurrencyUnit.USD, 10.0), 30.minutes),
         date = Instant.fromEpochMilliseconds(0),
-        note = "Note"
+        note = "Note",
+        status = AppointmentStatus.SCHEDULED,
+        cancellationReason = ""
     )
 
     @Test
@@ -60,7 +63,7 @@ internal class UpdateAppointmentImplTest {
         coEvery { settingsDataSource.getForUpdate(testBusinessId) } returns settings
         coEvery { settings.isInWorkday(any()) } returns false
         coEvery { settings.isInWorktime(any()) } returns false
-        coEvery { permissionsDataSource.getPermissions(testUserId, testBusinessId) } returns ObjectPermission.WRITE.int
+        coEvery { permissionsDataSource.getPermissions(testUserId, testBusinessId) } returns ObjectPermission.EDIT.int
         coEvery { appointmentDataSource.update(any<Appointment>()) } returns testAppointment
         coEvery { appointmentDataSource.hasOverlapsWith(any<Appointment>()) } returns false
 
@@ -143,7 +146,7 @@ internal class UpdateAppointmentImplTest {
         coEvery { settingsDataSource.getForUpdate(testBusinessId) } returns settings
         coEvery { settings.isInWorkday(any()) } returns false
         coEvery { settings.isInWorktime(any()) } returns false
-        coEvery { permissionsDataSource.getPermissions(testUserId, testBusinessId) } returns ObjectPermission.WRITE.int
+        coEvery { permissionsDataSource.getPermissions(testUserId, testBusinessId) } returns ObjectPermission.EDIT.int
         coEvery { appointmentDataSource.update(any<Appointment>()) } returns testAppointment // Update is called BEFORE overlap check
         coEvery { appointmentDataSource.hasOverlapsWith(any<Appointment>()) } returns true 
 
@@ -173,7 +176,7 @@ internal class UpdateAppointmentImplTest {
         val settings = mockk<AppointmentSettings>()
         coEvery { settingsDataSource.getForUpdate(testBusinessId) } returns settings
         coEvery { settings.isInWorkday(any()) } returns true
-        coEvery { permissionsDataSource.getPermissions(testUserId, testBusinessId) } returns ObjectPermission.WRITE.int
+        coEvery { permissionsDataSource.getPermissions(testUserId, testBusinessId) } returns ObjectPermission.EDIT.int
         coEvery { appointmentDataSource.update(any()) } returns testAppointment // Update is called BEFORE workday check
 
         whenn()
@@ -203,7 +206,7 @@ internal class UpdateAppointmentImplTest {
         coEvery { settingsDataSource.getForUpdate(testBusinessId) } returns settings
         coEvery { settings.isInWorkday(any()) } returns false
         coEvery { settings.isInWorktime(any()) } returns true
-        coEvery { permissionsDataSource.getPermissions(testUserId, testBusinessId) } returns ObjectPermission.WRITE.int
+        coEvery { permissionsDataSource.getPermissions(testUserId, testBusinessId) } returns ObjectPermission.EDIT.int
         coEvery { appointmentDataSource.update(any()) } returns testAppointment // Update is called BEFORE worktime check
 
         whenn()

@@ -72,9 +72,9 @@ Structure every test in three clearly separated phases:
 
 ### 1. Core Principles (Continued)
 
-#### Test Isolation Mandate
-- **No Shared State**: SUT (System Under Test) and ALL mocks MUST be initialized *within* each individual test method.
-- **No Class-Level Sharing**: DO NOT initialize SUT or mocks as class properties. Shared state between tests leads to flaky, order-dependent behavior.
+#### Event Publication Mandate
+- **Event Verification**: If an operation triggers domain events (using `eventProducer.send`), you MUST include a unit test case that verifies the event is actually published.
+- **Verification Tool**: Use `coVerify(exactly = 1) { eventProducer.send(any(YourEvent::class), any()) }` to assert that the specific event is sent.
 
 ---
 
@@ -462,6 +462,7 @@ For every new module, feature, or route, you MUST enumerate the following test s
     -   Create a **checklist** in your plan, mapping EVERY case to a test.
         - `[ ] ErrorTypeA: Validates Status Code X and Error Code Y`
         - `[ ] ErrorTypeB: Validates Status Code Z and Error Code W`
+    -   **Route-Level Requirement**: For microservice routes, EACH domain error case MUST also have a corresponding test case at the route level, asserting the HTTP status code (e.g., 422 Unprocessable Entity) and the correct error code in the JSON response body (`SimpleServerError`).
     -   Do not proceed to execution until this checklist is created.
 3.  **Authentication/Authorization Scenarios**: 
     -   Unauthenticated (401 Unauthorized).
@@ -470,7 +471,7 @@ For every new module, feature, or route, you MUST enumerate the following test s
 
 ### Final Verification Step
 BEFORE marking a task as complete, you MUST:
-1.  Review your implemented test suite against the original **Domain Error Scenarios (Coverage Checklist)**.
+1.  Review your implemented test suite against the original **Domain Error Scenarios (Coverage Checklist)** for BOTH domain and route tests.
 2.  Explicitly confirm in the final response that **ALL** error cases have corresponding test implementations.
 3.  Report any missed coverage explicitly.
 

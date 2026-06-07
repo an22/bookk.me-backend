@@ -4,6 +4,7 @@ import com.bookk.appointments.data.orm.entity.AppointmentRequestEntity
 import com.bookk.appointments.data.orm.table.AppointmentRequestTable
 import com.bookk.appointments.data.orm.table.AppointmentTable
 import com.bookk.appointments.domain.api.entity.AppointmentRequest
+import com.bookk.appointments.domain.api.entity.AppointmentRequestStatus
 import com.bookk.appointments.domain.datasource.AppointmentRequestDataSource
 import com.bookk.core.data.DataSource
 import com.bookk.core.domain.entity.Error
@@ -13,6 +14,7 @@ import org.jetbrains.exposed.v1.core.greater
 import org.jetbrains.exposed.v1.core.less
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.update
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 
@@ -39,6 +41,14 @@ internal class AppointmentRequestDataSourceImpl : DataSource(), AppointmentReque
     override suspend fun delete(request: AppointmentRequest) = dbQuery<Unit> {
         AppointmentRequestTable.deleteWhere {
             AppointmentRequestTable.id eq request.id.toJavaUuid()
+        }
+    }
+
+    override suspend fun approve(request: AppointmentRequest) = dbQuery<Unit> {
+        AppointmentRequestTable.update(
+            where = { AppointmentRequestTable.id eq request.id.toJavaUuid() },
+        ) {
+            it[AppointmentRequestTable.status] = AppointmentRequestStatus.APPROVED
         }
     }
 

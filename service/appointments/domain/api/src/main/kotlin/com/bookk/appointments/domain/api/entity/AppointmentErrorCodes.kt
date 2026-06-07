@@ -7,4 +7,6 @@ object AppointmentErrorCodes {
     const val TIME_NOT_ALLOWED = BASE + 2
     const val DATE_NOT_ALLOWED = BASE + 3
     const val APPOINTMENT_EXISTS = BASE + 4
+    const val APPOINTMENT_ALREADY_CANCELED = BASE + 5
+    const val APPOINTMENT_ALREADY_COMPLETED = BASE + 6
 }

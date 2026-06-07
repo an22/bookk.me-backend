@@ -14,4 +14,14 @@ data class ServiceSnapshot(
     @Serializable(with = MoneySerializer::class)
     val price: Money,
     val duration: Duration
-)
+) {
+    companion object {
+        fun stub() = ServiceSnapshot(
+            id = Uuid.random(),
+            name = "Service Name",
+            groupId = Uuid.random(),
+            price = Money.parse("USD 100"),
+            duration = Duration.parse("30m")
+        )
+    }
+}

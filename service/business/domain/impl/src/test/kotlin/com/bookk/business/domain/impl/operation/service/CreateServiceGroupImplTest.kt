@@ -39,7 +39,7 @@ internal class CreateServiceGroupImplTest {
         val userId = Uuid.random()
         val group = createTestGroup()
 
-        coEvery { businessDataSource.getPermission(userId, group.businessId) } returns ObjectPermission.WRITE.int
+        coEvery { businessDataSource.getPermission(userId, group.businessId) } returns ObjectPermission.EDIT.int
         coEvery { serviceDataSource.createServiceGroup(group) } returns group
 
         whenn()

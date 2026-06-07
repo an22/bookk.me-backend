@@ -4,6 +4,7 @@ import com.bookk.appointments.data.orm.table.AppointmentTable
 import com.bookk.appointments.data.orm.table.BusinessHasAppointments
 import com.bookk.appointments.domain.api.entity.Appointment
 import com.bookk.appointments.domain.api.entity.AppointmentRequest
+import com.bookk.appointments.domain.api.entity.AppointmentStatus
 import com.bookk.appointments.domain.api.entity.ClientSnapshot
 import com.bookk.appointments.domain.api.entity.ServiceSnapshot
 import com.bookk.core.data.DecoratorUUIDEntityClass
@@ -36,6 +37,8 @@ internal class AppointmentEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var dateStart by AppointmentTable.dateStart
     var dateEnd by AppointmentTable.dateEnd
     var note by AppointmentTable.note
+    var status by AppointmentTable.status
+    var cancellationReason by AppointmentTable.cancellationReason
 
     fun domain(): Appointment {
         return Appointment(
@@ -59,7 +62,9 @@ internal class AppointmentEntity(id: EntityID<UUID>) : UUIDEntity(id) {
                 duration = durationMinutes.minutes
             ),
             date = dateStart,
-            note = note
+            note = note,
+            status = status,
+            cancellationReason = cancellationReason
         )
     }
 
@@ -82,6 +87,8 @@ internal class AppointmentEntity(id: EntityID<UUID>) : UUIDEntity(id) {
             dateStart = request.date
             dateEnd = request.date + request.service.duration
             note = request.note
+            status = AppointmentStatus.SCHEDULED
+            cancellationReason = ""
         }
 
         fun findByIdAndUpdate(appointment: Appointment) = findByIdAndUpdate(appointment.id.toJavaUuid()) {
@@ -101,6 +108,8 @@ internal class AppointmentEntity(id: EntityID<UUID>) : UUIDEntity(id) {
             it.dateStart = appointment.date
             it.dateEnd = appointment.date + appointment.service.duration
             it.note = appointment.note
+            it.status = appointment.status
+            it.cancellationReason = appointment.cancellationReason
         }
     }
 }

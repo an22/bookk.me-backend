@@ -1,6 +1,7 @@
 package com.bookk.appointments.domain.impl.operation
 
 import com.bookk.appointments.domain.api.entity.AppointmentSettings
+import com.bookk.appointments.domain.api.entity.BusinessSnapshot
 import com.bookk.appointments.domain.api.operation.EnableAppointmentsForBusiness
 import com.bookk.appointments.domain.datasource.AppointmentSettingsDataSource
 import com.bookk.appointments.domain.datasource.AppointmentSubscriptionDataSource
@@ -15,9 +16,9 @@ internal class EnableAppointmentsForBusinessImpl(
     private val permissionsDataSource: PermissionsDataSource,
     private val transactionManager: TransactionManager
 ) : EnableAppointmentsForBusiness {
-    override suspend fun invoke(userId: Uuid, businessId: Uuid): Result<Unit> = transactionManager.transaction {
-        subscriptionSource.attachBusiness(businessId)
-        permissionsDataSource.initPermissions(userId, businessId, ObjectPermission.OWNER.int)
-        settingsDataSource.create(AppointmentSettings(businessId))
+    override suspend fun invoke(userId: Uuid, snapshot: BusinessSnapshot): Result<Unit> = transactionManager.transaction {
+        subscriptionSource.attachBusiness(snapshot)
+        permissionsDataSource.initPermissions(userId, snapshot.id, ObjectPermission.OWNER.int)
+        settingsDataSource.create(AppointmentSettings(snapshot.id))
     }
 }

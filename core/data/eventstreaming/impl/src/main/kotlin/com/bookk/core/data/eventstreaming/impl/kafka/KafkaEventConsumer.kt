@@ -56,18 +56,23 @@ class KafkaEventConsumer(
         onEvent: suspend (T) -> Unit
     ): EventStreaming.Consumer<String> {
         receivers[topic] = {
-            val serializer = protoBuf.serializersModule.serializer(type)
-            val event = protoBuf.decodeFromByteArray(serializer, it) as T
-            if (!eventIdempotencyStorage.isEventProcessed(event.topic, event.idempotencyKey)) {
-                runCatching {
-                    logger.debug("Received event, Topic: {}. Event: {}", event.topic, event)
-                    onEvent(event)
-                }.onSuccess {
-                    eventIdempotencyStorage.markEventAsProcessed(event.topic, event.idempotencyKey)
-                    logger.debug("Event successfully processed for topic: {}. Event: {}", event.topic, event)
-                }.onFailure { error ->
-                    dltProducer.send(DltEvent(event.toString(), "${event.topic}_dlt"))
-                    logger.error("Error while processing event for topic: ${event.topic}. Event: $event, $error")
+            runCatching {
+                val serializer = protoBuf.serializersModule.serializer(type)
+                protoBuf.decodeFromByteArray(serializer, it) as T
+            }.onFailure {
+                logger.debug("Received unprocessable event, Topic: {}. Error: {}", topic, it.message)
+            }.onSuccess { event ->
+                if (!eventIdempotencyStorage.isEventProcessed(event.topic, event.idempotencyKey)) {
+                    runCatching {
+                        logger.debug("Received event, Topic: {}. Event: {}", event.topic, event)
+                        onEvent(event)
+                    }.onSuccess {
+                        eventIdempotencyStorage.markEventAsProcessed(event.topic, event.idempotencyKey)
+                        logger.debug("Event successfully processed for topic: {}. Event: {}", event.topic, event)
+                    }.onFailure { error ->
+                        dltProducer.send(DltEvent(event.toString(), "${event.topic}_dlt"))
+                        logger.error("Error while processing event for topic: ${event.topic}. Event: $event, $error")
+                    }
                 }
             }
         }
@@ -78,7 +83,10 @@ class KafkaEventConsumer(
         consumer.subscribe(receivers.keys)
         return flow {
             while (currentCoroutineContext().isActive) {
-                emit(consumer.poll(Duration.ofSeconds(1)))
+                val records = consumer.poll(Duration.ofSeconds(1))
+                if (!records.isEmpty) {
+                    emit(records)
+                }
             }
         }
             .onEach { records ->

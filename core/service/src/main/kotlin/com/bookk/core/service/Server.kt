@@ -13,10 +13,10 @@ import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.auth.Authentication
 import io.ktor.server.auth.jwt.jwt
+import io.ktor.server.cio.CIO
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.engine.sslConnector
 import io.ktor.server.metrics.micrometer.MicrometerMetrics
-import io.ktor.server.netty.Netty
 import io.ktor.server.plugins.calllogging.CallLogging
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.plugins.openapi.openAPI
@@ -48,7 +48,7 @@ fun startServer(
     modules: Routing.(Application) -> Unit
 ) {
     embeddedServer(
-        factory = Netty,
+        factory = CIO,
         configure = {
             val keystoreFile = File(AppLevelConstants.sslFile)
             val keyStorePass = AppLevelConstants.sslPass
@@ -63,7 +63,6 @@ fun startServer(
             ) {
                 port = AppLevelConstants.sslPort
             }
-            enableHttp2 = true
         },
         module = {
             val prometheusRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)

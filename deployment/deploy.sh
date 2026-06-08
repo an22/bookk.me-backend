@@ -29,8 +29,8 @@ echo "Manager User: $manager_user"
 echo "Using ssh key: $ssh_name"
 echo "Wireguard password: $wireguard_admin_password"
 
-docker network create -d overlay operational
-docker network create -d overlay agent_network
+docker network create --driver overlay --opt encrypted operational
+docker network create --driver overlay --opt encrypted agent_network
 
 ssh-add --apple-use-keychain "$HOME/.ssh/$ssh_name"
 

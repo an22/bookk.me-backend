@@ -20,7 +20,7 @@ internal fun Route.deleteAccount() {
          * Description: Delete user account and all associated data attached to current auth token
          * Tag: auth
          * Security: jwt
-         * RequestBody: application/x-protobuf [com.bookk.auth.domain.api.delete_account.entity.VerifyDeleteAccRequest]
+         * Body: application/x-protobuf [com.bookk.auth.domain.api.delete_account.entity.VerifyDeleteAccRequest]
          * Response: 200 application/x-protobuf Success
          */
         delete<Api.Auth.Account> {

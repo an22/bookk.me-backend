@@ -32,7 +32,7 @@ fun Route.businessCrud() {
          * Description: Create new business with specific name
          * Tag: business
          * Security: jwt
-         * RequestBody: application/x-protobuf [com.bookk.business.microservice.route.api.BusinessCreateRequest]
+         * Body: application/x-protobuf [com.bookk.business.microservice.route.api.BusinessCreateRequest]
          * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Create business errors:
          *  - BUSINESS_ALREADY_EXIST (Code 200001): Business already exist
          *  - BUSINESS_NAME_VALIDATION_ERROR (Code 200002): Business name invalid
@@ -55,7 +55,7 @@ fun Route.businessCrud() {
          * Description: Partially update business
          * Tag: business
          * Security: jwt
-         * RequestBody: application/x-protobuf [com.bookk.business.domain.api.business.entity.BusinessUpdateModel] Non-null fields will be updated
+         * Body: application/x-protobuf [com.bookk.business.domain.api.business.entity.BusinessUpdateModel] Non-null fields will be updated
          * Response: 204 application/x-protobuf No content
          */
         put<Api.Business.Id> {

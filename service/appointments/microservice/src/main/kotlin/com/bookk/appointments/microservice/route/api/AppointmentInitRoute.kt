@@ -22,7 +22,7 @@ fun Routing.appointmentInit() {
          * Description: Enable appointments for business
          * Tag: appointment
          * Security: jwt
-         * RequestBody: application/x-protobuf [com.bookk.appointments.domain.api.entity.BusinessSnapshot]
+         * Body: application/x-protobuf [com.bookk.appointments.domain.api.entity.BusinessSnapshot]
          * Response: 204 application/x-protobuf Created appointment entity
          */
         post<Api.Appointment.Enable> {

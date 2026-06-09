@@ -26,7 +26,7 @@ fun Route.serviceGroupCrud() {
          * Description: Creates a new service group that can be presented to the clients
          * Tag: service_group
          * Security: jwt
-         * RequestBody: application/x-protobuf [com.bookk.business.domain.api.service.entity.ServiceGroup]
+         * Body: application/x-protobuf [com.bookk.business.domain.api.service.entity.ServiceGroup]
          * Response: 200 application/x-protobuf [com.bookk.business.domain.api.service.entity.ServiceGroup] Created service entity
          * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Create service group errors:
          *  - BUSINESS_SERVICE_GROUP_EXISTS (Code 200010): Service group with this name already exists

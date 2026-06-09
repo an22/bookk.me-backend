@@ -23,7 +23,7 @@ fun Route.clientCrud() {
          * Description: Create new client within business
          * Tag: business
          * Security: jwt
-         * RequestBody: application/x-protobuf [com.bookk.business.domain.api.client.entity.ClientRemote]
+         * Body: application/x-protobuf [com.bookk.business.domain.api.client.entity.ClientRemote]
          * Response: 200 application/x-protobuf [com.bookk.business.domain.api.client.entity.Client] Created client entity
          * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Create client errors:
          *  - BUSINESS_CLIENT_EXISTS (Code 200004): Client with this phone already exists

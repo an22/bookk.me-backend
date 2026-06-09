@@ -39,7 +39,7 @@ fun Routing.requests() {
          * Description: Create new appointment request
          * Tag: appointment
          * Security: jwt
-         * RequestBody: application/x-protobuf [com.bookk.appointments.domain.api.entity.AppointmentRequest]
+         * Body: application/x-protobuf [com.bookk.appointments.domain.api.entity.AppointmentRequest]
          * Response: 204 application/x-protobuf Request successfully created
          * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Create appointment request errors:
          *  - REQUEST_EXISTS (Code 300001): Request for this time already exists
@@ -64,7 +64,7 @@ fun Routing.requests() {
          * Description: Cancel appointment request with specific reason
          * Tag: appointment
          * Security: jwt
-         * RequestBody: application/x-protobuf [com.bookk.appointments.domain.api.entity.AppointmentCancellation]
+         * Body: application/x-protobuf [com.bookk.appointments.domain.api.entity.AppointmentCancellation]
          * Response: 204 application/x-protobuf Appointment request canceled
          * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Cancel appointment request errors:
          *  - REQUEST_ALREADY_DECLINED (Code 300007): Appointment request already declined

@@ -37,7 +37,7 @@ internal fun Route.postContactForm() {
          * Description: Create contact/support form
          * Tag: user
          * Security: jwt
-         * RequestBody: application/x-protobuf [com.bookk.user.microservice.route.api.ContactFormBody] Contact form created by client
+         * Body: application/x-protobuf [com.bookk.user.microservice.route.api.ContactFormBody] Contact form created by client
          * Response: 201 application/x-protobuf Contact form submitted
          */
         post<Api.User.ContactUs> {

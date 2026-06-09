@@ -20,7 +20,7 @@ fun Routing.settings() {
          * Description: Update appointment settings
          * Tag: appointment
          * Security: jwt
-         * RequestBody: application/x-protobuf [com.bookk.appointments.domain.api.entity.AppointmentSettings]
+         * Body: application/x-protobuf [com.bookk.appointments.domain.api.entity.AppointmentSettings]
          * Response: 200 application/x-protobuf [com.bookk.appointments.domain.api.entity.AppointmentSettings] Updated settings entity
          */
         put<Api.Appointment.Settings> {

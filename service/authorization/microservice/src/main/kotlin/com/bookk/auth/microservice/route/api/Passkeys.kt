@@ -53,7 +53,7 @@ internal fun Route.passkeyOperations() {
          * Description: Adds new passkey to account represented by current auth method
          * Tag: auth
          * Security: jwt
-         * RequestBody: application/x-protobuf [com.bookk.auth.domain.api.identification.entity.AddPasskeyRequest] Passkey verification payload
+         * Body: application/x-protobuf [com.bookk.auth.domain.api.identification.entity.AddPasskeyRequest] Passkey verification payload
          * Response: 201 application/x-protobuf Passkey created
          * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Passkey errors:
          *  - LAST_PASSKEY (Code 200006): Can't delete passkey if it's the only one registered.

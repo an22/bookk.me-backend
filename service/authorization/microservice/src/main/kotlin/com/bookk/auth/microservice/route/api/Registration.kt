@@ -17,7 +17,7 @@ internal fun Route.registration() {
      * Summary: Get sign up challenge
      * Description: Get sign up challenge for passkey creation.
      * Tag: auth
-     * RequestBody: application/x-protobuf [com.bookk.auth.domain.api.registration.entity.CreateAccountRequest] User parameters
+     * Body: application/x-protobuf [com.bookk.auth.domain.api.registration.entity.CreateAccountRequest] User parameters
      * Response: 200 application/x-protobuf [com.bookk.auth.domain.api.registration.entity.RegistrationChallengeResponse] Validation challenge returned
      * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Registration errors:
      *  - EMAIL_EXIST (Code 200001): This email already exists
@@ -33,7 +33,7 @@ internal fun Route.registration() {
      * Summary: Validate passkey data
      * Description: Validate passkey data from native credentials API
      * Tag: auth
-     * RequestBody: application/x-protobuf [com.bookk.auth.domain.api.registration.entity.VerifyAccountCreationRequest] User parameters
+     * Body: application/x-protobuf [com.bookk.auth.domain.api.registration.entity.VerifyAccountCreationRequest] User parameters
      * Response: 200 application/x-protobuf [com.bookk.auth.domain.api.token.entity.AuthTokens] User has been created
      * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Registration errors:
      *  - USER_ALREADY_EXIST (Code 200003): User with this email already exist

@@ -28,7 +28,7 @@ fun Route.serviceCrud() {
          * Description: Creates a new service offering that can be presented to the clients
          * Tag: service
          * Security: jwt
-         * RequestBody: application/x-protobuf [com.bookk.business.domain.api.service.entity.Service]
+         * Body: application/x-protobuf [com.bookk.business.domain.api.service.entity.Service]
          * Response: 200 application/x-protobuf [com.bookk.business.domain.api.service.entity.Service] Created service entity
          * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Create service errors:
          *  - BUSINESS_SERVICE_EXISTS (Code 200007): Service with this name already exists
@@ -52,7 +52,7 @@ fun Route.serviceCrud() {
          * Description: Updates a new service offering that can be presented to the clients
          * Tag: service
          * Security: jwt
-         * RequestBody: application/x-protobuf [com.bookk.business.domain.api.service.entity.Service]
+         * Body: application/x-protobuf [com.bookk.business.domain.api.service.entity.Service]
          * Response: 200 application/x-protobuf [com.bookk.business.domain.api.service.entity.Service] Updated service entity
          * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Update service errors
          */

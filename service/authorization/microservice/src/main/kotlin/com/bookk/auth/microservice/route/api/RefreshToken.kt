@@ -19,7 +19,7 @@ internal fun Route.postRefreshToken() {
          * Description: This request generates new access/refresh pair.
          * Tag: auth
          * Security: jwt
-         * RequestBody: application/x-protobuf [com.bookk.auth.domain.api.token.entity.RefreshTokenInfo] Refresh token info
+         * Body: application/x-protobuf [com.bookk.auth.domain.api.token.entity.RefreshTokenInfo] Refresh token info
          * Response: 200 application/x-protobuf [com.bookk.auth.domain.api.token.entity.AuthTokens] New access/refresh pair
          * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Refresh errors:
          *  - INVALID_CREDENTIALS (Code 400001): Invalid refresh token

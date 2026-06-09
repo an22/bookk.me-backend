@@ -27,7 +27,7 @@ internal fun Route.signIn() {
      * Summary: Verify sign in
      * Description: Verify user-signed challenge and return authentication tokens
      * Tag: auth
-     * RequestBody: application/x-protobuf [com.bookk.auth.domain.api.authentication.entity.VerifySignInRequest]
+     * Body: application/x-protobuf [com.bookk.auth.domain.api.authentication.entity.VerifySignInRequest]
      * Response: 200 application/x-protobuf [com.bookk.auth.domain.api.token.entity.AuthTokens] Authentication tokens
      * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Sign in errors:
      *  - CHALLENGE_WINDOW_EXPIRED (Code 300001): Challenge window expired

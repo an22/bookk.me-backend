@@ -6,13 +6,9 @@ import com.bookk.appointments.domain.api.operation.CreateAppointmentRequest
 import com.bookk.appointments.domain.api.operation.DeclineAppointmentRequest
 import com.bookk.appointments.domain.api.operation.GetAppointmentRequests
 import com.bookk.appointments.microservice.route.AppointmentsRouting.Api
-import com.bookk.core.domain.entity.SimpleServerError
-import com.bookk.core.domain.entity.asServerError
 import com.bookk.core.service.auth.AppPrincipal
 import com.bookk.core.service.enity.respondWith
-import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
-import io.ktor.openapi.jsonSchema
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.principal
 import io.ktor.server.request.receive
@@ -21,28 +17,35 @@ import io.ktor.server.resources.post
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Routing
 import io.ktor.server.routing.application
-import io.ktor.server.routing.openapi.describe
 import org.koin.ktor.ext.inject
 
 fun Routing.requests() {
     authenticate {
+        /**
+         * Summary: Get appointment requests
+         * Tag: appointment
+         * Security: jwt
+         * Response: 200 application/x-protobuf [kotlin.collections.List<com.bookk.appointments.domain.api.entity.AppointmentRequest>] List of appointment requests
+         */
         get<Api.Appointment.Requests> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
             val getRequests by application.inject<GetAppointmentRequests>()
 
             call.respondWith(getRequests(principal.userId, it.businessId))
-        }.describe {
-            summary = "Get appointment requests"
-            tag("appointment")
-            responses {
-                HttpStatusCode.OK {
-                    description = "List of appointment requests"
-                    schema = jsonSchema<List<AppointmentRequest>>()
-                    ContentType.Application.ProtoBuf()
-                }
-            }
         }
 
+        /**
+         * Summary: Create appointment request
+         * Description: Create new appointment request
+         * Tag: appointment
+         * Security: jwt
+         * RequestBody: application/x-protobuf [com.bookk.appointments.domain.api.entity.AppointmentRequest]
+         * Response: 204 application/x-protobuf Request successfully created
+         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Create appointment request errors:
+         *  - REQUEST_EXISTS (Code 300001): Request for this time already exists
+         *  - DATE_NOT_ALLOWED (Code 300003): Request for this date not allowed
+         *  - TIME_NOT_ALLOWED (Code 300002): Request for this time not allowed
+         */
         post<Api.Appointment.Request> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
             val body = call.receive<AppointmentRequest>()
@@ -54,33 +57,19 @@ fun Routing.requests() {
                     request = body
                 )
             )
-        }.describe {
-            summary = "Create appointment request"
-            description = "Create new appointment request"
-            tag("appointment")
-            requestBody {
-                required = true
-                schema = jsonSchema<AppointmentRequest>()
-                ContentType.Application.ProtoBuf()
-            }
-            responses {
-                HttpStatusCode.NoContent {
-                    description = "Request successfully created"
-                }
-                HttpStatusCode.UnprocessableEntity {
-                    description = buildString {
-                        append(CreateAppointmentRequest.Error.RequestForThisTimeExists().asServerError().toString())
-                        append("\n\n")
-                        append(CreateAppointmentRequest.Error.RequestForThisDateNotAllowed().asServerError().toString())
-                        append("\n\n")
-                        append(CreateAppointmentRequest.Error.RequestForThisTimeNotAllowed().asServerError().toString())
-                    }
-                    schema = jsonSchema<SimpleServerError>()
-                    ContentType.Application.ProtoBuf()
-                }
-            }
         }
 
+        /**
+         * Summary: Cancel appointment request
+         * Description: Cancel appointment request with specific reason
+         * Tag: appointment
+         * Security: jwt
+         * RequestBody: application/x-protobuf [com.bookk.appointments.domain.api.entity.AppointmentCancellation]
+         * Response: 204 application/x-protobuf Appointment request canceled
+         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Cancel appointment request errors:
+         *  - REQUEST_ALREADY_DECLINED (Code 300007): Appointment request already declined
+         *  - REQUEST_ALREADY_APPROVED (Code 300008): Appointment request already approved
+         */
         post<Api.Appointment.RequestCancel> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
             val body = call.receive<AppointmentCancellation>()
@@ -95,29 +84,6 @@ fun Routing.requests() {
                         cancellation = body
                     )
                 )
-            }
-        }.describe {
-            summary = "Cancel appointment request"
-            description = "Cancel appointment request with specific reason"
-            tag("appointment")
-            requestBody {
-                required = true
-                schema = jsonSchema<AppointmentCancellation>()
-                ContentType.Application.ProtoBuf()
-            }
-            responses {
-                HttpStatusCode.NoContent {
-                    description = "Appointment request canceled"
-                }
-                HttpStatusCode.UnprocessableEntity {
-                    description = buildString {
-                        append(DeclineAppointmentRequest.Error.AlreadyDeclined().asServerError().toString())
-                        append("\n\n")
-                        append(DeclineAppointmentRequest.Error.AlreadyApproved().asServerError().toString())
-                    }
-                    schema = jsonSchema<SimpleServerError>()
-                    ContentType.Application.ProtoBuf()
-                }
             }
         }
     }

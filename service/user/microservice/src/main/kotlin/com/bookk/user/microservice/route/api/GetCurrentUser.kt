@@ -1,10 +1,7 @@
 package com.bookk.user.microservice.route.api
 
-import com.bookk.core.domain.entity.SimpleServerError
 import com.bookk.core.service.auth.AppPrincipal
 import com.bookk.core.service.enity.respondWith
-import com.bookk.user.domain.api.entity.User
-import com.bookk.user.domain.api.error.UserErrorCodes
 import com.bookk.user.domain.api.operation.GetUserById
 import com.bookk.user.microservice.route.UserRouting.Api
 import io.ktor.server.auth.authenticate
@@ -17,14 +14,13 @@ import org.koin.ktor.ext.inject
 internal fun Route.getCurrentUser() {
     authenticate {
         /**
-         * Get current user
-         * @description Get user profile from current authentication token.
-         * @security jwt
-         * @tag *user
-         * @response 200 application/protobuf [User] User associated with provided credentials
-         * @response 404 application/protobuf [SimpleServerError]
-         *  Codes:
-         *   1. [UserErrorCodes.USER_NOT_EXIST] - User not found
+         * Summary: Get current user
+         * Description: Get user profile from current authentication token.
+         * Tag: user
+         * Security: jwt
+         * Response: 200 application/x-protobuf [com.bookk.user.domain.api.entity.User] User associated with provided credentials
+         * Response: 404 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] User errors:
+         *  - USER_NOT_EXIST (Code 100001): User not found
          */
         get<Api.User.Me> {
             val principal = requireNotNull(call.principal<AppPrincipal>())

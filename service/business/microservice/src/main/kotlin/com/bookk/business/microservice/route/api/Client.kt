@@ -1,6 +1,5 @@
 package com.bookk.business.microservice.route.api
 
-import com.bookk.business.domain.api.client.entity.Client
 import com.bookk.business.domain.api.client.entity.ClientRemote
 import com.bookk.business.domain.api.client.entity.toDomain
 import com.bookk.business.domain.api.client.operation.CreateClient
@@ -20,14 +19,13 @@ import org.koin.ktor.ext.inject
 fun Route.clientCrud() {
     authenticate {
         /**
-         * Create client
-         * @description Create new client within business
-         * @security jwt
-         * @tag *business
-         * @request application/protobuf [Client]
-         * @response 200 application/protobuf [Client] Created client entity
-         * @response 422 application/protobuf [CreateClient.Error.ClientExist]
-         * @response 422 application/protobuf [CreateClient.Error.ClientValidationError]
+         * Summary: Create client
+         * Description: Create new client within business
+         * Tag: business
+         * Security: jwt
+         * RequestBody: application/x-protobuf [com.bookk.business.domain.api.client.entity.ClientRemote]
+         * Response: 200 application/x-protobuf [com.bookk.business.domain.api.client.entity.Client] Created client entity
+         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Create client errors
          */
         post<Api.Clients> {
             val body = call.receive<ClientRemote>()
@@ -42,11 +40,11 @@ fun Route.clientCrud() {
         }
 
         /**
-         * Get clients
-         * @description Get clients list for specific business
-         * @security jwt
-         * @tag *business
-         * @response 200 application/protobuf [kotlin.collections.List<Client>] Created client entity
+         * Summary: Get clients
+         * Description: Get clients list for specific business
+         * Tag: business
+         * Security: jwt
+         * Response: 200 application/x-protobuf [kotlin.collections.List<com.bookk.business.domain.api.client.entity.Client>] List of clients
          */
         get<Api.Clients> {
             val getClients by application.inject<GetClients>()
@@ -55,11 +53,11 @@ fun Route.clientCrud() {
         }
 
         /**
-         * Delete client
-         * @description Get clients list for specific business
-         * @security jwt
-         * @tag *business
-         * @response 204 Entity deleted
+         * Summary: Delete client
+         * Description: Get clients list for specific business
+         * Tag: business
+         * Security: jwt
+         * Response: 204 application/x-protobuf Entity deleted
          */
         delete<Api.Clients.Id> {
             val deleteClient by application.inject<DeleteClient>()

@@ -53,7 +53,7 @@ internal class DeclineAppointmentRequestTest {
                 single { useCase }
             },
             routeUnderTest = {
-                appointment()
+                requests()
             }
         )
 
@@ -96,7 +96,7 @@ internal class DeclineAppointmentRequestTest {
                 single { useCase }
             },
             routeUnderTest = {
-                appointment()
+                requests()
             }
         )
 
@@ -141,7 +141,7 @@ internal class DeclineAppointmentRequestTest {
                 single { useCase }
             },
             routeUnderTest = {
-                appointment()
+                requests()
             }
         )
 
@@ -172,7 +172,7 @@ internal class DeclineAppointmentRequestTest {
                 single { useCase }
             },
             routeUnderTest = {
-                appointment()
+                requests()
             }
         )
 

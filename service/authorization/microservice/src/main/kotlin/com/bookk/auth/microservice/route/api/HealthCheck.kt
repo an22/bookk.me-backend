@@ -8,10 +8,10 @@ import io.ktor.server.routing.Route
 
 internal fun Route.healthCheck() {
     /**
-     * Healthcheck
-     * @description Check service health
-     * @tag *auth
-     * @response 200 Service is alive
+     * Summary: Healthcheck
+     * Description: Check service health
+     * Tag: auth
+     * Response: 200 Service is alive
      */
     get<Api.Auth.HealthCheck> {
         call.respond(HttpStatusCode.OK)

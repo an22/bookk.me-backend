@@ -1,13 +1,9 @@
 package com.bookk.auth.microservice.route.api
 
-import com.bookk.auth.domain.api.authentication.entity.AssertionStartResponse
 import com.bookk.auth.domain.api.authentication.entity.VerifySignInRequest
 import com.bookk.auth.domain.api.authentication.operation.SignIn
 import com.bookk.auth.domain.api.authentication.operation.StartAssertion
-import com.bookk.auth.domain.api.error.AuthErrorCodes
-import com.bookk.auth.domain.api.token.entity.AuthTokens
 import com.bookk.auth.microservice.route.AuthRouting.Api
-import com.bookk.core.domain.entity.SimpleServerError
 import com.bookk.core.service.enity.respondWith
 import io.ktor.server.request.receive
 import io.ktor.server.resources.get
@@ -18,26 +14,25 @@ import org.koin.ktor.ext.inject
 
 internal fun Route.signIn() {
     /**
-     * Get sign in challenge
-     * @description Get sign in passkey challenge.
-     * @tag *auth
-     * @response 200 application/protobuf [AssertionStartResponse] Passkey json payload
+     * Summary: Get sign in challenge
+     * Description: Get sign in passkey challenge.
+     * Tag: auth
+     * Response: 200 application/x-protobuf [com.bookk.auth.domain.api.authentication.entity.AssertionStartResponse] Passkey json payload
      */
     get<Api.Auth.PassKey.SignInChallenge> {
         val startAssertion: StartAssertion by application.inject()
         call.respondWith(startAssertion())
     }
     /**
-     * Verify sign in
-     * @description Verify user-signed challenge and return authentication tokens
-     * @tag *auth
-     * @request application/protobuf [VerifySignInRequest]
-     * @response 200 application/protobuf [AuthTokens] Authentication tokens
-     * @response 422 application/protobuf [SimpleServerError]
-     * Codes:
-     *  1. [AuthErrorCodes.CHALLENGE_WINDOW_EXPIRED] - Challenge window expired
-     *  2. [AuthErrorCodes.VERIFICATION_FAILED] - Passkey verification failed
-     *  3. [AuthErrorCodes.PASSKEY_OWNER_NOT_FOUND] - Passkey owner not found
+     * Summary: Verify sign in
+     * Description: Verify user-signed challenge and return authentication tokens
+     * Tag: auth
+     * RequestBody: application/x-protobuf [com.bookk.auth.domain.api.authentication.entity.VerifySignInRequest]
+     * Response: 200 application/x-protobuf [com.bookk.auth.domain.api.token.entity.AuthTokens] Authentication tokens
+     * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Sign in errors:
+     *  - CHALLENGE_WINDOW_EXPIRED (Code 300001): Challenge window expired
+     *  - VERIFICATION_FAILED (Code 300002): Passkey verification failed
+     *  - PASSKEY_OWNER_NOT_FOUND (Code 300003): Passkey owner not found
      */
     post<Api.Auth.SignIn> {
         val request = call.receive<VerifySignInRequest>()

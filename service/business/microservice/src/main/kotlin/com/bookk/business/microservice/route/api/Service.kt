@@ -6,13 +6,9 @@ import com.bookk.business.domain.api.service.operation.DeleteService
 import com.bookk.business.domain.api.service.operation.GetServices
 import com.bookk.business.domain.api.service.operation.UpdateService
 import com.bookk.business.microservice.route.BusinessRouting.Api
-import com.bookk.core.domain.entity.SimpleServerError
-import com.bookk.core.domain.entity.asServerError
 import com.bookk.core.service.auth.AppPrincipal
 import com.bookk.core.service.enity.respondWith
-import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
-import io.ktor.openapi.jsonSchema
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.principal
 import io.ktor.server.request.receive
@@ -23,11 +19,19 @@ import io.ktor.server.resources.put
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.application
-import io.ktor.server.routing.openapi.describe
 import org.koin.ktor.ext.inject
 
 fun Route.serviceCrud() {
     authenticate {
+        /**
+         * Summary: Create a new service
+         * Description: Creates a new service offering that can be presented to the clients
+         * Tag: service
+         * Security: jwt
+         * RequestBody: application/x-protobuf [com.bookk.business.domain.api.service.entity.Service]
+         * Response: 200 application/x-protobuf [com.bookk.business.domain.api.service.entity.Service] Created service entity
+         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Create service errors
+         */
         post<Api.Service> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
             val body = call.receive<Service>()
@@ -39,33 +43,17 @@ fun Route.serviceCrud() {
                     createService(requestUserId = principal.userId, service = body)
                 )
             }
-        }.describe {
-            summary = "Create a new service"
-            description = "Creates a new service offering that can be presented to the clients"
-            tag("service")
-            requestBody {
-                required = true
-                schema = jsonSchema<Service>()
-                ContentType.Application.ProtoBuf()
-            }
-            responses {
-                HttpStatusCode.OK {
-                    description = "Created service entity"
-                    schema = jsonSchema<Service>()
-                    ContentType.Application.ProtoBuf()
-                }
-                HttpStatusCode.UnprocessableEntity {
-                    description = buildString {
-                        append(CreateService.Error.ServiceExist().asServerError().toString())
-                        append("\n\n")
-                        append(CreateService.Error.ValidationError().asServerError().toString())
-                    }
-                    schema = jsonSchema<SimpleServerError>()
-                    ContentType.Application.ProtoBuf()
-                }
-            }
         }
 
+        /**
+         * Summary: Update service
+         * Description: Updates a new service offering that can be presented to the clients
+         * Tag: service
+         * Security: jwt
+         * RequestBody: application/x-protobuf [com.bookk.business.domain.api.service.entity.Service]
+         * Response: 200 application/x-protobuf [com.bookk.business.domain.api.service.entity.Service] Updated service entity
+         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Update service errors
+         */
         put<Api.Service.Id> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
             val body = call.receive<Service>()
@@ -78,50 +66,28 @@ fun Route.serviceCrud() {
                     updateService(requestUserId = principal.userId, service = body)
                 )
             }
-        }.describe {
-            summary = "Update service"
-            description = "Updates a new service offering that can be presented to the clients"
-            tag("service")
-            requestBody {
-                required = true
-                schema = jsonSchema<Service>()
-                ContentType.Application.ProtoBuf()
-            }
-            responses {
-                HttpStatusCode.OK {
-                    description = "Updated service entity"
-                    schema = jsonSchema<Service>()
-                    ContentType.Application.ProtoBuf()
-                }
-                HttpStatusCode.UnprocessableEntity {
-                    description = buildString {
-                        append(UpdateService.Error.ServiceExist().asServerError().toString())
-                        append("\n\n")
-                        append(UpdateService.Error.ValidationError().asServerError().toString())
-                    }
-                    schema = jsonSchema<SimpleServerError>()
-                    ContentType.Application.ProtoBuf()
-                }
-            }
         }
 
+        /**
+         * Summary: Get all services
+         * Description: Get all service offerings of a business with specific id
+         * Tag: service
+         * Security: jwt
+         * Response: 200 application/x-protobuf [kotlin.collections.List<com.bookk.business.domain.api.service.entity.Service>] List of services
+         */
         get<Api.Service> {
             val getServices by application.inject<GetServices>()
 
             call.respondWith(getServices(it.businessId))
-        }.describe {
-            summary = "Get all services"
-            description = "Get all service offerings of a business with specific id"
-            tag("service")
-            responses {
-                HttpStatusCode.OK {
-                    description = "Created service entity"
-                    schema = jsonSchema<List<Service>>()
-                    ContentType.Application.ProtoBuf()
-                }
-            }
         }
 
+        /**
+         * Summary: Delete service offering
+         * Description: Delete service offering
+         * Tag: service
+         * Security: jwt
+         * Response: 204 application/x-protobuf Service offering deleted
+         */
         delete<Api.Service.Id> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
             val deleteService by application.inject<DeleteService>()
@@ -133,15 +99,6 @@ fun Route.serviceCrud() {
                     id = it.id
                 )
             )
-        }.describe {
-            summary = "Delete service offering"
-            description = "Delete service offering"
-            tag("service")
-            responses {
-                HttpStatusCode.NoContent {
-                    description = "Service offering deleted"
-                }
-            }
         }
     }
 }

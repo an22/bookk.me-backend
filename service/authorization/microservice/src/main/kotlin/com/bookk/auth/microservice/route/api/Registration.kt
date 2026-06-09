@@ -1,14 +1,10 @@
 package com.bookk.auth.microservice.route.api
 
-import com.bookk.auth.domain.api.error.AuthErrorCodes
 import com.bookk.auth.domain.api.registration.entity.CreateAccountRequest
-import com.bookk.auth.domain.api.registration.entity.RegistrationChallengeResponse
 import com.bookk.auth.domain.api.registration.entity.VerifyAccountCreationRequest
 import com.bookk.auth.domain.api.registration.operation.FinishRegistration
 import com.bookk.auth.domain.api.registration.operation.StartRegistration
-import com.bookk.auth.domain.api.token.entity.AuthTokens
 import com.bookk.auth.microservice.route.AuthRouting.Api
-import com.bookk.core.domain.entity.SimpleServerError
 import com.bookk.core.service.enity.respondWith
 import io.ktor.server.request.receive
 import io.ktor.server.resources.post
@@ -18,15 +14,14 @@ import org.koin.ktor.ext.inject
 
 internal fun Route.registration() {
     /**
-     * Get sign up challenge
-     * @description Get sign up challenge for passkey creation.
-     * @tag *auth
-     * @body application/protobuf [CreateAccountRequest] User parameters
-     * @response 200 application/protobuf [RegistrationChallengeResponse] Validation challenge returned
-     * @response 422 application/protobuf [SimpleServerError]
-     * Codes:
-     *  1. [AuthErrorCodes.EMAIL_EXIST] - This email already exists
-     *  2. [AuthErrorCodes.INVALID_EMAIL_FORMAT] - Invalid email format
+     * Summary: Get sign up challenge
+     * Description: Get sign up challenge for passkey creation.
+     * Tag: auth
+     * RequestBody: application/x-protobuf [com.bookk.auth.domain.api.registration.entity.CreateAccountRequest] User parameters
+     * Response: 200 application/x-protobuf [com.bookk.auth.domain.api.registration.entity.RegistrationChallengeResponse] Validation challenge returned
+     * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Registration errors:
+     *  - EMAIL_EXIST (Code 200001): This email already exists
+     *  - INVALID_EMAIL_FORMAT (Code 200002): Invalid email format
      */
     post<Api.Auth.PassKey.SignUpChallenge> {
         val info = call.receive<CreateAccountRequest>()
@@ -35,18 +30,17 @@ internal fun Route.registration() {
         call.respondWith(startRegistration(info))
     }
     /**
-     * Validate passkey data
-     * @description Validate passkey data from native credentials API
-     * @tag *auth
-     * @body application/protobuf [VerifyAccountCreationRequest] User parameters
-     * @response 200 application/protobuf [AuthTokens] User has been created
-     * @response 422 application/protobuf [SimpleServerError]
-     * Codes:
-     *  1. [AuthErrorCodes.USER_ALREADY_EXIST] - User with this email already exist
-     *  2. [AuthErrorCodes.INVALID_EMAIL_FORMAT] - Invalid email format
-     *  3. [AuthErrorCodes.ACCOUNT_CREATION_FAILED] - Error during account creation, try again later
-     *  4. [AuthErrorCodes.CHALLENGE_WINDOW_EXPIRED] - Challenge window expired
-     *  5. [AuthErrorCodes.VERIFICATION_FAILED] - Passkey verification failed
+     * Summary: Validate passkey data
+     * Description: Validate passkey data from native credentials API
+     * Tag: auth
+     * RequestBody: application/x-protobuf [com.bookk.auth.domain.api.registration.entity.VerifyAccountCreationRequest] User parameters
+     * Response: 200 application/x-protobuf [com.bookk.auth.domain.api.token.entity.AuthTokens] User has been created
+     * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Registration errors:
+     *  - USER_ALREADY_EXIST (Code 200003): User with this email already exist
+     *  - INVALID_EMAIL_FORMAT (Code 200002): Invalid email format
+     *  - ACCOUNT_CREATION_FAILED (Code 200004): Error during account creation, try again later
+     *  - CHALLENGE_WINDOW_EXPIRED (Code 300001): Challenge window expired
+     *  - VERIFICATION_FAILED (Code 300002): Passkey verification failed
      */
     post<Api.Auth.SignUp> {
         val info = call.receive<VerifyAccountCreationRequest>()

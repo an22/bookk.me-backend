@@ -19,7 +19,7 @@ internal class CreateServiceImpl(
     override suspend fun invoke(requestUserId: Uuid, service: Service): Result<Service> {
         if (service.name.isBlank()) return Result.failure(Error.ValidationError())
         return transactionManager.transaction {
-            businessDataSource.getPermission(requestUserId, service.businessId).assert(ObjectPermission.WRITE)
+            businessDataSource.getPermission(requestUserId, service.businessId).assert(ObjectPermission.EDIT)
             dataSource.createService(service)
         }.onConstraintFailure {
             throw Error.ServiceExist()

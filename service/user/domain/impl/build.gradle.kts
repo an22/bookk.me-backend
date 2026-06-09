@@ -12,4 +12,5 @@ dependencies {
     implementation(projects.service.user.domain.api)
     implementation(projects.service.user.data.source)
     implementation(projects.service.user.client)
+    implementation(projects.service.authorization.client)
 }

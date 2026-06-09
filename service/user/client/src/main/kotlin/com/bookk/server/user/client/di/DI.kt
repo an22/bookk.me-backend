@@ -2,7 +2,6 @@ package com.bookk.server.user.client.di
 
 import com.bookk.core.AppLevelConstants
 import com.bookk.core.AppLevelConstants.SupportedSerializers
-import com.bookk.core.SslSettings
 import com.bookk.server.user.client.UserClient
 import com.bookk.server.user.client.impl.UserClientImpl
 import com.bookk.server.user.client.impl.operation.CreateUserClientImpl
@@ -64,11 +63,6 @@ fun userClientModule(clientTag: String) = module {
                 level = when (AppLevelConstants.BUILD_TYPE) {
                     AppLevelConstants.BuildType.DEBUG.STR -> LogLevel.BODY
                     else -> LogLevel.INFO
-                }
-            }
-            engine {
-                https {
-                    trustManager = SslSettings.getTrustManager()
                 }
             }
             defaultRequest {

@@ -4,7 +4,7 @@ import com.bookk.core.domain.entity.Error
 
 enum class ObjectPermission(val int: Int) {
     READ(1),
-    WRITE(2),
+    EDIT(2),
     OWNER(100);
 
     operator fun compareTo(type: Int): Int {

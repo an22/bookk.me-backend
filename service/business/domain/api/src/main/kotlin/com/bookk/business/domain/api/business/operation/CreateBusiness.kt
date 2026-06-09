@@ -10,13 +10,13 @@ interface CreateBusiness {
     suspend operator fun invoke(userId: Uuid, name: String, currencyCode: String): Result<Business>
 
     sealed interface Error {
-        data object BusinessExist : BusinessError(
+        class BusinessExist : BusinessError(
             statusCode = HttpStatusCode.UnprocessableEntity.value,
             code = BusinessErrorCodes.BUSINESS_ALREADY_EXIST,
             message = "Business already exist"
         )
 
-        data object BusinessValidationError : BusinessError(
+        class BusinessValidationError : BusinessError(
             statusCode = HttpStatusCode.UnprocessableEntity.value,
             code = BusinessErrorCodes.BUSINESS_NAME_VALIDATION_ERROR,
             message = "Business name invalid"

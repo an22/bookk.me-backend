@@ -1,0 +1,219 @@
+package com.bookk.appointments.domain.impl.operation
+
+import com.bookk.appointments.domain.api.entity.Appointment
+import com.bookk.appointments.domain.api.entity.AppointmentSettings
+import com.bookk.appointments.domain.api.entity.AppointmentStatus
+import com.bookk.appointments.domain.api.entity.ClientSnapshot
+import com.bookk.appointments.domain.api.entity.ServiceSnapshot
+import com.bookk.appointments.domain.api.operation.UpdateAppointment
+import com.bookk.appointments.domain.datasource.AppointmentDataSource
+import com.bookk.appointments.domain.datasource.AppointmentSettingsDataSource
+import com.bookk.appointments.domain.datasource.PermissionsDataSource
+import com.bookk.core.domain.datasource.transaction.TransactionManager
+import com.bookk.core.domain.datasource.transaction.mockTransaction
+import com.bookk.core.test.given
+import com.bookk.core.test.runUnitTest
+import com.bookk.core.test.then
+import com.bookk.core.test.whenn
+import io.mockk.coEvery
+import io.mockk.mockk
+import library.permissions.ObjectPermission
+import org.joda.money.CurrencyUnit
+import org.joda.money.Money
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Test
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Instant
+import kotlin.uuid.Uuid
+
+internal class UpdateAppointmentImplTest {
+
+    private val testUserId = Uuid.random()
+    private val testBusinessId = Uuid.random()
+    private val testAppointment = Appointment(
+        id = Uuid.random(),
+        userId = Uuid.random(),
+        businessId = testBusinessId,
+        client = ClientSnapshot(Uuid.random(), "Name", "123", "a@b.com"),
+        service = ServiceSnapshot(Uuid.random(), "Svc", Uuid.random(), Money.of(CurrencyUnit.USD, 10.0), 30.minutes),
+        date = Instant.fromEpochMilliseconds(0),
+        note = "Note",
+        status = AppointmentStatus.SCHEDULED,
+        cancellationReason = ""
+    )
+
+    @Test
+    fun `should update appointment successfully`() = runUnitTest {
+        val appointmentDataSource = mockk<AppointmentDataSource>()
+        val settingsDataSource = mockk<AppointmentSettingsDataSource>()
+        val permissionsDataSource = mockk<PermissionsDataSource>()
+        val transactionManager = mockk<TransactionManager>()
+        val sut = UpdateAppointmentImpl(
+            appointmentDataSource,
+            settingsDataSource,
+            permissionsDataSource,
+            transactionManager
+        )
+
+        given()
+        transactionManager.mockTransaction()
+        val settings = mockk<AppointmentSettings>()
+
+        coEvery { settingsDataSource.getForUpdate(testBusinessId) } returns settings
+        coEvery { settings.isInWorkday(any()) } returns false
+        coEvery { settings.isInWorktime(any()) } returns false
+        coEvery { permissionsDataSource.getPermissions(testUserId, testBusinessId) } returns ObjectPermission.EDIT.int
+        coEvery { appointmentDataSource.update(any<Appointment>()) } returns testAppointment
+        coEvery { appointmentDataSource.hasOverlapsWith(any<Appointment>()) } returns false
+
+        whenn()
+        val result = sut(testUserId, testAppointment)
+
+        then()
+        assertTrue(result.isSuccess)
+        assertEquals(testAppointment, result.getOrNull())
+    }
+
+    @Test
+    fun `should return failure when appointment does not exist (settings not found)`() = runUnitTest {
+        val appointmentDataSource = mockk<AppointmentDataSource>()
+        val settingsDataSource = mockk<AppointmentSettingsDataSource>()
+        val permissionsDataSource = mockk<PermissionsDataSource>()
+        val transactionManager = mockk<TransactionManager>()
+        val sut = UpdateAppointmentImpl(
+            appointmentDataSource,
+            settingsDataSource,
+            permissionsDataSource,
+            transactionManager
+        )
+
+        given()
+        transactionManager.mockTransaction()
+        coEvery { settingsDataSource.getForUpdate(testBusinessId) } returns null
+
+        whenn()
+        val result = sut(testUserId, testAppointment)
+
+        then()
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is com.bookk.core.domain.entity.Error.NotFound)
+    }
+
+    @Test
+    fun `should return failure when user has no permissions`() = runUnitTest {
+        val appointmentDataSource = mockk<AppointmentDataSource>()
+        val settingsDataSource = mockk<AppointmentSettingsDataSource>()
+        val permissionsDataSource = mockk<PermissionsDataSource>()
+        val transactionManager = mockk<TransactionManager>()
+        val sut = UpdateAppointmentImpl(
+            appointmentDataSource,
+            settingsDataSource,
+            permissionsDataSource,
+            transactionManager
+        )
+
+        given()
+        transactionManager.mockTransaction()
+        val settings = mockk<AppointmentSettings>()
+        coEvery { settingsDataSource.getForUpdate(testBusinessId) } returns settings
+        coEvery { permissionsDataSource.getPermissions(testUserId, testBusinessId) } returns ObjectPermission.READ.int 
+
+        whenn()
+        val result = sut(testUserId, testAppointment)
+
+        then()
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is com.bookk.core.domain.entity.Error.OperationNotAllowed)
+    }
+
+    @Test
+    fun `should return failure when overlap exists`() = runUnitTest {
+        val appointmentDataSource = mockk<AppointmentDataSource>()
+        val settingsDataSource = mockk<AppointmentSettingsDataSource>()
+        val permissionsDataSource = mockk<PermissionsDataSource>()
+        val transactionManager = mockk<TransactionManager>()
+        val sut = UpdateAppointmentImpl(
+            appointmentDataSource,
+            settingsDataSource,
+            permissionsDataSource,
+            transactionManager
+        )
+
+        given()
+        transactionManager.mockTransaction()
+        val settings = mockk<AppointmentSettings>()
+        coEvery { settingsDataSource.getForUpdate(testBusinessId) } returns settings
+        coEvery { settings.isInWorkday(any()) } returns false
+        coEvery { settings.isInWorktime(any()) } returns false
+        coEvery { permissionsDataSource.getPermissions(testUserId, testBusinessId) } returns ObjectPermission.EDIT.int
+        coEvery { appointmentDataSource.update(any<Appointment>()) } returns testAppointment // Update is called BEFORE overlap check
+        coEvery { appointmentDataSource.hasOverlapsWith(any<Appointment>()) } returns true 
+
+        whenn()
+        val result = sut(testUserId, testAppointment)
+
+        then()
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is UpdateAppointment.Error.AppointmentForThisTimeExists)
+    }
+
+    @Test
+    fun `should return failure when workday not allowed`() = runUnitTest {
+        val appointmentDataSource = mockk<AppointmentDataSource>()
+        val settingsDataSource = mockk<AppointmentSettingsDataSource>()
+        val permissionsDataSource = mockk<PermissionsDataSource>()
+        val transactionManager = mockk<TransactionManager>()
+        val sut = UpdateAppointmentImpl(
+            appointmentDataSource,
+            settingsDataSource,
+            permissionsDataSource,
+            transactionManager
+        )
+
+        given()
+        transactionManager.mockTransaction()
+        val settings = mockk<AppointmentSettings>()
+        coEvery { settingsDataSource.getForUpdate(testBusinessId) } returns settings
+        coEvery { settings.isInWorkday(any()) } returns true
+        coEvery { permissionsDataSource.getPermissions(testUserId, testBusinessId) } returns ObjectPermission.EDIT.int
+        coEvery { appointmentDataSource.update(any()) } returns testAppointment // Update is called BEFORE workday check
+
+        whenn()
+        val result = sut(testUserId, testAppointment)
+
+        then()
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is UpdateAppointment.Error.RequestForThisDateNotAllowed)
+    }
+
+    @Test
+    fun `should return failure when time not allowed`() = runUnitTest {
+        val appointmentDataSource = mockk<AppointmentDataSource>()
+        val settingsDataSource = mockk<AppointmentSettingsDataSource>()
+        val permissionsDataSource = mockk<PermissionsDataSource>()
+        val transactionManager = mockk<TransactionManager>()
+        val sut = UpdateAppointmentImpl(
+            appointmentDataSource,
+            settingsDataSource,
+            permissionsDataSource,
+            transactionManager
+        )
+
+        given()
+        transactionManager.mockTransaction()
+        val settings = mockk<AppointmentSettings>()
+        coEvery { settingsDataSource.getForUpdate(testBusinessId) } returns settings
+        coEvery { settings.isInWorkday(any()) } returns false
+        coEvery { settings.isInWorktime(any()) } returns true
+        coEvery { permissionsDataSource.getPermissions(testUserId, testBusinessId) } returns ObjectPermission.EDIT.int
+        coEvery { appointmentDataSource.update(any()) } returns testAppointment // Update is called BEFORE worktime check
+
+        whenn()
+        val result = sut(testUserId, testAppointment)
+
+        then()
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is UpdateAppointment.Error.RequestForThisTimeNotAllowed)
+    }
+}

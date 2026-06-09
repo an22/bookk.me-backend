@@ -13,7 +13,7 @@ internal class GetUserByEmailImpl(
 ) : GetUserByEmail {
 
     override suspend fun invoke(body: EmailBody): Result<User> = transactionManager.transaction {
-        userDataSource.getUserByEmail(body.email) ?: throw Error.UserNotFound
+        userDataSource.getUserByEmail(body.email) ?: throw Error.UserNotFound()
     }
 
 }

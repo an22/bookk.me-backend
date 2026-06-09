@@ -10,7 +10,7 @@ interface GetDashboardBusiness {
     suspend operator fun invoke(userId: Uuid): Result<Business>
 
     sealed interface Error {
-        data object NotFound : BusinessError(
+        class NotFound : BusinessError(
             statusCode = HttpStatusCode.NotFound.value,
             code = BusinessErrorCodes.BUSINESS_NOT_FOUND,
             message = "No businesses for this user"

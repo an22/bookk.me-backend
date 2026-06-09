@@ -12,14 +12,14 @@ import io.ktor.server.routing.application
 import org.koin.ktor.ext.inject
 
 internal fun Route.logOut() {
-    /**
-     * Sign Out
-     * @description Mark user as signed out
-     * @tag *auth
-     * @security jwt
-     * @response 200 Success
-     */
     authenticate {
+        /**
+         * Summary: Sign Out
+         * Description: Mark user as signed out
+         * Tag: auth
+         * Security: jwt
+         * Response: 200 application/x-protobuf Success
+         */
         delete<Api.Auth.SignOut> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
             val signOut by application.inject<SignOut>()

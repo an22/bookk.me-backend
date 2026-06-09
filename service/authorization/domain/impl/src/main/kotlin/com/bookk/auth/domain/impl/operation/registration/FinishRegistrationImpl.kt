@@ -13,9 +13,9 @@ import com.bookk.auth.domain.datasource.DeviceDataSource
 import com.bookk.core.data.eventstreaming.StandardEventProducer
 import com.bookk.core.data.eventstreaming.send
 import com.bookk.core.domain.datasource.transaction.TransactionManager
+import com.bookk.server.auth.client.AuthEvent
 import com.bookk.server.user.client.UserClient
 import com.bookk.server.user.client.api.CreateUserRequest
-import com.bookk.server.user.client.api.event.UserEvents.DeleteUserEvent
 import kotlin.uuid.Uuid
 
 internal class FinishRegistrationImpl(
@@ -38,7 +38,7 @@ internal class FinishRegistrationImpl(
                 finishPasskeyRegistration.attachOwner(ownerId, verifiedPasskey).getOrThrow()
                 createAndSaveAuthCredentials(ownerId, request)
             }.onFailure {
-                userId?.let { eventProducer.send(DeleteUserEvent(it)) }
+                userId?.let { eventProducer.send(AuthEvent.UserDeleted(it)) }
             }
         }
     }

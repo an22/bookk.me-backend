@@ -11,6 +11,6 @@ internal class GetBusinessByIdImpl(
     private val transactionManager: TransactionManager
 ) : GetBusinessById {
     override suspend fun invoke(id: Uuid): Result<Business> = transactionManager.transaction {
-        businessDataSource.getBusinessById(id) ?: throw GetBusinessById.Error.NotFound
+        businessDataSource.getBusinessById(id) ?: throw GetBusinessById.Error.NotFound()
     }
 }

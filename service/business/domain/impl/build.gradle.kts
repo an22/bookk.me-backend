@@ -11,6 +11,9 @@ dependencies {
     implementation(projects.core.data.eventstreaming.api)
     implementation(projects.service.business.domain.api)
     implementation(projects.service.business.client)
+    implementation(projects.service.authorization.client)
     implementation(projects.service.business.data.source)
     implementation(projects.library.permissions)
+    testImplementation(testFixtures(projects.core))
+    testImplementation(testFixtures(projects.core.domain.datasource))
 }

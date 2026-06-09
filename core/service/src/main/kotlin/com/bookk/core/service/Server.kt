@@ -13,10 +13,10 @@ import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.auth.Authentication
 import io.ktor.server.auth.jwt.jwt
+import io.ktor.server.cio.CIO
+import io.ktor.server.engine.connector
 import io.ktor.server.engine.embeddedServer
-import io.ktor.server.engine.sslConnector
 import io.ktor.server.metrics.micrometer.MicrometerMetrics
-import io.ktor.server.netty.Netty
 import io.ktor.server.plugins.calllogging.CallLogging
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.plugins.openapi.openAPI
@@ -39,8 +39,6 @@ import org.koin.core.module.Module
 import org.koin.ktor.ext.get
 import org.koin.ktor.plugin.Koin
 import org.slf4j.event.Level
-import java.io.File
-import java.security.KeyStore
 
 fun startServer(
     diModules: List<Module> = emptyList(),
@@ -48,20 +46,10 @@ fun startServer(
     modules: Routing.(Application) -> Unit
 ) {
     embeddedServer(
-        factory = Netty,
+        factory = CIO,
         configure = {
-            val keystoreFile = File(AppLevelConstants.sslFile)
-            val keyStorePass = AppLevelConstants.sslPass
-            sslConnector(
-                keyStore = KeyStore.getInstance(
-                    keystoreFile,
-                    keyStorePass.toCharArray()
-                ),
-                keyAlias = AppLevelConstants.sslAlias,
-                keyStorePassword = { keyStorePass.toCharArray() },
-                privateKeyPassword = { keyStorePass.toCharArray() }
-            ) {
-                port = AppLevelConstants.sslPort
+            connector {
+                port = AppLevelConstants.servicePort
             }
         },
         module = {

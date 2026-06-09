@@ -7,7 +7,7 @@ import com.bookk.user.domain.api.operation.DeleteUser
 import com.bookk.user.domain.api.operation.EditUser
 import com.bookk.user.domain.api.operation.GetUserByEmail
 import com.bookk.user.domain.api.operation.GetUserById
-import com.bookk.user.domain.impl.event.UserEventHandlerImpl
+import com.bookk.user.domain.impl.event.UserEventHandler
 import com.bookk.user.domain.impl.operation.CreateContactFormImpl
 import com.bookk.user.domain.impl.operation.CreateUserImpl
 import com.bookk.user.domain.impl.operation.DeleteUserImpl
@@ -27,5 +27,5 @@ fun userDomainModule() = module {
     singleOf(::CreateContactFormImpl) bind CreateContactForm::class
     singleOf(::GetUserByEmailImpl) bind GetUserByEmail::class
     singleOf(::GetUserByIdImpl) bind GetUserById::class
-    factoryOf(::UserEventHandlerImpl) bind EventHandler::class
+    factoryOf(::UserEventHandler) bind EventHandler::class
 }

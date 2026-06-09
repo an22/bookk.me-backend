@@ -1,10 +1,7 @@
 package com.bookk.user.microservice.route.api.internal
 
-import com.bookk.core.domain.entity.SimpleServerError
 import com.bookk.core.service.enity.respondWith
 import com.bookk.user.domain.api.entity.EmailBody
-import com.bookk.user.domain.api.entity.User
-import com.bookk.user.domain.api.error.UserErrorCodes
 import com.bookk.user.domain.api.operation.GetUserByEmail
 import com.bookk.user.microservice.route.UserRouting.Api
 import io.ktor.server.request.receive
@@ -15,13 +12,13 @@ import org.koin.ktor.ext.inject
 
 internal fun Route.getUserByEmail() {
     /**
-     * Get user by email
-     * @description Get user profile by email.
-     * @tag *internal
-     * @response 200 application/protobuf [User] User associated with this email
-     * @response 404 application/protobuf [SimpleServerError]
-     *  Codes:
-     *  1. [UserErrorCodes.USER_NOT_EXIST] - User not exist
+     * Summary: Get user by email
+     * Description: Get user profile by email.
+     * Tag: internal
+     * Body: application/x-protobuf [com.bookk.user.domain.api.entity.EmailBody] Email to search by
+     * Response: 200 application/x-protobuf [com.bookk.user.domain.api.entity.User] User associated with this email
+     * Response: 404 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] User errors:
+     *  - USER_NOT_EXIST (Code 100001): User not exist
      */
     get<Api.Internal.User.Email> {
         val getUserByEmail by application.inject<GetUserByEmail>()

@@ -15,7 +15,7 @@ internal class DeleteServiceImpl(
 ) : DeleteService {
     override suspend fun invoke(requestUserId: Uuid, businessId: Uuid, id: Uuid): Result<Unit> {
         return transactionManager.transaction {
-            businessDataSource.getPermission(requestUserId, businessId).assert(ObjectPermission.WRITE)
+            businessDataSource.getPermission(requestUserId, businessId).assert(ObjectPermission.EDIT)
             dataSource.deleteService(id)
         }
     }

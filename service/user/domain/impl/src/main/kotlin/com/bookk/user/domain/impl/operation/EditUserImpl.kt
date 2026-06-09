@@ -12,6 +12,6 @@ internal class EditUserImpl(
     private val transactionManager: TransactionManager
 ) : EditUser {
     override suspend fun invoke(id: Uuid, user: UserEditModel): Result<Unit> = transactionManager.transaction {
-        if (!userDataSource.updateUser(id, user)) throw Error.UserNotFound
+        if (!userDataSource.updateUser(id, user)) throw Error.UserNotFound()
     }
 }

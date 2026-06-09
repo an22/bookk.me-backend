@@ -9,14 +9,6 @@ application {
     mainClass.set("com.bookk.auth.AuthMicroserviceKt")
 }
 
-ktor {
-    openApi {
-        enabled = true
-        codeInferenceEnabled = false
-        onlyCommented = false
-    }
-}
-
 dependencies {
     implementation(projects.core)
     implementation(projects.core.service)

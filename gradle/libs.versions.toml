@@ -1,10 +1,9 @@
 [versions]
 apache-common-pool = "2.4.3"
-boringssl = "2.0.65.Final"
 coroutines = "1.10.2"
 flyway = "11.11.2"
 hikari = "5.1.0"
-kafka = "3.8.0"
+kafka = "4.3.0"
 koin-bom = "4.1.0"
 kotlin = "2.3.21"
 kotlin-datetime = "0.7.1"
@@ -14,7 +13,7 @@ mariadb-jdbc = "3.4.1"
 redis = "6.4.0.RELEASE"
 passkey = "2.7.0"
 exposed = "1.0.0-rc-4"
-mockk = "1.13.6"
+mockk = "1.14.11"
 money = "2.0.2"
 jackson = "2.17.1"
 
@@ -30,6 +29,7 @@ koin-core = { module = "io.insert-koin:koin-core" }
 koin-ktor = { module = "io.insert-koin:koin-ktor" }
 kotlin-coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 kotlin-coroutines-reactive = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-reactive", version.ref = "coroutines" }
+kotlin-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
 kotlin-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlin-datetime" }
 kotlin-std = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
 kotlin-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
@@ -51,7 +51,7 @@ ktor-logging = { module = "ch.qos.logback:logback-classic", version.ref = "logba
 ktor-logging-call = { module = "io.ktor:ktor-server-call-logging", version.ref = "logback" }
 ktor-server-negotiation = { module = "io.ktor:ktor-server-content-negotiation", version.ref = "ktor" }
 ktor-client-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
-ktor-netty = { module = "io.ktor:ktor-server-netty", version.ref = "ktor" }
+ktor-cio = { module = "io.ktor:ktor-server-cio", version.ref = "ktor" }
 ktor-plugin = { module = "io.ktor.plugin:io.ktor.plugin.gradle.plugin", version.ref = "ktor" }
 ktor-protobuf = { module = "io.ktor:ktor-serialization-kotlinx-protobuf", version.ref = "ktor" }
 ktor-server-resources = { module = "io.ktor:ktor-server-resources", version.ref = "ktor" }
@@ -59,7 +59,6 @@ ktor-client-resources = { module = "io.ktor:ktor-client-resources", version.ref 
 ktor-test = { module = "io.ktor:ktor-server-test-host", version.ref = "ktor" }
 ktor-status = { module = "io.ktor:ktor-server-status-pages", version.ref = "ktor" }
 mariadb-jdbc = { module = "org.mariadb.jdbc:mariadb-java-client", version.ref = "mariadb-jdbc" }
-netty-boringssl = { module = "io.netty:netty-tcnative-boringssl-static", version.ref = "boringssl" }
 redis-client = { module = "io.lettuce:lettuce-core", version.ref = "redis" }
 redis-pool = { module = "org.apache.commons:commons-pool2", version.ref = "apache-common-pool" }
 passkey = { module = "com.yubico:webauthn-server-core", version.ref = "passkey" }
@@ -71,7 +70,6 @@ exposed-migration = { module = "org.jetbrains.exposed:exposed-migration-core", v
 exposed-migration-jdbc = { module = "org.jetbrains.exposed:exposed-migration-jdbc", version.ref = "exposed" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 joda-money = { module = "org.joda:joda-money", version.ref = "money" }
-
 
 [plugins]
 bookk-data = { id = "com.bookk.data" }

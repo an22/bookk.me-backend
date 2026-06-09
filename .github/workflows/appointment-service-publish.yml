@@ -1,0 +1,29 @@
+name: Publish appointment service
+on:
+  push:
+    tags:
+      - 'appointment/*'
+
+jobs:
+  publish:
+    name: Publish Appointment Microservice
+    uses: ./.github/workflows/service-publish-template.yml
+    secrets:
+      gradleEncryption: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
+    with:
+      module: "service:appointments:microservice"
+      serviceName: "com.bookk.server.microservice.appointments"
+
+  deploy:
+    needs: publish
+    name: Deploy Appointment Microservice
+    uses: ./.github/workflows/service-deploy-template.yml
+    secrets:
+      envFile: ${{ secrets.APPOINTMENTS_ENV_FILE }}
+      privateKey: ${{ secrets.SSH_PRIVATE_KEY }}
+      remoteUri: ${{ secrets.SWARM_MANAGER }}
+      knownHosts: ${{ secrets.SSH_KNOWN_HOSTS }}
+    with:
+      image: "ghcr.io/an22/com.bookk.server.microservice.appointments"
+      stackName: "appointments"
+      version: ${{ needs.publish.outputs.version }}

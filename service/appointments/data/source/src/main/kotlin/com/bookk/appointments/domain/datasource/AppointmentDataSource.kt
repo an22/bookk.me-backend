@@ -5,10 +5,12 @@ import com.bookk.appointments.domain.api.entity.AppointmentRequest
 import kotlin.uuid.Uuid
 
 interface AppointmentDataSource {
-    suspend fun attachBusiness(businessId: Uuid)
-    suspend fun initPermissions(userId: Uuid, businessId: Uuid, permissions: Int)
-    suspend fun getPermissions(userId: Uuid, businessId: Uuid): Int?
+    suspend fun get(id: Uuid): Appointment
     suspend fun hasOverlapsWith(request: AppointmentRequest): Boolean
-
+    suspend fun hasOverlapsWith(appointment: Appointment): Boolean
     suspend fun create(request: AppointmentRequest): Appointment
+    suspend fun delete(id: Uuid)
+    suspend fun cancel(id: Uuid, reason: String): Appointment
+    suspend fun update(appointment: Appointment): Appointment
+    suspend fun getAll(businessId: Uuid): List<Appointment>
 }

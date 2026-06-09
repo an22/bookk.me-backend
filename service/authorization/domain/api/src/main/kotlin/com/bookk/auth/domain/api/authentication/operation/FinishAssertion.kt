@@ -11,8 +11,8 @@ interface FinishAssertion {
     suspend operator fun invoke(request: FinishAssertionRequest): Result<PasskeyCredential>
 
     sealed interface Error {
-        data object PasskeyOwnerNotFound : BusinessError(HttpStatusCode.UnprocessableEntity.value, AuthErrorCodes.PASSKEY_OWNER_NOT_FOUND, "Passkey owner not found"), Error
-        data object ChallengeWindowExpired : BusinessError(HttpStatusCode.UnprocessableEntity.value, AuthErrorCodes.CHALLENGE_WINDOW_EXPIRED, "Challenge window expired"), Error
-        data object VerificationFailed : BusinessError(HttpStatusCode.UnprocessableEntity.value, AuthErrorCodes.VERIFICATION_FAILED, "Passkey verification failed"), Error
+        class PasskeyOwnerNotFound : BusinessError(HttpStatusCode.UnprocessableEntity.value, AuthErrorCodes.PASSKEY_OWNER_NOT_FOUND, "Passkey owner not found"), Error
+        class ChallengeWindowExpired : BusinessError(HttpStatusCode.UnprocessableEntity.value, AuthErrorCodes.CHALLENGE_WINDOW_EXPIRED, "Challenge window expired"), Error
+        class VerificationFailed : BusinessError(HttpStatusCode.UnprocessableEntity.value, AuthErrorCodes.VERIFICATION_FAILED, "Passkey verification failed"), Error
     }
 }

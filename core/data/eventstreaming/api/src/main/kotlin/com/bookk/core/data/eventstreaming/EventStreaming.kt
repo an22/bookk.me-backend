@@ -26,6 +26,9 @@ interface EventStreaming {
     interface Event<K> {
         val topic: K
         val idempotencyKey: String
+
+        override fun equals(other: Any?): Boolean
+        override fun hashCode(): Int
     }
 }
 
@@ -38,6 +41,13 @@ inline fun <reified T : Any, K> Consumer<K>.registerReceiver(
     noinline onEvent: suspend (T) -> Unit
 ): Consumer<K> {
     return registerReceiver(topic, typeOf<T>(), onEvent)
+}
+
+inline fun <reified T : Any, K, R> Consumer<K>.registerResultReceiver(
+    topic: K,
+    noinline onEvent: suspend (T) -> Result<R>
+): Consumer<K> {
+    return registerReceiver(topic, typeOf<T>()) { it: T -> onEvent(it).getOrThrow() }
 }
 
 typealias StandardEventProducer = Producer<String>

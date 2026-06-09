@@ -4,7 +4,7 @@ import kotlinx.serialization.Serializable
 import kotlin.uuid.Uuid
 
 @Serializable
-class UserEditModel(
+data class UserEditModel(
     val id: Uuid? = null,
     val firstName: String? = null,
     val lastName: String? = null,

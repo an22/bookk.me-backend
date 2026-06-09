@@ -19,9 +19,9 @@ internal class StartRegistrationImpl(
     private val emailRegex = Regex(RegistrationConstants.EMAIL_REGEX)
 
     override suspend fun invoke(request: CreateAccountRequest) = runCatching {
-        if (!emailRegex.matches(request.email)) throw InvalidEmailFormat
+        if (!emailRegex.matches(request.email)) throw InvalidEmailFormat()
         userClient.getUserByEmail(request.email)
-            .onSuccess { throw EmailAlreadyExist }
+            .onSuccess { throw EmailAlreadyExist() }
             //TODO Very questionable check. Rework
             .throwIf { (it as? BusinessError)?.statusCode != HttpStatusCode.NotFound.value }
         startPasskeyRegistration(

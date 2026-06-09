@@ -10,7 +10,7 @@ interface EditUser {
     suspend operator fun invoke(id: Uuid, user: UserEditModel): Result<Unit>
 
     sealed interface Error {
-        data object UserNotFound : BusinessError(
+        class UserNotFound : BusinessError(
             statusCode = HttpStatusCode.NotFound.value,
             code = UserErrorCodes.USER_NOT_EXIST,
             message = "User not found"

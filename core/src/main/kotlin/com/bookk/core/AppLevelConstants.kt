@@ -18,13 +18,7 @@ object AppLevelConstants {
         get() = System.getenv("APPLICATION_REDIS_PASSWORD")
     val eventStreamingHost: String
         get() = System.getenv("APPLICATION_KAFKA_HOSTS")
-    val sslFile: String
-        get() = System.getenv("APPLICATION_SERVICE_SSL_FILE")
-    val sslPass: String
-        get() = System.getenv("APPLICATION_SERVICE_SSL_PASSWORD")
-    val sslAlias: String
-        get() = System.getenv("APPLICATION_SERVICE_SSL_ALIAS")
-    val sslPort: Int
+    val servicePort: Int
         get() = System.getenv("APPLICATION_SERVICE_PORT").toInt()
     val dbSchemaName: String
         get() = System.getenv("APPLICATION_DB_SCHEME")

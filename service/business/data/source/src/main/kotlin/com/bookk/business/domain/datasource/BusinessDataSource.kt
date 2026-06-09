@@ -10,7 +10,7 @@ interface BusinessDataSource {
     suspend fun updateBusiness(model: BusinessUpdateModel)
     suspend fun getBusinessById(id: Uuid): Business?
     suspend fun isBusinessExist(userId: Uuid): Boolean
-    suspend fun deleteUserBusinesses(userId: Uuid)
+    suspend fun deleteUserBusinesses(userId: Uuid): List<Uuid>
     suspend fun getDashboardBusiness(userId: Uuid): Business?
     suspend fun getUserBusinesses(userId: Uuid): UserBusinesses
     suspend fun getPermission(userId: Uuid, businessId: Uuid): Int?

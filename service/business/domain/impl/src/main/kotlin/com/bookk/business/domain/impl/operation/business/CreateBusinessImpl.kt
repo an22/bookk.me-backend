@@ -16,8 +16,8 @@ internal class CreateBusinessImpl(
         name: String,
         currencyCode: String
     ): Result<Business> = transactionManager.transaction {
-        if (name.length !in 2..512) throw CreateBusiness.Error.BusinessValidationError
-        if (businessDataSource.isBusinessExist(userId)) throw CreateBusiness.Error.BusinessExist
+        if (name.length !in 2..512) throw CreateBusiness.Error.BusinessValidationError()
+        if (businessDataSource.isBusinessExist(userId)) throw CreateBusiness.Error.BusinessExist()
         businessDataSource.createBusiness(userId, name, currencyCode).also {
             businessDataSource.setUserPermissions(userId, it.id, ObjectPermission.OWNER.int)
         }

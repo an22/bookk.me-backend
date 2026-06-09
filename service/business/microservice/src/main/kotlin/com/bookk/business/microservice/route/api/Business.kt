@@ -1,8 +1,6 @@
 package com.bookk.business.microservice.route.api
 
-import com.bookk.business.domain.api.business.entity.Business
 import com.bookk.business.domain.api.business.entity.BusinessUpdateModel
-import com.bookk.business.domain.api.business.entity.UserBusinesses
 import com.bookk.business.domain.api.business.operation.CreateBusiness
 import com.bookk.business.domain.api.business.operation.GetBusinessById
 import com.bookk.business.domain.api.business.operation.GetUserBusinesses
@@ -30,14 +28,16 @@ class BusinessCreateRequest(
 fun Route.businessCrud() {
     authenticate {
         /**
-         * Create business
-         * @description Create new business with specific name
-         * @security jwt
-         * @tag business
-         * @request application/protobuf [BusinessCreateRequest]
-         * @response 200 application/protobuf [Business] Created business entity
+         * Summary: Create business
+         * Description: Create new business with specific name
+         * Tag: business
+         * Security: jwt
+         * Body: application/x-protobuf [com.bookk.business.microservice.route.api.BusinessCreateRequest]
+         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Create business errors:
+         *  - BUSINESS_ALREADY_EXIST (Code 200001): Business already exist
+         *  - BUSINESS_NAME_VALIDATION_ERROR (Code 200002): Business name invalid
          */
-        post<Api.Business> {
+         post<Api.Business> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
             val body = call.receive<BusinessCreateRequest>()
             val createBusiness by application.inject<CreateBusiness>()
@@ -49,14 +49,14 @@ fun Route.businessCrud() {
                     currencyCode = body.currencyCode
                 )
             )
-        }
+         }
         /**
-         * Update business
-         * @description Partially update business
-         * @security jwt
-         * @tag business
-         * @request application/protobuf [BusinessUpdateModel] Non-null fields will be updated
-         * @response 204 No content
+         * Summary: Update business
+         * Description: Partially update business
+         * Tag: business
+         * Security: jwt
+         * Body: application/x-protobuf [com.bookk.business.domain.api.business.entity.BusinessUpdateModel] Non-null fields will be updated
+         * Response: 204 application/x-protobuf No content
          */
         put<Api.Business.Id> {
             val body = call.receive<BusinessUpdateModel>()
@@ -65,11 +65,11 @@ fun Route.businessCrud() {
             call.respondWith(updateBusiness(body))
         }
         /**
-         * Get dashboard business info
-         * @description Get all user business and dashboard business id. Dashboard business is a business that user selected to be displayed as main business
-         * @security jwt
-         * @tag business
-         * @response 200 application/protobuf [UserBusinesses] User business info
+         * Summary: Get dashboard business info
+         * Description: Get all user business and dashboard business id. Dashboard business is a business that user selected to be displayed as main business
+         * Tag: business
+         * Security: jwt
+         * Response: 200 application/x-protobuf [com.bookk.business.domain.api.business.entity.UserBusinesses] User business info
          */
         get<Api.Business> { path ->
             val getUserBusinesses by application.inject<GetUserBusinesses>()
@@ -78,10 +78,10 @@ fun Route.businessCrud() {
             call.respondWith(getUserBusinesses(userId = principal.userId))
         }
         /**
-         * Get business by id
-         * @security jwt
-         * @tag business
-         * @response 200 application/protobuf [Business] Business info
+         * Summary: Get business by id
+         * Tag: business
+         * Security: jwt
+         * Response: 200 application/x-protobuf [com.bookk.business.domain.api.business.entity.Business] Business info
          */
         get<Api.Business.Id> { path ->
             val getBusinessById by application.inject<GetBusinessById>()

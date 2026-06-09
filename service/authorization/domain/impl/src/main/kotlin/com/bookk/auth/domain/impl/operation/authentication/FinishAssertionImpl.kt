@@ -27,7 +27,7 @@ internal class FinishAssertionImpl(
 ) : FinishAssertion {
     override suspend fun invoke(request: FinishAssertionRequest): Result<PasskeyCredential> = runCatching {
         val cachedRequest =
-            passKeyDataSource.getCachedChallenge(request.requestId) ?: throw Error.ChallengeWindowExpired
+            passKeyDataSource.getCachedChallenge(request.requestId) ?: throw Error.ChallengeWindowExpired()
         val challenge = AssertionRequest.fromJson(cachedRequest)
         val response = PublicKeyCredential.parseAssertionResponseJson(request.publicKeyCredentialJson)
         passKeyDataSource.deleteCachedChallenge(request.requestId)
@@ -43,8 +43,8 @@ internal class FinishAssertionImpl(
                     )
             }.recover {
                 throw when (it) {
-                    is AssertionFailedException -> Error.PasskeyOwnerNotFound
-                    else -> Error.VerificationFailed
+                    is AssertionFailedException -> Error.PasskeyOwnerNotFound()
+                    else -> Error.VerificationFailed()
                 }
             }.getOrThrow()
             if (result.isSuccess) {
@@ -52,11 +52,11 @@ internal class FinishAssertionImpl(
                     userHandle = result.credential.userHandle.bytes.toUUID(),
                     credentialId = result.credential.credentialId.bytes
                 )
-                if (credentials == null) throw Error.PasskeyOwnerNotFound
+                if (credentials == null) throw Error.PasskeyOwnerNotFound()
                 passKeyDataSource.markAsUsed(credentials.id)
                 credentials
             } else {
-                throw Error.PasskeyOwnerNotFound
+                throw Error.PasskeyOwnerNotFound()
             }
         }
     }

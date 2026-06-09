@@ -33,7 +33,7 @@ class PostStartRegistrationTest {
         val useCase: StartRegistration = mockk()
         val client = createTestClient()
         val request = CreateAccountRequest("firstName", "lastName", "email")
-        coEvery { useCase.invoke(any()) } returns Result.failure(InvalidEmailFormat)
+        coEvery { useCase.invoke(any()) } returns Result.failure(InvalidEmailFormat())
         setupApplication(
             diModule = module {
                 single<StartRegistration> { useCase }
@@ -51,7 +51,7 @@ class PostStartRegistrationTest {
         coVerify { useCase.invoke(eq(request)) }
         assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
         assertEquals(AuthErrorCodes.INVALID_EMAIL_FORMAT, body.errorCode)
-        assertEquals(InvalidEmailFormat.message, body.message)
+        assertEquals(InvalidEmailFormat().message, body.message)
     }
 
     @Test
@@ -60,7 +60,7 @@ class PostStartRegistrationTest {
         val useCase: StartRegistration = mockk()
         val client = createTestClient()
         val request = CreateAccountRequest("firstName", "lastName", "email")
-        coEvery { useCase.invoke(any()) } returns Result.failure(EmailAlreadyExist)
+        coEvery { useCase.invoke(any()) } returns Result.failure(EmailAlreadyExist())
         setupApplication(
             diModule = module {
                 single<StartRegistration> { useCase }
@@ -76,7 +76,7 @@ class PostStartRegistrationTest {
         coVerify { useCase.invoke(eq(request)) }
         assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
         assertEquals(AuthErrorCodes.EMAIL_EXIST, body.errorCode)
-        assertEquals(EmailAlreadyExist.message, body.message)
+        assertEquals(EmailAlreadyExist().message, body.message)
     }
 
     @Test

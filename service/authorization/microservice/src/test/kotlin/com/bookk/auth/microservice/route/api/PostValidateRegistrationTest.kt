@@ -52,7 +52,7 @@ class PostValidateRegistrationTest {
         val useCase: FinishRegistration = mockk()
         val client = createTestClient()
         val request = createSimpleRequest()
-        coEvery { useCase.invoke(any()) } returns Result.failure(InvalidEmailFormat)
+        coEvery { useCase.invoke(any()) } returns Result.failure(InvalidEmailFormat())
         setupApplication(
             diModule = module {
                 single<FinishRegistration> { useCase }
@@ -68,7 +68,7 @@ class PostValidateRegistrationTest {
         coVerify { useCase.invoke(eq(request)) }
         assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
         assertEquals(AuthErrorCodes.INVALID_EMAIL_FORMAT, body.errorCode)
-        assertEquals(InvalidEmailFormat.message, body.message)
+        assertEquals(InvalidEmailFormat().message, body.message)
     }
 
     @Test
@@ -77,7 +77,7 @@ class PostValidateRegistrationTest {
         val useCase: FinishRegistration = mockk()
         val client = createTestClient()
         val request = createSimpleRequest()
-        coEvery { useCase.invoke(any()) } returns Result.failure(UserAlreadyExist)
+        coEvery { useCase.invoke(any()) } returns Result.failure(UserAlreadyExist())
         setupApplication(
             diModule = module {
                 single<FinishRegistration> { useCase }
@@ -93,7 +93,7 @@ class PostValidateRegistrationTest {
         coVerify { useCase.invoke(eq(request)) }
         assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
         assertEquals(AuthErrorCodes.USER_ALREADY_EXIST, body.errorCode)
-        assertEquals(UserAlreadyExist.message, body.message)
+        assertEquals(UserAlreadyExist().message, body.message)
     }
 
     @Test
@@ -102,7 +102,7 @@ class PostValidateRegistrationTest {
         val useCase: FinishRegistration = mockk()
         val client = createTestClient()
         val request = createSimpleRequest()
-        coEvery { useCase.invoke(any()) } returns Result.failure(VerificationFailed)
+        coEvery { useCase.invoke(any()) } returns Result.failure(VerificationFailed())
         setupApplication(
             diModule = module {
                 single<FinishRegistration> { useCase }
@@ -118,7 +118,7 @@ class PostValidateRegistrationTest {
         coVerify { useCase.invoke(eq(request)) }
         assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
         assertEquals(AuthErrorCodes.VERIFICATION_FAILED, body.errorCode)
-        assertEquals(VerificationFailed.message, body.message)
+        assertEquals(VerificationFailed().message, body.message)
     }
 
     @Test
@@ -127,7 +127,7 @@ class PostValidateRegistrationTest {
         val useCase: FinishRegistration = mockk()
         val client = createTestClient()
         val request = createSimpleRequest()
-        coEvery { useCase.invoke(any()) } returns Result.failure(AccountCreationFailed)
+        coEvery { useCase.invoke(any()) } returns Result.failure(AccountCreationFailed())
         setupApplication(
             diModule = module {
                 single<FinishRegistration> { useCase }
@@ -143,7 +143,7 @@ class PostValidateRegistrationTest {
         coVerify { useCase.invoke(eq(request)) }
         assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
         assertEquals(AuthErrorCodes.ACCOUNT_CREATION_FAILED, body.errorCode)
-        assertEquals(AccountCreationFailed.message, body.message)
+        assertEquals(AccountCreationFailed().message, body.message)
     }
 
     @Test

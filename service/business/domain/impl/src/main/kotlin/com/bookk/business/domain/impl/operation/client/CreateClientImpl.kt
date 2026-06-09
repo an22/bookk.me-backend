@@ -13,9 +13,9 @@ internal class CreateClientImpl(
     private val clientDataSource: ClientDataSource
 ) : CreateClient {
     override suspend fun invoke(businessId: Uuid, client: Client): Result<ClientRemote> = transactionManager.transaction {
-        if (client.name.length > MAX_NAME_LENGTH) throw CreateClient.Error.ClientValidationError
-        if (client.lastName.length > MAX_NAME_LENGTH) throw CreateClient.Error.ClientValidationError
-        if (clientDataSource.getClient(businessId, client.phone) != null) throw CreateClient.Error.ClientExist
+        if (client.name.length > MAX_NAME_LENGTH) throw CreateClient.Error.ClientValidationError()
+        if (client.lastName.length > MAX_NAME_LENGTH) throw CreateClient.Error.ClientValidationError()
+        if (clientDataSource.getClient(businessId, client.phone) != null) throw CreateClient.Error.ClientExist()
 
         when (client) {
             is Client.Detached -> clientDataSource.createDetachedClient(businessId, client)

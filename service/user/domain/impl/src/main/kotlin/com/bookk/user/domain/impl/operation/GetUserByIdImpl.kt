@@ -13,7 +13,7 @@ internal class GetUserByIdImpl(
 ) : GetUserById {
 
     override suspend fun invoke(userId: Uuid): Result<User> = transactionManager.transaction {
-        userDataSource.getUserById(userId) ?: throw Error.UserNotFound
+        userDataSource.getUserById(userId) ?: throw Error.UserNotFound()
     }
 
 }

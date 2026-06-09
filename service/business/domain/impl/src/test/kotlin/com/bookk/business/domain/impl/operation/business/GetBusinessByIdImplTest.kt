@@ -46,7 +46,7 @@ internal class GetBusinessByIdImplTest {
         val id = Uuid.random()
         
         coEvery { transactionManager.transaction<Business>(any()) } coAnswers {
-            Result.failure(GetBusinessById.Error.NotFound)
+            Result.failure(GetBusinessById.Error.NotFound())
         }
         coEvery { businessDataSource.getBusinessById(id) } returns null
 
@@ -55,6 +55,6 @@ internal class GetBusinessByIdImplTest {
 
         then()
         assertTrue(result.isFailure)
-        assertEquals(GetBusinessById.Error.NotFound, result.exceptionOrNull())
+        assertEquals(GetBusinessById.Error.NotFound(), result.exceptionOrNull())
     }
 }

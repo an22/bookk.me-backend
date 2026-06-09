@@ -11,13 +11,13 @@ interface CreateClient {
     suspend operator fun invoke(businessId: Uuid, client: Client): Result<ClientRemote>
 
     sealed interface Error {
-        data object ClientExist : BusinessError(
+        class ClientExist : BusinessError(
             statusCode = HttpStatusCode.UnprocessableEntity.value,
             code = BusinessErrorCodes.BUSINESS_CLIENT_EXISTS,
             message = "Client with this phone already exists"
         )
 
-        data object ClientValidationError : BusinessError(
+        class ClientValidationError : BusinessError(
             statusCode = HttpStatusCode.UnprocessableEntity.value,
             code = BusinessErrorCodes.BUSINESS_CLIENT_NAME_VALIDATION_ERROR,
             message = "Client name or last name is too long"

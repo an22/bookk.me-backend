@@ -24,7 +24,7 @@ internal class GenerateAuthTokenImpl(
 ) : GenerateAuthToken {
 
     override suspend fun invoke(source: Source): Result<AuthTokens> = transactionManager.transaction {
-        val deviceRecord = source.getDevice() ?: throw InvalidCredentials
+        val deviceRecord = source.getDevice() ?: throw InvalidCredentials()
         val accessToken = createAccessToken(deviceRecord)
         val refreshId = Uuid.random()
         val refreshToken = createRefreshToken(refreshId, deviceRecord)
@@ -61,7 +61,7 @@ internal class GenerateAuthTokenImpl(
     private suspend fun Source.getDevice(): Device? {
         return when (this) {
             is Source.FromRefresh -> deviceDataSource.getDeviceById(deviceId)?.also {
-                if (it.deviceInfo.refreshTokenId != tokenId) throw InvalidCredentials
+                if (it.deviceInfo.refreshTokenId != tokenId) throw InvalidCredentials()
             }
 
             is Source.FromAuthDevice -> deviceDataSource.getDeviceByAuthIdAndUUID(authId, deviceUUID)

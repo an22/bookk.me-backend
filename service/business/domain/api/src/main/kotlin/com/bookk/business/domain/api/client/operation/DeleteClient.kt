@@ -9,7 +9,7 @@ interface DeleteClient {
     suspend operator fun invoke(businessId: Uuid, id: Uuid): Result<Unit>
 
     sealed interface Error {
-        data object NotFound : BusinessError(
+        class NotFound : BusinessError(
             statusCode = HttpStatusCode.NotFound.value,
             code = BusinessErrorCodes.BUSINESS_CLIENT_NOT_EXISTS,
             message = "Client not found"

@@ -51,6 +51,6 @@ internal class DeleteClientImplTest {
 
         then()
         assertTrue(result.isFailure)
-        assertEquals(DeleteClient.Error.NotFound, result.exceptionOrNull())
+        assertEquals(DeleteClient.Error.NotFound(), result.exceptionOrNull())
     }
 }

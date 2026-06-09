@@ -12,6 +12,6 @@ internal class GetDashboardBusinessImpl(
     private val transactionManager: TransactionManager
 ): GetDashboardBusiness {
     override suspend fun invoke(userId: Uuid): Result<Business> = transactionManager.transaction {
-        businessDataSource.getDashboardBusiness(userId) ?: throw NotFound
+        businessDataSource.getDashboardBusiness(userId) ?: throw NotFound()
     }
 }

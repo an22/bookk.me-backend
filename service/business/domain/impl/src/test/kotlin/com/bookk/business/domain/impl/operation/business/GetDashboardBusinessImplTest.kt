@@ -46,7 +46,7 @@ internal class GetDashboardBusinessImplTest {
         val userId = Uuid.random()
         
         coEvery { transactionManager.transaction<Business>(any()) } coAnswers {
-            Result.failure(GetDashboardBusiness.Error.NotFound)
+            Result.failure(GetDashboardBusiness.Error.NotFound())
         }
         coEvery { businessDataSource.getDashboardBusiness(userId) } returns null
 
@@ -55,6 +55,6 @@ internal class GetDashboardBusinessImplTest {
 
         then()
         assertTrue(result.isFailure)
-        assertEquals(GetDashboardBusiness.Error.NotFound, result.exceptionOrNull())
+        assertEquals(GetDashboardBusiness.Error.NotFound(), result.exceptionOrNull())
     }
 }

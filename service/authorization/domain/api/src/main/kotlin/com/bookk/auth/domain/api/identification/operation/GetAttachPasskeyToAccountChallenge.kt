@@ -10,7 +10,7 @@ interface GetAttachPasskeyToAccountChallenge {
     suspend operator fun invoke(authId: Uuid, deviceId: Uuid, userId: Uuid): Result<RegistrationChallengeResponse>
 
     sealed interface Error {
-        data object UnableToGeneratePasskeyChallenge : BusinessError(
+        class UnableToGeneratePasskeyChallenge : BusinessError(
             statusCode = HttpStatusCode.UnprocessableEntity.value,
             code = AuthErrorCodes.UNABLE_TO_GENERATE_REGISTRATION_CHALLENGE,
             message = "Unable to provide registration challenge"

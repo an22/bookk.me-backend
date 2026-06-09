@@ -83,7 +83,7 @@ internal class PostValidateSignInTest {
             ),
             publicKeyCredentialJson = "mock"
         )
-        coEvery { useCase.invoke(any()) } returns Result.failure(PasskeyOwnerNotFound)
+        coEvery { useCase.invoke(any()) } returns Result.failure(PasskeyOwnerNotFound())
 
         whenn()
         val response = client.post(AuthRouting.Api.Auth.SignIn()) {
@@ -94,7 +94,7 @@ internal class PostValidateSignInTest {
         coVerify { useCase.invoke(any()) }
         assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
         assertEquals(AuthErrorCodes.PASSKEY_OWNER_NOT_FOUND, body.errorCode)
-        assertEquals(PasskeyOwnerNotFound.message, body.message)
+        assertEquals(PasskeyOwnerNotFound().message, body.message)
     }
 
     @Test
@@ -116,7 +116,7 @@ internal class PostValidateSignInTest {
             ),
             publicKeyCredentialJson = "mock"
         )
-        coEvery { useCase.invoke(any()) } returns Result.failure(ChallengeWindowExpired)
+        coEvery { useCase.invoke(any()) } returns Result.failure(ChallengeWindowExpired())
 
         whenn()
         val response = client.post(AuthRouting.Api.Auth.SignIn()) {
@@ -127,7 +127,7 @@ internal class PostValidateSignInTest {
         coVerify { useCase.invoke(any()) }
         assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
         assertEquals(AuthErrorCodes.CHALLENGE_WINDOW_EXPIRED, body.errorCode)
-        assertEquals(ChallengeWindowExpired.message, body.message)
+        assertEquals(ChallengeWindowExpired().message, body.message)
     }
 
     @Test
@@ -149,7 +149,7 @@ internal class PostValidateSignInTest {
             ),
             publicKeyCredentialJson = "mock"
         )
-        coEvery { useCase.invoke(any()) } returns Result.failure(VerificationFailed)
+        coEvery { useCase.invoke(any()) } returns Result.failure(VerificationFailed())
 
         whenn()
         val response = client.post(AuthRouting.Api.Auth.SignIn()) {
@@ -160,6 +160,6 @@ internal class PostValidateSignInTest {
         coVerify { useCase.invoke(any()) }
         assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
         assertEquals(AuthErrorCodes.VERIFICATION_FAILED, body.errorCode)
-        assertEquals(VerificationFailed.message, body.message)
+        assertEquals(VerificationFailed().message, body.message)
     }
 }

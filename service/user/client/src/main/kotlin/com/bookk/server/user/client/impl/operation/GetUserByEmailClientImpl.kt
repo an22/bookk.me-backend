@@ -24,7 +24,7 @@ internal class GetUserByEmailClientImpl(
             response.body<User>()
         } else {
             when (response.body<SimpleServerError>().errorCode) {
-                UserErrorCodes.USER_NOT_EXIST -> throw Error.UserNotFound
+                UserErrorCodes.USER_NOT_EXIST -> throw Error.UserNotFound()
                 else -> throw UnsupportedOperationException()
             }
         }

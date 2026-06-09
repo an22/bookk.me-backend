@@ -34,12 +34,12 @@ internal class FinishPasskeyRegistrationImpl(
     override suspend fun verifyRequest(request: FinishRegistrationRequest): Result<PasskeyCredential> {
         return transactionManager.transaction {
             val pkc = PublicKeyCredential.parseRegistrationResponseJson(request.publicKeyCredentialJson)
-            val challengeJson = passKeyDS.getCachedChallenge(request.requestId) ?: throw ChallengeWindowExpired
+            val challengeJson = passKeyDS.getCachedChallenge(request.requestId) ?: throw ChallengeWindowExpired()
             val challenge = PublicKeyCredentialCreationOptions.fromJson(challengeJson)
             validateRegistrationChallenge(request, challenge, pkc).asPasskeyCredential(pkc, challenge)
         }.recoverCatching {
             when (it) {
-                is RegistrationFailedException -> throw VerificationFailed
+                is RegistrationFailedException -> throw VerificationFailed()
                 else -> throw it
             }
         }

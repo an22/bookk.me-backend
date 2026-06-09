@@ -11,7 +11,7 @@ internal class DeleteClientImpl(
 ) : DeleteClient {
     override suspend fun invoke(businessId: Uuid, id: Uuid): Result<Unit> = transactionManager.transaction {
         if (!clientDataSource.deleteClient(businessId, id)) {
-            throw DeleteClient.Error.NotFound
+            throw DeleteClient.Error.NotFound()
         }
     }
 }

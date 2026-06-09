@@ -23,7 +23,7 @@ internal class DeleteAccountImpl(
         request: FinishAssertionRequest
     ): Result<Unit> = transactionManager.transaction {
         finishAssertion(request).getOrThrow()
-        val authRecord = accountDataSource.getAuthRecordByUserId(userId) ?: throw InvalidCredentials
+        val authRecord = accountDataSource.getAuthRecordByUserId(userId) ?: throw InvalidCredentials()
         eventProducer.send(AuthEvent.UserDeleted(authRecord.userId))
         accountDataSource.deleteAuthorization(authRecord.userId)
     }

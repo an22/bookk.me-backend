@@ -33,9 +33,11 @@ fun Route.businessCrud() {
          * Tag: business
          * Security: jwt
          * RequestBody: application/x-protobuf [com.bookk.business.microservice.route.api.BusinessCreateRequest]
-         * Response: 200 application/x-protobuf [com.bookk.business.domain.api.business.entity.Business] Created business entity
+         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Create business errors:
+         *  - BUSINESS_ALREADY_EXIST (Code 200001): Business already exist
+         *  - BUSINESS_NAME_VALIDATION_ERROR (Code 200002): Business name invalid
          */
-        post<Api.Business> {
+         post<Api.Business> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
             val body = call.receive<BusinessCreateRequest>()
             val createBusiness by application.inject<CreateBusiness>()
@@ -47,7 +49,7 @@ fun Route.businessCrud() {
                     currencyCode = body.currencyCode
                 )
             )
-        }
+         }
         /**
          * Summary: Update business
          * Description: Partially update business

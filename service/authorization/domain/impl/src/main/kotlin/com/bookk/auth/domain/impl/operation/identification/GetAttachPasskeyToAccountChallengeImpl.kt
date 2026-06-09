@@ -23,7 +23,7 @@ internal class GetAttachPasskeyToAccountChallengeImpl(
         return runCatching {
             val auth = getAuthorizationInfo(authId)
             val device = getDeviceInfo(deviceId)
-            val user = userClient.getUserById(userId).getOrElse { throw UnableToGeneratePasskeyChallenge }
+            val user = userClient.getUserById(userId).getOrElse { throw UnableToGeneratePasskeyChallenge() }
             val handle = auth.uuid
             val displayName = "${user.name} ${user.lastName} - ${device.deviceInfo.deviceName}"
             return startPasskeyRegistration(handle, displayName)
@@ -32,13 +32,13 @@ internal class GetAttachPasskeyToAccountChallengeImpl(
 
     private suspend fun getAuthorizationInfo(authId: Uuid): Authentication {
         return transactionManager.transaction {
-            accountDataSource.getAuthRecordById(authId) ?: throw UnableToGeneratePasskeyChallenge
+            accountDataSource.getAuthRecordById(authId) ?: throw UnableToGeneratePasskeyChallenge()
         }.getOrThrow()
     }
 
     private suspend fun getDeviceInfo(deviceId: Uuid): Device {
         return transactionManager.transaction {
-            deviceDataSource.getDeviceById(deviceId) ?: throw UnableToGeneratePasskeyChallenge
+            deviceDataSource.getDeviceById(deviceId) ?: throw UnableToGeneratePasskeyChallenge()
         }.getOrThrow()
     }
 }

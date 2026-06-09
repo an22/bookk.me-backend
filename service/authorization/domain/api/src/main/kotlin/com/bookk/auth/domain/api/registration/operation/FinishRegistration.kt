@@ -10,8 +10,8 @@ interface FinishRegistration {
     suspend operator fun invoke(request: VerifyAccountCreationRequest): Result<AuthTokens>
 
     sealed interface Error {
-        data object InvalidEmailFormat : BusinessError(422, AuthErrorCodes.INVALID_EMAIL_FORMAT, "Invalid email format"), Error
-        data object UserAlreadyExist : BusinessError(422, AuthErrorCodes.USER_ALREADY_EXIST, "User with this email already exist"), Error
-        data object AccountCreationFailed : BusinessError(422, AuthErrorCodes.ACCOUNT_CREATION_FAILED, "Error during account creation, try again later"), Error
+        class InvalidEmailFormat : BusinessError(422, AuthErrorCodes.INVALID_EMAIL_FORMAT, "Invalid email format"), Error
+        class UserAlreadyExist : BusinessError(422, AuthErrorCodes.USER_ALREADY_EXIST, "User with this email already exist"), Error
+        class AccountCreationFailed : BusinessError(422, AuthErrorCodes.ACCOUNT_CREATION_FAILED, "Error during account creation, try again later"), Error
     }
 }

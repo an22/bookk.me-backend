@@ -28,7 +28,9 @@ fun Route.serviceGroupCrud() {
          * Security: jwt
          * RequestBody: application/x-protobuf [com.bookk.business.domain.api.service.entity.ServiceGroup]
          * Response: 200 application/x-protobuf [com.bookk.business.domain.api.service.entity.ServiceGroup] Created service entity
-         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Create service group errors
+         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Create service group errors:
+         *  - BUSINESS_SERVICE_GROUP_EXISTS (Code 200010): Service group with this name already exists
+         *  - BUSINESS_SERVICE_GROUP_VALIDATION_ERROR (Code 200011): Invalid service group name
          */
         post<Api.ServiceGroup> {
             val principal = requireNotNull(call.principal<AppPrincipal>())

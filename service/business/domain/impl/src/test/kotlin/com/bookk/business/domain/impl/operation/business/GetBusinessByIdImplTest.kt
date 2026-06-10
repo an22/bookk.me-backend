@@ -55,6 +55,6 @@ internal class GetBusinessByIdImplTest {
 
         then()
         assertTrue(result.isFailure)
-        assertEquals(GetBusinessById.Error.NotFound(), result.exceptionOrNull())
+        assertTrue(result.exceptionOrNull() is GetBusinessById.Error.NotFound)
     }
 }

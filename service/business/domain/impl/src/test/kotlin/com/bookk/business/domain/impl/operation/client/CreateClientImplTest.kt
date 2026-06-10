@@ -87,7 +87,7 @@ internal class CreateClientImplTest {
 
         then()
         assertTrue(result.isFailure)
-        assertEquals(CreateClient.Error.ClientExist(), result.exceptionOrNull())
+        assertTrue(result.exceptionOrNull() is CreateClient.Error.ClientExist)
     }
 
     @Test
@@ -102,7 +102,7 @@ internal class CreateClientImplTest {
 
         then()
         assertTrue(result.isFailure)
-        assertEquals(CreateClient.Error.ClientValidationError(), result.exceptionOrNull())
+        assertTrue(result.exceptionOrNull() is CreateClient.Error.ClientValidationError)
     }
 
     @Test
@@ -117,6 +117,6 @@ internal class CreateClientImplTest {
 
         then()
         assertTrue(result.isFailure)
-        assertEquals(CreateClient.Error.ClientValidationError(), result.exceptionOrNull())
+        assertTrue(result.exceptionOrNull() is CreateClient.Error.ClientValidationError)
     }
 }

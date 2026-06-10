@@ -11,4 +11,5 @@ object AppointmentErrorCodes {
     const val APPOINTMENT_ALREADY_COMPLETED = BASE + 6
     const val REQUEST_ALREADY_DECLINED = BASE + 7
     const val REQUEST_ALREADY_APPROVED = BASE + 8
+    const val PLUGIN_ALREADY_ENABLED = BASE + 9
 }

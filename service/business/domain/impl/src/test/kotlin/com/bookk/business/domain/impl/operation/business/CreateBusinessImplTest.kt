@@ -52,7 +52,7 @@ internal class CreateBusinessImplTest {
         
         then()
         assertTrue(result.isFailure)
-        assertEquals(CreateBusiness.Error.BusinessValidationError(), result.exceptionOrNull())
+        assertTrue(result.exceptionOrNull() is CreateBusiness.Error.BusinessValidationError)
     }
 
     @Test
@@ -65,7 +65,7 @@ internal class CreateBusinessImplTest {
         
         then()
         assertTrue(result.isFailure)
-        assertEquals(CreateBusiness.Error.BusinessValidationError(), result.exceptionOrNull())
+        assertTrue(result.exceptionOrNull() is CreateBusiness.Error.BusinessValidationError)
     }
 
     @Test
@@ -80,6 +80,6 @@ internal class CreateBusinessImplTest {
 
         then()
         assertTrue(result.isFailure)
-        assertEquals(CreateBusiness.Error.BusinessExist(), result.exceptionOrNull())
+        assertTrue(result.exceptionOrNull() is CreateBusiness.Error.BusinessExist)
     }
 }

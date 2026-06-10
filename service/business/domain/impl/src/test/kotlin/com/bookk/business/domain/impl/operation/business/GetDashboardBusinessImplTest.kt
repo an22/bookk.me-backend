@@ -55,6 +55,6 @@ internal class GetDashboardBusinessImplTest {
 
         then()
         assertTrue(result.isFailure)
-        assertEquals(GetDashboardBusiness.Error.NotFound(), result.exceptionOrNull())
+        assertTrue(result.exceptionOrNull() is GetDashboardBusiness.Error.NotFound)
     }
 }

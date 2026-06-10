@@ -10,6 +10,25 @@ The project is structured as a modular monolith split into microservices, librar
   - `data/`: Persistence layers (Exposed ORM).
   - `microservice/`: Ktor-based routing, authentication, and dependency injection (Koin).
 
+### 1. Ktor Route Documentation Standard
+
+- **Documentation Style**: Use KDoc-based OpenAPI annotations.
+- **Naming/Structure Convention**:
+  - **MANDATORY**: ALWAYS use `Body:` (not `RequestBody:`) for request payload documentation in KDoc OpenAPI tags. Any future documentation created or updated MUST use `Body:`.
+  - Required format:
+    ```kotlin
+    /**
+     * Summary: ...
+     * Description: ...
+     * Tag: ...
+     * Security: jwt // Only if protected by authenticate {}
+     * Body: application/x-protobuf [com.package.Type] Description
+     * Response: ...
+     */
+    ```
+- **Fully Qualified Types**: Use fully qualified package names for all types in `Body` and `Response` documentation (e.g., `[com.bookk.business.domain.api.business.entity.Business]`).
+- **Error Documentation**: Map every `sealed interface Error` to a documentation entry, specifying code and description.
+
 ## Unit Test Generation Guidelines
 
 ### 1. Web Layer (Ktor Routing) Tests

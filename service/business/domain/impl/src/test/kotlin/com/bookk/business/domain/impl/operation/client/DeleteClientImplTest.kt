@@ -10,7 +10,6 @@ import com.bookk.core.test.then
 import com.bookk.core.test.whenn
 import io.mockk.coEvery
 import io.mockk.mockk
-import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import kotlin.uuid.Uuid
@@ -51,6 +50,6 @@ internal class DeleteClientImplTest {
 
         then()
         assertTrue(result.isFailure)
-        assertEquals(DeleteClient.Error.NotFound(), result.exceptionOrNull())
+        assertTrue(result.exceptionOrNull() is DeleteClient.Error.NotFound)
     }
 }

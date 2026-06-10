@@ -186,7 +186,13 @@ private suspend fun storeResponse(
             else -> null
         } ?: HttpStatusCode.OK.value
 
-    if (HttpStatusCode.fromValue(status) in pluginConfig.ignoreHttpStatusCodes) return
+    if (HttpStatusCode.fromValue(status) in pluginConfig.ignoreHttpStatusCodes) {
+        pluginConfig.idempotentResponseRepository?.release(
+            requestIdentity,
+            idempotencyKey,
+        )
+        return
+    }
 
     val headers = call.response.headers.allValues().toMap()
 

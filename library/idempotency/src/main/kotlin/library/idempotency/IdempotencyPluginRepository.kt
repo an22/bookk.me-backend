@@ -16,6 +16,11 @@ interface IdempotentResponseRepository {
         idempotencyKey: IdempotencyKey,
     ): IdempotencyResponse?
 
+    suspend fun release(
+        resource: String,
+        idempotencyKey: IdempotencyKey,
+    )
+
     suspend fun deleteExpiredResponses(lastValidDate: OffsetDateTime)
 }
 

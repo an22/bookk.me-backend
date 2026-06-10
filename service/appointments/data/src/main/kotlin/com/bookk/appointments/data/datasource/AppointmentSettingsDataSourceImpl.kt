@@ -19,8 +19,8 @@ import kotlin.uuid.toJavaUuid
 internal class AppointmentSettingsDataSourceImpl : DataSource(), AppointmentSettingsDataSource {
     override suspend fun create(settings: AppointmentSettings): AppointmentSettings = dbQuery {
         val settingsEntity = SettingsEntity.new(settings)
-        WorkingHourEntity.batchInsert(settings.id, settings.workingHours)
-        DayOffEntity.batchInsert(settings.id, settings.dayOffs)
+        WorkingHourEntity.batchInsert(settingsEntity.id.value, settings.workingHours)
+        DayOffEntity.batchInsert(settingsEntity.id.value, settings.dayOffs)
         settingsEntity
             .apply { refresh() }
             .domain()
@@ -28,8 +28,9 @@ internal class AppointmentSettingsDataSourceImpl : DataSource(), AppointmentSett
 
     override suspend fun update(settings: AppointmentSettings): AppointmentSettings = dbQuery {
         val settingsEntity = SettingsEntity.findByIdAndUpdate(settings) ?: throw Error.NotFound()
-        WorkingHourEntity.batchInsert(settings.id, settings.workingHours)
-        DayOffEntity.batchInsert(settings.id, settings.dayOffs)
+        settingsEntity.flush()
+        WorkingHourEntity.batchInsert(settingsEntity.id.value, settings.workingHours)
+        DayOffEntity.batchInsert(settingsEntity.id.value, settings.dayOffs)
         settingsEntity
             .apply { refresh() }
             .domain()

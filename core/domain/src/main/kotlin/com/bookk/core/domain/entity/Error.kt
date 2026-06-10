@@ -24,3 +24,10 @@ suspend inline fun <T> Result<T>.onPermissionsMissing(crossinline action: suspen
         else throw it
     }
 }
+
+suspend inline fun <T> Result<T>.onPermissionsMissingReturn(crossinline action: suspend () -> T): Result<T> {
+    return recoverCatching {
+        if (it.isPermissionFailure()) action()
+        else throw it
+    }
+}

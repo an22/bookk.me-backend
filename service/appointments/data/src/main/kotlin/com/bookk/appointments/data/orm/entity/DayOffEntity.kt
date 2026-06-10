@@ -9,19 +9,16 @@ import org.jetbrains.exposed.v1.dao.UUIDEntity
 import org.jetbrains.exposed.v1.jdbc.batchInsert
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import java.util.UUID
-import kotlin.uuid.Uuid
-import kotlin.uuid.toJavaUuid
 
 internal class DayOffEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var settings by SettingsEntity referencedOn DayOffsTable.settingsId
     var date by DayOffsTable.date
 
     companion object : DecoratorUUIDEntityClass<DayOffEntity>(DayOffsTable) {
-        fun batchInsert(settingsId: Uuid, dates: List<LocalDate>) {
-            val uuid = settingsId.toJavaUuid()
-            DayOffsTable.deleteWhere { DayOffsTable.settingsId eq uuid }
+        fun batchInsert(settingsId: UUID, dates: List<LocalDate>) {
+            DayOffsTable.deleteWhere { DayOffsTable.settingsId eq settingsId }
             DayOffsTable.batchInsert(dates) {
-                this[DayOffsTable.settingsId] = uuid
+                this[DayOffsTable.settingsId] = settingsId
             }
         }
     }

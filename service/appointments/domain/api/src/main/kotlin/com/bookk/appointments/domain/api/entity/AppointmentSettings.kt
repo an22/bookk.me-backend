@@ -62,7 +62,7 @@ data class AppointmentSettings(
 }
 
 @Serializable
-class WorkHour(
+data class WorkHour(
     val dayOfWeek: DayOfWeek,
     val from: LocalTime,
     val to: LocalTime

@@ -261,6 +261,33 @@ internal class CreateAppointmentRequestImplTest {
     }
 
     @Test
+    fun `should return failure when request overlaps with existing appointment`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+        val businessId = Uuid.random()
+        val request = AppointmentRequest.stub(userId = userId, businessId = businessId)
+        val settings = mockk<AppointmentSettings>()
+
+        with(fixture) {
+            coEvery { settingsDataSource.getForUpdate(businessId) } returns settings
+            coEvery { settings.automaticApproval } returns false
+            coEvery { settings.isInWorkday(request.date) } returns false
+            coEvery { settings.isInWorktime(request.date) } returns false
+            coEvery { permissionsDataSource.getPermissions(userId, businessId) } returns EDIT.int
+            coEvery { requestDataSource.hasOverlapsWith(request) } returns true
+            transactionManager.mockTransaction()
+        }
+
+        whenn()
+        val result = fixture.sut.invoke(userId, request)
+
+        then()
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is CreateAppointmentRequest.Error.RequestForThisTimeExists)
+    }
+
+    @Test
     fun `should send event if appointment created`() = runUnitTest {
         given()
         val fixture = SutFixture()

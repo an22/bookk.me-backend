@@ -4,6 +4,7 @@ import com.bookk.business.domain.api.business.entity.Business
 import com.bookk.business.domain.api.business.operation.GetBusinessById
 import com.bookk.business.domain.datasource.BusinessDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
+import com.bookk.core.domain.datasource.transaction.mockTransaction
 import com.bookk.core.test.given
 import com.bookk.core.test.runUnitTest
 import com.bookk.core.test.then
@@ -17,23 +18,25 @@ import kotlin.uuid.Uuid
 
 internal class GetBusinessByIdImplTest {
 
-    private val businessDataSource = mockk<BusinessDataSource>()
-    private val transactionManager = mockk<TransactionManager>()
-    private val sut = GetBusinessByIdImpl(businessDataSource, transactionManager)
+    private class SutFixture {
+        val businessDataSource = mockk<BusinessDataSource>()
+        val transactionManager = mockk<TransactionManager>()
+        val sut = GetBusinessByIdImpl(businessDataSource, transactionManager)
+    }
 
     @Test
     fun `should return business when exists`() = runUnitTest {
         given()
+        val fixture = SutFixture()
         val id = Uuid.random()
         val business = Business(id, "Test", "Desc", "Addr", null, "USD", emptyList())
-        
-        coEvery { transactionManager.transaction<Business>(any()) } coAnswers {
-            Result.success(firstArg<suspend () -> Business>().invoke())
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { businessDataSource.getBusinessById(id) } returns business
         }
-        coEvery { businessDataSource.getBusinessById(id) } returns business
 
         whenn()
-        val result = sut(id)
+        val result = fixture.sut(id)
 
         then()
         assertTrue(result.isSuccess)
@@ -43,15 +46,15 @@ internal class GetBusinessByIdImplTest {
     @Test
     fun `should return failure when not exists`() = runUnitTest {
         given()
+        val fixture = SutFixture()
         val id = Uuid.random()
-        
-        coEvery { transactionManager.transaction<Business>(any()) } coAnswers {
-            Result.failure(GetBusinessById.Error.NotFound())
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { businessDataSource.getBusinessById(id) } returns null
         }
-        coEvery { businessDataSource.getBusinessById(id) } returns null
 
         whenn()
-        val result = sut(id)
+        val result = fixture.sut(id)
 
         then()
         assertTrue(result.isFailure)

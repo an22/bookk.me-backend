@@ -1,5 +1,6 @@
 package com.bookk.business.microservice.route.api
 
+import com.bookk.business.domain.api.error.BusinessErrorCodes
 import com.bookk.business.domain.api.service.entity.Service
 import com.bookk.business.domain.api.service.entity.ServiceGroup
 import com.bookk.business.domain.api.service.operation.CreateService
@@ -7,6 +8,7 @@ import com.bookk.business.domain.api.service.operation.DeleteService
 import com.bookk.business.domain.api.service.operation.GetServices
 import com.bookk.business.domain.api.service.operation.UpdateService
 import com.bookk.business.microservice.route.BusinessRouting
+import com.bookk.core.domain.entity.SimpleServerError
 import com.bookk.core.service.auth.AppPrincipal
 import com.bookk.core.service.test.createTestClient
 import com.bookk.core.service.test.routeTest
@@ -14,6 +16,7 @@ import com.bookk.core.service.test.setupApplication
 import com.bookk.core.test.given
 import com.bookk.core.test.then
 import com.bookk.core.test.whenn
+import io.ktor.client.call.body
 import io.ktor.client.plugins.resources.delete
 import io.ktor.client.plugins.resources.get
 import io.ktor.client.plugins.resources.post
@@ -22,6 +25,7 @@ import io.ktor.client.request.setBody
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.install
 import io.ktor.server.auth.Authentication
+import io.ktor.server.auth.bearer
 import io.mockk.coEvery
 import io.mockk.mockk
 import org.joda.money.Money
@@ -154,9 +158,9 @@ internal class ServiceCrudTest {
         given()
         val useCase: DeleteService = mockk()
         val id = Uuid.random()
-        
+
         coEvery { useCase.invoke(userId, businessId, id) } returns Result.success(Unit)
-        
+
         setupApplication(
             extension = {
                 install(Authentication) {
@@ -170,12 +174,213 @@ internal class ServiceCrudTest {
             },
             routeUnderTest = { serviceCrud() }
         )
-        
+
         whenn()
         val client = createTestClient()
         val response = client.delete(BusinessRouting.Api.Service.Id(BusinessRouting.Api.Service(businessId = businessId), id))
-        
+
         then()
         assertEquals(HttpStatusCode.NoContent, response.status)
+    }
+
+    @Test
+    fun `should return unprocessable entity when service already exists on create`() = routeTest {
+        given()
+        val useCase: CreateService = mockk()
+        val service = createTestService()
+        coEvery { useCase.invoke(userId, service) } returns Result.failure(CreateService.Error.ServiceExist())
+
+        setupApplication(
+            extension = {
+                install(Authentication) {
+                    provider {
+                        authenticate { it.principal(AppPrincipal(Uuid.random(), userId, Uuid.random())) }
+                    }
+                }
+            },
+            diModule = module { single { useCase } },
+            routeUnderTest = { serviceCrud() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.post(BusinessRouting.Api.Service(businessId = businessId)) {
+            setBody(service)
+        }
+
+        then()
+        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
+        assertEquals(BusinessErrorCodes.BUSINESS_SERVICE_EXISTS, response.body<SimpleServerError>().errorCode)
+    }
+
+    @Test
+    fun `should return unprocessable entity when service validation error on create`() = routeTest {
+        given()
+        val useCase: CreateService = mockk()
+        val service = createTestService()
+        coEvery { useCase.invoke(userId, service) } returns Result.failure(CreateService.Error.ValidationError())
+
+        setupApplication(
+            extension = {
+                install(Authentication) {
+                    provider {
+                        authenticate { it.principal(AppPrincipal(Uuid.random(), userId, Uuid.random())) }
+                    }
+                }
+            },
+            diModule = module { single { useCase } },
+            routeUnderTest = { serviceCrud() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.post(BusinessRouting.Api.Service(businessId = businessId)) {
+            setBody(service)
+        }
+
+        then()
+        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
+        assertEquals(BusinessErrorCodes.BUSINESS_SERVICE_NAME_VALIDATION_ERROR, response.body<SimpleServerError>().errorCode)
+    }
+
+    @Test
+    fun `should return unprocessable entity when service already exists on update`() = routeTest {
+        given()
+        val useCase: UpdateService = mockk()
+        val service = createTestService()
+        coEvery { useCase.invoke(userId, service) } returns Result.failure(UpdateService.Error.ServiceExist())
+
+        setupApplication(
+            extension = {
+                install(Authentication) {
+                    provider {
+                        authenticate { it.principal(AppPrincipal(Uuid.random(), userId, Uuid.random())) }
+                    }
+                }
+            },
+            diModule = module { single { useCase } },
+            routeUnderTest = { serviceCrud() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.put(BusinessRouting.Api.Service.Id(BusinessRouting.Api.Service(businessId = businessId), service.id)) {
+            setBody(service)
+        }
+
+        then()
+        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
+        assertEquals(BusinessErrorCodes.BUSINESS_SERVICE_EXISTS, response.body<SimpleServerError>().errorCode)
+    }
+
+    @Test
+    fun `should return unprocessable entity when service validation error on update`() = routeTest {
+        given()
+        val useCase: UpdateService = mockk()
+        val service = createTestService()
+        coEvery { useCase.invoke(userId, service) } returns Result.failure(CreateService.Error.ValidationError())
+
+        setupApplication(
+            extension = {
+                install(Authentication) {
+                    provider {
+                        authenticate { it.principal(AppPrincipal(Uuid.random(), userId, Uuid.random())) }
+                    }
+                }
+            },
+            diModule = module { single { useCase } },
+            routeUnderTest = { serviceCrud() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.put(BusinessRouting.Api.Service.Id(BusinessRouting.Api.Service(businessId = businessId), service.id)) {
+            setBody(service)
+        }
+
+        then()
+        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
+        assertEquals(BusinessErrorCodes.BUSINESS_SERVICE_NAME_VALIDATION_ERROR, response.body<SimpleServerError>().errorCode)
+    }
+
+    @Test
+    fun `should return unauthorized when creating service without authentication`() = routeTest {
+        given()
+        val useCase: CreateService = mockk()
+
+        setupApplication(
+            extension = { install(Authentication) { bearer { authenticate { null } } } },
+            diModule = module { single { useCase } },
+            routeUnderTest = { serviceCrud() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.post(BusinessRouting.Api.Service(businessId = businessId)) {
+            setBody(createTestService())
+        }
+
+        then()
+        assertEquals(HttpStatusCode.Unauthorized, response.status)
+    }
+
+    @Test
+    fun `should return unauthorized when updating service without authentication`() = routeTest {
+        given()
+        val useCase: UpdateService = mockk()
+        val service = createTestService()
+
+        setupApplication(
+            extension = { install(Authentication) { bearer { authenticate { null } } } },
+            diModule = module { single { useCase } },
+            routeUnderTest = { serviceCrud() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.put(BusinessRouting.Api.Service.Id(BusinessRouting.Api.Service(businessId = businessId), service.id)) {
+            setBody(service)
+        }
+
+        then()
+        assertEquals(HttpStatusCode.Unauthorized, response.status)
+    }
+
+    @Test
+    fun `should return unauthorized when getting services without authentication`() = routeTest {
+        given()
+        val useCase: GetServices = mockk()
+
+        setupApplication(
+            extension = { install(Authentication) { bearer { authenticate { null } } } },
+            diModule = module { single { useCase } },
+            routeUnderTest = { serviceCrud() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.get(BusinessRouting.Api.Service(businessId = businessId))
+
+        then()
+        assertEquals(HttpStatusCode.Unauthorized, response.status)
+    }
+
+    @Test
+    fun `should return unauthorized when deleting service without authentication`() = routeTest {
+        given()
+        val useCase: DeleteService = mockk()
+
+        setupApplication(
+            extension = { install(Authentication) { bearer { authenticate { null } } } },
+            diModule = module { single { useCase } },
+            routeUnderTest = { serviceCrud() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.delete(BusinessRouting.Api.Service.Id(BusinessRouting.Api.Service(businessId = businessId), Uuid.random()))
+
+        then()
+        assertEquals(HttpStatusCode.Unauthorized, response.status)
     }
 }

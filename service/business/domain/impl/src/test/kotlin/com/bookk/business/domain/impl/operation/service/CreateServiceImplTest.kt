@@ -7,6 +7,7 @@ import com.bookk.business.domain.datasource.BusinessDataSource
 import com.bookk.business.domain.datasource.ServiceDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.datasource.transaction.mockTransaction
+import com.bookk.core.domain.entity.Error
 import com.bookk.core.test.given
 import com.bookk.core.test.runUnitTest
 import com.bookk.core.test.then
@@ -24,10 +25,12 @@ import kotlin.uuid.Uuid
 
 internal class CreateServiceImplTest {
 
-    private val serviceDataSource = mockk<ServiceDataSource>()
-    private val businessDataSource = mockk<BusinessDataSource>()
-    private val transactionManager = mockk<TransactionManager>()
-    private val sut = CreateServiceImpl(serviceDataSource, businessDataSource, transactionManager)
+    private class SutFixture {
+        val serviceDataSource = mockk<ServiceDataSource>()
+        val businessDataSource = mockk<BusinessDataSource>()
+        val transactionManager = mockk<TransactionManager>()
+        val sut = CreateServiceImpl(serviceDataSource, businessDataSource, transactionManager)
+    }
 
     private fun createTestService(name: String = "Service") = Service(
         id = Uuid.random(),
@@ -43,15 +46,17 @@ internal class CreateServiceImplTest {
     @Test
     fun `should create service successfully when valid data provided`() = runUnitTest {
         given()
-        transactionManager.mockTransaction()
+        val fixture = SutFixture()
         val userId = Uuid.random()
         val service = createTestService()
-        
-        coEvery { businessDataSource.getPermission(userId, service.businessId) } returns ObjectPermission.EDIT.int
-        coEvery { serviceDataSource.createService(service) } returns service
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { businessDataSource.getPermission(userId, service.businessId) } returns ObjectPermission.EDIT.int
+            coEvery { serviceDataSource.createService(service) } returns service
+        }
 
         whenn()
-        val result = sut(userId, service)
+        val result = fixture.sut(userId, service)
 
         then()
         assertTrue(result.isSuccess)
@@ -61,11 +66,12 @@ internal class CreateServiceImplTest {
     @Test
     fun `should return failure when name is blank`() = runUnitTest {
         given()
+        val fixture = SutFixture()
         val userId = Uuid.random()
         val service = createTestService(name = "")
-        
+
         whenn()
-        val result = sut(userId, service)
+        val result = fixture.sut(userId, service)
 
         then()
         assertTrue(result.isFailure)
@@ -75,17 +81,39 @@ internal class CreateServiceImplTest {
     @Test
     fun `should return failure when permission denied`() = runUnitTest {
         given()
-        transactionManager.mockTransaction()
+        val fixture = SutFixture()
         val userId = Uuid.random()
         val service = createTestService()
-        
-        coEvery { businessDataSource.getPermission(userId, service.businessId) } returns ObjectPermission.READ.int
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { businessDataSource.getPermission(userId, service.businessId) } returns ObjectPermission.READ.int
+        }
 
         whenn()
-        val result = sut(userId, service)
+        val result = fixture.sut(userId, service)
 
         then()
         assertTrue(result.isFailure)
-        // library.permissions.assert throws PermissionDenied if check fails
+        assertTrue(result.exceptionOrNull() is Error.OperationNotAllowed)
+    }
+
+    @Test
+    fun `should return failure when service already exists`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+        val service = createTestService()
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { businessDataSource.getPermission(userId, service.businessId) } returns ObjectPermission.EDIT.int
+            coEvery { serviceDataSource.createService(service) } throws Error.UniqueConstraintFailed("", RuntimeException())
+        }
+
+        whenn()
+        val result = fixture.sut(userId, service)
+
+        then()
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is CreateService.Error.ServiceExist)
     }
 }

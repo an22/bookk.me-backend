@@ -21,14 +21,16 @@ import kotlin.uuid.Uuid
 
 internal class GetServicesImplTest {
 
-    private val serviceDataSource = mockk<ServiceDataSource>()
-    private val transactionManager = mockk<TransactionManager>()
-    private val sut = GetServicesImpl(serviceDataSource, transactionManager)
+    private class SutFixture {
+        val serviceDataSource = mockk<ServiceDataSource>()
+        val transactionManager = mockk<TransactionManager>()
+        val sut = GetServicesImpl(serviceDataSource, transactionManager)
+    }
 
     @Test
     fun `should return services list when exist`() = runUnitTest {
         given()
-        transactionManager.mockTransaction()
+        val fixture = SutFixture()
         val businessId = Uuid.random()
         val services = listOf(
             Service(
@@ -42,11 +44,13 @@ internal class GetServicesImplTest {
                 Instant.fromEpochMilliseconds(0)
             )
         )
-        
-        coEvery { serviceDataSource.getServices(businessId) } returns services
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { serviceDataSource.getServices(businessId) } returns services
+        }
 
         whenn()
-        val result = sut(businessId)
+        val result = fixture.sut(businessId)
 
         then()
         assertTrue(result.isSuccess)

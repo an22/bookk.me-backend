@@ -18,21 +18,25 @@ import kotlin.uuid.Uuid
 
 internal class GetServiceGroupsImplTest {
 
-    private val serviceDataSource = mockk<ServiceDataSource>()
-    private val transactionManager = mockk<TransactionManager>()
-    private val sut = GetServiceGroupsImpl(serviceDataSource, transactionManager)
+    private class SutFixture {
+        val serviceDataSource = mockk<ServiceDataSource>()
+        val transactionManager = mockk<TransactionManager>()
+        val sut = GetServiceGroupsImpl(serviceDataSource, transactionManager)
+    }
 
     @Test
     fun `should return groups list when exist`() = runUnitTest {
         given()
-        transactionManager.mockTransaction()
+        val fixture = SutFixture()
         val businessId = Uuid.random()
         val groups = listOf(ServiceGroup(Uuid.random(), businessId, "Group", Instant.fromEpochMilliseconds(0)))
-        
-        coEvery { serviceDataSource.getServiceGroups(businessId) } returns groups
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { serviceDataSource.getServiceGroups(businessId) } returns groups
+        }
 
         whenn()
-        val result = sut(businessId)
+        val result = fixture.sut(businessId)
 
         then()
         assertTrue(result.isSuccess)

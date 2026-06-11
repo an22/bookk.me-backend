@@ -4,6 +4,7 @@ import com.bookk.business.domain.datasource.BusinessDataSource
 import com.bookk.business.domain.datasource.ServiceDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.datasource.transaction.mockTransaction
+import com.bookk.core.domain.entity.Error
 import com.bookk.core.test.given
 import com.bookk.core.test.runUnitTest
 import com.bookk.core.test.then
@@ -18,26 +19,50 @@ import kotlin.uuid.Uuid
 
 internal class DeleteServiceGroupImplTest {
 
-    private val serviceDataSource = mockk<ServiceDataSource>(relaxed = true)
-    private val businessDataSource = mockk<BusinessDataSource>()
-    private val transactionManager = mockk<TransactionManager>()
-    private val sut = DeleteServiceGroupImpl(serviceDataSource, businessDataSource, transactionManager)
+    private class SutFixture {
+        val serviceDataSource = mockk<ServiceDataSource>(relaxed = true)
+        val businessDataSource = mockk<BusinessDataSource>()
+        val transactionManager = mockk<TransactionManager>()
+        val sut = DeleteServiceGroupImpl(serviceDataSource, businessDataSource, transactionManager)
+    }
 
     @Test
     fun `should return success when delete service group with valid data`() = runUnitTest {
         given()
-        transactionManager.mockTransaction()
+        val fixture = SutFixture()
         val userId = Uuid.random()
         val businessId = Uuid.random()
         val id = Uuid.random()
-        
-        coEvery { businessDataSource.getPermission(userId, businessId) } returns ObjectPermission.EDIT.int
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { businessDataSource.getPermission(userId, businessId) } returns ObjectPermission.EDIT.int
+        }
 
         whenn()
-        val result = sut(userId, businessId, id)
+        val result = fixture.sut(userId, businessId, id)
 
         then()
         assertTrue(result.isSuccess)
-        coVerify(exactly = 1) { serviceDataSource.deleteServiceGroup(id) }
+        coVerify(exactly = 1) { fixture.serviceDataSource.deleteServiceGroup(id) }
+    }
+
+    @Test
+    fun `should return failure when permission denied`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+        val businessId = Uuid.random()
+        val id = Uuid.random()
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { businessDataSource.getPermission(userId, businessId) } returns ObjectPermission.READ.int
+        }
+
+        whenn()
+        val result = fixture.sut(userId, businessId, id)
+
+        then()
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is Error.OperationNotAllowed)
     }
 }

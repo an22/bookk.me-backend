@@ -11,5 +11,5 @@ data class BusinessUpdateModel(
     val address: String?,
     val location: Business.Location?,
     val currencyCode: String?,
-    val socials: List<Business.Social>?
+    val socials: List<Business.Social>
 )

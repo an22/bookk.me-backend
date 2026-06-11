@@ -16,23 +16,24 @@ import kotlin.uuid.Uuid
 
 internal class DeleteModuleImplTest {
 
-    private val dataSource = mockk<AppointmentSubscriptionDataSource>()
-    private val transactionManager = mockk<TransactionManager>()
-    private fun sut() = DeleteModuleImpl(
-        dataSource,
-        transactionManager
-    )
+    private class SutFixture {
+        val dataSource = mockk<AppointmentSubscriptionDataSource>()
+        val transactionManager = mockk<TransactionManager>()
+        val sut = DeleteModuleImpl(dataSource, transactionManager)
+    }
 
     @Test
     fun `should delete module successfully`() = runUnitTest {
         given()
-        transactionManager.mockTransaction()
+        val fixture = SutFixture()
         val businessId = Uuid.random()
-
-        coEvery { dataSource.detachBusiness(businessId) } returns Unit
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { dataSource.detachBusiness(businessId) } returns Unit
+        }
 
         whenn()
-        val result = sut().invoke(businessId)
+        val result = fixture.sut.invoke(businessId)
 
         then()
         assertTrue(result.isSuccess)
@@ -41,13 +42,15 @@ internal class DeleteModuleImplTest {
     @Test
     fun `should return failure when detach throws`() = runUnitTest {
         given()
-        transactionManager.mockTransaction()
+        val fixture = SutFixture()
         val businessId = Uuid.random()
-
-        coEvery { dataSource.detachBusiness(businessId) } answers { throw Error.DatabaseError("", IllegalStateException()) }
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { dataSource.detachBusiness(businessId) } answers { throw Error.DatabaseError("", IllegalStateException()) }
+        }
 
         whenn()
-        val result = sut().invoke(businessId)
+        val result = fixture.sut.invoke(businessId)
 
         then()
         assertTrue(result.isFailure)

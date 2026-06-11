@@ -17,14 +17,17 @@ import kotlin.uuid.Uuid
 
 internal class UpdateBusinessImplTest {
 
-    private val businessDataSource = mockk<BusinessDataSource>(relaxed = true)
-    private val transactionManager = mockk<TransactionManager>()
-    private val sut = UpdateBusinessImpl(businessDataSource, transactionManager)
+    private class SutFixture {
+        val businessDataSource = mockk<BusinessDataSource>(relaxed = true)
+        val transactionManager = mockk<TransactionManager>()
+        val sut = UpdateBusinessImpl(businessDataSource, transactionManager)
+    }
 
     @Test
     fun `should return success when truncated values are provided`() = runUnitTest {
         given()
-        transactionManager.mockTransaction()
+        val fixture = SutFixture()
+        fixture.transactionManager.mockTransaction()
         val businessId = Uuid.random()
         val updateModel = BusinessUpdateModel(
             id = businessId,
@@ -37,17 +40,17 @@ internal class UpdateBusinessImplTest {
         )
         
         whenn()
-        val result = sut(updateModel)
+        val result = fixture.sut(updateModel)
 
         then()
         assertTrue(result.isSuccess)
-        coVerify(exactly = 1) { 
-            businessDataSource.updateBusiness(match {
+        coVerify(exactly = 1) {
+            fixture.businessDataSource.updateBusiness(match {
                 it.name?.length == Business.MAX_NAME_LENGTH &&
                 it.description?.length == Business.MAX_DESCRIPTION_LENGTH &&
                 it.address?.length == Business.MAX_ADDRESS_LENGTH &&
                 it.currencyCode?.length == Business.MAX_CURRENCY_CODE &&
-                it.socials?.first()?.value?.length == Business.MAX_SOCIAL_LENGTH
+                it.socials.firstOrNull()?.value?.length == Business.MAX_SOCIAL_LENGTH
             })
         }
     }
@@ -55,17 +58,18 @@ internal class UpdateBusinessImplTest {
     @Test
     fun `should return success when null values are provided`() = runUnitTest {
         given()
-        transactionManager.mockTransaction()
-        val updateModel = BusinessUpdateModel(Uuid.random(), null, null, null, null, null, null)
-        
+        val fixture = SutFixture()
+        fixture.transactionManager.mockTransaction()
+        val updateModel = BusinessUpdateModel(Uuid.random(), null, null, null, null, null, emptyList())
+
         whenn()
-        val result = sut(updateModel)
+        val result = fixture.sut(updateModel)
 
         then()
         assertTrue(result.isSuccess)
-        coVerify(exactly = 1) { 
-            businessDataSource.updateBusiness(match {
-                it.name == null && it.description == null && it.address == null && it.socials == null
+        coVerify(exactly = 1) {
+            fixture.businessDataSource.updateBusiness(match {
+                it.name == null && it.description == null && it.address == null && it.socials.isEmpty()
             })
         }
     }

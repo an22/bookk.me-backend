@@ -1,5 +1,6 @@
 package com.bookk.appointments.data.orm.entity
 
+import com.bookk.appointments.data.orm.table.AppointmentRequestServicesTable
 import com.bookk.appointments.data.orm.table.AppointmentRequestTable
 import com.bookk.appointments.data.orm.table.BusinessHasAppointments
 import com.bookk.appointments.domain.api.entity.AppointmentRequest
@@ -26,13 +27,7 @@ internal class AppointmentRequestEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var clientName by AppointmentRequestTable.clientName
     var clientPhone by AppointmentRequestTable.clientPhone
     var clientEmail by AppointmentRequestTable.clientEmail
-    var serviceId by AppointmentRequestTable.serviceId
-    var serviceName by AppointmentRequestTable.serviceName
-    var serviceGroupId by AppointmentRequestTable.serviceGroupId
-    var priceCurrency by AppointmentRequestTable.priceCurrency
-    var priceUnscaled by AppointmentRequestTable.priceUnscaled
-    var priceScale by AppointmentRequestTable.priceScale
-    var durationMinutes by AppointmentRequestTable.durationMinutes
+    val services by AppointmentRequestServiceEntity referrersOn AppointmentRequestServicesTable.requestId
     var dateStart by AppointmentRequestTable.dateStart
     var dateEnd by AppointmentRequestTable.dateEnd
     var note by AppointmentRequestTable.note
@@ -50,16 +45,18 @@ internal class AppointmentRequestEntity(id: EntityID<UUID>) : UUIDEntity(id) {
                 phone = clientPhone.orEmpty(),
                 email = clientEmail.orEmpty()
             ),
-            service = ServiceSnapshot(
-                id = serviceId.toKotlinUuid(),
-                name = serviceName,
-                groupId = serviceGroupId.toKotlinUuid(),
-                price = Money.of(
-                    CurrencyUnit.of(priceCurrency),
-                    BigDecimal(BigInteger.valueOf(priceUnscaled), priceScale)
-                ),
-                duration = durationMinutes.minutes
-            ),
+            services = services.map {
+                ServiceSnapshot(
+                    id = it.serviceId.toKotlinUuid(),
+                    name = it.serviceName,
+                    groupId = it.serviceGroupId.toKotlinUuid(),
+                    price = Money.of(
+                        CurrencyUnit.of(it.priceCurrency),
+                        BigDecimal(BigInteger.valueOf(it.priceUnscaled), it.priceScale)
+                    ),
+                    duration = it.durationMinutes.minutes
+                )
+            },
             date = dateStart,
             note = note,
             status = status,
@@ -76,15 +73,8 @@ internal class AppointmentRequestEntity(id: EntityID<UUID>) : UUIDEntity(id) {
             clientName = request.client.fullName
             clientPhone = request.client.phone
             clientEmail = request.client.email
-            serviceId = request.service.id.toJavaUuid()
-            serviceName = request.service.name
-            serviceGroupId = request.service.groupId.toJavaUuid()
-            priceCurrency = request.service.price.currencyUnit.code
-            priceUnscaled = request.service.price.amount.unscaledValue().longValueExact()
-            priceScale = request.service.price.scale
-            durationMinutes = request.service.duration.inWholeMinutes
             dateStart = request.date
-            dateEnd = request.date + request.service.duration
+            dateEnd = request.dateEnd
             note = request.note
             status = AppointmentRequestStatus.PENDING
             declineReason = request.declineReason
@@ -97,15 +87,8 @@ internal class AppointmentRequestEntity(id: EntityID<UUID>) : UUIDEntity(id) {
             it.clientName = request.client.fullName
             it.clientPhone = request.client.phone
             it.clientEmail = request.client.email
-            it.serviceId = request.service.id.toJavaUuid()
-            it.serviceName = request.service.name
-            it.serviceGroupId = request.service.groupId.toJavaUuid()
-            it.priceCurrency = request.service.price.currencyUnit.code
-            it.priceUnscaled = request.service.price.amount.unscaledValue().longValueExact()
-            it.priceScale = request.service.price.scale
-            it.durationMinutes = request.service.duration.inWholeMinutes
             it.dateStart = request.date
-            it.dateEnd = request.date + request.service.duration
+            it.dateEnd = request.dateEnd
             it.note = request.note
             it.status = request.status
             it.declineReason = request.declineReason

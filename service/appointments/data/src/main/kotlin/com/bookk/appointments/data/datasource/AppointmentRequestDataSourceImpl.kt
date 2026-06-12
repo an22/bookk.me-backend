@@ -1,6 +1,8 @@
 package com.bookk.appointments.data.datasource
 
 import com.bookk.appointments.data.orm.entity.AppointmentRequestEntity
+import com.bookk.appointments.data.orm.entity.AppointmentRequestServiceEntity
+import com.bookk.appointments.data.orm.table.AppointmentRequestServicesTable
 import com.bookk.appointments.data.orm.table.AppointmentRequestTable
 import com.bookk.appointments.data.orm.table.AppointmentTable
 import com.bookk.appointments.domain.api.entity.AppointmentRequest
@@ -31,11 +33,22 @@ internal class AppointmentRequestDataSourceImpl : DataSource(), AppointmentReque
     }
 
     override suspend fun create(request: AppointmentRequest): AppointmentRequest = dbQuery {
-        AppointmentRequestEntity.new(request).domain()
+        val request = AppointmentRequestEntity.new(request).domain()
+        request.services.forEach {
+            AppointmentRequestServiceEntity.new(it)
+        }
+        request.copy(id = request.id)
     }
 
     override suspend fun update(request: AppointmentRequest): AppointmentRequest = dbQuery {
         AppointmentRequestEntity.findByIdAndUpdate(request)?.domain() ?: throw Error.NotFound()
+        AppointmentRequestServicesTable.deleteWhere {
+            AppointmentRequestServicesTable.requestId eq request.id.toJavaUuid()
+        }
+        request.services.forEach {
+            AppointmentRequestServiceEntity.new(it)
+        }
+        request
     }
 
     override suspend fun delete(request: AppointmentRequest) = dbQuery<Unit> {
@@ -65,7 +78,7 @@ internal class AppointmentRequestDataSourceImpl : DataSource(), AppointmentReque
                 .where {
                     (AppointmentRequestTable.businessId eq request.businessId.toJavaUuid())
                         .and(AppointmentRequestTable.userId eq request.userId.toJavaUuid())
-                        .and(AppointmentRequestTable.dateStart.less(request.date + request.service.duration))
+                        .and(AppointmentRequestTable.dateStart.less(request.dateEnd))
                         .and(AppointmentRequestTable.dateEnd.greater(request.date))
                 }
                 .limit(1)

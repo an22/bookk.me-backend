@@ -1,10 +1,9 @@
 package com.bookk.appointments.domain.impl.operation
 
 import com.bookk.appointments.domain.api.entity.Appointment
-import com.bookk.appointments.domain.api.entity.AppointmentStatus
-import com.bookk.appointments.domain.api.entity.ClientSnapshot
-import com.bookk.appointments.domain.api.entity.ServiceSnapshot
+import com.bookk.appointments.domain.api.entity.AppointmentSettings
 import com.bookk.appointments.domain.datasource.AppointmentDataSource
+import com.bookk.appointments.domain.datasource.AppointmentSettingsDataSource
 import com.bookk.appointments.domain.datasource.PermissionsDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.datasource.transaction.mockTransaction
@@ -15,23 +14,23 @@ import com.bookk.core.test.then
 import com.bookk.core.test.whenn
 import io.mockk.coEvery
 import io.mockk.mockk
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.atStartOfDayIn
 import library.permissions.ObjectPermission
-import org.joda.money.CurrencyUnit
-import org.joda.money.Money
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import kotlin.time.Duration.Companion.minutes
-import kotlin.time.Instant
+import kotlin.time.Duration.Companion.days
 import kotlin.uuid.Uuid
 
-internal class GetAppointmentsImplTest {
+internal class GetAppointmentsForDateImplTest {
 
     private class SutFixture {
         val appointmentDataSource = mockk<AppointmentDataSource>()
         val permissionsDataSource = mockk<PermissionsDataSource>()
+        val settingsDataSource = mockk<AppointmentSettingsDataSource>()
         val transactionManager = mockk<TransactionManager>()
-        val sut = GetAppointmentsImpl(appointmentDataSource, permissionsDataSource, transactionManager)
+        val sut = GetAppointmentsForDataImpl(appointmentDataSource, permissionsDataSource, settingsDataSource, transactionManager)
     }
 
     @Test
@@ -40,28 +39,21 @@ internal class GetAppointmentsImplTest {
         val fixture = SutFixture()
         val userId = Uuid.random()
         val businessId = Uuid.random()
-        val appointments = listOf(
-            Appointment(
-                id = Uuid.random(),
-                userId = userId,
-                businessId = businessId,
-                client = ClientSnapshot(Uuid.random(), "Client Name", "phone", "client@example.com"),
-                service = ServiceSnapshot(Uuid.random(), "Service Name", Uuid.random(), Money.of(CurrencyUnit.of("USD"), 10.0), 30.minutes),
-                date = Instant.fromEpochMilliseconds(0),
-                note = "Note",
-                status = AppointmentStatus.SCHEDULED,
-                cancellationReason = ""
-            )
-        )
+        val date = LocalDate(2024, 1, 15)
+        val settings = AppointmentSettings.stub(businessId)
+        val instant = date.atStartOfDayIn(settings.timeZone)
+        val expectedRange = instant..(instant + 1.days)
+        val appointments = listOf(Appointment.stub(userId = userId, businessId = businessId))
 
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { permissionsDataSource.getPermissions(userId, businessId) } returns ObjectPermission.READ.int
-            coEvery { appointmentDataSource.getAll(businessId) } returns appointments
+            coEvery { settingsDataSource.get(businessId) } returns settings
+            coEvery { appointmentDataSource.getAllForDate(businessId, expectedRange) } returns appointments
         }
 
         whenn()
-        val result = fixture.sut(userId, businessId)
+        val result = fixture.sut(userId, businessId, date)
 
         then()
         assertTrue(result.isSuccess)
@@ -74,17 +66,41 @@ internal class GetAppointmentsImplTest {
         val fixture = SutFixture()
         val userId = Uuid.random()
         val businessId = Uuid.random()
+        val date = LocalDate(2024, 1, 15)
+
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { permissionsDataSource.getPermissions(userId, businessId) } returns null
         }
 
         whenn()
-        val result = fixture.sut(userId, businessId)
+        val result = fixture.sut(userId, businessId, date)
 
         then()
         assertTrue(result.isFailure)
         assertTrue(result.exceptionOrNull() is Error.OperationNotAllowed)
+    }
+
+    @Test
+    fun `should return not found when settings are missing`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+        val businessId = Uuid.random()
+        val date = LocalDate(2024, 1, 15)
+
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { permissionsDataSource.getPermissions(userId, businessId) } returns ObjectPermission.READ.int
+            coEvery { settingsDataSource.get(businessId) } returns null
+        }
+
+        whenn()
+        val result = fixture.sut(userId, businessId, date)
+
+        then()
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is Error.NotFound)
     }
 
     @Test
@@ -93,15 +109,21 @@ internal class GetAppointmentsImplTest {
         val fixture = SutFixture()
         val userId = Uuid.random()
         val businessId = Uuid.random()
+        val date = LocalDate(2024, 1, 15)
+        val settings = AppointmentSettings.stub(businessId)
+        val instant = date.atStartOfDayIn(settings.timeZone)
+        val expectedRange = instant..(instant + 1.days)
         val exception = RuntimeException("Database error")
+
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { permissionsDataSource.getPermissions(userId, businessId) } returns ObjectPermission.READ.int
-            coEvery { appointmentDataSource.getAll(businessId) } throws exception
+            coEvery { settingsDataSource.get(businessId) } returns settings
+            coEvery { appointmentDataSource.getAllForDate(businessId, expectedRange) } throws exception
         }
 
         whenn()
-        val result = fixture.sut(userId, businessId)
+        val result = fixture.sut(userId, businessId, date)
 
         then()
         assertTrue(result.isFailure)

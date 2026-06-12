@@ -37,7 +37,10 @@ internal class AppointmentSettingsDataSourceImpl : DataSource(), AppointmentSett
     }
 
     override suspend fun get(businessId: Uuid): AppointmentSettings? = dbQuery {
-        SettingsEntity.findById(businessId.toJavaUuid())
+        SettingsEntity.find {
+            SettingsTable.businessId eq businessId.toJavaUuid()
+        }
+            .singleOrNull()
             ?.domain()
     }
 

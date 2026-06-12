@@ -4,7 +4,8 @@ import com.bookk.appointments.domain.api.entity.Appointment
 import com.bookk.appointments.domain.api.entity.AppointmentCancellation
 import com.bookk.appointments.domain.api.operation.CancelAppointment
 import com.bookk.appointments.domain.api.operation.CreateAppointment
-import com.bookk.appointments.domain.api.operation.GetAppointments
+import com.bookk.appointments.domain.api.operation.GetAppointmentHistory
+import com.bookk.appointments.domain.api.operation.GetAppointmentsForDate
 import com.bookk.appointments.domain.api.operation.UpdateAppointment
 import com.bookk.appointments.microservice.route.AppointmentsRouting.Api
 import com.bookk.core.service.auth.AppPrincipal
@@ -59,16 +60,29 @@ fun Routing.appointment() {
             }
         }
         /**
-         * Summary: Get appointments
+         * Summary: Get appointments for specific date
          * Tag: appointment
          * Security: jwt
          * Response: 200 application/x-protobuf [kotlin.collections.List<com.bookk.appointments.domain.api.entity.Appointment>] List of appointments
          */
         get<Api.Appointments> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
-            val getAppointments by application.inject<GetAppointments>()
+            val getAppointments by application.inject<GetAppointmentsForDate>()
 
-            call.respondWith(getAppointments(principal.userId, it.businessId))
+            call.respondWith(getAppointments(principal.userId, it.businessId, it.date))
+        }
+
+        /**
+         * Summary: Get appointments history
+         * Tag: appointment
+         * Security: jwt
+         * Response: 200 application/x-protobuf [com.bookk.core.domain.entity.Pagination<com.bookk.appointments.domain.api.entity.Appointment>] List of appointments
+         */
+        get<Api.AppointmentHistory> {
+            val principal = requireNotNull(call.principal<AppPrincipal>())
+            val getHistory by application.inject<GetAppointmentHistory>()
+
+            call.respondWith(getHistory(principal.userId, it.businessId, it.limit, it.offset))
         }
 
         /**

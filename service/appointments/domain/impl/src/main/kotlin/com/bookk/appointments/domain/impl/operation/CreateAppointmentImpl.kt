@@ -64,11 +64,11 @@ internal class CreateAppointmentImpl(
         eventProducer.send(
             AppointmentEvent.RequestApproved(
                 from = request.date,
-                to = request.date + request.service.duration,
+                to = request.dateEnd,
                 businessName = business.name,
                 executioner = "TODO",
                 address = business.address,
-                price = moneyFormatter.print(request.service.price)
+                price = moneyFormatter.print(request.totalAmount)
             )
         )
     }

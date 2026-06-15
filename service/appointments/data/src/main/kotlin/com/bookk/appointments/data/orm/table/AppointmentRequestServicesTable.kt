@@ -3,7 +3,7 @@ package com.bookk.appointments.data.orm.table
 import com.bookk.core.data.database.BaseUUIDTable
 import org.jetbrains.exposed.v1.core.ReferenceOption
 
-object AppointmentRequestServicesTable : BaseUUIDTable("appointment_services") {
+object AppointmentRequestServicesTable : BaseUUIDTable("appointment_request_services") {
     val requestId = reference("appointment_request_id", AppointmentRequestTable, ReferenceOption.CASCADE).index()
     val serviceId = uuid("service_id").index()
     val serviceName = varchar("service_name", 1024)

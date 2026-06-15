@@ -42,8 +42,8 @@ internal class CreateAppointmentRequestImpl(
                 .map { Unit }
                 .getOrThrow()
         }
-        if (settings.isInWorkday(request.date)) throw CreateAppointmentRequest.Error.RequestForThisDateNotAllowed()
-        if (settings.isInWorktime(request.date)) throw CreateAppointmentRequest.Error.RequestForThisTimeNotAllowed()
+        if (!settings.isInWorkday(request.date)) throw CreateAppointmentRequest.Error.RequestForThisDateNotAllowed()
+        if (!settings.isInWorktime(request.date)) throw CreateAppointmentRequest.Error.RequestForThisTimeNotAllowed()
         if (requestDataSource.hasOverlapsWith(request)) throw CreateAppointmentRequest.Error.RequestForThisTimeExists()
         requestDataSource.create(request).also {
             sendRequestCreatedNotification(request)

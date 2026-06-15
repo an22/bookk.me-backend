@@ -267,4 +267,129 @@ internal class CreateAppointmentImplTest {
         assertTrue(result.isSuccess)
         coVerify(exactly = 1) { fixture.eventProducer.send(any(AppointmentEvent.RequestApproved::class), any()) }
     }
+
+    // invoke(userId, appointment: Appointment)
+
+    @Test
+    fun `should create instant appointment successfully`() = runUnitTest {
+        given()
+        val userId = Uuid.random()
+        val appointment = Appointment.stub(userId = userId)
+        val settings = mockk<AppointmentSettings>()
+        val fixture = SutFixture()
+
+        with(fixture) {
+            coEvery { settingsDataSource.getForUpdate(appointment.businessId) } returns settings
+            coEvery { settings.isInWorkday(appointment.date) } returns false
+            coEvery { settings.isInWorktime(appointment.date) } returns false
+            coEvery { permissionsDataSource.getPermissions(userId, appointment.businessId) } returns EDIT.int
+            coEvery { appointmentDataSource.hasOverlapsWith(appointment) } returns false
+            coEvery { appointmentDataSource.create(appointment) } returns appointment
+            transactionManager.mockTransaction()
+        }
+
+        whenn()
+        val result = fixture.sut.invoke(userId, appointment)
+
+        then()
+        assertTrue(result.isSuccess)
+        assertEquals(appointment, result.getOrNull())
+    }
+
+    @Test
+    fun `should return failure when instant appointment overlaps with existing appointment`() = runUnitTest {
+        given()
+        val userId = Uuid.random()
+        val appointment = Appointment.stub(userId = userId)
+        val settings = mockk<AppointmentSettings>()
+        val fixture = SutFixture()
+
+        with(fixture) {
+            coEvery { settingsDataSource.getForUpdate(appointment.businessId) } returns settings
+            coEvery { settings.isInWorkday(appointment.date) } returns false
+            coEvery { settings.isInWorktime(appointment.date) } returns false
+            coEvery { permissionsDataSource.getPermissions(userId, appointment.businessId) } returns EDIT.int
+            coEvery { appointmentDataSource.hasOverlapsWith(appointment) } returns true
+            transactionManager.mockTransaction()
+        }
+
+        whenn()
+        val result = fixture.sut.invoke(userId, appointment)
+
+        then()
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is CreateAppointment.Error.AppointmentForThisTimeExists)
+    }
+
+    @Test
+    fun `should return failure when instant appointment date not allowed`() = runUnitTest {
+        given()
+        val userId = Uuid.random()
+        val appointment = Appointment.stub(userId = userId)
+        val settings = mockk<AppointmentSettings>()
+        val fixture = SutFixture()
+
+        with(fixture) {
+            coEvery { settingsDataSource.getForUpdate(appointment.businessId) } returns settings
+            coEvery { settings.isInWorkday(appointment.date) } returns true
+            coEvery { settings.isInWorktime(appointment.date) } returns false
+            coEvery { permissionsDataSource.getPermissions(userId, appointment.businessId) } returns EDIT.int
+            transactionManager.mockTransaction()
+        }
+
+        whenn()
+        val result = fixture.sut.invoke(userId, appointment)
+
+        then()
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is CreateAppointment.Error.RequestForThisDateNotAllowed)
+    }
+
+    @Test
+    fun `should return failure when instant appointment time not allowed`() = runUnitTest {
+        given()
+        val userId = Uuid.random()
+        val appointment = Appointment.stub(userId = userId)
+        val settings = mockk<AppointmentSettings>()
+        val fixture = SutFixture()
+
+        with(fixture) {
+            coEvery { settingsDataSource.getForUpdate(appointment.businessId) } returns settings
+            coEvery { settings.isInWorkday(appointment.date) } returns false
+            coEvery { settings.isInWorktime(appointment.date) } returns true
+            coEvery { permissionsDataSource.getPermissions(userId, appointment.businessId) } returns EDIT.int
+            transactionManager.mockTransaction()
+        }
+
+        whenn()
+        val result = fixture.sut.invoke(userId, appointment)
+
+        then()
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is CreateAppointment.Error.RequestForThisTimeNotAllowed)
+    }
+
+    @Test
+    fun `should return failure when instant appointment created with READ permissions`() = runUnitTest {
+        given()
+        val userId = Uuid.random()
+        val appointment = Appointment.stub(userId = userId)
+        val settings = mockk<AppointmentSettings>()
+        val fixture = SutFixture()
+
+        with(fixture) {
+            coEvery { settingsDataSource.getForUpdate(appointment.businessId) } returns settings
+            coEvery { settings.isInWorkday(appointment.date) } returns false
+            coEvery { settings.isInWorktime(appointment.date) } returns false
+            coEvery { permissionsDataSource.getPermissions(userId, appointment.businessId) } returns READ.int
+            transactionManager.mockTransaction()
+        }
+
+        whenn()
+        val result = fixture.sut.invoke(userId, appointment)
+
+        then()
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is Error.OperationNotAllowed)
+    }
 }

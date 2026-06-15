@@ -8,18 +8,18 @@ import kotlin.uuid.Uuid
 
 @Serializable
 data class Appointment(
-    val id: Uuid,
-    val userId: Uuid,
-    val businessId: Uuid,
+    override val id: Uuid,
+    override val userId: Uuid,
+    override val businessId: Uuid,
     val client: ClientSnapshot,
     val services: List<ServiceSnapshot>,
     val status: AppointmentStatus,
-    val date: Instant,
+    override val date: Instant,
     val note: String,
     val cancellationReason: String
-) {
+) : AppointmentRepresentation {
     @Transient
-    val dateEnd = date + services.fold(0.minutes) { acc, service ->
+    override val dateEnd = date + services.fold(0.minutes) { acc, service ->
         acc + service.duration
     }
 

@@ -1,11 +1,11 @@
 package com.bookk.appointments.data.datasource
 
 import com.bookk.appointments.data.orm.entity.AppointmentEntity
-import com.bookk.appointments.data.orm.entity.AppointmentRequestServiceEntity
 import com.bookk.appointments.data.orm.entity.AppointmentServiceEntity
 import com.bookk.appointments.data.orm.table.AppointmentServicesTable
 import com.bookk.appointments.data.orm.table.AppointmentTable
 import com.bookk.appointments.domain.api.entity.Appointment
+import com.bookk.appointments.domain.api.entity.AppointmentRepresentation
 import com.bookk.appointments.domain.api.entity.AppointmentRequest
 import com.bookk.appointments.domain.api.entity.AppointmentStatus
 import com.bookk.appointments.domain.datasource.AppointmentDataSource
@@ -25,6 +25,7 @@ import org.jetbrains.exposed.v1.jdbc.select
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
+import kotlin.uuid.toKotlinUuid
 
 internal class AppointmentDataSourceImpl : DataSource(), AppointmentDataSource {
 
@@ -33,22 +34,7 @@ internal class AppointmentDataSourceImpl : DataSource(), AppointmentDataSource {
             ?.domain() ?: throw Error.NotFound()
     }
 
-    override suspend fun hasOverlapsWith(request: AppointmentRequest): Boolean {
-        return dbQuery {
-            AppointmentTable.select(AppointmentTable.id)
-                .where {
-                    (AppointmentTable.businessId eq request.businessId.toJavaUuid())
-                        .and(AppointmentTable.userId eq request.userId.toJavaUuid())
-                        .and(AppointmentTable.dateStart.less(request.dateEnd))
-                        .and(AppointmentTable.dateEnd.greater(request.date))
-                }
-                .limit(1)
-                .empty()
-                .not()
-        }
-    }
-
-    override suspend fun hasOverlapsWith(appointment: Appointment): Boolean {
+    override suspend fun hasOverlapsWith(appointment: AppointmentRepresentation): Boolean {
         return dbQuery {
             AppointmentTable.select(AppointmentTable.id)
                 .where {
@@ -65,21 +51,29 @@ internal class AppointmentDataSourceImpl : DataSource(), AppointmentDataSource {
     }
 
     override suspend fun create(request: AppointmentRequest): Appointment = dbQuery {
-        val appointment = AppointmentEntity.new(request).domain()
+        val appointment = AppointmentEntity.new(request)
         request.services.forEach {
-            AppointmentRequestServiceEntity.new(it)
+            AppointmentServiceEntity.new(appointment.id, it)
         }
-        appointment.copy(id = request.id)
+        appointment.refresh()
+        appointment.domain()
+    }
+
+    override suspend fun create(appointment: Appointment): Appointment = dbQuery {
+        val appointmentEntity = AppointmentEntity.new(appointment)
+        appointment.services.forEach {
+            AppointmentServiceEntity.new(appointmentEntity.id, it)
+        }
+        appointment.copy(id = appointmentEntity.id.value.toKotlinUuid())
     }
 
     override suspend fun update(appointment: Appointment): Appointment = dbQuery {
-        AppointmentEntity.findByIdAndUpdate(appointment)
-            ?.domain() ?: throw Error.NotFound()
+        val appointmentEntity = AppointmentEntity.findByIdAndUpdate(appointment) ?: throw Error.NotFound()
         AppointmentServicesTable.deleteWhere {
             AppointmentServicesTable.appointmentId eq appointment.id.toJavaUuid()
         }
         appointment.services.forEach {
-            AppointmentServiceEntity.new(it)
+            AppointmentServiceEntity.new(appointmentEntity.id, it)
         }
         appointment
     }

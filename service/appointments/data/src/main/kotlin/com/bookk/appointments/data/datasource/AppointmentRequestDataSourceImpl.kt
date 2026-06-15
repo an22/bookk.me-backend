@@ -4,7 +4,6 @@ import com.bookk.appointments.data.orm.entity.AppointmentRequestEntity
 import com.bookk.appointments.data.orm.entity.AppointmentRequestServiceEntity
 import com.bookk.appointments.data.orm.table.AppointmentRequestServicesTable
 import com.bookk.appointments.data.orm.table.AppointmentRequestTable
-import com.bookk.appointments.data.orm.table.AppointmentTable
 import com.bookk.appointments.domain.api.entity.AppointmentRequest
 import com.bookk.appointments.domain.api.entity.AppointmentRequestStatus
 import com.bookk.appointments.domain.datasource.AppointmentRequestDataSource
@@ -19,6 +18,7 @@ import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.update
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
+import kotlin.uuid.toKotlinUuid
 
 internal class AppointmentRequestDataSourceImpl : DataSource(), AppointmentRequestDataSource {
     override suspend fun get(id: Uuid): AppointmentRequest? = dbQuery {
@@ -33,20 +33,20 @@ internal class AppointmentRequestDataSourceImpl : DataSource(), AppointmentReque
     }
 
     override suspend fun create(request: AppointmentRequest): AppointmentRequest = dbQuery {
-        val request = AppointmentRequestEntity.new(request).domain()
+        val requestEntity = AppointmentRequestEntity.new(request)
         request.services.forEach {
-            AppointmentRequestServiceEntity.new(it)
+            AppointmentRequestServiceEntity.new(requestEntity.id, it)
         }
-        request.copy(id = request.id)
+        request.copy(id = requestEntity.id.value.toKotlinUuid())
     }
 
     override suspend fun update(request: AppointmentRequest): AppointmentRequest = dbQuery {
-        AppointmentRequestEntity.findByIdAndUpdate(request)?.domain() ?: throw Error.NotFound()
+        val requestEntity = AppointmentRequestEntity.findByIdAndUpdate(request) ?: throw Error.NotFound()
         AppointmentRequestServicesTable.deleteWhere {
             AppointmentRequestServicesTable.requestId eq request.id.toJavaUuid()
         }
         request.services.forEach {
-            AppointmentRequestServiceEntity.new(it)
+            AppointmentRequestServiceEntity.new(requestEntity.id, it)
         }
         request
     }
@@ -74,7 +74,7 @@ internal class AppointmentRequestDataSourceImpl : DataSource(), AppointmentReque
 
     override suspend fun hasOverlapsWith(request: AppointmentRequest): Boolean {
         return dbQuery {
-            AppointmentRequestTable.select(AppointmentTable.id)
+            AppointmentRequestTable.select(AppointmentRequestTable.id)
                 .where {
                     (AppointmentRequestTable.businessId eq request.businessId.toJavaUuid())
                         .and(AppointmentRequestTable.userId eq request.userId.toJavaUuid())

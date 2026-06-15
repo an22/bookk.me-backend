@@ -16,6 +16,7 @@ import kotlin.uuid.toKotlinUuid
 
 internal class AppointmentServiceEntity(id: EntityID<UUID>) : UUIDEntity(id) {
 
+    var appointmentId by AppointmentServicesTable.appointmentId
     var serviceId by AppointmentServicesTable.serviceId
     var serviceName by AppointmentServicesTable.serviceName
     var serviceGroupId by AppointmentServicesTable.serviceGroupId
@@ -38,7 +39,8 @@ internal class AppointmentServiceEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     }
 
     companion object : DecoratorUUIDEntityClass<AppointmentServiceEntity>(AppointmentServicesTable) {
-        fun new(service: ServiceSnapshot): AppointmentServiceEntity = new {
+        fun new(ownerId: EntityID<UUID>, service: ServiceSnapshot): AppointmentServiceEntity = new {
+            appointmentId = ownerId
             serviceId = service.id.toJavaUuid()
             serviceName = service.name
             serviceGroupId = service.groupId.toJavaUuid()

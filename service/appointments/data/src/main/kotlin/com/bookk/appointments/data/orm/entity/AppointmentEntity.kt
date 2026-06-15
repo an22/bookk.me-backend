@@ -81,6 +81,20 @@ internal class AppointmentEntity(id: EntityID<UUID>) : UUIDEntity(id) {
             cancellationReason = ""
         }
 
+        fun new(appointment: Appointment) = new {
+            userId = appointment.userId.toJavaUuid()
+            businessId = EntityID(appointment.businessId.toJavaUuid(), table = BusinessHasAppointments)
+            clientId = appointment.client.id.toJavaUuid()
+            clientName = appointment.client.fullName
+            clientPhone = appointment.client.phone
+            clientEmail = appointment.client.email
+            dateStart = appointment.date
+            dateEnd = appointment.dateEnd
+            note = appointment.note
+            status = AppointmentStatus.SCHEDULED
+            cancellationReason = ""
+        }
+
         fun findByIdAndUpdate(appointment: Appointment) = findByIdAndUpdate(appointment.id.toJavaUuid()) {
             it.userId = appointment.userId.toJavaUuid()
             it.businessId = EntityID(appointment.businessId.toJavaUuid(), table = BusinessHasAppointments)

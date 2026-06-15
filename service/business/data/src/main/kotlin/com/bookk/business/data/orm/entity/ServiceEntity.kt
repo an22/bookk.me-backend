@@ -10,7 +10,7 @@ import org.joda.money.Money
 import java.math.BigDecimal
 import java.math.BigInteger
 import java.util.UUID
-import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Duration.Companion.minutes
 import kotlin.uuid.toKotlinUuid
 
 internal class ServiceEntity(id: EntityID<UUID>) : UUIDEntity(id) {
@@ -33,7 +33,7 @@ internal class ServiceEntity(id: EntityID<UUID>) : UUIDEntity(id) {
             id = id.value.toKotlinUuid(),
             businessId = businessId.value.toKotlinUuid(),
             group = group.toDomain(),
-            duration = duration.seconds,
+            duration = duration.minutes,
             name = name,
             price = Money.of(
                 CurrencyUnit.of(priceCurrency),

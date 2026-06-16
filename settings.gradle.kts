@@ -40,6 +40,7 @@ include(":core:service")
 include(":library:money")
 include(":library:idempotency")
 include(":library:permissions")
+include(":library:scheduler")
 
 //Authorization
 include(":service:authorization:microservice")

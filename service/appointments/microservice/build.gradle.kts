@@ -28,6 +28,7 @@ dependencies {
     implementation(projects.service.appointments.data)
     implementation(projects.service.appointments.domain.api)
     implementation(projects.service.appointments.domain.impl)
+    implementation(projects.library.scheduler)
     testImplementation(libs.joda.money)
     testImplementation(testFixtures(projects.core))
     testImplementation(testFixtures(projects.core.service))

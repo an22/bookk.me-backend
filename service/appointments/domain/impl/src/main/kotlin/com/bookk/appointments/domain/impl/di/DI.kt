@@ -11,6 +11,7 @@ import com.bookk.appointments.domain.api.operation.GetAppointmentHistory
 import com.bookk.appointments.domain.api.operation.GetAppointmentRequests
 import com.bookk.appointments.domain.api.operation.GetAppointmentsForDate
 import com.bookk.appointments.domain.api.operation.IsAppointmentsEnabled
+import com.bookk.appointments.domain.api.operation.MarkAppointmentsCompleted
 import com.bookk.appointments.domain.api.operation.UpdateAppointment
 import com.bookk.appointments.domain.impl.event.AppointmentEventHandler
 import com.bookk.appointments.domain.impl.operation.CreateAppointmentImpl
@@ -24,6 +25,7 @@ import com.bookk.appointments.domain.impl.operation.GetAppointmentHistoryImpl
 import com.bookk.appointments.domain.impl.operation.GetAppointmentRequestsImpl
 import com.bookk.appointments.domain.impl.operation.GetAppointmentsForDataImpl
 import com.bookk.appointments.domain.impl.operation.IsAppointmentsEnabledImpl
+import com.bookk.appointments.domain.impl.operation.MarkAppointmentsCompletedImpl
 import com.bookk.appointments.domain.impl.operation.UpdateAppointmentImpl
 import com.bookk.appointments.domain.impl.operation.UpdateBusinessInformation
 import com.bookk.core.data.eventstreaming.EventHandler
@@ -46,4 +48,5 @@ fun appointmentsDomainModule() = module {
     factoryOf(::UpdateBusinessInformation)
     factoryOf(::DeclineAppointmentRequestImpl) bind DeclineAppointmentRequest::class
     factoryOf(::IsAppointmentsEnabledImpl) bind IsAppointmentsEnabled::class
+    factoryOf(::MarkAppointmentsCompletedImpl) bind MarkAppointmentsCompleted::class
 }

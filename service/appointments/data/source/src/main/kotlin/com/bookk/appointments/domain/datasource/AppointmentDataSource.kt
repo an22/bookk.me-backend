@@ -18,4 +18,5 @@ interface AppointmentDataSource {
     suspend fun getAll(businessId: Uuid): List<Appointment>
     suspend fun getAllForDate(businessId: Uuid, range: ClosedRange<Instant>): List<Appointment>
     suspend fun getAllPaginated(businessId: Uuid, limit: Int, offset: Long): Pagination<Appointment>
+    suspend fun markCompleted(before: Instant)
 }

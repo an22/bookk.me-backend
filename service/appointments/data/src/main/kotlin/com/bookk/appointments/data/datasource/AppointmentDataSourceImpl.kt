@@ -22,6 +22,7 @@ import org.jetbrains.exposed.v1.core.lessEq
 import org.jetbrains.exposed.v1.core.neq
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.update
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
@@ -127,6 +128,17 @@ internal class AppointmentDataSourceImpl : DataSource(), AppointmentDataSource {
                 pageSize = limit,
                 page = (offset / limit) + 1
             )
+        }
+    }
+
+    override suspend fun markCompleted(before: Instant) = dbQuery<Unit> {
+        AppointmentTable.update(
+            where = {
+                AppointmentTable.status.eq(AppointmentStatus.SCHEDULED)
+                    .and(AppointmentTable.dateEnd.less(before))
+            }
+        ) {
+            it[AppointmentTable.status] = AppointmentStatus.COMPLETED
         }
     }
 }

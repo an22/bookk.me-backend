@@ -61,8 +61,8 @@ internal class UpdateAppointmentImplTest {
         val settings = mockk<AppointmentSettings>()
 
         coEvery { settingsDataSource.getForUpdate(testBusinessId) } returns settings
-        coEvery { settings.isInWorkday(any()) } returns false
-        coEvery { settings.isInWorktime(any()) } returns false
+        coEvery { settings.isInWorkday(any()) } returns true
+        coEvery { settings.isInWorktime(any()) } returns true
         coEvery { permissionsDataSource.getPermissions(testUserId, testBusinessId) } returns ObjectPermission.EDIT.int
         coEvery { appointmentDataSource.update(any<Appointment>()) } returns testAppointment
         coEvery { appointmentDataSource.hasOverlapsWith(any<Appointment>()) } returns false
@@ -144,11 +144,11 @@ internal class UpdateAppointmentImplTest {
         transactionManager.mockTransaction()
         val settings = mockk<AppointmentSettings>()
         coEvery { settingsDataSource.getForUpdate(testBusinessId) } returns settings
-        coEvery { settings.isInWorkday(any()) } returns false
-        coEvery { settings.isInWorktime(any()) } returns false
+        coEvery { settings.isInWorkday(any()) } returns true
+        coEvery { settings.isInWorktime(any()) } returns true
         coEvery { permissionsDataSource.getPermissions(testUserId, testBusinessId) } returns ObjectPermission.EDIT.int
         coEvery { appointmentDataSource.update(any<Appointment>()) } returns testAppointment // Update is called BEFORE overlap check
-        coEvery { appointmentDataSource.hasOverlapsWith(any<Appointment>()) } returns true 
+        coEvery { appointmentDataSource.hasOverlapsWith(any<Appointment>()) } returns true
 
         whenn()
         val result = sut(testUserId, testAppointment)
@@ -175,7 +175,7 @@ internal class UpdateAppointmentImplTest {
         transactionManager.mockTransaction()
         val settings = mockk<AppointmentSettings>()
         coEvery { settingsDataSource.getForUpdate(testBusinessId) } returns settings
-        coEvery { settings.isInWorkday(any()) } returns true
+        coEvery { settings.isInWorkday(any()) } returns false
         coEvery { permissionsDataSource.getPermissions(testUserId, testBusinessId) } returns ObjectPermission.EDIT.int
         coEvery { appointmentDataSource.update(any()) } returns testAppointment // Update is called BEFORE workday check
 
@@ -204,8 +204,8 @@ internal class UpdateAppointmentImplTest {
         transactionManager.mockTransaction()
         val settings = mockk<AppointmentSettings>()
         coEvery { settingsDataSource.getForUpdate(testBusinessId) } returns settings
-        coEvery { settings.isInWorkday(any()) } returns false
-        coEvery { settings.isInWorktime(any()) } returns true
+        coEvery { settings.isInWorkday(any()) } returns true
+        coEvery { settings.isInWorktime(any()) } returns false
         coEvery { permissionsDataSource.getPermissions(testUserId, testBusinessId) } returns ObjectPermission.EDIT.int
         coEvery { appointmentDataSource.update(any()) } returns testAppointment // Update is called BEFORE worktime check
 

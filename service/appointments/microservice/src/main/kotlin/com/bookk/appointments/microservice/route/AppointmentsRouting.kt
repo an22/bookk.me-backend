@@ -1,6 +1,7 @@
 package com.bookk.appointments.microservice.route
 
 import io.ktor.resources.Resource
+import kotlinx.datetime.LocalDate
 import kotlin.uuid.Uuid
 
 object AppointmentsRouting {
@@ -10,8 +11,11 @@ object AppointmentsRouting {
         @Resource("/appointment")
         class Appointment(val parent: Api = Api()) {
 
-            @Resource("/enable/{businessId}")
-            class Enable(val parent: Appointment = Appointment(), val businessId: Uuid)
+            @Resource("/instant")
+            class Instant(val parent: Appointment = Appointment())
+
+            @Resource("/enabled/{businessId}")
+            class Enabled(val parent: Appointment = Appointment(), val businessId: Uuid)
 
             @Resource("/{id}")
             class Id(val parent: Appointment = Appointment(), val id: Uuid)
@@ -35,8 +39,11 @@ object AppointmentsRouting {
             class Settings(val parent: Appointment = Appointment(), val businessId: Uuid)
         }
 
-        @Resource("/appointments")
-        class Appointments(val parent: Api = Api(), val businessId: Uuid)
+        @Resource("/appointments/{businessId}")
+        class Appointments(val parent: Api = Api(), val businessId: Uuid, val date: LocalDate)
+
+        @Resource("/appointments/history/{businessId}")
+        class AppointmentHistory(val parent: Api = Api(), val businessId: Uuid, val limit: Int, val offset: Long)
     }
 
 }

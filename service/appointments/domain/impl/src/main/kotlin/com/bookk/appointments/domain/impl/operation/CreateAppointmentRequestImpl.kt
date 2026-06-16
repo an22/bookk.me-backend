@@ -42,8 +42,8 @@ internal class CreateAppointmentRequestImpl(
                 .map { Unit }
                 .getOrThrow()
         }
-        if (settings.isInWorkday(request.date)) throw CreateAppointmentRequest.Error.RequestForThisDateNotAllowed()
-        if (settings.isInWorktime(request.date)) throw CreateAppointmentRequest.Error.RequestForThisTimeNotAllowed()
+        if (!settings.isInWorkday(request.date)) throw CreateAppointmentRequest.Error.RequestForThisDateNotAllowed()
+        if (!settings.isInWorktime(request.date)) throw CreateAppointmentRequest.Error.RequestForThisTimeNotAllowed()
         if (requestDataSource.hasOverlapsWith(request)) throw CreateAppointmentRequest.Error.RequestForThisTimeExists()
         requestDataSource.create(request).also {
             sendRequestCreatedNotification(request)
@@ -58,11 +58,11 @@ internal class CreateAppointmentRequestImpl(
         eventProducer.send(
             AppointmentEvent.RequestCreated(
                 from = request.date,
-                to = request.date + request.service.duration,
+                to = request.dateEnd,
                 businessName = business.name,
                 executioner = "TODO",
                 address = business.address,
-                price = moneyFormatter.print(request.service.price)
+                price = moneyFormatter.print(request.totalAmount)
             )
         )
     }

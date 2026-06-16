@@ -10,6 +10,7 @@ import kotlin.uuid.Uuid
 interface CreateAppointment {
     suspend operator fun invoke(userId: Uuid, appointmentRequestId: Uuid): Result<Appointment>
     suspend operator fun invoke(userId: Uuid, request: AppointmentRequest): Result<Appointment>
+    suspend operator fun invoke(userId: Uuid, appointment: Appointment): Result<Appointment>
 
     sealed interface Error {
         class AppointmentForThisTimeExists : BusinessError(

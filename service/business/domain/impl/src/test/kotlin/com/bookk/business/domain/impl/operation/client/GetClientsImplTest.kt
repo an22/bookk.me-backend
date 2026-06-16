@@ -18,24 +18,28 @@ import kotlin.uuid.Uuid
 
 internal class GetClientsImplTest {
 
-    private val clientDataSource = mockk<ClientDataSource>()
-    private val transactionManager = mockk<TransactionManager>()
-    private val sut = GetClientsImpl(clientDataSource, transactionManager)
+    private class SutFixture {
+        val clientDataSource = mockk<ClientDataSource>()
+        val transactionManager = mockk<TransactionManager>()
+        val sut = GetClientsImpl(clientDataSource, transactionManager)
+    }
 
     @Test
     fun `should return clients list when clients exist`() = runUnitTest {
         given()
-        transactionManager.mockTransaction()
+        val fixture = SutFixture()
         val businessId = Uuid.random()
         val clients = listOf(
             Client.Detached(Uuid.random(), "John", "Doe", "123456", "john@doe.com"),
             Client.Integrated(Uuid.random(), "Jane", "Doe", "654321", "jane@doe.com", Uuid.random())
         )
-        
-        coEvery { clientDataSource.getClients(businessId) } returns clients
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { clientDataSource.getClients(businessId) } returns clients
+        }
 
         whenn()
-        val result = sut(businessId)
+        val result = fixture.sut(businessId)
 
         then()
         assertTrue(result.isSuccess)

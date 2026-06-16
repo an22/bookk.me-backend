@@ -1,6 +1,8 @@
 package com.bookk.appointments.data.orm
 
+import com.bookk.appointments.data.orm.table.AppointmentRequestServicesTable
 import com.bookk.appointments.data.orm.table.AppointmentRequestTable
+import com.bookk.appointments.data.orm.table.AppointmentServicesTable
 import com.bookk.appointments.data.orm.table.AppointmentTable
 import com.bookk.appointments.data.orm.table.BusinessHasAppointments
 import com.bookk.appointments.data.orm.table.DayOffsTable
@@ -14,8 +16,8 @@ import org.jetbrains.exposed.v1.core.Table
 fun main() {
     runBlocking {
         createMigrationScriptFor(
-            referenceVersion = 0,
-            targetVersion = 1,
+            referenceVersion = 1,
+            targetVersion = 2,
             schemaName = "appointments",
             tables = tables()
         )
@@ -29,5 +31,7 @@ private fun tables(): Array<Table> = arrayOf(
     AppointmentRequestTable,
     SettingsTable,
     UserHasAppointmentPermissions,
-    WorkingHoursTable
+    WorkingHoursTable,
+    AppointmentRequestServicesTable,
+    AppointmentServicesTable
 )

@@ -70,7 +70,7 @@ fun userClientModule(clientTag: String) = module {
 
                 headers["Idempotency-Key"] = Uuid.random().toString()
 
-                url { protocol = URLProtocol.HTTPS }
+                url { protocol = URLProtocol.HTTP }
 
                 when (AppLevelConstants.SERIALIZER) {
                     SupportedSerializers.JSON.STR -> contentType(ContentType.Application.Json)

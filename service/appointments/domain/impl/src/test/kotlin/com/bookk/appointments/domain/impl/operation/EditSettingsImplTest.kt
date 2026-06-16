@@ -19,29 +19,29 @@ import kotlin.uuid.Uuid
 
 internal class EditSettingsImplTest {
 
-    private val settingsSource = mockk<AppointmentSettingsDataSource>()
-    private val permissionsSource = mockk<PermissionsDataSource>()
-    private val transactionManager = mockk<TransactionManager>()
-    private fun sut() = EditSettingsImpl(
-        settingsSource,
-        permissionsSource,
-        transactionManager
-    )
+    private class SutFixture {
+        val settingsSource = mockk<AppointmentSettingsDataSource>()
+        val permissionsSource = mockk<PermissionsDataSource>()
+        val transactionManager = mockk<TransactionManager>()
+        val sut = EditSettingsImpl(settingsSource, permissionsSource, transactionManager)
+    }
 
     @Test
     fun `should update settings successfully when valid settings provided`() = runUnitTest {
         given()
-        transactionManager.mockTransaction()
+        val fixture = SutFixture()
         val userId = Uuid.random()
         val businessId = Uuid.random()
         val settings = mockk<AppointmentSettings>()
-
-        coEvery { settings.businessId } returns businessId
-        coEvery { permissionsSource.getPermissions(userId, businessId) } returns ObjectPermission.EDIT.int
-        coEvery { settingsSource.update(settings) } returns settings
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { settings.businessId } returns businessId
+            coEvery { permissionsSource.getPermissions(userId, businessId) } returns ObjectPermission.EDIT.int
+            coEvery { settingsSource.update(settings) } returns settings
+        }
 
         whenn()
-        val result = sut().invoke(userId, settings)
+        val result = fixture.sut.invoke(userId, settings)
 
         then()
         assertTrue(result.isSuccess)
@@ -50,17 +50,18 @@ internal class EditSettingsImplTest {
     @Test
     fun `should return operation not allowed when invalid permissions`() = runUnitTest {
         given()
-        transactionManager.mockTransaction()
+        val fixture = SutFixture()
         val userId = Uuid.random()
         val businessId = Uuid.random()
         val settings = mockk<AppointmentSettings>()
-
-        coEvery { settings.businessId } returns businessId
-        coEvery { permissionsSource.getPermissions(userId, businessId) } returns ObjectPermission.READ.int
-        coEvery { settingsSource.update(settings) } returns settings
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { settings.businessId } returns businessId
+            coEvery { permissionsSource.getPermissions(userId, businessId) } returns ObjectPermission.READ.int
+        }
 
         whenn()
-        val result = sut().invoke(userId, settings)
+        val result = fixture.sut.invoke(userId, settings)
 
         then()
         assertTrue(result.isFailure)
@@ -70,17 +71,19 @@ internal class EditSettingsImplTest {
     @Test
     fun `should return failure on any exception from datasource`() = runUnitTest {
         given()
-        transactionManager.mockTransaction()
+        val fixture = SutFixture()
         val userId = Uuid.random()
         val businessId = Uuid.random()
         val settings = mockk<AppointmentSettings>()
-
-        coEvery { settings.businessId } returns businessId
-        coEvery { permissionsSource.getPermissions(userId, businessId) } returns ObjectPermission.READ.int
-        coEvery { settingsSource.update(settings) } answers { throw IllegalStateException() }
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { settings.businessId } returns businessId
+            coEvery { permissionsSource.getPermissions(userId, businessId) } returns ObjectPermission.EDIT.int
+            coEvery { settingsSource.update(settings) } answers { throw IllegalStateException() }
+        }
 
         whenn()
-        val result = sut().invoke(userId, settings)
+        val result = fixture.sut.invoke(userId, settings)
 
         then()
         assertTrue(result.isFailure)

@@ -55,6 +55,13 @@ class CacheIdempotentResponseRepository(
         }
     }
 
+    override suspend fun release(resource: String, idempotencyKey: IdempotencyKey) {
+        val key = "$resource:$idempotencyKey"
+        cacheClient.withTransaction {
+            delete(key)
+        }
+    }
+
     override suspend fun deleteExpiredResponses(lastValidDate: OffsetDateTime) {
         //Responses are deleted automatically
     }

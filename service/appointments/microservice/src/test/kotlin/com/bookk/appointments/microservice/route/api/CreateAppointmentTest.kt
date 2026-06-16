@@ -45,13 +45,13 @@ internal class CreateAppointmentTest {
             userId = userId,
             businessId = Uuid.random(),
             client = ClientSnapshot(Uuid.random(), "Full Name", "123456789", "test@example.com"),
-            service = ServiceSnapshot(
+            services = listOf(ServiceSnapshot(
                 Uuid.random(),
                 "Service Name",
                 Uuid.random(),
                 Money.parse("USD 100"),
                 duration = 30.minutes
-            ),
+            )),
             date = Instant.fromEpochMilliseconds(0),
             note = "test",
             status = AppointmentStatus.SCHEDULED,

@@ -54,7 +54,9 @@ fun Route.serviceCrud() {
          * Security: jwt
          * Body: application/x-protobuf [com.bookk.business.domain.api.service.entity.Service]
          * Response: 200 application/x-protobuf [com.bookk.business.domain.api.service.entity.Service] Updated service entity
-         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Update service errors
+         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Update service errors:
+         *  - BUSINESS_SERVICE_EXISTS (Code 200007): Service with this name already exists
+         *  - BUSINESS_SERVICE_NAME_VALIDATION_ERROR (Code 200008): Invalid service name
          */
         put<Api.Service.Id> {
             val principal = requireNotNull(call.principal<AppPrincipal>())

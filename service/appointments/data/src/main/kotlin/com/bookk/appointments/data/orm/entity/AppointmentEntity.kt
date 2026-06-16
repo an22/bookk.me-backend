@@ -1,5 +1,6 @@
 package com.bookk.appointments.data.orm.entity
 
+import com.bookk.appointments.data.orm.table.AppointmentServicesTable
 import com.bookk.appointments.data.orm.table.AppointmentTable
 import com.bookk.appointments.data.orm.table.BusinessHasAppointments
 import com.bookk.appointments.domain.api.entity.Appointment
@@ -27,13 +28,7 @@ internal class AppointmentEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var clientName by AppointmentTable.clientName
     var clientPhone by AppointmentTable.clientPhone
     var clientEmail by AppointmentTable.clientEmail
-    var serviceId by AppointmentTable.serviceId
-    var serviceName by AppointmentTable.serviceName
-    var serviceGroupId by AppointmentTable.serviceGroupId
-    var priceCurrency by AppointmentTable.priceCurrency
-    var priceUnscaled by AppointmentTable.priceUnscaled
-    var priceScale by AppointmentTable.priceScale
-    var durationMinutes by AppointmentTable.durationMinutes
+    val services by AppointmentServiceEntity referrersOn AppointmentServicesTable.appointmentId
     var dateStart by AppointmentTable.dateStart
     var dateEnd by AppointmentTable.dateEnd
     var note by AppointmentTable.note
@@ -51,16 +46,18 @@ internal class AppointmentEntity(id: EntityID<UUID>) : UUIDEntity(id) {
                 phone = clientPhone.orEmpty(),
                 email = clientEmail.orEmpty()
             ),
-            service = ServiceSnapshot(
-                id = serviceId.toKotlinUuid(),
-                name = serviceName,
-                groupId = serviceGroupId.toKotlinUuid(),
-                price = Money.of(
-                    CurrencyUnit.of(priceCurrency),
-                    BigDecimal(BigInteger.valueOf(priceUnscaled), priceScale)
-                ),
-                duration = durationMinutes.minutes
-            ),
+            services = services.map {
+                ServiceSnapshot(
+                    id = it.serviceId.toKotlinUuid(),
+                    name = it.serviceName,
+                    groupId = it.serviceGroupId.toKotlinUuid(),
+                    price = Money.of(
+                        CurrencyUnit.of(it.priceCurrency),
+                        BigDecimal(BigInteger.valueOf(it.priceUnscaled), it.priceScale)
+                    ),
+                    duration = it.durationMinutes.minutes
+                )
+            },
             date = dateStart,
             note = note,
             status = status,
@@ -77,16 +74,23 @@ internal class AppointmentEntity(id: EntityID<UUID>) : UUIDEntity(id) {
             clientName = request.client.fullName
             clientPhone = request.client.phone
             clientEmail = request.client.email
-            serviceId = request.service.id.toJavaUuid()
-            serviceName = request.service.name
-            serviceGroupId = request.service.groupId.toJavaUuid()
-            priceCurrency = request.service.price.currencyUnit.code
-            priceUnscaled = request.service.price.amount.unscaledValue().longValueExact()
-            priceScale = request.service.price.scale
-            durationMinutes = request.service.duration.inWholeMinutes
             dateStart = request.date
-            dateEnd = request.date + request.service.duration
+            dateEnd = request.dateEnd
             note = request.note
+            status = AppointmentStatus.SCHEDULED
+            cancellationReason = ""
+        }
+
+        fun new(appointment: Appointment) = new {
+            userId = appointment.userId.toJavaUuid()
+            businessId = EntityID(appointment.businessId.toJavaUuid(), table = BusinessHasAppointments)
+            clientId = appointment.client.id.toJavaUuid()
+            clientName = appointment.client.fullName
+            clientPhone = appointment.client.phone
+            clientEmail = appointment.client.email
+            dateStart = appointment.date
+            dateEnd = appointment.dateEnd
+            note = appointment.note
             status = AppointmentStatus.SCHEDULED
             cancellationReason = ""
         }
@@ -98,15 +102,8 @@ internal class AppointmentEntity(id: EntityID<UUID>) : UUIDEntity(id) {
             it.clientName = appointment.client.fullName
             it.clientPhone = appointment.client.phone
             it.clientEmail = appointment.client.email
-            it.serviceId = appointment.service.id.toJavaUuid()
-            it.serviceName = appointment.service.name
-            it.serviceGroupId = appointment.service.groupId.toJavaUuid()
-            it.priceCurrency = appointment.service.price.currencyUnit.code
-            it.priceUnscaled = appointment.service.price.amount.unscaledValue().longValueExact()
-            it.priceScale = appointment.service.price.scale
-            it.durationMinutes = appointment.service.duration.inWholeMinutes
             it.dateStart = appointment.date
-            it.dateEnd = appointment.date + appointment.service.duration
+            it.dateEnd = appointment.dateEnd
             it.note = appointment.note
             it.status = appointment.status
             it.cancellationReason = appointment.cancellationReason

@@ -7,9 +7,10 @@ import com.bookk.appointments.domain.datasource.AppointmentSubscriptionDataSourc
 import com.bookk.core.data.DataSource
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
+import org.jetbrains.exposed.v1.jdbc.insert
+import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.update
-import org.jetbrains.exposed.v1.jdbc.upsert
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 
@@ -24,7 +25,7 @@ internal class AppointmentSubscriptionDataSourceImpl : DataSource(), Appointment
 
     override suspend fun attachBusiness(snapshot: BusinessSnapshot) {
         dbQuery {
-            BusinessHasAppointments.upsert {
+            BusinessHasAppointments.insert {
                 it[id] = snapshot.id.toJavaUuid()
                 it[name] = snapshot.name
                 it[address] = snapshot.address
@@ -62,6 +63,23 @@ internal class AppointmentSubscriptionDataSourceImpl : DataSource(), Appointment
                 BusinessHasAppointments.id eq businessId.toJavaUuid()
             }
         }
+    }
+
+    override suspend fun enableBusiness(businessId: Uuid) {
+        dbQuery {
+            BusinessHasAppointments.update(
+                where = { BusinessHasAppointments.id eq businessId.toJavaUuid() }
+            ) {
+                it[enabled] = true
+            }
+        }
+    }
+
+    override suspend fun isBusinessEnabled(businessId: Uuid): Boolean = dbQuery {
+        BusinessHasAppointments.select(BusinessHasAppointments.enabled)
+            .where { BusinessHasAppointments.id eq businessId.toJavaUuid() }
+            .map { it[BusinessHasAppointments.enabled] }
+            .singleOrNull() ?: false
     }
 
     override suspend fun disableBusiness(businessId: Uuid) {

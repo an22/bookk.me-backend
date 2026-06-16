@@ -21,6 +21,7 @@ import io.ktor.client.request.setBody
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.install
 import io.ktor.server.auth.Authentication
+import io.ktor.server.auth.bearer
 import io.mockk.coEvery
 import io.mockk.mockk
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -199,5 +200,64 @@ internal class ServiceGroupCrudTest {
 
         then()
         assertEquals(HttpStatusCode.NoContent, response.status)
+    }
+
+    @Test
+    fun `should return unauthorized when creating service group without authentication`() = routeTest {
+        given()
+        val useCase: CreateServiceGroup = mockk()
+
+        setupApplication(
+            extension = { install(Authentication) { bearer { authenticate { null } } } },
+            diModule = module { single { useCase } },
+            routeUnderTest = { serviceGroupCrud() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.post(BusinessRouting.Api.ServiceGroup(businessId = businessId)) {
+            setBody(createTestServiceGroup())
+        }
+
+        then()
+        assertEquals(HttpStatusCode.Unauthorized, response.status)
+    }
+
+    @Test
+    fun `should return unauthorized when getting service groups without authentication`() = routeTest {
+        given()
+        val useCase: GetServiceGroups = mockk()
+
+        setupApplication(
+            extension = { install(Authentication) { bearer { authenticate { null } } } },
+            diModule = module { single { useCase } },
+            routeUnderTest = { serviceGroupCrud() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.get(BusinessRouting.Api.ServiceGroup(businessId = businessId))
+
+        then()
+        assertEquals(HttpStatusCode.Unauthorized, response.status)
+    }
+
+    @Test
+    fun `should return unauthorized when deleting service group without authentication`() = routeTest {
+        given()
+        val useCase: DeleteServiceGroup = mockk()
+
+        setupApplication(
+            extension = { install(Authentication) { bearer { authenticate { null } } } },
+            diModule = module { single { useCase } },
+            routeUnderTest = { serviceGroupCrud() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.delete(BusinessRouting.Api.ServiceGroup.Id(BusinessRouting.Api.ServiceGroup(businessId = businessId), Uuid.random()))
+
+        then()
+        assertEquals(HttpStatusCode.Unauthorized, response.status)
     }
 }

@@ -22,7 +22,7 @@ data class AppointmentSettings(
     val appointmentNote: String
 ) {
     companion object {
-        fun stub(businessId: Uuid = Uuid.random()) = AppointmentSettings(businessId)
+        fun stub(businessId: Uuid = Uuid.random()) = AppointmentSettings(businessId = businessId)
     }
 
     constructor(businessId: Uuid) : this(
@@ -62,7 +62,7 @@ data class AppointmentSettings(
 }
 
 @Serializable
-class WorkHour(
+data class WorkHour(
     val dayOfWeek: DayOfWeek,
     val from: LocalTime,
     val to: LocalTime

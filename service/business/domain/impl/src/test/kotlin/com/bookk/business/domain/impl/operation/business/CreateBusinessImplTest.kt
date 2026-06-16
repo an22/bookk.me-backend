@@ -19,23 +19,27 @@ import kotlin.uuid.Uuid
 
 internal class CreateBusinessImplTest {
 
-    private val businessDataSource = mockk<BusinessDataSource>()
-    private val transactionManager = mockk<TransactionManager>()
-    private val sut = CreateBusinessImpl(businessDataSource, transactionManager)
+    private class SutFixture {
+        val businessDataSource = mockk<BusinessDataSource>()
+        val transactionManager = mockk<TransactionManager>()
+        val sut = CreateBusinessImpl(businessDataSource, transactionManager)
+    }
 
     @Test
     fun `should create business successfully when valid data provided`() = runUnitTest {
         given()
-        transactionManager.mockTransaction()
+        val fixture = SutFixture()
         val userId = Uuid.random()
         val business = Business(Uuid.random(), "Name", "Desc", "Addr", null, "USD", emptyList())
-        
-        coEvery { businessDataSource.isBusinessExist(userId) } returns false
-        coEvery { businessDataSource.createBusiness(userId, "Name", "USD") } returns business
-        coEvery { businessDataSource.setUserPermissions(userId, business.id, ObjectPermission.OWNER.int) } returns Unit
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { businessDataSource.isBusinessExist(userId) } returns false
+            coEvery { businessDataSource.createBusiness(userId, "Name", "USD") } returns business
+            coEvery { businessDataSource.setUserPermissions(userId, business.id, ObjectPermission.OWNER.int) } returns Unit
+        }
 
         whenn()
-        val result = sut(userId, "Name", "USD")
+        val result = fixture.sut(userId, "Name", "USD")
 
         then()
         assertTrue(result.isSuccess)
@@ -45,41 +49,46 @@ internal class CreateBusinessImplTest {
     @Test
     fun `should return failure when name is too short`() = runUnitTest {
         given()
-        transactionManager.mockTransaction()
-        
+        val fixture = SutFixture()
+        fixture.transactionManager.mockTransaction()
+
         whenn()
-        val result = sut(Uuid.random(), "A", "USD")
-        
+        val result = fixture.sut(Uuid.random(), "A", "USD")
+
         then()
         assertTrue(result.isFailure)
-        assertEquals(CreateBusiness.Error.BusinessValidationError(), result.exceptionOrNull())
+        assertTrue(result.exceptionOrNull() is CreateBusiness.Error.BusinessValidationError)
     }
 
     @Test
     fun `should return failure when name is too long`() = runUnitTest {
         given()
-        transactionManager.mockTransaction()
-        
+        val fixture = SutFixture()
+        fixture.transactionManager.mockTransaction()
+
         whenn()
-        val result = sut(Uuid.random(), "A".repeat(513), "USD")
-        
+        val result = fixture.sut(Uuid.random(), "A".repeat(513), "USD")
+
         then()
         assertTrue(result.isFailure)
-        assertEquals(CreateBusiness.Error.BusinessValidationError(), result.exceptionOrNull())
+        assertTrue(result.exceptionOrNull() is CreateBusiness.Error.BusinessValidationError)
     }
 
     @Test
     fun `should return failure when business exists`() = runUnitTest {
         given()
-        transactionManager.mockTransaction()
+        val fixture = SutFixture()
         val userId = Uuid.random()
-        coEvery { businessDataSource.isBusinessExist(userId) } returns true
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { businessDataSource.isBusinessExist(userId) } returns true
+        }
 
         whenn()
-        val result = sut(userId, "Name", "USD")
+        val result = fixture.sut(userId, "Name", "USD")
 
         then()
         assertTrue(result.isFailure)
-        assertEquals(CreateBusiness.Error.BusinessExist(), result.exceptionOrNull())
+        assertTrue(result.exceptionOrNull() is CreateBusiness.Error.BusinessExist)
     }
 }

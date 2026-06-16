@@ -1,6 +1,7 @@
 package com.bookk.appointments.domain.impl.operation
 
 import com.bookk.appointments.domain.api.entity.Appointment
+import com.bookk.appointments.domain.api.entity.AppointmentRepresentation
 import com.bookk.appointments.domain.api.entity.AppointmentRequest
 import com.bookk.appointments.domain.api.operation.CreateAppointment
 import com.bookk.appointments.domain.datasource.AppointmentDataSource
@@ -44,12 +45,26 @@ internal class CreateAppointmentImpl(
             createAppointment(userId, request)
         }
 
+    override suspend fun invoke(userId: Uuid, appointment: Appointment): Result<Appointment> =
+        transactionManager.transaction {
+            createAppointment(userId, appointment)
+        }
+
+    private suspend fun createAppointment(userId: Uuid, appointment: Appointment): Appointment {
+        verifyAppointment(userId, appointment)
+        return appointmentDataSource.create(appointment)
+    }
+
+    private suspend fun verifyAppointment(userId: Uuid, appointment: AppointmentRepresentation) {
+        val settings = settingsDataSource.getForUpdate(appointment.businessId) ?: throw Error.NotFound()
+        permissionsDataSource.getPermissions(userId, appointment.businessId).assert(ObjectPermission.EDIT)
+        if (!settings.isInWorkday(appointment.date)) throw CreateAppointment.Error.RequestForThisDateNotAllowed()
+        if (!settings.isInWorktime(appointment.date)) throw CreateAppointment.Error.RequestForThisTimeNotAllowed()
+        if (appointmentDataSource.hasOverlapsWith(appointment)) throw CreateAppointment.Error.AppointmentForThisTimeExists()
+    }
+
     private suspend fun createAppointment(userId: Uuid, request: AppointmentRequest): Appointment {
-        val settings = settingsDataSource.getForUpdate(request.businessId) ?: throw Error.NotFound()
-        permissionsDataSource.getPermissions(userId, request.businessId).assert(ObjectPermission.EDIT)
-        if (settings.isInWorkday(request.date)) throw CreateAppointment.Error.RequestForThisDateNotAllowed()
-        if (settings.isInWorktime(request.date)) throw CreateAppointment.Error.RequestForThisTimeNotAllowed()
-        if (appointmentDataSource.hasOverlapsWith(request)) throw CreateAppointment.Error.AppointmentForThisTimeExists()
+        verifyAppointment(userId, request)
         return appointmentDataSource.create(request).also {
             requestDataSource.approve(request)
             sendRequestApprovedNotification(request)
@@ -64,11 +79,11 @@ internal class CreateAppointmentImpl(
         eventProducer.send(
             AppointmentEvent.RequestApproved(
                 from = request.date,
-                to = request.date + request.service.duration,
+                to = request.dateEnd,
                 businessName = business.name,
                 executioner = "TODO",
                 address = business.address,
-                price = moneyFormatter.print(request.service.price)
+                price = moneyFormatter.print(request.totalAmount)
             )
         )
     }

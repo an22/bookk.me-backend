@@ -27,19 +27,17 @@ import kotlin.uuid.Uuid
 
 internal class GetAppointmentRequestsImplTest {
 
-    private val requestsDataSource = mockk<AppointmentRequestDataSource>()
-    private val permissionsDataSource = mockk<PermissionsDataSource>()
-    private val transactionManager = mockk<TransactionManager>()
-    private val sut = GetAppointmentRequestsImpl(
-        requestsDataSource,
-        permissionsDataSource,
-        transactionManager
-    )
+    private class SutFixture {
+        val requestsDataSource = mockk<AppointmentRequestDataSource>()
+        val permissionsDataSource = mockk<PermissionsDataSource>()
+        val transactionManager = mockk<TransactionManager>()
+        val sut = GetAppointmentRequestsImpl(requestsDataSource, permissionsDataSource, transactionManager)
+    }
 
     @Test
     fun `should return appointment requests when user has read permissions`() = runUnitTest {
         given()
-        transactionManager.mockTransaction()
+        val fixture = SutFixture()
         val userId = Uuid.random()
         val businessId = Uuid.random()
         val requests = listOf(
@@ -48,7 +46,7 @@ internal class GetAppointmentRequestsImplTest {
                 userId = userId,
                 businessId = businessId,
                 client = ClientSnapshot(Uuid.random(), "Client Name", "phone", "client@example.com"),
-                service = ServiceSnapshot(Uuid.random(), "Service Name", Uuid.random(), Money.of(CurrencyUnit.of("USD"), 10.0), 30.minutes),
+                services = listOf(ServiceSnapshot(Uuid.random(), "Service Name", Uuid.random(), Money.of(CurrencyUnit.of("USD"), 10.0), 30.minutes)),
                 date = Instant.fromEpochMilliseconds(0),
                 note = "Note",
                 status = AppointmentRequestStatus.PENDING,
@@ -56,11 +54,14 @@ internal class GetAppointmentRequestsImplTest {
             )
         )
 
-        coEvery { permissionsDataSource.getPermissions(userId, businessId) } returns ObjectPermission.READ.int
-        coEvery { requestsDataSource.getAll(businessId) } returns requests
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { permissionsDataSource.getPermissions(userId, businessId) } returns ObjectPermission.READ.int
+            coEvery { requestsDataSource.getAll(businessId) } returns requests
+        }
 
         whenn()
-        val result = sut(userId, businessId)
+        val result = fixture.sut(userId, businessId)
 
         then()
         assertTrue(result.isSuccess)
@@ -70,14 +71,16 @@ internal class GetAppointmentRequestsImplTest {
     @Test
     fun `should return failure when user has no permissions`() = runUnitTest {
         given()
-        transactionManager.mockTransaction()
+        val fixture = SutFixture()
         val userId = Uuid.random()
         val businessId = Uuid.random()
-
-        coEvery { permissionsDataSource.getPermissions(userId, businessId) } returns null
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { permissionsDataSource.getPermissions(userId, businessId) } returns null
+        }
 
         whenn()
-        val result = sut(userId, businessId)
+        val result = fixture.sut(userId, businessId)
 
         then()
         assertTrue(result.isFailure)
@@ -87,16 +90,18 @@ internal class GetAppointmentRequestsImplTest {
     @Test
     fun `should return failure when data source fails`() = runUnitTest {
         given()
-        transactionManager.mockTransaction()
+        val fixture = SutFixture()
         val userId = Uuid.random()
         val businessId = Uuid.random()
         val exception = RuntimeException("Database error")
-
-        coEvery { permissionsDataSource.getPermissions(userId, businessId) } returns ObjectPermission.READ.int
-        coEvery { requestsDataSource.getAll(businessId) } throws exception
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { permissionsDataSource.getPermissions(userId, businessId) } returns ObjectPermission.READ.int
+            coEvery { requestsDataSource.getAll(businessId) } throws exception
+        }
 
         whenn()
-        val result = sut(userId, businessId)
+        val result = fixture.sut(userId, businessId)
 
         then()
         assertTrue(result.isFailure)

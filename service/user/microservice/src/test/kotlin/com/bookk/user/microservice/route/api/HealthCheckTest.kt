@@ -15,7 +15,7 @@ import org.koin.dsl.module
 
 internal class HealthCheckTest {
     @Test
-    fun shouldReturnOk() = routeTest {
+    fun `should return OK when health check is called`() = routeTest {
         given()
         setupApplication(
             diModule = module {},

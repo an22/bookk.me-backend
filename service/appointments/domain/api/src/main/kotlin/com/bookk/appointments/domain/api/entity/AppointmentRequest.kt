@@ -1,21 +1,34 @@
 package com.bookk.appointments.domain.api.entity
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
 @Serializable
 data class AppointmentRequest(
-    val id: Uuid,
-    val userId: Uuid,
-    val businessId: Uuid,
+    override val id: Uuid,
+    override val userId: Uuid,
+    override val businessId: Uuid,
     val client: ClientSnapshot,
-    val service: ServiceSnapshot,
+    val services: List<ServiceSnapshot>,
     val status: AppointmentRequestStatus,
-    val date: Instant,
+    override val date: Instant,
     val note: String,
     val declineReason: String,
-) {
+) : AppointmentRepresentation {
+
+    @Transient
+    override val dateEnd = date + services.fold(0.minutes) { acc, service ->
+        acc + service.duration
+    }
+
+    @Transient
+    val totalAmount = services.fold(services[0].price) { acc, service ->
+        acc + service.price
+    }
+
     companion object {
         fun stub(
             id: Uuid = Uuid.random(),
@@ -27,7 +40,7 @@ data class AppointmentRequest(
             userId = userId,
             businessId = businessId,
             client = ClientSnapshot.stub(),
-            service = ServiceSnapshot.stub(),
+            services = listOf(ServiceSnapshot.stub()),
             status = AppointmentRequestStatus.PENDING,
             date = date,
             note = "Note",

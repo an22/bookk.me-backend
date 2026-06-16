@@ -39,7 +39,7 @@ internal class UpdateAppointmentTest {
         userId = Uuid.random(),
         businessId = Uuid.random(),
         client = ClientSnapshot(Uuid.random(), "Name", "123", "a@b.com"),
-        service = ServiceSnapshot(Uuid.random(), "Svc", Uuid.random(), Money.parse("USD 100"), 30.minutes),
+        services = listOf(ServiceSnapshot(Uuid.random(), "Svc", Uuid.random(), Money.parse("USD 100"), 30.minutes)),
         date = Instant.fromEpochMilliseconds(0),
         note = "Note",
         status = AppointmentStatus.SCHEDULED,

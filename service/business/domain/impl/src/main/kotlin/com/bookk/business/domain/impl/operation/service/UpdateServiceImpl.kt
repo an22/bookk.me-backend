@@ -6,6 +6,7 @@ import com.bookk.business.domain.api.service.operation.UpdateService
 import com.bookk.business.domain.datasource.BusinessDataSource
 import com.bookk.business.domain.datasource.ServiceDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
+import com.bookk.core.domain.entity.onConstraintFailure
 import library.permissions.ObjectPermission
 import library.permissions.assert
 import kotlin.uuid.Uuid
@@ -20,6 +21,8 @@ internal class UpdateServiceImpl(
         return transactionManager.transaction {
             businessDataSource.getPermission(requestUserId, service.businessId).assert(ObjectPermission.EDIT)
             dataSource.editService(service)
+        }.onConstraintFailure {
+            throw UpdateService.Error.ServiceExist()
         }
     }
 }

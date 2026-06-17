@@ -38,10 +38,7 @@ fun Routing.appointment() {
          * Security: jwt
          * Body: application/x-protobuf [com.bookk.appointments.domain.api.entity.Appointment]
          * Response: 200 application/x-protobuf [com.bookk.appointments.domain.api.entity.Appointment] Updated appointment entity
-         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Update appointment errors:
-         *  - APPOINTMENT_EXISTS (Code 300004): Appointment for this time already exists
-         *  - DATE_NOT_ALLOWED (Code 300003): Request for this date not allowed
-         *  - TIME_NOT_ALLOWED (Code 300002): Request for this time not allowed
+         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Update appointment errors<br>APPOINTMENT_EXISTS (Code 300004) Appointment for this time already exists<br>DATE_NOT_ALLOWED (Code 300003) Request for this date not allowed<br>TIME_NOT_ALLOWED (Code 300002) Request for this time not allowed
          */
         put<Api.Appointment.Id> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
@@ -92,10 +89,7 @@ fun Routing.appointment() {
          * Security: jwt
          * Body: application/x-protobuf [com.bookk.appointments.microservice.route.api.AppointmentRequestId]
          * Response: 200 application/x-protobuf [com.bookk.appointments.domain.api.entity.Appointment] Created appointment entity
-         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Create appointment errors:
-         *  - APPOINTMENT_EXISTS (Code 300004): Appointment for this time already exists
-         *  - DATE_NOT_ALLOWED (Code 300003): Request for this date not allowed
-         *  - TIME_NOT_ALLOWED (Code 300002): Request for this time not allowed
+         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Create appointment errors<br>APPOINTMENT_EXISTS (Code 300004) Appointment for this time already exists<br>DATE_NOT_ALLOWED (Code 300003) Request for this date not allowed<br>TIME_NOT_ALLOWED (Code 300002) Request for this time not allowed
          */
         post<Api.Appointment> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
@@ -117,10 +111,7 @@ fun Routing.appointment() {
          * Security: jwt
          * Body: application/x-protobuf [com.bookk.appointments.domain.api.entity.Appointment]
          * Response: 200 application/x-protobuf [com.bookk.appointments.domain.api.entity.Appointment] Created appointment entity
-         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Create appointment errors:
-         *  - APPOINTMENT_EXISTS (Code 300004): Appointment for this time already exists
-         *  - DATE_NOT_ALLOWED (Code 300003): Request for this date not allowed
-         *  - TIME_NOT_ALLOWED (Code 300002): Request for this time not allowed
+         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Create appointment errors<br>APPOINTMENT_EXISTS (Code 300004) Appointment for this time already exists<br>DATE_NOT_ALLOWED (Code 300003) Request for this date not allowed<br>TIME_NOT_ALLOWED (Code 300002) Request for this time not allowed
          */
         post<Api.Appointment.Instant> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
@@ -142,9 +133,7 @@ fun Routing.appointment() {
          * Security: jwt
          * Body: application/x-protobuf [com.bookk.appointments.domain.api.entity.AppointmentCancellation]
          * Response: 200 application/x-protobuf [com.bookk.appointments.domain.api.entity.Appointment] Canceled appointment
-         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Cancel appointment errors:
-         *  - ALREADY_CANCELLED (Code 300005): Appointment already canceled
-         *  - ALREADY_COMPLETED (Code 300006): Appointment already completed
+         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Cancel appointment errors<br>ALREADY_CANCELLED (Code 300005) Appointment already canceled<br>ALREADY_COMPLETED (Code 300006) Appointment already completed
          */
         post<Api.Appointment.Cancel> {
             val principal = requireNotNull(call.principal<AppPrincipal>())

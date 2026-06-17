@@ -19,8 +19,7 @@ internal fun Route.getCurrentUser() {
          * Tag: user
          * Security: jwt
          * Response: 200 application/x-protobuf [com.bookk.user.domain.api.entity.User] User associated with provided credentials
-         * Response: 404 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] User errors:
-         *  - USER_NOT_EXIST (Code 100001): User not found
+         * Response: 404 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] User errors<br>USER_NOT_EXIST (Code 100001) User not found
          */
         get<Api.User.Me> {
             val principal = requireNotNull(call.principal<AppPrincipal>())

@@ -25,9 +25,7 @@ fun Route.clientCrud() {
          * Security: jwt
          * Body: application/x-protobuf [com.bookk.business.domain.api.client.entity.ClientRemote]
          * Response: 200 application/x-protobuf [com.bookk.business.domain.api.client.entity.Client] Created client entity
-         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Create client errors:
-         *  - BUSINESS_CLIENT_EXISTS (Code 200004): Client with this phone already exists
-         *  - BUSINESS_CLIENT_NAME_VALIDATION_ERROR (Code 200005): Client name or last name is too long
+         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Create client errors<br>BUSINESS_CLIENT_EXISTS (Code 200004) Client with this phone already exists<br>BUSINESS_CLIENT_NAME_VALIDATION_ERROR (Code 200005) Client name or last name is too long
          */
         post<Api.Clients> {
             val body = call.receive<ClientRemote>()

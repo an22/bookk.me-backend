@@ -19,9 +19,7 @@ internal fun Route.registration() {
      * Tag: auth
      * Body: application/x-protobuf [com.bookk.auth.domain.api.registration.entity.CreateAccountRequest] User parameters
      * Response: 200 application/x-protobuf [com.bookk.auth.domain.api.registration.entity.RegistrationChallengeResponse] Validation challenge returned
-     * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Registration errors:
-     *  - EMAIL_EXIST (Code 200001): This email already exists
-     *  - INVALID_EMAIL_FORMAT (Code 200002): Invalid email format
+     * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Registration errors<br>EMAIL_EXIST (Code 200001) This email already exists<br>INVALID_EMAIL_FORMAT (Code 200002) Invalid email format
      */
     post<Api.Auth.PassKey.SignUpChallenge> {
         val info = call.receive<CreateAccountRequest>()
@@ -35,12 +33,7 @@ internal fun Route.registration() {
      * Tag: auth
      * Body: application/x-protobuf [com.bookk.auth.domain.api.registration.entity.VerifyAccountCreationRequest] User parameters
      * Response: 200 application/x-protobuf [com.bookk.auth.domain.api.token.entity.AuthTokens] User has been created
-     * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Registration errors:
-     *  - USER_ALREADY_EXIST (Code 200003): User with this email already exist
-     *  - INVALID_EMAIL_FORMAT (Code 200002): Invalid email format
-     *  - ACCOUNT_CREATION_FAILED (Code 200004): Error during account creation, try again later
-     *  - CHALLENGE_WINDOW_EXPIRED (Code 300001): Challenge window expired
-     *  - VERIFICATION_FAILED (Code 300002): Passkey verification failed
+     * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Registration errors<br>USER_ALREADY_EXIST (Code 200003) User with this email already exist<br>INVALID_EMAIL_FORMAT (Code 200002) Invalid email format<br>ACCOUNT_CREATION_FAILED (Code 200004) Error during account creation try again later<br>CHALLENGE_WINDOW_EXPIRED (Code 300001) Challenge window expired<br>VERIFICATION_FAILED (Code 300002) Passkey verification failed
      */
     post<Api.Auth.SignUp> {
         val info = call.receive<VerifyAccountCreationRequest>()

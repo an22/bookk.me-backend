@@ -35,6 +35,45 @@ internal class AppointmentDataSourceImpl : DataSource(), AppointmentDataSource {
             ?.domain() ?: throw Error.NotFound()
     }
 
+    override suspend fun getAll(businessId: Uuid): List<Appointment> = dbQuery {
+        AppointmentEntity
+            .find { AppointmentTable.businessId eq businessId.toJavaUuid() }
+            .map { it.domain() }
+    }
+
+    override suspend fun getAllForDate(businessId: Uuid, range: ClosedRange<Instant>): List<Appointment> {
+        return dbQuery {
+            AppointmentEntity
+                .find {
+                    AppointmentTable.businessId.eq(businessId.toJavaUuid())
+                        .and(AppointmentTable.dateStart.greaterEq(range.start))
+                        .and(AppointmentTable.dateEnd.lessEq(range.endInclusive))
+                }
+                .orderBy(AppointmentTable.dateStart to SortOrder.ASC)
+                .map { it.domain() }
+        }
+    }
+
+    override suspend fun getAllPaginated(businessId: Uuid, limit: Int, offset: Long): Pagination<Appointment> {
+        return dbQuery {
+            val query = AppointmentEntity
+                .find { AppointmentTable.businessId.eq(businessId.toJavaUuid()) }
+                .orderBy(AppointmentTable.dateStart to SortOrder.ASC)
+
+            val total = query.count()
+            val result = query
+                .limit(limit)
+                .offset(offset)
+                .map { it.domain() }
+            Pagination(
+                data = result,
+                total = total,
+                pageSize = limit,
+                page = (offset / limit) + 1
+            )
+        }
+    }
+
     override suspend fun hasOverlapsWith(appointment: AppointmentRepresentation): Boolean {
         return dbQuery {
             AppointmentTable.select(AppointmentTable.id)
@@ -44,6 +83,7 @@ internal class AppointmentDataSourceImpl : DataSource(), AppointmentDataSource {
                         .and(AppointmentTable.dateStart.less(appointment.dateEnd))
                         .and(AppointmentTable.dateEnd.greater(appointment.date))
                         .and(AppointmentTable.id neq appointment.id.toJavaUuid())
+                        .and(AppointmentTable.status eq AppointmentStatus.SCHEDULED)
                 }
                 .limit(1)
                 .empty()
@@ -90,45 +130,6 @@ internal class AppointmentDataSourceImpl : DataSource(), AppointmentDataSource {
             it.status = AppointmentStatus.CANCELLED
             it.cancellationReason = reason
         }?.domain() ?: throw Error.NotFound()
-    }
-
-    override suspend fun getAll(businessId: Uuid): List<Appointment> = dbQuery {
-        AppointmentEntity
-            .find { AppointmentTable.businessId eq businessId.toJavaUuid() }
-            .map { it.domain() }
-    }
-
-    override suspend fun getAllForDate(businessId: Uuid, range: ClosedRange<Instant>): List<Appointment> {
-        return dbQuery {
-            AppointmentEntity
-                .find {
-                    AppointmentTable.businessId.eq(businessId.toJavaUuid())
-                        .and(AppointmentTable.dateStart.greaterEq(range.start))
-                        .and(AppointmentTable.dateEnd.lessEq(range.endInclusive))
-                }
-                .orderBy(AppointmentTable.dateStart to SortOrder.ASC)
-                .map { it.domain() }
-        }
-    }
-
-    override suspend fun getAllPaginated(businessId: Uuid, limit: Int, offset: Long): Pagination<Appointment> {
-        return dbQuery {
-            val query = AppointmentEntity
-                .find { AppointmentTable.businessId.eq(businessId.toJavaUuid()) }
-                .orderBy(AppointmentTable.dateStart to SortOrder.ASC)
-
-            val total = query.count()
-            val result = query
-                .limit(limit)
-                .offset(offset)
-                .map { it.domain() }
-            Pagination(
-                data = result,
-                total = total,
-                pageSize = limit,
-                page = (offset / limit) + 1
-            )
-        }
     }
 
     override suspend fun markCompleted(before: Instant) = dbQuery<Unit> {

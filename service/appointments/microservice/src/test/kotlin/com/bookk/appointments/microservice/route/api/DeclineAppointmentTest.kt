@@ -1,5 +1,6 @@
 package com.bookk.appointments.microservice.route.api
 
+import com.bookk.appointments.domain.api.entity.Appointment
 import com.bookk.appointments.domain.api.entity.AppointmentCancellation
 import com.bookk.appointments.domain.api.entity.AppointmentErrorCodes
 import com.bookk.appointments.domain.api.operation.CancelAppointment
@@ -37,7 +38,7 @@ internal class DeclineAppointmentTest {
         val appointmentId = Uuid.random()
         val cancellation = AppointmentCancellation(id = appointmentId, businessId = businessId, reason = "Reason")
 
-        coEvery { useCase.invoke(userId, cancellation) } returns Result.success(Unit)
+        coEvery { useCase.invoke(userId, cancellation) } returns Result.success(Appointment.stub(id = appointmentId))
 
         setupApplication(
             extension = {
@@ -64,7 +65,7 @@ internal class DeclineAppointmentTest {
         }
 
         then()
-        assertEquals(HttpStatusCode.NoContent, response.status)
+        assertEquals(HttpStatusCode.OK, response.status)
     }
 
     @Test

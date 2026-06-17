@@ -18,9 +18,9 @@ import library.permissions.assert
 import org.slf4j.LoggerFactory
 import kotlin.uuid.Uuid
 
-private val declineAppointmentLogger = LoggerFactory.getLogger(DeclineAppointmentImpl::class.java)
+private val declineAppointmentLogger = LoggerFactory.getLogger(CancelAppointmentImpl::class.java)
 
-internal class DeclineAppointmentImpl(
+internal class CancelAppointmentImpl(
     private val appointmentDataSource: AppointmentDataSource,
     private val permissionsDataSource: PermissionsDataSource,
     private val subscriptionDataSource: AppointmentSubscriptionDataSource,
@@ -28,7 +28,7 @@ internal class DeclineAppointmentImpl(
     private val transactionManager: TransactionManager
 ) : CancelAppointment {
 
-    override suspend fun invoke(userId: Uuid, cancellation: AppointmentCancellation): Result<Unit> = transactionManager.transaction {
+    override suspend fun invoke(userId: Uuid, cancellation: AppointmentCancellation): Result<Appointment> = transactionManager.transaction {
         permissionsDataSource.getPermissions(userId, cancellation.businessId).assert(ObjectPermission.EDIT)
         val appointment = appointmentDataSource.get(cancellation.id)
         val cancelled = when (appointment.status) {
@@ -37,6 +37,10 @@ internal class DeclineAppointmentImpl(
             AppointmentStatus.SCHEDULED -> appointmentDataSource.cancel(cancellation.id, cancellation.reason)
         }
         sendAppointmentCancelledEvent(cancelled)
+        appointment.copy(
+            status = AppointmentStatus.CANCELLED,
+            cancellationReason = cancellation.reason
+        )
     }
 
     private suspend fun sendAppointmentCancelledEvent(appointment: Appointment) {

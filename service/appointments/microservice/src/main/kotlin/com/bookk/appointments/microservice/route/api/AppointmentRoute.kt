@@ -141,9 +141,9 @@ fun Routing.appointment() {
          * Tag: appointment
          * Security: jwt
          * Body: application/x-protobuf [com.bookk.appointments.domain.api.entity.AppointmentCancellation]
-         * Response: 204 application/x-protobuf Appointment canceled
+         * Response: 200 application/x-protobuf [com.bookk.appointments.domain.api.entity.Appointment] Canceled appointment
          * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Cancel appointment errors:
-         *  - ALREADY_CANCELLED (Code 300005): Appointment already cancelled
+         *  - ALREADY_CANCELLED (Code 300005): Appointment already canceled
          *  - ALREADY_COMPLETED (Code 300006): Appointment already completed
          */
         post<Api.Appointment.Cancel> {

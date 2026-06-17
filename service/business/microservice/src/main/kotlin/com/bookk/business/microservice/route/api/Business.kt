@@ -33,7 +33,7 @@ fun Route.businessCrud() {
          * Tag: business
          * Security: jwt
          * Body: application/x-protobuf [com.bookk.business.microservice.route.api.BusinessCreateRequest]
-         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Create business errors<br>BUSINESS_ALREADY_EXIST (Code 200001) Business already exist<br>BUSINESS_NAME_VALIDATION_ERROR (Code 200002) Business name invalid
+         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Create business errors<br>BUSINESS_ALREADY_EXIST (200001) Business already exist<br>BUSINESS_NAME_VALIDATION_ERROR (200002) Business name invalid
          */
          post<Api.Business> {
             val principal = requireNotNull(call.principal<AppPrincipal>())

@@ -21,7 +21,7 @@ internal fun Route.postRefreshToken() {
          * Security: jwt
          * Body: application/x-protobuf [com.bookk.auth.domain.api.token.entity.RefreshTokenInfo] Refresh token info
          * Response: 200 application/x-protobuf [com.bookk.auth.domain.api.token.entity.AuthTokens] New access/refresh pair
-         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Refresh errors<br>INVALID_CREDENTIALS (Code 400001) Invalid refresh token
+         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Refresh errors<br>INVALID_CREDENTIALS (400001) Invalid refresh token
          */
         post<Api.Auth.Refresh> {
             val principal = requireNotNull(call.principal<RefreshPrincipal>())

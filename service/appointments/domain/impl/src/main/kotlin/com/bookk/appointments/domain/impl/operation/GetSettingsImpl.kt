@@ -1,0 +1,25 @@
+package com.bookk.appointments.domain.impl.operation
+
+import com.bookk.appointments.domain.api.entity.AppointmentSettings
+import com.bookk.appointments.domain.api.operation.GetSettings
+import com.bookk.appointments.domain.datasource.AppointmentSettingsDataSource
+import com.bookk.appointments.domain.datasource.PermissionsDataSource
+import com.bookk.core.domain.datasource.transaction.TransactionManager
+import com.bookk.core.domain.entity.Error
+import library.permissions.ObjectPermission
+import library.permissions.assert
+import kotlin.uuid.Uuid
+
+internal class GetSettingsImpl(
+    private val settingsSource: AppointmentSettingsDataSource,
+    private val permissionsSource: PermissionsDataSource,
+    private val transactionManager: TransactionManager
+) : GetSettings {
+    override suspend fun invoke(
+        userId: Uuid,
+        businessId: Uuid
+    ): Result<AppointmentSettings> = transactionManager.transaction {
+        permissionsSource.getPermissions(userId, businessId).assert(ObjectPermission.READ)
+        settingsSource.get(businessId) ?: throw Error.NotFound()
+    }
+}

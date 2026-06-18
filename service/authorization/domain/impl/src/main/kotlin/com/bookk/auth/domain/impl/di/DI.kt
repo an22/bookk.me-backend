@@ -44,7 +44,7 @@ import org.koin.dsl.module
 
 fun authDomainModule() = module {
     includes(userClientModule(AppLevelConstants.serviceName))
-    single<GenerateAuthToken> { GenerateAuthTokenImpl(AppLevelConstants.DOMAIN_NAME, get(), get(), get()) }
+    singleOf(::GenerateAuthTokenImpl) bind GenerateAuthToken::class
     singleOf(::RefreshTokenImpl) bind RefreshToken::class
     singleOf(::GetActiveSigningKeyImpl) bind GetActiveSigningKey::class
     singleOf(::GetVerificationKeysImpl) bind GetVerificationKeys::class

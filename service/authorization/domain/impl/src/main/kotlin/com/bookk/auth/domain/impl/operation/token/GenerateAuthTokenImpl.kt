@@ -10,6 +10,7 @@ import com.bookk.auth.domain.api.token.operation.GenerateAuthToken.Error.Invalid
 import com.bookk.auth.domain.api.token.operation.GenerateAuthToken.Source
 import com.bookk.auth.domain.api.token.operation.GetActiveSigningKey
 import com.bookk.auth.domain.datasource.DeviceDataSource
+import com.bookk.core.AppLevelConstants
 import com.bookk.core.AppLevelConstants.Claim
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import java.security.interfaces.RSAPrivateKey
@@ -20,7 +21,6 @@ import kotlin.time.toJavaInstant
 import kotlin.uuid.Uuid
 
 internal class GenerateAuthTokenImpl(
-    private val serviceUrl: String,
     private val getActiveSigningKey: GetActiveSigningKey,
     private val deviceDataSource: DeviceDataSource,
     private val transactionManager: TransactionManager
@@ -57,8 +57,8 @@ internal class GenerateAuthTokenImpl(
         }
         return JWT.create()
             .withKeyId(signingKey.id.toString())
-            .withAudience(serviceUrl)
-            .withIssuer(ISSUER)
+            .withAudience("https://${AppLevelConstants.domainName}")
+            .withIssuer("https://${AppLevelConstants.domainName}")
             .withJWTId(Uuid.random().toString())
             .withClaim(Claim.AUTH_ID.key, record.authRecord.id.toString())
             .withClaim(Claim.USER_ID.key, record.authRecord.userId.toString())
@@ -94,6 +94,5 @@ internal class GenerateAuthTokenImpl(
 
     companion object {
         private const val ACCESS_EXPIRATION_TIME = 1000L * 60 * 5 // 5 Minutes
-        private const val ISSUER = "com.bookk.server"
     }
 }

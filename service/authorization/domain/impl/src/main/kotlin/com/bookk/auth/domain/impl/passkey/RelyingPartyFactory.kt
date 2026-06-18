@@ -8,7 +8,7 @@ import com.yubico.webauthn.data.RelyingPartyIdentity
 internal fun createRelyingParty(credentialRepository: CredentialRepository) = RelyingParty.builder()
     .identity(
         RelyingPartyIdentity.builder()
-            .id(AppLevelConstants.DOMAIN_NAME)
+            .id(AppLevelConstants.domainName)
             .name(AppLevelConstants.APP_NAME)
             .build()
     )

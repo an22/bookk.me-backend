@@ -38,9 +38,11 @@ internal fun Route.jwks() {
     get("/jwks.json") {
         val getVerificationKeys by application.inject<GetVerificationKeys>()
         val keys = getVerificationKeys().getOrThrow().map { it.toJwk() }
-        call.respondText(Json.encodeToString(JwkSet(keys)), ContentType.Application.Json)
+        call.respondText(jwksJson.encodeToString(JwkSet(keys)), ContentType.Application.Json)
     }
 }
+
+private val jwksJson = Json { encodeDefaults = true }
 
 private fun SigningKey.toJwk(): Jwk {
     val publicKey = publicKeyPem.toRsaPublicKey()

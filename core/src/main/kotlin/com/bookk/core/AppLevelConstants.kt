@@ -1,11 +1,12 @@
 package com.bookk.core
 
 object AppLevelConstants {
-    const val DOMAIN_NAME = "bookkme.app"
     const val APP_NAME = "BookkMe"
     const val SERIALIZER = SupportedSerializers.PROTOBUF.STR
     const val BUILD_TYPE = BuildType.DEBUG.STR
 
+    val domainName: String
+        get() = System.getenv("APPLICATION_DOMAIN_NAME").orEmpty()
     val serviceName: String
         get() = System.getenv("APPLICATION_SERVICE_NAME").orEmpty()
     val serviceVersion: String

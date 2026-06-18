@@ -13,12 +13,12 @@ import kotlin.uuid.Uuid
 
 object AccessVerifier {
 
-    private const val ISSUER = "com.bookk.server"
+    private val issuer: String = "https://${AppLevelConstants.domainName}"
 
     val verifier: JWTVerifier = JWT
         .require(Algorithm.RSA256(createJwksKeyProvider()))
-        .withIssuer(ISSUER)
-        .withAudience(AppLevelConstants.DOMAIN_NAME)
+        .withIssuer(issuer)
+        .withAudience(issuer)
         .build()
 
     val validator: ApplicationCall.(JWTCredential) -> AppPrincipal? = { credentials ->

@@ -10,5 +10,6 @@ interface DeviceDataSource {
     suspend fun getDeviceByAuthIdAndUUID(authId: Uuid, deviceUUID: Uuid): Device?
     suspend fun getDevices(authId: Uuid): List<Device>
     suspend fun attachRefreshTokenToDevice(deviceId: Uuid, tokenId: Uuid, tokenHash: String)
+    suspend fun rotateRefreshToken(deviceId: Uuid, tokenId: Uuid, tokenHash: String)
     suspend fun deleteTokenFromDevice(deviceId: Uuid)
 }

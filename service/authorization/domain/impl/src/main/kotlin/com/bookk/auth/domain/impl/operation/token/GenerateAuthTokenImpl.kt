@@ -30,14 +30,28 @@ internal class GenerateAuthTokenImpl(
         val deviceRecord = source.getDevice() ?: throw InvalidCredentials()
         val accessToken = createAccessToken(deviceRecord)
         val refreshToken = OpaqueRefreshToken.generate()
-        deviceDataSource.attachRefreshTokenToDevice(deviceRecord.deviceInfo.id, refreshToken.id, refreshToken.secretHash)
+        when (source) {
+            is Source.RefreshToken -> deviceDataSource.rotateRefreshToken(
+                deviceRecord.deviceInfo.id,
+                refreshToken.id,
+                refreshToken.secretHash
+            )
+
+            is Source.InitialAuthentication -> deviceDataSource.attachRefreshTokenToDevice(
+                deviceRecord.deviceInfo.id,
+                refreshToken.id,
+                refreshToken.secretHash
+            )
+        }
         AuthTokens(accessToken, refreshToken.token)
     }
 
     private suspend fun createAccessToken(record: Device): String {
         val signingKey = getActiveSigningKey().getOrThrow()
         val keyProvider = object : RSAKeyProvider {
-            override fun getPublicKeyById(id: String?): RSAPublicKey = RsaSigningKeyFactory.parsePublicKey(signingKey.publicKeyPem)
+            override fun getPublicKeyById(id: String?): RSAPublicKey =
+                RsaSigningKeyFactory.parsePublicKey(signingKey.publicKeyPem)
+
             override fun getPrivateKey(): RSAPrivateKey = RsaSigningKeyFactory.parsePrivateKey(signingKey.privateKeyPem)
             override fun getPrivateKeyId(): String = signingKey.id.toString()
         }
@@ -57,15 +71,25 @@ internal class GenerateAuthTokenImpl(
 
     private suspend fun Source.getDevice(): Device? {
         return when (this) {
-            is Source.FromRefresh -> validateRefreshToken(tokenId, secret)
-            is Source.FromAuthDevice -> deviceDataSource.getDeviceByAuthIdAndUUID(authId, deviceUUID)
+            is Source.RefreshToken -> validateRefreshToken(token)
+            is Source.InitialAuthentication -> deviceDataSource.getDeviceByAuthIdAndUUID(authId, deviceUUID)
         }
     }
 
-    private suspend fun validateRefreshToken(tokenId: Uuid, secret: String): Device? {
-        val device = deviceDataSource.getDeviceByRefreshTokenId(tokenId) ?: return null
-        val expectedHash = device.deviceInfo.refreshTokenHash ?: return null
-        return device.takeIf { OpaqueRefreshToken.matches(secret, expectedHash) }
+    private suspend fun validateRefreshToken(token: String): Device? {
+        val refreshToken = OpaqueRefreshToken.parse(token) ?: return null
+        val device = deviceDataSource.getDeviceByRefreshTokenId(refreshToken.id) ?: return null
+        val currentDeviceToken = device.deviceInfo.refreshToken ?: return null
+        val previousDeviceToken = device.deviceInfo.previousRefreshToken
+
+        if (previousDeviceToken != null && OpaqueRefreshToken.matches(refreshToken, previousDeviceToken)) {
+            deviceDataSource.deleteTokenFromDevice(device.deviceInfo.id)
+            return null
+        }
+        if (OpaqueRefreshToken.matches(refreshToken, currentDeviceToken)) {
+            return device
+        }
+        return null
     }
 
     companion object {

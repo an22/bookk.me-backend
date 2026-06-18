@@ -9,6 +9,7 @@ import com.bookk.auth.domain.api.identification.entity.Device
 import com.bookk.auth.domain.api.identification.entity.DeviceInfo
 import com.bookk.auth.domain.api.identification.entity.PasskeyCredential
 import com.bookk.auth.domain.api.identification.entity.PasskeyCredential.CredentialDescriptor
+import com.bookk.auth.domain.api.token.entity.SafeRefreshToken
 import com.bookk.auth.domain.api.token.entity.SigningKey
 import com.yubico.webauthn.RegisteredCredential
 import com.yubico.webauthn.data.AuthenticatorTransport
@@ -31,8 +32,8 @@ internal fun AuthDeviceEntity.toDomain(): Device {
         deviceInfo = DeviceInfo(
             id = id.value.toKotlinUuid(),
             deviceUUID = deviceUUID.toKotlinUuid(),
-            refreshTokenId = refreshTokenId?.toKotlinUuid(),
-            refreshTokenHash = refreshTokenHash,
+            refreshToken = SafeRefreshToken.from(refreshTokenId?.toKotlinUuid(), refreshTokenHash),
+            previousRefreshToken = SafeRefreshToken.from(previousRefreshTokenId?.toKotlinUuid(), previousRefreshTokenHash),
             deviceName = deviceName,
             isSignedIn = isSignedIn,
         )

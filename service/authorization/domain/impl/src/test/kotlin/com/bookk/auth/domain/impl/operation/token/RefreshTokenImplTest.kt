@@ -12,7 +12,6 @@ import io.mockk.coVerify
 import io.mockk.mockk
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import kotlin.uuid.Uuid
 
 internal class RefreshTokenImplTest {
 
@@ -23,15 +22,13 @@ internal class RefreshTokenImplTest {
     }
 
     @Test
-    fun `should generate a new token pair from the opaque refresh token`() = runUnitTest {
+    fun `should forward the raw token to generate auth token`() = runUnitTest {
         given()
         val fixture = SutFixture()
-        val tokenId = Uuid.random()
-        val secret = "secret"
-        val token = "$tokenId.$secret"
+        val token = "some-opaque-token"
         val tokens = AuthTokens(accessToken = "access", refreshToken = "refresh")
 
-        coEvery { fixture.generateAuthToken(any<Source.FromRefresh>()) } returns Result.success(tokens)
+        coEvery { fixture.generateAuthToken(any<Source.RefreshToken>()) } returns Result.success(tokens)
 
         whenn()
         val result = fixture.sut.invoke(token)
@@ -39,20 +36,7 @@ internal class RefreshTokenImplTest {
         then()
         assertEquals(tokens, result.getOrThrow())
         coVerify(exactly = 1) {
-            fixture.generateAuthToken(match { it is Source.FromRefresh && it.tokenId == tokenId && it.secret == secret })
+            fixture.generateAuthToken(match { it is Source.RefreshToken && it.token == token })
         }
-    }
-
-    @Test
-    fun `should fail with invalid credentials when token is malformed`() = runUnitTest {
-        given()
-        val fixture = SutFixture()
-
-        whenn()
-        val result = fixture.sut.invoke("not-a-valid-token")
-
-        then()
-        assertEquals(true, result.isFailure)
-        coVerify(exactly = 0) { fixture.generateAuthToken(any()) }
     }
 }

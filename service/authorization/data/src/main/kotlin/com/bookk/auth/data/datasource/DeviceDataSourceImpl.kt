@@ -7,10 +7,12 @@ import com.bookk.auth.data.orm.table.AuthenticationTable
 import com.bookk.auth.domain.api.identification.entity.Device
 import com.bookk.auth.domain.datasource.DeviceDataSource
 import com.bookk.core.data.DataSource
+import com.bookk.core.domain.entity.Error
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.greater
 import org.jetbrains.exposed.v1.core.innerJoin
+import org.jetbrains.exposed.v1.core.or
 import org.jetbrains.exposed.v1.jdbc.insertIgnore
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.update
@@ -23,6 +25,26 @@ internal class DeviceDataSourceImpl : DataSource(), DeviceDataSource {
     override suspend fun attachRefreshTokenToDevice(deviceId: Uuid, tokenId: Uuid, tokenHash: String) = dbQuery<Unit> {
         AuthDeviceTable.update(where = { AuthDeviceTable.id eq deviceId.toJavaUuid() }) {
             it[isSignedIn] = true
+            it[refreshTokenId] = tokenId.toJavaUuid()
+            it[refreshTokenHash] = tokenHash
+            it[refreshTokenExpiresAt] = Clock.System.now().plus(REFRESH_TOKEN_TTL)
+            it[previousRefreshTokenId] = null
+            it[previousRefreshTokenHash] = null
+            it[updatedAt] = Clock.System.now()
+        }
+    }
+
+    override suspend fun rotateRefreshToken(deviceId: Uuid, tokenId: Uuid, tokenHash: String) = dbQuery<Unit> {
+        val (id, hash) = AuthDeviceTable
+            .selectAll()
+            .where { AuthDeviceTable.id eq deviceId.toJavaUuid() }
+            .map { it[AuthDeviceTable.refreshTokenId] to it[AuthDeviceTable.refreshTokenHash] }
+            .singleOrNull() ?: throw Error.NotFound()
+
+        AuthDeviceTable.update(where = { AuthDeviceTable.id eq deviceId.toJavaUuid() }) {
+            it[isSignedIn] = true
+            it[previousRefreshTokenId] = id
+            it[previousRefreshTokenHash] = hash
             it[refreshTokenId] = tokenId.toJavaUuid()
             it[refreshTokenHash] = tokenHash
             it[refreshTokenExpiresAt] = Clock.System.now().plus(REFRESH_TOKEN_TTL)
@@ -46,6 +68,7 @@ internal class DeviceDataSourceImpl : DataSource(), DeviceDataSource {
             .where {
                 AuthDeviceTable.refreshTokenId.eq(tokenId.toJavaUuid())
                     .and(AuthDeviceTable.refreshTokenExpiresAt.greater(Clock.System.now()))
+                    .or(AuthDeviceTable.previousRefreshTokenId.eq(tokenId.toJavaUuid()))
             }
             .map { AuthDeviceEntity.wrapRow(it).toDomain() }
             .singleOrNull()
@@ -85,6 +108,8 @@ internal class DeviceDataSourceImpl : DataSource(), DeviceDataSource {
             it[isSignedIn] = false
             it[refreshTokenId] = null
             it[refreshTokenHash] = null
+            it[previousRefreshTokenId] = null
+            it[previousRefreshTokenHash] = null
             it[updatedAt] = Clock.System.now()
         }
     }

@@ -22,7 +22,7 @@ internal class SignInImpl(
         val credentials = finishAssertion(request).getOrThrow()
         createDeviceIfNotExist(credentials.authInfo.id, request.deviceInfo)
         generateAuthToken(
-            Source.FromAuthDevice(
+            Source.InitialAuthentication(
                 credentials.authInfo.id,
                 request.deviceInfo.deviceUUID
             )

@@ -11,9 +11,6 @@ services:
     environment:
       JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:8000 -ea"
       TZ: "UTC"
-    volumes:
-      - './security/private.pem:/etc/service/private.pem:ro'
-      - './security/public.pem:/etc/service/public.pem:ro'
     deploy:
       resources:
         limits:
@@ -29,9 +26,6 @@ services:
     environment:
       JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,address=*:8000,server=y,suspend=n -ea"
       TZ: "UTC"
-    volumes:
-      - './security/private.pem:/etc/service/private.pem:ro'
-      - './security/public.pem:/etc/service/public.pem:ro'
     deploy:
       resources:
         limits:
@@ -47,9 +41,6 @@ services:
     environment:
       JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,address=*:8000,server=y,suspend=n -ea"
       TZ: "UTC"
-    volumes:
-      - './security/private.pem:/etc/service/private.pem:ro'
-      - './security/public.pem:/etc/service/public.pem:ro'
     deploy:
       resources:
         limits:
@@ -65,9 +56,6 @@ services:
     environment:
       JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,address=*:8000,server=y,suspend=n -ea"
       TZ: "UTC"
-    volumes:
-      - './security/private.pem:/etc/service/private.pem:ro'
-      - './security/public.pem:/etc/service/public.pem:ro'
     deploy:
       resources:
         limits:

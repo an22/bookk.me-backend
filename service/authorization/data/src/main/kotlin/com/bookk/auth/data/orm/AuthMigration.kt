@@ -3,6 +3,7 @@ package com.bookk.auth.data.orm
 import com.bookk.auth.data.orm.table.AuthDeviceTable
 import com.bookk.auth.data.orm.table.AuthenticationTable
 import com.bookk.auth.data.orm.table.PasskeyCredentialTable
+import com.bookk.auth.data.orm.table.SigningKeyTable
 import com.bookk.core.data.database.createMigrationScriptFor
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.v1.core.Table
@@ -10,8 +11,8 @@ import org.jetbrains.exposed.v1.core.Table
 fun main() {
     runBlocking {
         createMigrationScriptFor(
-            referenceVersion = 0,
-            targetVersion = 1,
+            referenceVersion = 2,
+            targetVersion = 3,
             schemaName = "authorization",
             tables = authTables()
         )
@@ -21,5 +22,6 @@ fun main() {
 private fun authTables(): Array<Table> = arrayOf(
     AuthDeviceTable,
     AuthenticationTable,
-    PasskeyCredentialTable
+    PasskeyCredentialTable,
+    SigningKeyTable
 )

@@ -3,11 +3,13 @@ package com.bookk.auth.data.map
 import com.bookk.auth.data.orm.entity.AuthDeviceEntity
 import com.bookk.auth.data.orm.entity.AuthenticationEntity
 import com.bookk.auth.data.orm.entity.PasskeyCredentialEntity
+import com.bookk.auth.data.orm.entity.SigningKeyEntity
 import com.bookk.auth.domain.api.authentication.entity.Authentication
 import com.bookk.auth.domain.api.identification.entity.Device
 import com.bookk.auth.domain.api.identification.entity.DeviceInfo
 import com.bookk.auth.domain.api.identification.entity.PasskeyCredential
 import com.bookk.auth.domain.api.identification.entity.PasskeyCredential.CredentialDescriptor
+import com.bookk.auth.domain.api.token.entity.SigningKey
 import com.yubico.webauthn.RegisteredCredential
 import com.yubico.webauthn.data.AuthenticatorTransport
 import com.yubico.webauthn.data.PublicKeyCredentialDescriptor
@@ -30,6 +32,7 @@ internal fun AuthDeviceEntity.toDomain(): Device {
             id = id.value.toKotlinUuid(),
             deviceUUID = deviceUUID.toKotlinUuid(),
             refreshTokenId = refreshTokenId?.toKotlinUuid(),
+            refreshTokenHash = refreshTokenHash,
             deviceName = deviceName,
             isSignedIn = isSignedIn,
         )
@@ -57,6 +60,17 @@ internal fun PasskeyCredentialEntity.toDomain(): PasskeyCredential {
         clientData = clientData,
         lastUsedAt = lastUsedAt,
         createdAt = createdAt
+    )
+}
+
+internal fun SigningKeyEntity.toDomain(): SigningKey {
+    return SigningKey(
+        id = id.value.toKotlinUuid(),
+        publicKeyPem = publicKey,
+        privateKeyPem = privateKey,
+        status = status,
+        createdAt = createdAt,
+        retiredAt = retiredAt
     )
 }
 

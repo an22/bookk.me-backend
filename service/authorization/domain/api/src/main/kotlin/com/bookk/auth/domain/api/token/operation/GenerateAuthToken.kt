@@ -11,7 +11,7 @@ interface GenerateAuthToken {
     suspend operator fun invoke(source: Source): Result<AuthTokens>
 
     sealed interface Source {
-        class FromRefresh(val deviceId: Uuid, val tokenId: Uuid) : Source
+        class FromRefresh(val tokenId: Uuid, val secret: String) : Source
         class FromAuthDevice(val authId: Uuid, val deviceUUID: Uuid) : Source
     }
 

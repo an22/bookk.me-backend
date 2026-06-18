@@ -20,6 +20,7 @@ dependencies {
     implementation(libs.ktor.swagger)
     implementation(libs.ktor.openapi)
     implementation(libs.ktor.metrics.prometheus)
+    implementation(libs.jwks.rsa)
     implementation(projects.core)
     implementation(projects.core.data)
     implementation(projects.core.data.cache.api)

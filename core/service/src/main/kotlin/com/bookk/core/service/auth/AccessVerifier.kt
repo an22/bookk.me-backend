@@ -5,7 +5,7 @@ import com.auth0.jwt.JWTVerifier
 import com.auth0.jwt.algorithms.Algorithm
 import com.bookk.core.AppLevelConstants
 import com.bookk.core.AppLevelConstants.Claim
-import com.bookk.core.service.auth.JwtConfig.createPublicKeyProvider
+import com.bookk.core.service.auth.JwtConfig.createJwksKeyProvider
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.auth.jwt.JWTCredential
 import kotlin.time.Clock
@@ -16,7 +16,7 @@ object AccessVerifier {
     private const val ISSUER = "com.bookk.server"
 
     val verifier: JWTVerifier = JWT
-        .require(Algorithm.RSA256(createPublicKeyProvider()))
+        .require(Algorithm.RSA256(createJwksKeyProvider()))
         .withIssuer(ISSUER)
         .withAudience(AppLevelConstants.DOMAIN_NAME)
         .build()

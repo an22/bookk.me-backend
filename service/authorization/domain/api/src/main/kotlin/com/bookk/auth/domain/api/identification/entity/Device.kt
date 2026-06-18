@@ -12,6 +12,7 @@ class DeviceInfo(
     val id: Uuid,
     val deviceUUID: Uuid,
     val refreshTokenId: Uuid?,
+    val refreshTokenHash: String?,
     val deviceName: String,
     val isSignedIn: Boolean
 )

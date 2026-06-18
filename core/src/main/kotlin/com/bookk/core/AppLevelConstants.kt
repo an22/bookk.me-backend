@@ -30,10 +30,8 @@ object AppLevelConstants {
         get() = System.getenv("APPLICATION_DB_USER")
     val dbPassword: String
         get() = System.getenv("APPLICATION_DB_PASSWORD")
-    val pubKeyFilename: String
-        get() = System.getenv("APPLICATION_JWT_PUBLIC_KEY_FILE")
-    val privateKeyFilename: String
-        get() = System.getenv("APPLICATION_JWT_PRIVATE_KEY_FILE")
+    val authServiceHostname: String
+        get() = System.getenv("APPLICATION_AUTH_SERVICE_HOSTNAME")
 
     sealed interface SupportedSerializers {
         data object JSON : SupportedSerializers {

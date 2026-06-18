@@ -4,14 +4,6 @@ networks:
   operational:
     external: true
 
-secrets:
-  private-jwt:
-    external: true
-  public-jwt:
-    external: true
-  ssl-keystore:
-    external: true
-
 volumes:
   database_volume:
     driver: local
@@ -94,13 +86,6 @@ services:
         aliases:
           - ${APPLICATION_SERVICE_NAME}.service
 
-    secrets:
-      - source: public-jwt
-        target: ${APPLICATION_JWT_PUBLIC_KEY_FILE}
-      - source: private-jwt
-        target: ${APPLICATION_JWT_PRIVATE_KEY_FILE}
-      - source: ssl-keystore
-        target: ${APPLICATION_SERVICE_SSL_FILE}
     env_file: "microservice.env"
     environment:
       APPLICATION_SERVICE_VERSION: ${APPLICATION_SERVICE_VERSION}

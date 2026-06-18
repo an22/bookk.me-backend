@@ -26,8 +26,7 @@ fun Routing.appointmentInit() {
          * Security: jwt
          * Body: application/x-protobuf [com.bookk.appointments.domain.api.entity.BusinessSnapshot]
          * Response: 204 application/x-protobuf Created appointment entity
-         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Appointment errors:
-         *  - PLUGIN_ALREADY_ENABLED (Code 300009): Appointment plugin already enabled
+         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Appointment errors<br>PLUGIN_ALREADY_ENABLED (300009) Appointment plugin already enabled
          */
         post<Api.Appointment.Enabled> {
             val principal = requireNotNull(call.principal<AppPrincipal>())

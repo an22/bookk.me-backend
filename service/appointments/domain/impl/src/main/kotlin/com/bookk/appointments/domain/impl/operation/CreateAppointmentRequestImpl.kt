@@ -3,6 +3,7 @@ package com.bookk.appointments.domain.impl.operation
 import com.bookk.appointments.domain.api.entity.AppointmentRequest
 import com.bookk.appointments.domain.api.operation.CreateAppointment
 import com.bookk.appointments.domain.api.operation.CreateAppointmentRequest
+import com.bookk.appointments.domain.datasource.AppointmentDataSource
 import com.bookk.appointments.domain.datasource.AppointmentRequestDataSource
 import com.bookk.appointments.domain.datasource.AppointmentSettingsDataSource
 import com.bookk.appointments.domain.datasource.AppointmentSubscriptionDataSource
@@ -23,6 +24,7 @@ private val createAppointmentRequestLogger = LoggerFactory.getLogger(CreateAppoi
 
 internal class CreateAppointmentRequestImpl(
     private val requestDataSource: AppointmentRequestDataSource,
+    private val appointmentDataSource: AppointmentDataSource,
     private val settingsDataSource: AppointmentSettingsDataSource,
     private val permissionsDataSource: PermissionsDataSource,
     private val subscriptionDataSource: AppointmentSubscriptionDataSource,
@@ -45,6 +47,7 @@ internal class CreateAppointmentRequestImpl(
         if (!settings.isInWorkday(request.date)) throw CreateAppointmentRequest.Error.RequestForThisDateNotAllowed()
         if (!settings.isInWorktime(request.date)) throw CreateAppointmentRequest.Error.RequestForThisTimeNotAllowed()
         if (requestDataSource.hasOverlapsWith(request)) throw CreateAppointmentRequest.Error.RequestForThisTimeExists()
+        if (appointmentDataSource.hasOverlapsWith(request)) throw CreateAppointmentRequest.Error.RequestForThisTimeExists()
         requestDataSource.create(request).also {
             sendRequestCreatedNotification(request)
         }

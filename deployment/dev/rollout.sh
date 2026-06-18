@@ -9,23 +9,23 @@ cd ../../.. || exit
 ./gradlew :service:authorization:microservice:publishImageToLocalRegistry --no-configuration-cache || exit
 
 #User service
-cd deployment/local-testing-environment/service || exit
+cd deployment/dev/service || exit
 export $(grep -v '^#' user.env | xargs) || exit
 cd ../../.. || exit
 ./gradlew :service:user:microservice:publishImageToLocalRegistry --no-configuration-cache || exit
 
 #Business service
-cd deployment/local-testing-environment/service || exit
+cd deployment/dev/service || exit
 export $(grep -v '^#' business.env | xargs) || exit
 cd ../../.. || exit
 ./gradlew :service:business:microservice:publishImageToLocalRegistry --no-configuration-cache || exit
 
 #Appointments service
-cd deployment/local-testing-environment/service || exit
+cd deployment/dev/service || exit
 export $(grep -v '^#' appointments.env | xargs) || exit
 cd ../../.. || exit
 ./gradlew :service:appointments:microservice:publishImageToLocalRegistry --no-configuration-cache || exit
 
 docker context use default || exit
-cd deployment/local-testing-environment || exit
+cd deployment/dev || exit
 docker compose -f microservices-compose.yml up -d

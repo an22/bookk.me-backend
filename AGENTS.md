@@ -86,8 +86,7 @@ fun Routing.thing() {
          * Security: jwt
          * Body: application/x-protobuf [com.bookk.svc.microservice.route.api.ThingRequest]
          * Response: 200 application/x-protobuf [com.bookk.svc.domain.api.entity.Thing] Created thing
-         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Create thing errors:
-         *  - THING_EXISTS (Code 300010): Thing already exists
+         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Create thing errors<br>THING_EXISTS (300010): Thing already exists
          */
         post<Api.Thing> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
@@ -99,7 +98,7 @@ fun Routing.thing() {
     }
 }
 ```
-3. KDoc OpenAPI rules (the ktor openApi plugin parses these): `Summary:`, optional `Description:`, `Tag:`, `Security: jwt` only when inside `authenticate {}`, **`Body:` (NEVER `RequestBody:`)**, one `Response:` line per status. Fully qualified type names in brackets. Every case of the operation's `sealed interface Error` must appear under the 422 response with `NAME (Code <n>): message`. 204 responses: `Response: 204 application/x-protobuf <description>` (no type).
+3. KDoc OpenAPI rules (the ktor openApi plugin parses these): `Summary:`, optional `Description:`, `Tag:`, `Security: jwt` only when inside `authenticate {}`, **`Body:` (NEVER `RequestBody:`)**, one `Response:` line per status. Fully qualified type names in brackets. Every case of the operation's `sealed interface Error` must appear under the 422 response with `NAME (<n>): message`. 204 responses: `Response: 204 application/x-protobuf <description>` (no type).
 4. When a path id duplicates a body id, validate: `if (it.id != body.id) call.respond(HttpStatusCode.BadRequest, "Invalid request") else ...`.
 5. Register the new route fn in `route/<Svc>Route.kt` aggregator (`fun Routing.<svc>Route()`); the aggregator is already wired in `<Svc>Microservice.kt`.
 6. `AppPrincipal` fields: `authId`, `userId`, `deviceId` (all `Uuid`).

@@ -17,8 +17,7 @@ internal fun Route.getUserByEmail() {
      * Tag: internal
      * Body: application/x-protobuf [com.bookk.user.domain.api.entity.EmailBody] Email to search by
      * Response: 200 application/x-protobuf [com.bookk.user.domain.api.entity.User] User associated with this email
-     * Response: 404 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] User errors:
-     *  - USER_NOT_EXIST (Code 100001): User not exist
+     * Response: 404 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] User errors<br>USER_NOT_EXIST (100001) User not exist
      */
     get<Api.Internal.User.Email> {
         val getUserByEmail by application.inject<GetUserByEmail>()

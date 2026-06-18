@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import kotlin.uuid.Uuid
 
-internal class DeclineAppointmentImplTest {
+internal class CancelAppointmentImplTest {
 
     private class SutFixture {
         val appointmentDataSource = mockk<AppointmentDataSource>()
@@ -32,7 +32,7 @@ internal class DeclineAppointmentImplTest {
         val eventProducer = mockk<StandardEventProducer>(relaxed = true)
         val transactionManager = mockk<TransactionManager>()
 
-        val sut = DeclineAppointmentImpl(
+        val sut = CancelAppointmentImpl(
             appointmentDataSource,
             permissionsDataSource,
             subscriptionDataSource,

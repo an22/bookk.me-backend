@@ -1,5 +1,6 @@
 package com.bookk.appointments.domain.api.operation
 
+import com.bookk.appointments.domain.api.entity.Appointment
 import com.bookk.appointments.domain.api.entity.AppointmentCancellation
 import com.bookk.appointments.domain.api.entity.AppointmentErrorCodes
 import com.bookk.core.domain.entity.BusinessError
@@ -7,7 +8,7 @@ import io.ktor.http.HttpStatusCode
 import kotlin.uuid.Uuid
 
 interface CancelAppointment {
-    suspend operator fun invoke(userId: Uuid, cancellation: AppointmentCancellation): Result<Unit>
+    suspend operator fun invoke(userId: Uuid, cancellation: AppointmentCancellation): Result<Appointment>
 
     sealed interface Error {
         class AlreadyCancelled: Error, BusinessError(

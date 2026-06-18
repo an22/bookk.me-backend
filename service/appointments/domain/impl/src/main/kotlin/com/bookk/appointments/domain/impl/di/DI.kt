@@ -10,13 +10,14 @@ import com.bookk.appointments.domain.api.operation.EnableAppointmentsForBusiness
 import com.bookk.appointments.domain.api.operation.GetAppointmentHistory
 import com.bookk.appointments.domain.api.operation.GetAppointmentRequests
 import com.bookk.appointments.domain.api.operation.GetAppointmentsForDate
+import com.bookk.appointments.domain.api.operation.GetSettings
 import com.bookk.appointments.domain.api.operation.IsAppointmentsEnabled
 import com.bookk.appointments.domain.api.operation.MarkAppointmentsCompleted
 import com.bookk.appointments.domain.api.operation.UpdateAppointment
 import com.bookk.appointments.domain.impl.event.AppointmentEventHandler
+import com.bookk.appointments.domain.impl.operation.CancelAppointmentImpl
 import com.bookk.appointments.domain.impl.operation.CreateAppointmentImpl
 import com.bookk.appointments.domain.impl.operation.CreateAppointmentRequestImpl
-import com.bookk.appointments.domain.impl.operation.DeclineAppointmentImpl
 import com.bookk.appointments.domain.impl.operation.DeclineAppointmentRequestImpl
 import com.bookk.appointments.domain.impl.operation.DeleteModuleImpl
 import com.bookk.appointments.domain.impl.operation.EditSettingsImpl
@@ -24,6 +25,7 @@ import com.bookk.appointments.domain.impl.operation.EnableAppointmentsForBusines
 import com.bookk.appointments.domain.impl.operation.GetAppointmentHistoryImpl
 import com.bookk.appointments.domain.impl.operation.GetAppointmentRequestsImpl
 import com.bookk.appointments.domain.impl.operation.GetAppointmentsForDataImpl
+import com.bookk.appointments.domain.impl.operation.GetSettingsImpl
 import com.bookk.appointments.domain.impl.operation.IsAppointmentsEnabledImpl
 import com.bookk.appointments.domain.impl.operation.MarkAppointmentsCompletedImpl
 import com.bookk.appointments.domain.impl.operation.UpdateAppointmentImpl
@@ -39,12 +41,13 @@ fun appointmentsDomainModule() = module {
     factoryOf(::AppointmentEventHandler) bind EventHandler::class
     factoryOf(::DeleteModuleImpl) bind DeleteModule::class
     factoryOf(::EditSettingsImpl) bind EditSettings::class
+    factoryOf(::GetSettingsImpl) bind GetSettings::class
     factoryOf(::CreateAppointmentRequestImpl) bind CreateAppointmentRequest::class
     factoryOf(::GetAppointmentRequestsImpl) bind GetAppointmentRequests::class
     factoryOf(::GetAppointmentsForDataImpl) bind GetAppointmentsForDate::class
     factoryOf(::GetAppointmentHistoryImpl) bind GetAppointmentHistory::class
     factoryOf(::UpdateAppointmentImpl) bind UpdateAppointment::class
-    factoryOf(::DeclineAppointmentImpl) bind CancelAppointment::class
+    factoryOf(::CancelAppointmentImpl) bind CancelAppointment::class
     factoryOf(::UpdateBusinessInformation)
     factoryOf(::DeclineAppointmentRequestImpl) bind DeclineAppointmentRequest::class
     factoryOf(::IsAppointmentsEnabledImpl) bind IsAppointmentsEnabled::class

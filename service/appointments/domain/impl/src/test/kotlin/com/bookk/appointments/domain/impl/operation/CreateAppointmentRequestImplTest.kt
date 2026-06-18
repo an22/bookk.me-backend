@@ -5,6 +5,7 @@ import com.bookk.appointments.domain.api.entity.AppointmentSettings
 import com.bookk.appointments.domain.api.entity.BusinessSnapshot
 import com.bookk.appointments.domain.api.operation.CreateAppointment
 import com.bookk.appointments.domain.api.operation.CreateAppointmentRequest
+import com.bookk.appointments.domain.datasource.AppointmentDataSource
 import com.bookk.appointments.domain.datasource.AppointmentRequestDataSource
 import com.bookk.appointments.domain.datasource.AppointmentSettingsDataSource
 import com.bookk.appointments.domain.datasource.AppointmentSubscriptionDataSource
@@ -32,6 +33,7 @@ internal class CreateAppointmentRequestImplTest {
 
     private class SutFixture {
         val requestDataSource = mockk<AppointmentRequestDataSource>()
+        val appointmentDataSource = mockk<AppointmentDataSource>()
         val settingsDataSource = mockk<AppointmentSettingsDataSource>()
         val permissionsDataSource = mockk<PermissionsDataSource>()
         val createAppointment = mockk<CreateAppointment>()
@@ -41,6 +43,7 @@ internal class CreateAppointmentRequestImplTest {
 
         val sut = CreateAppointmentRequestImpl(
             requestDataSource,
+            appointmentDataSource,
             settingsDataSource,
             permissionsDataSource,
             subscriptionDataSource,
@@ -67,6 +70,7 @@ internal class CreateAppointmentRequestImplTest {
             coEvery { settings.isInWorktime(request.date) } returns true
             coEvery { permissionsDataSource.getPermissions(userId, businessId) } returns EDIT.int
             coEvery { requestDataSource.hasOverlapsWith(request) } returns false
+            coEvery { appointmentDataSource.hasOverlapsWith(request) } returns false
             coEvery { requestDataSource.create(request) } returns request
             coEvery { subscriptionDataSource.getBusinessSnapshot(any()) } returns businessSnapshot
             coEvery { eventProducer.send(any(), any()) } returns Unit
@@ -246,6 +250,7 @@ internal class CreateAppointmentRequestImplTest {
             coEvery { settings.isInWorktime(request.date) } returns true
             coEvery { permissionsDataSource.getPermissions(userId, businessId) } returns EDIT.int
             coEvery { requestDataSource.hasOverlapsWith(request) } returns false
+            coEvery { appointmentDataSource.hasOverlapsWith(request) } returns false
             coEvery { requestDataSource.create(request) } returns request
             coEvery { subscriptionDataSource.getBusinessSnapshot(businessId) } returns businessSnapshot
             coEvery { eventProducer.send(any(), any()) } answers { throw RuntimeException("Producer fail") }
@@ -304,6 +309,7 @@ internal class CreateAppointmentRequestImplTest {
             coEvery { settings.isInWorktime(request.date) } returns true
             coEvery { permissionsDataSource.getPermissions(userId, businessId) } returns EDIT.int
             coEvery { requestDataSource.hasOverlapsWith(request) } returns false
+            coEvery { appointmentDataSource.hasOverlapsWith(request) } returns false
             coEvery { requestDataSource.create(request) } returns request
             coEvery { subscriptionDataSource.getBusinessSnapshot(businessId) } returns businessSnapshot
             coEvery { eventProducer.send(any(), any()) } returns Unit

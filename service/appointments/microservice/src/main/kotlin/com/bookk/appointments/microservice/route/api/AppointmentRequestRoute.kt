@@ -41,10 +41,7 @@ fun Routing.requests() {
          * Security: jwt
          * Body: application/x-protobuf [com.bookk.appointments.domain.api.entity.AppointmentRequest]
          * Response: 204 application/x-protobuf Request successfully created
-         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Create appointment request errors:
-         *  - REQUEST_EXISTS (Code 300001): Request for this time already exists
-         *  - DATE_NOT_ALLOWED (Code 300003): Request for this date not allowed
-         *  - TIME_NOT_ALLOWED (Code 300002): Request for this time not allowed
+         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Create appointment request errors<br>REQUEST_EXISTS (300001) Request for this time already exists<br>DATE_NOT_ALLOWED (300003) Request for this date not allowed<br>TIME_NOT_ALLOWED (300002) Request for this time not allowed
          */
         post<Api.Appointment.Request> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
@@ -66,9 +63,7 @@ fun Routing.requests() {
          * Security: jwt
          * Body: application/x-protobuf [com.bookk.appointments.domain.api.entity.AppointmentCancellation]
          * Response: 204 application/x-protobuf Appointment request canceled
-         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Cancel appointment request errors:
-         *  - REQUEST_ALREADY_DECLINED (Code 300007): Appointment request already declined
-         *  - REQUEST_ALREADY_APPROVED (Code 300008): Appointment request already approved
+         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Cancel appointment request errors<br>REQUEST_ALREADY_DECLINED (300007) Appointment request already declined<br>REQUEST_ALREADY_APPROVED (300008) Appointment request already approved
          */
         post<Api.Appointment.RequestCancel> {
             val principal = requireNotNull(call.principal<AppPrincipal>())

@@ -18,7 +18,7 @@ import library.permissions.assert
 import org.slf4j.LoggerFactory
 import kotlin.uuid.Uuid
 
-private val declineAppointmentRequestLogger = LoggerFactory.getLogger(DeclineAppointmentImpl::class.java)
+private val declineAppointmentRequestLogger = LoggerFactory.getLogger(CancelAppointmentImpl::class.java)
 
 internal class DeclineAppointmentRequestImpl(
     private val requestDataSource: AppointmentRequestDataSource,

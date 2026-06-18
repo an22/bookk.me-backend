@@ -84,7 +84,6 @@ services:
   nginx:
     image: nginx:1.29.4
     labels:
-      co.elastic.logs/enabled: "true"
       sh.acme.autoload.domain: "${DOMAIN_NAME}"
     networks:
       - operational

@@ -279,8 +279,6 @@ services:
   logstash:
     <<: *replicated
     image: docker.elastic.co/logstash/logstash:${ELASTIC_STACK_VERSION}
-    labels:
-      co.elastic.logs/enabled: "true"
     configs:
       - source: logstash-config
         target: /usr/share/logstash/config/logstash.yml

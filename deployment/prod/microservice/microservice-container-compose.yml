@@ -21,8 +21,6 @@ volumes:
 services:
   database:
     image: mariadb:11.5.2-ubi9
-    labels:
-      co.elastic.logs/enabled: "true"
     networks:
       operational:
         aliases:
@@ -59,8 +57,6 @@ services:
 
   redis:
     image: bitnami/redis:6.2.14
-    labels:
-      co.elastic.logs/enabled: "true"
     volumes:
       - redis_data:/opt/bitnami/redis/
 
@@ -93,8 +89,6 @@ services:
 
   microservice:
     image: ${APPLICATION_SERVICE_IMAGE}:${APPLICATION_SERVICE_VERSION}
-    labels:
-      co.elastic.logs/enabled: "true"
     networks:
       operational:
         aliases:

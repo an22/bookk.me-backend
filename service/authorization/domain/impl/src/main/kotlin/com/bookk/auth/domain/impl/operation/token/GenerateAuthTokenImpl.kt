@@ -8,17 +8,20 @@ import com.bookk.auth.domain.api.token.entity.AuthTokens
 import com.bookk.auth.domain.api.token.operation.GenerateAuthToken
 import com.bookk.auth.domain.api.token.operation.GenerateAuthToken.Error.InvalidCredentials
 import com.bookk.auth.domain.api.token.operation.GenerateAuthToken.Source
+import com.bookk.auth.domain.api.token.operation.GetActiveSigningKey
 import com.bookk.auth.domain.datasource.DeviceDataSource
+import com.bookk.core.AppLevelConstants
 import com.bookk.core.AppLevelConstants.Claim
 import com.bookk.core.domain.datasource.transaction.TransactionManager
+import java.security.interfaces.RSAPrivateKey
+import java.security.interfaces.RSAPublicKey
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.toJavaInstant
 import kotlin.uuid.Uuid
 
 internal class GenerateAuthTokenImpl(
-    private val serviceUrl: String,
-    private val keyProvider: RSAKeyProvider,
+    private val getActiveSigningKey: GetActiveSigningKey,
     private val deviceDataSource: DeviceDataSource,
     private val transactionManager: TransactionManager
 ) : GenerateAuthToken {
@@ -26,16 +29,36 @@ internal class GenerateAuthTokenImpl(
     override suspend fun invoke(source: Source): Result<AuthTokens> = transactionManager.transaction {
         val deviceRecord = source.getDevice() ?: throw InvalidCredentials()
         val accessToken = createAccessToken(deviceRecord)
-        val refreshId = Uuid.random()
-        val refreshToken = createRefreshToken(refreshId, deviceRecord)
-        deviceDataSource.attachRefreshTokenToDevice(deviceRecord.deviceInfo.id, refreshId)
-        AuthTokens(accessToken, refreshToken)
+        val refreshToken = OpaqueRefreshToken.generate()
+        when (source) {
+            is Source.RefreshToken -> deviceDataSource.rotateRefreshToken(
+                deviceRecord.deviceInfo.id,
+                refreshToken.id,
+                refreshToken.secretHash
+            )
+
+            is Source.InitialAuthentication -> deviceDataSource.attachRefreshTokenToDevice(
+                deviceRecord.deviceInfo.id,
+                refreshToken.id,
+                refreshToken.secretHash
+            )
+        }
+        AuthTokens(accessToken, refreshToken.token)
     }
 
-    private fun createAccessToken(record: Device): String {
+    private suspend fun createAccessToken(record: Device): String {
+        val signingKey = getActiveSigningKey().getOrThrow()
+        val keyProvider = object : RSAKeyProvider {
+            override fun getPublicKeyById(id: String?): RSAPublicKey =
+                RsaSigningKeyFactory.parsePublicKey(signingKey.publicKeyPem)
+
+            override fun getPrivateKey(): RSAPrivateKey = RsaSigningKeyFactory.parsePrivateKey(signingKey.privateKeyPem)
+            override fun getPrivateKeyId(): String = signingKey.id.toString()
+        }
         return JWT.create()
-            .withAudience(serviceUrl)
-            .withIssuer(ISSUER)
+            .withKeyId(signingKey.id.toString())
+            .withAudience("https://${AppLevelConstants.domainName}")
+            .withIssuer("https://${AppLevelConstants.domainName}")
             .withJWTId(Uuid.random().toString())
             .withClaim(Claim.AUTH_ID.key, record.authRecord.id.toString())
             .withClaim(Claim.USER_ID.key, record.authRecord.userId.toString())
@@ -46,32 +69,30 @@ internal class GenerateAuthTokenImpl(
             .sign(Algorithm.RSA256(keyProvider))
     }
 
-    private fun createRefreshToken(tokenId: Uuid, record: Device): String {
-        return JWT.create()
-            .withAudience(serviceUrl)
-            .withIssuer(REFRESH_ISSUER)
-            .withJWTId(tokenId.toString())
-            .withClaim(Claim.DEVICE_ID.key, record.deviceInfo.id.toString())
-            .withIssuedAt(Clock.System.now().toJavaInstant())
-            .withNotBefore(Clock.System.now().toJavaInstant())
-            .withExpiresAt(Clock.System.now().plus(REFRESH_EXPIRATION_TIME.milliseconds).toJavaInstant())
-            .sign(Algorithm.RSA256(keyProvider))
-    }
-
     private suspend fun Source.getDevice(): Device? {
         return when (this) {
-            is Source.FromRefresh -> deviceDataSource.getDeviceById(deviceId)?.also {
-                if (it.deviceInfo.refreshTokenId != tokenId) throw InvalidCredentials()
-            }
-
-            is Source.FromAuthDevice -> deviceDataSource.getDeviceByAuthIdAndUUID(authId, deviceUUID)
+            is Source.RefreshToken -> validateRefreshToken(token)
+            is Source.InitialAuthentication -> deviceDataSource.getDeviceByAuthIdAndUUID(authId, deviceUUID)
         }
+    }
+
+    private suspend fun validateRefreshToken(token: String): Device? {
+        val refreshToken = OpaqueRefreshToken.parse(token) ?: return null
+        val device = deviceDataSource.getDeviceByRefreshTokenId(refreshToken.id) ?: return null
+        val currentDeviceToken = device.deviceInfo.refreshToken ?: return null
+        val previousDeviceToken = device.deviceInfo.previousRefreshToken
+
+        if (previousDeviceToken != null && OpaqueRefreshToken.matches(refreshToken, previousDeviceToken)) {
+            deviceDataSource.deleteTokenFromDevice(device.deviceInfo.id)
+            return null
+        }
+        if (OpaqueRefreshToken.matches(refreshToken, currentDeviceToken)) {
+            return device
+        }
+        return null
     }
 
     companion object {
         private const val ACCESS_EXPIRATION_TIME = 1000L * 60 * 5 // 5 Minutes
-        private const val REFRESH_EXPIRATION_TIME = 1000L * 60 * 60 * 24 * 7 // 1 Week
-        private const val ISSUER = "com.bookk.server"
-        private const val REFRESH_ISSUER = "com.bookk.server.refresh"
     }
 }

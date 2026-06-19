@@ -49,7 +49,7 @@ internal class FinishRegistrationImpl(
             uuid = request.deviceInfo.deviceUUID,
             name = request.deviceInfo.deviceName
         )
-        return generateAuthToken(Source.FromAuthDevice(ownerId, request.deviceInfo.deviceUUID)).getOrThrow()
+        return generateAuthToken(Source.InitialAuthentication(ownerId, request.deviceInfo.deviceUUID)).getOrThrow()
     }
 
     private suspend fun saveUserExternal(request: VerifyAccountCreationRequest): Uuid {

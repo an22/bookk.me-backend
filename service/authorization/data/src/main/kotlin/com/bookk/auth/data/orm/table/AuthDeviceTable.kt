@@ -10,6 +10,10 @@ internal object AuthDeviceTable : UUIDTable("auth_device") {
     val deviceUUID = uuid("device_uuid")
     val deviceName = varchar("device_name", 255)
     val refreshTokenId = uuid("refresh_token_id").nullable()
+    val refreshTokenHash = varchar("refresh_token_hash", 64).nullable()
+    val refreshTokenExpiresAt = timestamp("refresh_token_expires_at").nullable()
+    val previousRefreshTokenId = uuid("previous_refresh_token_id").nullable()
+    val previousRefreshTokenHash = varchar("previous_refresh_token_hash", 64).nullable()
     val isSignedIn = bool("is_signed_in")
     val createdAt = timestamp("created_at").clientDefault { Clock.System.now() }
     val updatedAt = timestamp("updated_at").clientDefault { Clock.System.now() }

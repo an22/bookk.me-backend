@@ -1,41 +1,25 @@
 #!/usr/bin/env sh
 
-manager_ip=$2
+manager_hostname=$2
 manager_user=$3
 wireguard_admin_password=$4
 ssh_name=${5:-id_rsa}
 
-#This environment variables should be defined for the deployment system
-#Kafka
-export KAFKA_CLUSTER_ID=
-export KAFKA_BROKER_PORT=
-export KAFKA_CONTROLLER_PORT=
-export KAFKA_UI_USERNAME=
-export KAFKA_UI_PASSWORD=
-#WireguardVPN
-export VPN_SUBNET=
-#Runner
-export RUNNER_ACCESS_TOKEN=
-export MOBILE_RUNNER_ACCESS_TOKEN=
-#Nginx
-export DOMAIN_NAME=
-export HOSTINGER_API_KEY=
-#Monitoring
-export GRAFANA_USER=
-export GRAFANA_PASSWORD=
+export "$(grep -v '^#' /keys/global/.env | xargs)"
 
-echo "Manager IP: $manager_ip"
+echo "Manager IP: $manager_hostname"
 echo "Manager User: $manager_user"
 echo "Using ssh key: $ssh_name"
 echo "Wireguard password: $wireguard_admin_password"
 
-docker network create --driver overlay --opt encrypted operational
-docker network create --driver overlay --opt encrypted agent_network
-
 ssh-add --apple-use-keychain "$HOME/.ssh/$ssh_name"
 
-docker context create swarm-manager --docker "host=ssh://$manager_user@$manager_ip"
+docker context create swarm-manager --docker "host=ssh://$manager_user@$manager_hostname"
 docker context use swarm-manager
+
+docker network create --driver overlay --opt encrypted operational
+docker network create --driver overlay --opt encrypted agent_network
+docker network create --driver overlay --opt encrypted monitoring
 
 OS_NAME=$(uname -s)
 

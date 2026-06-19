@@ -23,6 +23,7 @@ jobs:
       privateKey: ${{ secrets.SSH_PRIVATE_KEY }}
       remoteUri: ${{ secrets.SWARM_MANAGER }}
       knownHosts: ${{ secrets.SSH_KNOWN_HOSTS }}
+      extension: "ext/auth-extension.yml"
     with:
       image: "ghcr.io/an22/com.bookk.server.microservice.authorization"
       stackName: "authorization"

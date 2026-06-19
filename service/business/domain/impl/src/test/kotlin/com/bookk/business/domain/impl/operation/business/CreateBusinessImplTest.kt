@@ -30,7 +30,7 @@ internal class CreateBusinessImplTest {
         given()
         val fixture = SutFixture()
         val userId = Uuid.random()
-        val business = Business(Uuid.random(), "Name", "Desc", "Addr", null, "USD", emptyList())
+        val business = Business.stub(name = "Name", currencyCode = "USD")
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { businessDataSource.isBusinessExist(userId) } returns false

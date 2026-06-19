@@ -38,14 +38,11 @@ internal class BusinessCrudTest {
     private val userId = Uuid.random()
     private val businessId = Uuid.random()
 
-    private fun createTestBusiness(id: Uuid = businessId) = Business(
+    private fun createTestBusiness(id: Uuid = businessId) = Business.stub(
         id = id,
         name = "Test Business",
         description = "Test Description",
-        address = "Test Address",
-        location = null,
-        currencyCode = "USD",
-        socials = emptyList()
+        address = "Test Address"
     )
 
     @Test
@@ -86,7 +83,7 @@ internal class BusinessCrudTest {
     fun `should update business`() = routeTest {
         given()
         val useCase: UpdateBusiness = mockk()
-        val updateModel = BusinessUpdateModel(businessId, "New Name", null, null, null, null, emptyList())
+        val updateModel = BusinessUpdateModel(businessId, "New Name", null, null, null, null, null, emptyList())
         
         coEvery { useCase.invoke(updateModel) } returns Result.success(Unit)
         
@@ -332,7 +329,7 @@ internal class BusinessCrudTest {
         whenn()
         val client = createTestClient()
         val response = client.put(BusinessRouting.Api.Business.Id(id = businessId)) {
-            setBody(BusinessUpdateModel(businessId, null, null, null, null, null, emptyList()))
+            setBody(BusinessUpdateModel(businessId, null, null, null, null, null, null, emptyList()))
         }
 
         then()

@@ -29,7 +29,7 @@ internal class GetUserBusinessesImplTest {
         given()
         val fixture = SutFixture()
         val userId = Uuid.random()
-        val userBusinesses = UserBusinesses(Uuid.random(), listOf(Business(Uuid.random(), "Name", "Desc", "Addr", null, "USD", emptyList())))
+        val userBusinesses = UserBusinesses(Uuid.random(), listOf(Business.stub(name = "Name")))
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { businessDataSource.getUserBusinesses(userId) } returns userBusinesses

@@ -2,6 +2,7 @@ package com.bookk.business.data.map
 
 import com.bookk.business.data.orm.entity.BusinessEntity
 import com.bookk.business.domain.api.business.entity.Business
+import kotlinx.datetime.TimeZone
 import kotlin.uuid.toKotlinUuid
 
 internal fun BusinessEntity.toDomain(): Business {
@@ -17,6 +18,7 @@ internal fun BusinessEntity.toDomain(): Business {
         } else null,
         currencyCode = currency,
         address = address,
+        timeZone = TimeZone.of(timezone),
         socials = listOf(
             Business.Social(
                 Business.SocialKind.PHONE,

@@ -1,10 +1,11 @@
 package com.bookk.appointments.data.datasource
 
-import com.bookk.appointments.data.orm.table.BusinessHasAppointments
+import com.bookk.appointments.data.orm.table.AppointmentBusinessTable
 import com.bookk.appointments.data.orm.table.domain
 import com.bookk.appointments.domain.api.entity.BusinessSnapshot
 import com.bookk.appointments.domain.datasource.AppointmentSubscriptionDataSource
 import com.bookk.core.data.DataSource
+import kotlinx.datetime.TimeZone
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insert
@@ -17,58 +18,61 @@ import kotlin.uuid.toJavaUuid
 internal class AppointmentSubscriptionDataSourceImpl : DataSource(), AppointmentSubscriptionDataSource {
 
     override suspend fun getBusinessSnapshot(id: Uuid): BusinessSnapshot? = dbQuery {
-        BusinessHasAppointments.selectAll()
-            .where { BusinessHasAppointments.id eq id.toJavaUuid() }
+        AppointmentBusinessTable.selectAll()
+            .where { AppointmentBusinessTable.id eq id.toJavaUuid() }
             .map { it.domain() }
             .singleOrNull()
     }
 
     override suspend fun attachBusiness(snapshot: BusinessSnapshot) {
         dbQuery {
-            BusinessHasAppointments.insert {
+            AppointmentBusinessTable.insert {
                 it[id] = snapshot.id.toJavaUuid()
                 it[name] = snapshot.name
                 it[address] = snapshot.address
                 it[enabled] = true
+                it[timeZone] = snapshot.timeZone.id
             }
         }
     }
 
     override suspend fun updateBusiness(snapshot: BusinessSnapshot) {
         dbQuery {
-            BusinessHasAppointments.update(
-                where = { BusinessHasAppointments.id eq snapshot.id.toJavaUuid() },
+            AppointmentBusinessTable.update(
+                where = { AppointmentBusinessTable.id eq snapshot.id.toJavaUuid() },
             ) {
                 it[name] = snapshot.name
                 it[address] = snapshot.address
                 it[enabled] = snapshot.isEnabled
+                it[timeZone] = snapshot.timeZone.id
             }
         }
     }
 
-    override suspend fun updateBusinessInfo(id: Uuid, name: String, address: String) {
+    override suspend fun updateBusinessInfo(id: Uuid, name: String, address: String, timeZone: TimeZone) {
         dbQuery {
-            BusinessHasAppointments.update(
-                where = { BusinessHasAppointments.id eq id.toJavaUuid() },
+            AppointmentBusinessTable.update(
+                where = { AppointmentBusinessTable.id eq id.toJavaUuid() },
             ) {
-                it[BusinessHasAppointments.name] = name
-                it[BusinessHasAppointments.address] = address
+                it[AppointmentBusinessTable.name] = name
+                it[AppointmentBusinessTable.address] = address
+                it[AppointmentBusinessTable.timeZone] = timeZone.id
             }
         }
     }
 
     override suspend fun detachBusiness(businessId: Uuid) {
         dbQuery {
-            BusinessHasAppointments.deleteWhere {
-                BusinessHasAppointments.id eq businessId.toJavaUuid()
+            AppointmentBusinessTable.deleteWhere {
+                AppointmentBusinessTable.id eq businessId.toJavaUuid()
             }
         }
     }
 
     override suspend fun enableBusiness(businessId: Uuid) {
         dbQuery {
-            BusinessHasAppointments.update(
-                where = { BusinessHasAppointments.id eq businessId.toJavaUuid() }
+            AppointmentBusinessTable.update(
+                where = { AppointmentBusinessTable.id eq businessId.toJavaUuid() }
             ) {
                 it[enabled] = true
             }
@@ -76,16 +80,16 @@ internal class AppointmentSubscriptionDataSourceImpl : DataSource(), Appointment
     }
 
     override suspend fun isBusinessEnabled(businessId: Uuid): Boolean = dbQuery {
-        BusinessHasAppointments.select(BusinessHasAppointments.enabled)
-            .where { BusinessHasAppointments.id eq businessId.toJavaUuid() }
-            .map { it[BusinessHasAppointments.enabled] }
+        AppointmentBusinessTable.select(AppointmentBusinessTable.enabled)
+            .where { AppointmentBusinessTable.id eq businessId.toJavaUuid() }
+            .map { it[AppointmentBusinessTable.enabled] }
             .singleOrNull() ?: false
     }
 
     override suspend fun disableBusiness(businessId: Uuid) {
         dbQuery {
-            BusinessHasAppointments.update(
-                where = { BusinessHasAppointments.id eq businessId.toJavaUuid() }
+            AppointmentBusinessTable.update(
+                where = { AppointmentBusinessTable.id eq businessId.toJavaUuid() }
             ) {
                 it[enabled] = false
             }

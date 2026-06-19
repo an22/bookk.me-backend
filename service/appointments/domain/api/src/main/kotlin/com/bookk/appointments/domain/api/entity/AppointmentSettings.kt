@@ -56,8 +56,10 @@ data class AppointmentSettings(
     fun isInWorktime(date: Instant): Boolean {
         val localDateTime = date.toLocalDateTime(timeZone)
         val dayOfWeek = localDateTime.dayOfWeek
-        val workTime = workingHours.firstOrNull { it.dayOfWeek == dayOfWeek } ?: return false
-        return localDateTime.time in workTime.from..workTime.to
+        val workTime = workingHours.groupBy { it.dayOfWeek } [dayOfWeek] ?: return false
+        return workTime.any { time ->
+            localDateTime.time in time.from..time.to
+        }
     }
 }
 

@@ -29,7 +29,7 @@ internal class GetBusinessByIdImplTest {
         given()
         val fixture = SutFixture()
         val id = Uuid.random()
-        val business = Business(id, "Test", "Desc", "Addr", null, "USD", emptyList())
+        val business = Business.stub(id = id, name = "Test")
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { businessDataSource.getBusinessById(id) } returns business

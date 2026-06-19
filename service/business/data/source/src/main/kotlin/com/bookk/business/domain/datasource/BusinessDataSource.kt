@@ -7,7 +7,7 @@ import kotlin.uuid.Uuid
 
 interface BusinessDataSource {
     suspend fun createBusiness(userId: Uuid, name: String, currencyCode: String): Business
-    suspend fun updateBusiness(model: BusinessUpdateModel)
+    suspend fun updateBusiness(model: BusinessUpdateModel): Business
     suspend fun getBusinessById(id: Uuid): Business?
     suspend fun isBusinessExist(userId: Uuid): Boolean
     suspend fun deleteUserBusinesses(userId: Uuid): List<Uuid>

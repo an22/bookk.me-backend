@@ -1,8 +1,8 @@
 package com.bookk.appointments.data.orm.entity
 
+import com.bookk.appointments.data.orm.table.AppointmentBusinessTable
 import com.bookk.appointments.data.orm.table.AppointmentServicesTable
 import com.bookk.appointments.data.orm.table.AppointmentTable
-import com.bookk.appointments.data.orm.table.BusinessHasAppointments
 import com.bookk.appointments.domain.api.entity.Appointment
 import com.bookk.appointments.domain.api.entity.AppointmentRequest
 import com.bookk.appointments.domain.api.entity.AppointmentStatus
@@ -69,7 +69,7 @@ internal class AppointmentEntity(id: EntityID<UUID>) : UUIDEntity(id) {
 
         fun new(request: AppointmentRequest) = new {
             userId = request.userId.toJavaUuid()
-            businessId = EntityID(request.businessId.toJavaUuid(), table = BusinessHasAppointments)
+            businessId = EntityID(request.businessId.toJavaUuid(), table = AppointmentBusinessTable)
             clientId = request.client.id.toJavaUuid()
             clientName = request.client.fullName
             clientPhone = request.client.phone
@@ -83,7 +83,7 @@ internal class AppointmentEntity(id: EntityID<UUID>) : UUIDEntity(id) {
 
         fun new(appointment: Appointment) = new {
             userId = appointment.userId.toJavaUuid()
-            businessId = EntityID(appointment.businessId.toJavaUuid(), table = BusinessHasAppointments)
+            businessId = EntityID(appointment.businessId.toJavaUuid(), table = AppointmentBusinessTable)
             clientId = appointment.client.id.toJavaUuid()
             clientName = appointment.client.fullName
             clientPhone = appointment.client.phone
@@ -97,7 +97,7 @@ internal class AppointmentEntity(id: EntityID<UUID>) : UUIDEntity(id) {
 
         fun findByIdAndUpdate(appointment: Appointment) = findByIdAndUpdate(appointment.id.toJavaUuid()) {
             it.userId = appointment.userId.toJavaUuid()
-            it.businessId = EntityID(appointment.businessId.toJavaUuid(), table = BusinessHasAppointments)
+            it.businessId = EntityID(appointment.businessId.toJavaUuid(), table = AppointmentBusinessTable)
             it.clientId = appointment.client.id.toJavaUuid()
             it.clientName = appointment.client.fullName
             it.clientPhone = appointment.client.phone

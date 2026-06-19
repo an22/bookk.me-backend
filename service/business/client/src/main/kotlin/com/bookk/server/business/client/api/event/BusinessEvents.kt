@@ -1,6 +1,7 @@
 package com.bookk.server.business.client.api.event
 
 import com.bookk.core.data.eventstreaming.EventStreaming
+import kotlinx.datetime.TimeZone
 import kotlinx.serialization.Serializable
 import kotlin.uuid.Uuid
 
@@ -10,7 +11,8 @@ interface BusinessEvent : EventStreaming.Event<String> {
     data class BusinessDTO(
         val id: Uuid,
         val name: String,
-        val address: String
+        val address: String,
+        val timeZone: TimeZone
     )
 
     @Serializable

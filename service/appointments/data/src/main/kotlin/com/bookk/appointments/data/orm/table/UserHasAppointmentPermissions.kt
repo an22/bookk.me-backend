@@ -5,7 +5,7 @@ import org.jetbrains.exposed.v1.core.ReferenceOption
 
 object UserHasAppointmentPermissions : BaseUUIDTable("user_has_appointment_permissions") {
     val userId = uuid("userId")
-    val businessId = reference("business_id", BusinessHasAppointments.id, onDelete = ReferenceOption.CASCADE)
+    val businessId = reference("business_id", AppointmentBusinessTable.id, onDelete = ReferenceOption.CASCADE)
     val permission = integer("permission")
 
     init {

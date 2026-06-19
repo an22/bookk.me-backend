@@ -1,5 +1,7 @@
 package com.bookk.core
 
+import java.io.File
+
 object AppLevelConstants {
     const val APP_NAME = "BookkMe"
     const val SERIALIZER = SupportedSerializers.PROTOBUF.STR
@@ -33,6 +35,14 @@ object AppLevelConstants {
         get() = System.getenv("APPLICATION_DB_PASSWORD")
     val authServiceHostname: String
         get() = System.getenv("APPLICATION_AUTH_SERVICE_HOSTNAME")
+    val signingKeyEncryptionKey: String
+        get() = readSecret("signing_key_encryption_key")
+
+    private fun readSecret(name: String): String {
+        val envVarName = "APPLICATION_${name.uppercase()}_FILE"
+        val path = System.getenv(envVarName) ?: "/run/secrets/$name"
+        return File(path).takeIf { it.exists() }?.readText()?.trim().orEmpty()
+    }
 
     sealed interface SupportedSerializers {
         data object JSON : SupportedSerializers {
@@ -45,11 +55,11 @@ object AppLevelConstants {
     }
 
     sealed interface BuildType {
-        data object DEBUG : SupportedSerializers {
+        data object DEBUG : BuildType {
             const val STR = "DEBUG"
         }
 
-        data object RELEASE : SupportedSerializers {
+        data object RELEASE : BuildType {
             const val STR = "RELEASE"
         }
     }

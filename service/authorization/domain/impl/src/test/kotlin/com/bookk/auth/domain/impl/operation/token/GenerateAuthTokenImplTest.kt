@@ -34,7 +34,6 @@ internal class GenerateAuthTokenImplTest {
         val transactionManager = mockk<TransactionManager>()
 
         val sut = GenerateAuthTokenImpl(
-            "bookkme.app",
             getActiveSigningKey,
             deviceDataSource,
             transactionManager

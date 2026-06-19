@@ -10,9 +10,7 @@ networks:
   operational:
     external: true
   monitoring:
-    driver: overlay
-    driver_opts:
-      encrypted: "true"
+    external: true
 
 configs:
   prometheus_cfg:

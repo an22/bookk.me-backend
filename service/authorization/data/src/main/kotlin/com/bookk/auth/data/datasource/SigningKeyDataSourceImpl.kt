@@ -1,5 +1,6 @@
 package com.bookk.auth.data.datasource
 
+import com.bookk.auth.data.encryption.SigningKeyCipher
 import com.bookk.auth.data.map.toDomain
 import com.bookk.auth.data.orm.entity.SigningKeyEntity
 import com.bookk.auth.data.orm.table.SigningKeyTable
@@ -42,7 +43,7 @@ internal class SigningKeyDataSourceImpl : DataSource(), SigningKeyDataSource {
     override suspend fun insertKey(publicKeyPem: String, privateKeyPem: String): SigningKey = dbQuery {
         SigningKeyEntity.new {
             publicKey = publicKeyPem
-            privateKey = privateKeyPem
+            privateKey = SigningKeyCipher.encrypt(privateKeyPem)
             status = SigningKeyStatus.ACTIVE
             createdAt = Clock.System.now()
         }.toDomain()

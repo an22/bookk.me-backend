@@ -1,5 +1,9 @@
 version: "3.9"
 
+secrets:
+  signing_key_encryption_key:
+    file: security/signing_key_encryption_key
+
 services:
   service-auth:
     image: com.bookk.server.microservice.authorization
@@ -11,6 +15,8 @@ services:
     environment:
       JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:8000 -ea"
       TZ: "UTC"
+    secrets:
+      - signing_key_encryption_key
     deploy:
       resources:
         limits:

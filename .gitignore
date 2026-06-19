@@ -44,9 +44,9 @@ bin/
 .DS_Store
 
 ### Application ###
-deployment/keys
+deployment/prod/keys
 deployment/elastic-stack/elasticsearch/certs/*
 !deployment/elastic-stack/elasticsearch/certs/instances.yml
 local.properties
-!deployment/local-testing-environment/security/*
+!deployment/dev/security/*
 !deployment/orchestrator/dozzle/users.actual.yaml

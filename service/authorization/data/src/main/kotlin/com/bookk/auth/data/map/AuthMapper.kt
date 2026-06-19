@@ -1,5 +1,6 @@
 package com.bookk.auth.data.map
 
+import com.bookk.auth.data.encryption.SigningKeyCipher
 import com.bookk.auth.data.orm.entity.AuthDeviceEntity
 import com.bookk.auth.data.orm.entity.AuthenticationEntity
 import com.bookk.auth.data.orm.entity.PasskeyCredentialEntity
@@ -68,7 +69,7 @@ internal fun SigningKeyEntity.toDomain(): SigningKey {
     return SigningKey(
         id = id.value.toKotlinUuid(),
         publicKeyPem = publicKey,
-        privateKeyPem = privateKey,
+        privateKeyPem = SigningKeyCipher.decrypt(privateKey),
         status = status,
         createdAt = createdAt,
         retiredAt = retiredAt

@@ -74,7 +74,7 @@ internal class AppointmentSettingsDataSourceImpl : DataSource(), AppointmentSett
             val today = now.toLocalDateTime(TimeZone.of(timeZone)).date
             DayOffsTable.deleteWhere {
                 DayOffsTable.settingsId.inList(settingsIds)
-                    .and(DayOffsTable.date.less(today))
+                    .and(DayOffsTable.endDate.less(today))
             }
         }
     }

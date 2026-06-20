@@ -4,6 +4,7 @@ import com.bookk.appointments.data.orm.table.DayOffsTable
 import com.bookk.appointments.data.orm.table.SettingsTable
 import com.bookk.appointments.data.orm.table.WorkingHoursTable
 import com.bookk.appointments.domain.api.entity.AppointmentSettings
+import com.bookk.appointments.domain.api.entity.DayOffRange
 import com.bookk.appointments.domain.api.entity.WorkHour
 import com.bookk.core.data.DecoratorUUIDEntityClass
 import kotlinx.datetime.DayOfWeek
@@ -46,7 +47,7 @@ internal class SettingsEntity(id: EntityID<UUID>) : UUIDEntity(id) {
             )
         },
         automaticApproval = automaticApproval,
-        dayOffs = dayOffs.map { it.date },
+        dayOffs = dayOffs.map { DayOffRange(it.startDate, it.endDate) },
         inBetweenBreakInMinutes = inBetweenBreakInMinutes,
         appointmentNote = appointmentNote,
     )

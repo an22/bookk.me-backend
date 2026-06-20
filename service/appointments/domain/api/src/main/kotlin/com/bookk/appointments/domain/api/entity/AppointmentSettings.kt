@@ -16,7 +16,7 @@ data class AppointmentSettings(
     val timeZone: TimeZone,
     val workingDays: List<DayOfWeek>,
     val workingHours: List<WorkHour>,
-    val dayOffs: List<LocalDate>,
+    val dayOffs: List<DayOffRange>,
     val automaticApproval: Boolean,
     val inBetweenBreakInMinutes: Int,
     val appointmentNote: String
@@ -50,7 +50,9 @@ data class AppointmentSettings(
     )
 
     fun isInWorkday(date: Instant): Boolean {
-        return date.toLocalDateTime(timeZone).dayOfWeek in workingDays
+        val localDate = date.toLocalDateTime(timeZone)
+        if (localDate.dayOfWeek !in workingDays) return false
+        return dayOffs.none { localDate.date in it.start..it.end }
     }
 
     fun isInWorktime(date: Instant): Boolean {
@@ -68,6 +70,12 @@ data class WorkHour(
     val dayOfWeek: DayOfWeek,
     val from: LocalTime,
     val to: LocalTime
+)
+
+@Serializable
+data class DayOffRange(
+    val start: LocalDate,
+    val end: LocalDate
 )
 
 fun DayOfWeek.nineToFive() = WorkHour(

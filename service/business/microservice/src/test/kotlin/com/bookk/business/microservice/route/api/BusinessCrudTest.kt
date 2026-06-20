@@ -1,6 +1,7 @@
 package com.bookk.business.microservice.route.api
 
 import com.bookk.business.domain.api.business.entity.Business
+import com.bookk.business.domain.api.business.entity.BusinessCreateRequest
 import com.bookk.business.domain.api.business.entity.BusinessUpdateModel
 import com.bookk.business.domain.api.business.entity.UserBusinesses
 import com.bookk.business.domain.api.business.operation.CreateBusiness
@@ -28,6 +29,7 @@ import io.ktor.server.auth.Authentication
 import io.ktor.server.auth.bearer
 import io.mockk.coEvery
 import io.mockk.mockk
+import kotlinx.datetime.TimeZone
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.koin.dsl.module
@@ -52,8 +54,10 @@ internal class BusinessCrudTest {
         val business = createTestBusiness()
         val name = "Test Business"
         val currencyCode = "USD"
-        
-        coEvery { useCase.invoke(userId, name, currencyCode) } returns Result.success(business)
+        val timeZone = TimeZone.UTC
+        val request = BusinessCreateRequest(name, currencyCode, timeZone)
+
+        coEvery { useCase.invoke(userId, request) } returns Result.success(business)
         
         setupApplication(
             extension = {
@@ -72,9 +76,9 @@ internal class BusinessCrudTest {
         whenn()
         val client = createTestClient()
         val response = client.post(BusinessRouting.Api.Business()) {
-            setBody(BusinessCreateRequest(name, currencyCode))
+            setBody(request)
         }
-        
+
         then()
         assertEquals(HttpStatusCode.OK, response.status)
     }
@@ -175,7 +179,7 @@ internal class BusinessCrudTest {
     fun `should return unprocessable entity when business already exists`() = routeTest {
         given()
         val useCase: CreateBusiness = mockk()
-        coEvery { useCase.invoke(userId, any(), any()) } returns Result.failure(CreateBusiness.Error.BusinessExist())
+        coEvery { useCase.invoke(userId, any()) } returns Result.failure(CreateBusiness.Error.BusinessExist())
 
         setupApplication(
             extension = {
@@ -192,7 +196,7 @@ internal class BusinessCrudTest {
         whenn()
         val client = createTestClient()
         val response = client.post(BusinessRouting.Api.Business()) {
-            setBody(BusinessCreateRequest("Name", "USD"))
+            setBody(BusinessCreateRequest("Name", "USD", TimeZone.UTC))
         }
 
         then()
@@ -204,7 +208,7 @@ internal class BusinessCrudTest {
     fun `should return unprocessable entity when business validation error`() = routeTest {
         given()
         val useCase: CreateBusiness = mockk()
-        coEvery { useCase.invoke(userId, any(), any()) } returns Result.failure(CreateBusiness.Error.BusinessValidationError())
+        coEvery { useCase.invoke(userId, any()) } returns Result.failure(CreateBusiness.Error.BusinessValidationError())
 
         setupApplication(
             extension = {
@@ -221,7 +225,7 @@ internal class BusinessCrudTest {
         whenn()
         val client = createTestClient()
         val response = client.post(BusinessRouting.Api.Business()) {
-            setBody(BusinessCreateRequest("Name", "USD"))
+            setBody(BusinessCreateRequest("Name", "USD", TimeZone.UTC))
         }
 
         then()
@@ -270,7 +274,7 @@ internal class BusinessCrudTest {
         whenn()
         val client = createTestClient()
         val response = client.post(BusinessRouting.Api.Business()) {
-            setBody(BusinessCreateRequest("Name", "USD"))
+            setBody(BusinessCreateRequest("Name", "USD", TimeZone.UTC))
         }
 
         then()

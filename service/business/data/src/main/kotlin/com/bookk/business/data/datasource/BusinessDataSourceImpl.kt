@@ -11,6 +11,7 @@ import com.bookk.business.domain.api.business.entity.UserBusinesses
 import com.bookk.business.domain.datasource.BusinessDataSource
 import com.bookk.core.data.DataSource
 import com.bookk.core.domain.entity.Error
+import kotlinx.datetime.TimeZone
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.innerJoin
@@ -26,7 +27,7 @@ import kotlin.uuid.toJavaUuid
 import kotlin.uuid.toKotlinUuid
 
 internal class BusinessDataSourceImpl : DataSource(), BusinessDataSource {
-    override suspend fun createBusiness(userId: Uuid, name: String, currencyCode: String): Business = dbQuery {
+    override suspend fun createBusiness(userId: Uuid, name: String, currencyCode: String, timeZone: TimeZone): Business = dbQuery {
         val javaUserId = userId.toJavaUuid()
         val id = BusinessTable.insertAndGetId {
             it[this.name] = name
@@ -34,6 +35,7 @@ internal class BusinessDataSourceImpl : DataSource(), BusinessDataSource {
             it[this.currency] = currencyCode
             it[this.description] = ""
             it[this.address] = ""
+            it[this.timezone] = timeZone.id
         }
         BusinessDashboardTable.insert {
             it[this.userId] = javaUserId

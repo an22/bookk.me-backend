@@ -1,6 +1,7 @@
 package com.bookk.business.domain.impl.operation.business
 
 import com.bookk.business.domain.api.business.entity.Business
+import com.bookk.business.domain.api.business.entity.BusinessCreateRequest
 import com.bookk.business.domain.api.business.operation.CreateBusiness
 import com.bookk.business.domain.datasource.BusinessDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
@@ -13,12 +14,11 @@ internal class CreateBusinessImpl(
 ) : CreateBusiness {
     override suspend fun invoke(
         userId: Uuid,
-        name: String,
-        currencyCode: String
+        request: BusinessCreateRequest
     ): Result<Business> = transactionManager.transaction {
-        if (name.length !in 2..512) throw CreateBusiness.Error.BusinessValidationError()
+        if (request.name.length !in 2..512) throw CreateBusiness.Error.BusinessValidationError()
         if (businessDataSource.isBusinessExist(userId)) throw CreateBusiness.Error.BusinessExist()
-        businessDataSource.createBusiness(userId, name, currencyCode).also {
+        businessDataSource.createBusiness(userId, request.name, request.currencyCode, request.timeZone).also {
             businessDataSource.setUserPermissions(userId, it.id, ObjectPermission.OWNER.int)
         }
     }

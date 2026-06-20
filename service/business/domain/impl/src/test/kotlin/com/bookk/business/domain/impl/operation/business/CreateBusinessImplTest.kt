@@ -1,6 +1,7 @@
 package com.bookk.business.domain.impl.operation.business
 
 import com.bookk.business.domain.api.business.entity.Business
+import com.bookk.business.domain.api.business.entity.BusinessCreateRequest
 import com.bookk.business.domain.api.business.operation.CreateBusiness
 import com.bookk.business.domain.datasource.BusinessDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
@@ -11,6 +12,7 @@ import com.bookk.core.test.then
 import com.bookk.core.test.whenn
 import io.mockk.coEvery
 import io.mockk.mockk
+import kotlinx.datetime.TimeZone
 import library.permissions.ObjectPermission
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -34,12 +36,12 @@ internal class CreateBusinessImplTest {
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { businessDataSource.isBusinessExist(userId) } returns false
-            coEvery { businessDataSource.createBusiness(userId, "Name", "USD") } returns business
+            coEvery { businessDataSource.createBusiness(userId, "Name", "USD", TimeZone.UTC) } returns business
             coEvery { businessDataSource.setUserPermissions(userId, business.id, ObjectPermission.OWNER.int) } returns Unit
         }
 
         whenn()
-        val result = fixture.sut(userId, "Name", "USD")
+        val result = fixture.sut(userId, BusinessCreateRequest(name = "Name", currencyCode = "USD", timeZone = TimeZone.UTC))
 
         then()
         assertTrue(result.isSuccess)
@@ -53,7 +55,7 @@ internal class CreateBusinessImplTest {
         fixture.transactionManager.mockTransaction()
 
         whenn()
-        val result = fixture.sut(Uuid.random(), "A", "USD")
+        val result = fixture.sut(Uuid.random(), BusinessCreateRequest(name = "A", currencyCode = "USD", timeZone = TimeZone.UTC))
 
         then()
         assertTrue(result.isFailure)
@@ -67,7 +69,7 @@ internal class CreateBusinessImplTest {
         fixture.transactionManager.mockTransaction()
 
         whenn()
-        val result = fixture.sut(Uuid.random(), "A".repeat(513), "USD")
+        val result = fixture.sut(Uuid.random(), BusinessCreateRequest(name = "A".repeat(513), currencyCode = "USD", timeZone = TimeZone.UTC))
 
         then()
         assertTrue(result.isFailure)
@@ -85,7 +87,7 @@ internal class CreateBusinessImplTest {
         }
 
         whenn()
-        val result = fixture.sut(userId, "Name", "USD")
+        val result = fixture.sut(userId, BusinessCreateRequest(name = "Name", currencyCode = "USD", timeZone = TimeZone.UTC))
 
         then()
         assertTrue(result.isFailure)

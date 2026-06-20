@@ -1,6 +1,7 @@
 package com.bookk.appointments.microservice
 
 import com.bookk.appointments.data.di.appointmentsDataModule
+import com.bookk.appointments.domain.api.operation.DeleteDayOffsInThePast
 import com.bookk.appointments.domain.api.operation.MarkAppointmentsCompleted
 import com.bookk.appointments.domain.impl.di.appointmentsDomainModule
 import com.bookk.appointments.microservice.route.appointmentsRoute
@@ -41,7 +42,7 @@ fun Application.installScheduler() {
             get<MarkAppointmentsCompleted>().invoke().getOrThrow()
         }
         job("deleteDayOffsInThePast", interval = 1.days) {
-
+            get<DeleteDayOffsInThePast>().invoke().getOrThrow()
         }
     }
 }

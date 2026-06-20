@@ -8,4 +8,5 @@ interface AppointmentSettingsDataSource {
     suspend fun update(settings: AppointmentSettings): AppointmentSettings
     suspend fun get(businessId: Uuid): AppointmentSettings?
     suspend fun getForUpdate(businessId: Uuid): AppointmentSettings?
+    suspend fun deleteDayOffsInThePast()
 }

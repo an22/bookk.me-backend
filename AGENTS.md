@@ -18,6 +18,8 @@ service/<svc>/
 
 New gradle modules must be registered in `settings.gradle.kts` (one `include` per submodule, grouped per service). Convention plugins (`libs.plugins.bookk.microservice`, `bookk.domain.impl`, `bookk.domain.api`, `bookk.data`, …) already add Ktor/Koin/MockK/kotlin-test deps and JUnit platform — do not re-add them.
 
+**Never generate database migrations.** When an ORM table changes (new column, new index, etc.), leave the table definition updated but do NOT bump `referenceVersion`/`targetVersion` in `<Svc>Migration.kt` or run its `main()` to produce a new `V<n>__migration_script.sql`. The user runs that generation step themselves.
+
 ## Core conventions (apply everywhere)
 
 - Operations return `Result<T>`; impls **throw** errors inside `transactionManager.transaction { }`, which catches and converts to `Result.failure`.

@@ -1,0 +1,1 @@
+ALTER TABLE business ADD timezone VARCHAR(255) NOT NULL;

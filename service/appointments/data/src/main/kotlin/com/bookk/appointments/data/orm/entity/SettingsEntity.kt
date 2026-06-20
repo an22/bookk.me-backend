@@ -1,6 +1,5 @@
 package com.bookk.appointments.data.orm.entity
 
-import com.bookk.appointments.data.orm.table.BusinessHasAppointments
 import com.bookk.appointments.data.orm.table.DayOffsTable
 import com.bookk.appointments.data.orm.table.SettingsTable
 import com.bookk.appointments.data.orm.table.WorkingHoursTable
@@ -20,8 +19,7 @@ import kotlin.uuid.toKotlinUuid
 
 internal class SettingsEntity(id: EntityID<UUID>) : UUIDEntity(id) {
 
-    var businessId by SettingsTable.businessId
-    var timeZone by SettingsTable.timeZone
+    var business by AppointmentBusinessEntity referencedOn SettingsTable.businessId
     var workingDays by SettingsTable.workingDays
     val workingHours by WorkingHourEntity referrersOn WorkingHoursTable.settingsId
     val dayOffs by DayOffEntity referrersOn DayOffsTable.settingsId
@@ -31,8 +29,8 @@ internal class SettingsEntity(id: EntityID<UUID>) : UUIDEntity(id) {
 
     fun domain(): AppointmentSettings = AppointmentSettings(
         id = id.value.toKotlinUuid(),
-        businessId = businessId.value.toKotlinUuid(),
-        timeZone = TimeZone.of(timeZone),
+        businessId = business.id.value.toKotlinUuid(),
+        timeZone = TimeZone.of(business.timezone),
         workingDays = buildList {
             DayOfWeek.entries.forEach {
                 if (workingDays and (1 shl it.isoDayNumber).toByte() != 0.toByte()) {
@@ -55,8 +53,7 @@ internal class SettingsEntity(id: EntityID<UUID>) : UUIDEntity(id) {
 
     companion object : DecoratorUUIDEntityClass<SettingsEntity>(SettingsTable) {
         fun new(settings: AppointmentSettings): SettingsEntity = new {
-            businessId = EntityID(id = settings.businessId.toJavaUuid(), table = BusinessHasAppointments)
-            timeZone = settings.timeZone.id
+            business = AppointmentBusinessEntity[settings.businessId.toJavaUuid()]
             workingDays = settings.workingDays.fold(0) { acc, day ->
                 acc or (1 shl day.isoDayNumber).toByte()
             }
@@ -66,8 +63,6 @@ internal class SettingsEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         }
 
         fun findByIdAndUpdate(settings: AppointmentSettings) = findByIdAndUpdate(settings.id.toJavaUuid()) {
-            it.businessId = EntityID(id = settings.businessId.toJavaUuid(), table = BusinessHasAppointments)
-            it.timeZone = settings.timeZone.id
             it.workingDays = settings.workingDays.fold(0) { acc, day ->
                 acc or (1 shl day.isoDayNumber).toByte()
             }

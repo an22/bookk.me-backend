@@ -12,6 +12,7 @@ object BusinessTable: UUIDTable("business") {
     val latitude = double("latitude").nullable()
     val longitude = double("longitude").nullable()
     val currency = varchar("currency", 3)
+    val timezone = varchar("timezone", 255)
     val instagram = varchar("instagram", 255).nullable()
     val telegram = varchar("telegram", 255).nullable()
     val viber = varchar("viber", 255).nullable()

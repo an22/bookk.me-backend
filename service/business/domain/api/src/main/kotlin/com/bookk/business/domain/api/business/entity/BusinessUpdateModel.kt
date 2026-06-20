@@ -1,5 +1,6 @@
 package com.bookk.business.domain.api.business.entity
 
+import kotlinx.datetime.TimeZone
 import kotlinx.serialization.Serializable
 import kotlin.uuid.Uuid
 
@@ -11,5 +12,6 @@ data class BusinessUpdateModel(
     val address: String?,
     val location: Business.Location?,
     val currencyCode: String?,
-    val socials: List<Business.Social>
+    val timeZone: TimeZone?,
+    val socials: List<Business.Social>?
 )

@@ -10,6 +10,8 @@ import com.bookk.business.domain.api.business.entity.BusinessUpdateModel
 import com.bookk.business.domain.api.business.entity.UserBusinesses
 import com.bookk.business.domain.datasource.BusinessDataSource
 import com.bookk.core.data.DataSource
+import com.bookk.core.domain.entity.Error
+import kotlinx.datetime.TimeZone
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.innerJoin
@@ -18,14 +20,14 @@ import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.selectAll
-import org.jetbrains.exposed.v1.jdbc.update
+import org.jetbrains.exposed.v1.jdbc.updateReturning
 import org.jetbrains.exposed.v1.jdbc.upsert
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 import kotlin.uuid.toKotlinUuid
 
 internal class BusinessDataSourceImpl : DataSource(), BusinessDataSource {
-    override suspend fun createBusiness(userId: Uuid, name: String, currencyCode: String): Business = dbQuery {
+    override suspend fun createBusiness(userId: Uuid, name: String, currencyCode: String, timeZone: TimeZone): Business = dbQuery {
         val javaUserId = userId.toJavaUuid()
         val id = BusinessTable.insertAndGetId {
             it[this.name] = name
@@ -33,6 +35,7 @@ internal class BusinessDataSourceImpl : DataSource(), BusinessDataSource {
             it[this.currency] = currencyCode
             it[this.description] = ""
             it[this.address] = ""
+            it[this.timezone] = timeZone.id
         }
         BusinessDashboardTable.insert {
             it[this.userId] = javaUserId
@@ -44,30 +47,33 @@ internal class BusinessDataSourceImpl : DataSource(), BusinessDataSource {
             .first()
     }
 
-    override suspend fun updateBusiness(model: BusinessUpdateModel) = dbQuery<Unit> {
-        BusinessTable.update(
-            where = { BusinessTable.id eq model.id.toJavaUuid() }
-        ) { statement ->
-            model.name?.let { statement[name] = it }
-            model.description?.let { statement[description] = it }
-            model.address?.let { statement[address] = it }
-            model.location?.let {
-                statement[latitude] = it.lat
-                statement[longitude] = it.lng
-            }
-            model.currencyCode?.let { statement[currency] = it }
-            model.socials?.let {
-                for (social in it) {
-                    when (social.kind) {
-                        Business.SocialKind.INSTAGRAM -> statement[instagram] = social.value
-                        Business.SocialKind.TELEGRAM -> statement[telegram] = social.value
-                        Business.SocialKind.VIBER -> statement[viber] = social.value
-                        Business.SocialKind.WHATSAPP -> statement[whatsapp] = social.value
-                        Business.SocialKind.PHONE -> statement[phone] = social.value
+    override suspend fun updateBusiness(model: BusinessUpdateModel) = dbQuery<Business> {
+        BusinessTable
+            .updateReturning(
+                where = { BusinessTable.id eq model.id.toJavaUuid() }
+            ) { statement ->
+                model.name?.let { statement[name] = it }
+                model.description?.let { statement[description] = it }
+                model.address?.let { statement[address] = it }
+                model.location?.let {
+                    statement[latitude] = it.lat
+                    statement[longitude] = it.lng
+                }
+                model.currencyCode?.let { statement[currency] = it }
+                model.socials?.let {
+                    for (social in it) {
+                        when (social.kind) {
+                            Business.SocialKind.INSTAGRAM -> statement[instagram] = social.value
+                            Business.SocialKind.TELEGRAM -> statement[telegram] = social.value
+                            Business.SocialKind.VIBER -> statement[viber] = social.value
+                            Business.SocialKind.WHATSAPP -> statement[whatsapp] = social.value
+                            Business.SocialKind.PHONE -> statement[phone] = social.value
+                        }
                     }
                 }
             }
-        }
+            .map { BusinessEntity.wrapRow(it).toDomain() }
+            .singleOrNull() ?: throw Error.NotFound()
     }
 
     override suspend fun getBusinessById(id: Uuid): Business? = dbQuery {

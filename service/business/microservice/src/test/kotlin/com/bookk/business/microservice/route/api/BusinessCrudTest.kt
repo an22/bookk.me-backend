@@ -1,6 +1,7 @@
 package com.bookk.business.microservice.route.api
 
 import com.bookk.business.domain.api.business.entity.Business
+import com.bookk.business.domain.api.business.entity.BusinessCreateRequest
 import com.bookk.business.domain.api.business.entity.BusinessUpdateModel
 import com.bookk.business.domain.api.business.entity.UserBusinesses
 import com.bookk.business.domain.api.business.operation.CreateBusiness
@@ -28,6 +29,7 @@ import io.ktor.server.auth.Authentication
 import io.ktor.server.auth.bearer
 import io.mockk.coEvery
 import io.mockk.mockk
+import kotlinx.datetime.TimeZone
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.koin.dsl.module
@@ -38,14 +40,11 @@ internal class BusinessCrudTest {
     private val userId = Uuid.random()
     private val businessId = Uuid.random()
 
-    private fun createTestBusiness(id: Uuid = businessId) = Business(
+    private fun createTestBusiness(id: Uuid = businessId) = Business.stub(
         id = id,
         name = "Test Business",
         description = "Test Description",
-        address = "Test Address",
-        location = null,
-        currencyCode = "USD",
-        socials = emptyList()
+        address = "Test Address"
     )
 
     @Test
@@ -55,8 +54,10 @@ internal class BusinessCrudTest {
         val business = createTestBusiness()
         val name = "Test Business"
         val currencyCode = "USD"
-        
-        coEvery { useCase.invoke(userId, name, currencyCode) } returns Result.success(business)
+        val timeZone = TimeZone.UTC
+        val request = BusinessCreateRequest(name, currencyCode, timeZone)
+
+        coEvery { useCase.invoke(userId, request) } returns Result.success(business)
         
         setupApplication(
             extension = {
@@ -75,9 +76,9 @@ internal class BusinessCrudTest {
         whenn()
         val client = createTestClient()
         val response = client.post(BusinessRouting.Api.Business()) {
-            setBody(BusinessCreateRequest(name, currencyCode))
+            setBody(request)
         }
-        
+
         then()
         assertEquals(HttpStatusCode.OK, response.status)
     }
@@ -86,7 +87,7 @@ internal class BusinessCrudTest {
     fun `should update business`() = routeTest {
         given()
         val useCase: UpdateBusiness = mockk()
-        val updateModel = BusinessUpdateModel(businessId, "New Name", null, null, null, null, emptyList())
+        val updateModel = BusinessUpdateModel(businessId, "New Name", null, null, null, null, null, emptyList())
         
         coEvery { useCase.invoke(updateModel) } returns Result.success(Unit)
         
@@ -178,7 +179,7 @@ internal class BusinessCrudTest {
     fun `should return unprocessable entity when business already exists`() = routeTest {
         given()
         val useCase: CreateBusiness = mockk()
-        coEvery { useCase.invoke(userId, any(), any()) } returns Result.failure(CreateBusiness.Error.BusinessExist())
+        coEvery { useCase.invoke(userId, any()) } returns Result.failure(CreateBusiness.Error.BusinessExist())
 
         setupApplication(
             extension = {
@@ -195,7 +196,7 @@ internal class BusinessCrudTest {
         whenn()
         val client = createTestClient()
         val response = client.post(BusinessRouting.Api.Business()) {
-            setBody(BusinessCreateRequest("Name", "USD"))
+            setBody(BusinessCreateRequest("Name", "USD", TimeZone.UTC))
         }
 
         then()
@@ -207,7 +208,7 @@ internal class BusinessCrudTest {
     fun `should return unprocessable entity when business validation error`() = routeTest {
         given()
         val useCase: CreateBusiness = mockk()
-        coEvery { useCase.invoke(userId, any(), any()) } returns Result.failure(CreateBusiness.Error.BusinessValidationError())
+        coEvery { useCase.invoke(userId, any()) } returns Result.failure(CreateBusiness.Error.BusinessValidationError())
 
         setupApplication(
             extension = {
@@ -224,7 +225,7 @@ internal class BusinessCrudTest {
         whenn()
         val client = createTestClient()
         val response = client.post(BusinessRouting.Api.Business()) {
-            setBody(BusinessCreateRequest("Name", "USD"))
+            setBody(BusinessCreateRequest("Name", "USD", TimeZone.UTC))
         }
 
         then()
@@ -273,7 +274,7 @@ internal class BusinessCrudTest {
         whenn()
         val client = createTestClient()
         val response = client.post(BusinessRouting.Api.Business()) {
-            setBody(BusinessCreateRequest("Name", "USD"))
+            setBody(BusinessCreateRequest("Name", "USD", TimeZone.UTC))
         }
 
         then()
@@ -332,7 +333,7 @@ internal class BusinessCrudTest {
         whenn()
         val client = createTestClient()
         val response = client.put(BusinessRouting.Api.Business.Id(id = businessId)) {
-            setBody(BusinessUpdateModel(businessId, null, null, null, null, null, emptyList()))
+            setBody(BusinessUpdateModel(businessId, null, null, null, null, null, null, emptyList()))
         }
 
         then()

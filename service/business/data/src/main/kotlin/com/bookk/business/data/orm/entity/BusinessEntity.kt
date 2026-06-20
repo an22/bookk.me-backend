@@ -13,6 +13,7 @@ internal class BusinessEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var address by BusinessTable.address
     var latitude by BusinessTable.latitude
     var longitude by BusinessTable.longitude
+    var timezone by BusinessTable.timezone
     var currency by BusinessTable.currency
     var instagram by BusinessTable.instagram
     var telegram by BusinessTable.telegram

@@ -10,6 +10,11 @@ internal class UpdateBusinessInformation(
 ) {
 
     suspend operator fun invoke(business: BusinessEvent.BusinessDTO) = transactionManager.transaction {
-        subscriptionDataSource.updateBusinessInfo(business.id, business.name, business.address)
+        subscriptionDataSource.updateBusinessInfo(
+            id = business.id,
+            name = business.name,
+            address = business.address,
+            timeZone = business.timeZone
+        )
     }
 }

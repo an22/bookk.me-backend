@@ -1,8 +1,8 @@
 package com.bookk.appointments.data.orm.entity
 
+import com.bookk.appointments.data.orm.table.AppointmentBusinessTable
 import com.bookk.appointments.data.orm.table.AppointmentRequestServicesTable
 import com.bookk.appointments.data.orm.table.AppointmentRequestTable
-import com.bookk.appointments.data.orm.table.BusinessHasAppointments
 import com.bookk.appointments.domain.api.entity.AppointmentRequest
 import com.bookk.appointments.domain.api.entity.AppointmentRequestStatus
 import com.bookk.appointments.domain.api.entity.ClientSnapshot
@@ -68,7 +68,7 @@ internal class AppointmentRequestEntity(id: EntityID<UUID>) : UUIDEntity(id) {
 
         fun new(request: AppointmentRequest) = new {
             userId = request.userId.toJavaUuid()
-            businessId = EntityID(request.businessId.toJavaUuid(), table = BusinessHasAppointments)
+            businessId = EntityID(request.businessId.toJavaUuid(), table = AppointmentBusinessTable)
             clientId = request.client.id.toJavaUuid()
             clientName = request.client.fullName
             clientPhone = request.client.phone
@@ -82,7 +82,7 @@ internal class AppointmentRequestEntity(id: EntityID<UUID>) : UUIDEntity(id) {
 
         fun findByIdAndUpdate(request: AppointmentRequest) = findByIdAndUpdate(request.id.toJavaUuid()) {
             it.userId = request.userId.toJavaUuid()
-            it.businessId = EntityID(request.businessId.toJavaUuid(), table = BusinessHasAppointments)
+            it.businessId = EntityID(request.businessId.toJavaUuid(), table = AppointmentBusinessTable)
             it.clientId = request.client.id.toJavaUuid()
             it.clientName = request.client.fullName
             it.clientPhone = request.client.phone

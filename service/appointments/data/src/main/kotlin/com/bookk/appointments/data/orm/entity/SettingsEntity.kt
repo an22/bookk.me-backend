@@ -19,7 +19,7 @@ import kotlin.uuid.toKotlinUuid
 
 internal class SettingsEntity(id: EntityID<UUID>) : UUIDEntity(id) {
 
-    val business by AppointmentBusinessEntity referencedOn SettingsTable.businessId
+    var business by AppointmentBusinessEntity referencedOn SettingsTable.businessId
     var workingDays by SettingsTable.workingDays
     val workingHours by WorkingHourEntity referrersOn WorkingHoursTable.settingsId
     val dayOffs by DayOffEntity referrersOn DayOffsTable.settingsId
@@ -53,6 +53,7 @@ internal class SettingsEntity(id: EntityID<UUID>) : UUIDEntity(id) {
 
     companion object : DecoratorUUIDEntityClass<SettingsEntity>(SettingsTable) {
         fun new(settings: AppointmentSettings): SettingsEntity = new {
+            business = AppointmentBusinessEntity[settings.businessId.toJavaUuid()]
             workingDays = settings.workingDays.fold(0) { acc, day ->
                 acc or (1 shl day.isoDayNumber).toByte()
             }

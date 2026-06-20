@@ -14,6 +14,7 @@ import io.ktor.server.application.install
 import library.scheduler.Scheduler
 import org.koin.dsl.module
 import org.koin.ktor.ext.get
+import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
 
 fun appointmentsModule() = module {
@@ -38,6 +39,9 @@ fun Application.installScheduler() {
     install(Scheduler) {
         job("markAppointmentsAsCompleted", interval = 5.minutes) {
             get<MarkAppointmentsCompleted>().invoke().getOrThrow()
+        }
+        job("deleteDayOffsInThePast", interval = 1.days) {
+
         }
     }
 }

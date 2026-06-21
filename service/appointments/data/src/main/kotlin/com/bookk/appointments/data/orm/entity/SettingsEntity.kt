@@ -6,6 +6,7 @@ import com.bookk.appointments.data.orm.table.WorkingHoursTable
 import com.bookk.appointments.domain.api.entity.AppointmentSettings
 import com.bookk.appointments.domain.api.entity.DayOffRange
 import com.bookk.appointments.domain.api.entity.WorkHour
+import com.bookk.appointments.domain.api.entity.WorkingSchedule
 import com.bookk.core.data.DecoratorUUIDEntityClass
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.TimeZone
@@ -32,20 +33,24 @@ internal class SettingsEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         id = id.value.toKotlinUuid(),
         businessId = business.id.value.toKotlinUuid(),
         timeZone = TimeZone.of(business.timezone),
-        workingDays = buildList {
-            DayOfWeek.entries.forEach {
-                if (workingDays and (1 shl it.isoDayNumber).toByte() != 0.toByte()) {
-                    add(it)
+        schedule = WorkingSchedule(
+            workingDays = buildList {
+                DayOfWeek.entries.forEach {
+                    if (workingDays and (1 shl it.isoDayNumber).toByte() != 0.toByte()) {
+                        add(it)
+                    }
                 }
-            }
-        },
-        workingHours = workingHours.map {
-            WorkHour(
-                dayOfWeek = DayOfWeek(it.dayOfWeek.toInt()),
-                from = it.startTime,
-                to = it.endTime
-            )
-        },
+            },
+            workingHours = workingHours
+                .map {
+                    WorkHour(
+                        dayOfWeek = DayOfWeek(it.dayOfWeek.toInt()),
+                        from = it.startTime,
+                        to = it.endTime
+                    )
+                }
+                .groupBy { it.dayOfWeek }
+        ),
         automaticApproval = automaticApproval,
         dayOffs = dayOffs.map { DayOffRange(it.startDate, it.endDate) },
         inBetweenBreakInMinutes = inBetweenBreakInMinutes,
@@ -55,18 +60,22 @@ internal class SettingsEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     companion object : DecoratorUUIDEntityClass<SettingsEntity>(SettingsTable) {
         fun new(settings: AppointmentSettings): SettingsEntity = new {
             business = AppointmentBusinessEntity[settings.businessId.toJavaUuid()]
-            workingDays = settings.workingDays.fold(0) { acc, day ->
-                acc or (1 shl day.isoDayNumber).toByte()
-            }
+            workingDays = settings.schedule
+                .activeDays()
+                .fold(0) { acc, day ->
+                    acc or (1 shl day.isoDayNumber).toByte() //Yes I wanted to use shifting here, it was not suggested by AI :) It is unnecessary and purely my desire.
+                }
             inBetweenBreakInMinutes = settings.inBetweenBreakInMinutes
             appointmentNote = settings.appointmentNote
             automaticApproval = settings.automaticApproval
         }
 
         fun findByIdAndUpdate(settings: AppointmentSettings) = findByIdAndUpdate(settings.id.toJavaUuid()) {
-            it.workingDays = settings.workingDays.fold(0) { acc, day ->
-                acc or (1 shl day.isoDayNumber).toByte()
-            }
+            it.workingDays = settings.schedule
+                .activeDays()
+                .fold(0) { acc, day ->
+                    acc or (1 shl day.isoDayNumber).toByte()
+                }
             it.inBetweenBreakInMinutes = settings.inBetweenBreakInMinutes
             it.appointmentNote = settings.appointmentNote
             it.automaticApproval = settings.automaticApproval

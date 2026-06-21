@@ -19,6 +19,12 @@ internal class EditSettingsImpl(
         settings: AppointmentSettings
     ): Result<Unit> = transactionManager.transaction {
         permissionsSource.getPermissions(userId, settings.businessId).assert(ObjectPermission.EDIT)
+        if (settings.schedule.list().any { it.isActive && it.workingTime.isEmpty() }) {
+            throw EditSettings.Error.ActiveDayWithoutWorkHours()
+        }
+        if (settings.dayOffs.any { it.start >= it.end }) {
+            throw EditSettings.Error.InvalidDayOffRange()
+        }
         settingsSource.update(settings)
     }
 }

@@ -2,6 +2,7 @@ package com.bookk.appointments.domain.impl.entity
 
 import com.bookk.appointments.domain.api.entity.AppointmentSettings
 import com.bookk.appointments.domain.api.entity.DayOffRange
+import com.bookk.appointments.domain.api.entity.WorkingSchedule
 import com.bookk.core.test.given
 import com.bookk.core.test.runUnitTest
 import com.bookk.core.test.then
@@ -21,8 +22,10 @@ internal class AppointmentSettingsTest {
         id = Uuid.random(),
         businessId = Uuid.random(),
         timeZone = TimeZone.of("UTC"),
-        workingDays = listOf(DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY, DayOfWeek.THURSDAY, DayOfWeek.FRIDAY),
-        workingHours = listOf(),
+        schedule = WorkingSchedule(
+            workingDays = listOf(DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY, DayOfWeek.THURSDAY, DayOfWeek.FRIDAY),
+            workingHours = mapOf()
+        ),
         dayOffs = dayOffs,
         automaticApproval = false,
         inBetweenBreakInMinutes = 10,

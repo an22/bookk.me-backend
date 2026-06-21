@@ -43,7 +43,7 @@ fun Routing.settings() {
          * Security: jwt
          * Body: application/x-protobuf [com.bookk.appointments.domain.api.entity.AppointmentSettings]
          * Response: 200 application/x-protobuf [com.bookk.appointments.domain.api.entity.AppointmentSettings] Updated settings entity
-         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Update settings errors<br>ACTIVE_DAY_WITHOUT_WORK_HOURS (300010): Active day must have at least one work hour<br>INVALID_DAY_OFF_RANGE (300011): Day off range start date must be before end date
+         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Update settings errors<br>ACTIVE_DAY_WITHOUT_WORK_HOURS (300010) Active day must have at least one work hour<br>INVALID_DAY_OFF_RANGE (300011) Day off range start date must be before end date
          */
         put<Api.Appointment.Settings> {
             val principal = requireNotNull(call.principal<AppPrincipal>())

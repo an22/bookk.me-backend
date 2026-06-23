@@ -22,7 +22,7 @@ internal class UpdateAppointmentImpl(
         permissionsDataSource.getPermissions(userId, appointment.businessId).assert(ObjectPermission.EDIT)
         appointmentDataSource.update(appointment)
         if (!settings.isInWorkday(appointment.date)) throw UpdateAppointment.Error.RequestForThisDateNotAllowed()
-        if (!settings.isInWorktime(appointment.date)) throw UpdateAppointment.Error.RequestForThisTimeNotAllowed()
+        if (!settings.isInWorktime(appointment.date, appointment.dateEnd)) throw UpdateAppointment.Error.RequestForThisTimeNotAllowed()
         if (appointmentDataSource.hasOverlapsWith(appointment)) throw UpdateAppointment.Error.AppointmentForThisTimeExists()
         appointmentDataSource.update(appointment)
     }

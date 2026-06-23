@@ -36,7 +36,7 @@ internal class EditSettingsTest {
         val useCase: EditSettings = mockk()
         val userId = Uuid.random()
         val appointmentSettings = AppointmentSettings.stub(businessId = testBusinessId)
-        coEvery { useCase.invoke(userId, appointmentSettings) } returns Result.success(Unit)
+        coEvery { useCase.invoke(userId, appointmentSettings) } returns Result.success(appointmentSettings)
 
         setupApplication(
             extension = {
@@ -59,7 +59,8 @@ internal class EditSettingsTest {
         }
 
         then()
-        assertEquals(HttpStatusCode.NoContent, response.status)
+        assertEquals(HttpStatusCode.OK, response.status)
+        assertEquals(appointmentSettings, response.body<AppointmentSettings>())
     }
 
     @Test

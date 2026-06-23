@@ -7,7 +7,7 @@ import io.ktor.http.HttpStatusCode
 import kotlin.uuid.Uuid
 
 interface EditSettings {
-    suspend operator fun invoke(userId: Uuid, settings: AppointmentSettings): Result<Unit>
+    suspend operator fun invoke(userId: Uuid, settings: AppointmentSettings): Result<AppointmentSettings>
 
     sealed interface Error {
         class ActiveDayWithoutWorkHours : BusinessError(

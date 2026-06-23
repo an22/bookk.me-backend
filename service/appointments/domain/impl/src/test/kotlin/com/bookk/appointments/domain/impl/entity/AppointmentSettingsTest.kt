@@ -2,6 +2,7 @@ package com.bookk.appointments.domain.impl.entity
 
 import com.bookk.appointments.domain.api.entity.AppointmentSettings
 import com.bookk.appointments.domain.api.entity.DayOffRange
+import com.bookk.appointments.domain.api.entity.WorkHour
 import com.bookk.appointments.domain.api.entity.WorkingSchedule
 import com.bookk.core.test.given
 import com.bookk.core.test.runUnitTest
@@ -9,8 +10,11 @@ import com.bookk.core.test.then
 import com.bookk.core.test.whenn
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
+import kotlinx.datetime.atTime
+import kotlinx.datetime.toInstant
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -27,6 +31,20 @@ internal class AppointmentSettingsTest {
             workingHours = mapOf()
         ),
         dayOffs = dayOffs,
+        automaticApproval = false,
+        inBetweenBreakInMinutes = 10,
+        appointmentNote = ""
+    )
+
+    private fun settingsWithWorkingHours(workingHours: List<WorkHour>) = AppointmentSettings(
+        id = Uuid.random(),
+        businessId = Uuid.random(),
+        timeZone = TimeZone.of("UTC"),
+        schedule = WorkingSchedule(
+            workingDays = listOf(DayOfWeek.MONDAY),
+            workingHours = mapOf(DayOfWeek.MONDAY to workingHours)
+        ),
+        dayOffs = listOf(),
         automaticApproval = false,
         inBetweenBreakInMinutes = 10,
         appointmentNote = ""
@@ -95,6 +113,121 @@ internal class AppointmentSettingsTest {
 
         whenn()
         val result = settings.isInWorkday(saturday)
+
+        then()
+        assertFalse(result)
+    }
+
+    @Test
+    fun `should return true when appointment range is fully contained in a working time slot`() = runUnitTest {
+        given()
+        val settings = settingsWithWorkingHours(listOf(WorkHour(DayOfWeek.MONDAY, LocalTime(9, 0), LocalTime(17, 0))))
+        val monday = LocalDate(2026, 6, 22)
+        val start = monday.atTime(10, 0).toInstant(settings.timeZone)
+        val end = monday.atTime(11, 0).toInstant(settings.timeZone)
+
+        whenn()
+        val result = settings.isInWorktime(start, end)
+
+        then()
+        assertTrue(result)
+    }
+
+    @Test
+    fun `should return true when appointment range exactly matches a working time slot`() = runUnitTest {
+        given()
+        val settings = settingsWithWorkingHours(listOf(WorkHour(DayOfWeek.MONDAY, LocalTime(9, 0), LocalTime(17, 0))))
+        val monday = LocalDate(2026, 6, 22)
+        val start = monday.atTime(9, 0).toInstant(settings.timeZone)
+        val end = monday.atTime(17, 0).toInstant(settings.timeZone)
+
+        whenn()
+        val result = settings.isInWorktime(start, end)
+
+        then()
+        assertTrue(result)
+    }
+
+    @Test
+    fun `should return false when appointment starts before the working time slot`() = runUnitTest {
+        given()
+        val settings = settingsWithWorkingHours(listOf(WorkHour(DayOfWeek.MONDAY, LocalTime(9, 0), LocalTime(17, 0))))
+        val monday = LocalDate(2026, 6, 22)
+        val start = monday.atTime(8, 0).toInstant(settings.timeZone)
+        val end = monday.atTime(10, 0).toInstant(settings.timeZone)
+
+        whenn()
+        val result = settings.isInWorktime(start, end)
+
+        then()
+        assertFalse(result)
+    }
+
+    @Test
+    fun `should return false when appointment ends after the working time slot`() = runUnitTest {
+        given()
+        val settings = settingsWithWorkingHours(listOf(WorkHour(DayOfWeek.MONDAY, LocalTime(9, 0), LocalTime(17, 0))))
+        val monday = LocalDate(2026, 6, 22)
+        val start = monday.atTime(16, 0).toInstant(settings.timeZone)
+        val end = monday.atTime(18, 0).toInstant(settings.timeZone)
+
+        whenn()
+        val result = settings.isInWorktime(start, end)
+
+        then()
+        assertFalse(result)
+    }
+
+    @Test
+    fun `should return false when no working time slot is defined for the day`() = runUnitTest {
+        given()
+        val settings = settingsWithWorkingHours(listOf())
+        val monday = LocalDate(2026, 6, 22)
+        val start = monday.atTime(10, 0).toInstant(settings.timeZone)
+        val end = monday.atTime(11, 0).toInstant(settings.timeZone)
+
+        whenn()
+        val result = settings.isInWorktime(start, end)
+
+        then()
+        assertFalse(result)
+    }
+
+    @Test
+    fun `should return true when appointment fits within one of multiple working time slots`() = runUnitTest {
+        given()
+        val settings = settingsWithWorkingHours(
+            listOf(
+                WorkHour(DayOfWeek.MONDAY, LocalTime(9, 0), LocalTime(12, 0)),
+                WorkHour(DayOfWeek.MONDAY, LocalTime(13, 0), LocalTime(17, 0))
+            )
+        )
+        val monday = LocalDate(2026, 6, 22)
+        val start = monday.atTime(14, 0).toInstant(settings.timeZone)
+        val end = monday.atTime(15, 0).toInstant(settings.timeZone)
+
+        whenn()
+        val result = settings.isInWorktime(start, end)
+
+        then()
+        assertTrue(result)
+    }
+
+    @Test
+    fun `should return false when appointment spans across the gap between two working time slots`() = runUnitTest {
+        given()
+        val settings = settingsWithWorkingHours(
+            listOf(
+                WorkHour(DayOfWeek.MONDAY, LocalTime(9, 0), LocalTime(12, 0)),
+                WorkHour(DayOfWeek.MONDAY, LocalTime(13, 0), LocalTime(17, 0))
+            )
+        )
+        val monday = LocalDate(2026, 6, 22)
+        val start = monday.atTime(11, 0).toInstant(settings.timeZone)
+        val end = monday.atTime(14, 0).toInstant(settings.timeZone)
+
+        whenn()
+        val result = settings.isInWorktime(start, end)
 
         then()
         assertFalse(result)

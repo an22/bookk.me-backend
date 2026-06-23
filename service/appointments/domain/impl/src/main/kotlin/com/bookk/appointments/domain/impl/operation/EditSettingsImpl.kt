@@ -17,7 +17,7 @@ internal class EditSettingsImpl(
     override suspend fun invoke(
         userId: Uuid,
         settings: AppointmentSettings
-    ): Result<Unit> = transactionManager.transaction {
+    ): Result<AppointmentSettings> = transactionManager.transaction {
         permissionsSource.getPermissions(userId, settings.businessId).assert(ObjectPermission.EDIT)
         if (settings.schedule.list().any { it.isActive && it.workingTime.isEmpty() }) {
             throw EditSettings.Error.ActiveDayWithoutWorkHours()

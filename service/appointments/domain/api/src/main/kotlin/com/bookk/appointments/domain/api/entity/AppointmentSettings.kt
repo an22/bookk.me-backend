@@ -1,5 +1,6 @@
 package com.bookk.appointments.domain.api.entity
 
+import com.bookk.core.containedIn
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.Serializable
@@ -38,12 +39,14 @@ data class AppointmentSettings(
         return dayOffs.none { localDate.date in it.start..it.end }
     }
 
-    fun isInWorktime(date: Instant): Boolean {
-        val localDateTime = date.toLocalDateTime(timeZone)
-        val dayOfWeek = localDateTime.dayOfWeek
+    fun isInWorktime(date: Instant, dateEnd: Instant): Boolean {
+        val start = date.toLocalDateTime(timeZone)
+        val startTime = start.time.toMillisecondOfDay()
+        val endTime = dateEnd.toLocalDateTime(timeZone).time.toMillisecondOfDay()
+        val dayOfWeek = start.dayOfWeek
         val schedule = schedule[dayOfWeek]
         return schedule.workingTime.any { time ->
-            localDateTime.time in time.from..time.to
+            (startTime..endTime).containedIn(time.from.toMillisecondOfDay()..time.to.toMillisecondOfDay())
         }
     }
 }

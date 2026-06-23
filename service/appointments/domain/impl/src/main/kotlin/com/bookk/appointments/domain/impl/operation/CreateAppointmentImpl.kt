@@ -59,7 +59,7 @@ internal class CreateAppointmentImpl(
         val settings = settingsDataSource.getForUpdate(appointment.businessId) ?: throw Error.NotFound()
         permissionsDataSource.getPermissions(userId, appointment.businessId).assert(ObjectPermission.EDIT)
         if (!settings.isInWorkday(appointment.date)) throw CreateAppointment.Error.RequestForThisDateNotAllowed()
-        if (!settings.isInWorktime(appointment.date)) throw CreateAppointment.Error.RequestForThisTimeNotAllowed()
+        if (!settings.isInWorktime(appointment.date, appointment.dateEnd)) throw CreateAppointment.Error.RequestForThisTimeNotAllowed()
         if (appointmentDataSource.hasOverlapsWith(appointment)) throw CreateAppointment.Error.AppointmentForThisTimeExists()
     }
 

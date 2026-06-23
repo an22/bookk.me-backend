@@ -18,6 +18,7 @@ import io.mockk.mockk
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 import library.permissions.ObjectPermission
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import kotlin.uuid.Uuid
@@ -49,6 +50,7 @@ internal class EditSettingsImplTest {
 
         then()
         assertTrue(result.isSuccess)
+        assertEquals(settings, result.getOrNull())
     }
 
     @Test

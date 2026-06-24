@@ -26,7 +26,10 @@ import kotlin.uuid.toJavaUuid
 internal class AppointmentSettingsDataSourceImpl : DataSource(), AppointmentSettingsDataSource {
     override suspend fun create(settings: AppointmentSettings): AppointmentSettings = dbQuery {
         val settingsEntity = SettingsEntity.new(settings)
-        WorkingHourEntity.batchInsert(settingsEntity.id.value, settings.workingHours)
+        WorkingHourEntity.batchInsert(
+            settingsId = settingsEntity.id.value,
+            hours = settings.schedule.list().flatMap { it.workingTime }
+        )
         DayOffEntity.batchInsert(settingsEntity.id.value, settings.dayOffs)
         settingsEntity
             .apply { refresh() }
@@ -36,7 +39,10 @@ internal class AppointmentSettingsDataSourceImpl : DataSource(), AppointmentSett
     override suspend fun update(settings: AppointmentSettings): AppointmentSettings = dbQuery {
         val settingsEntity = SettingsEntity.findByIdAndUpdate(settings) ?: throw Error.NotFound()
         settingsEntity.flush()
-        WorkingHourEntity.batchInsert(settingsEntity.id.value, settings.workingHours)
+        WorkingHourEntity.batchInsert(
+            settingsId = settingsEntity.id.value,
+            hours = settings.schedule.list().flatMap { it.workingTime }
+        )
         DayOffEntity.batchInsert(settingsEntity.id.value, settings.dayOffs)
         settingsEntity
             .apply { refresh() }
@@ -74,7 +80,7 @@ internal class AppointmentSettingsDataSourceImpl : DataSource(), AppointmentSett
             val today = now.toLocalDateTime(TimeZone.of(timeZone)).date
             DayOffsTable.deleteWhere {
                 DayOffsTable.settingsId.inList(settingsIds)
-                    .and(DayOffsTable.date.less(today))
+                    .and(DayOffsTable.endDate.less(today))
             }
         }
     }

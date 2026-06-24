@@ -63,7 +63,7 @@ internal class CreateAppointmentImplTest {
 
         with(sutFixture) {
             coEvery { settings.isInWorkday(request.date) } returns true
-            coEvery { settings.isInWorktime(request.date) } returns true
+            coEvery { settings.isInWorktime(request.date, request.dateEnd) } returns true
             coEvery { settingsDataSource.getForUpdate(request.businessId) } returns settings
             coEvery { permissionsDataSource.getPermissions(userId, request.businessId) } returns EDIT.int
             coEvery { appointmentDataSource.hasOverlapsWith(request) } returns false
@@ -94,7 +94,7 @@ internal class CreateAppointmentImplTest {
 
         with(sutFixture) {
             coEvery { settings.isInWorkday(request.date) } returns true
-            coEvery { settings.isInWorktime(request.date) } returns true
+            coEvery { settings.isInWorktime(request.date, request.dateEnd) } returns true
             coEvery { settingsDataSource.getForUpdate(request.businessId) } returns settings
             coEvery { permissionsDataSource.getPermissions(userId, request.businessId) } returns EDIT.int
             coEvery { appointmentDataSource.hasOverlapsWith(request) } returns true
@@ -124,7 +124,7 @@ internal class CreateAppointmentImplTest {
 
         with(sutFixture) {
             coEvery { settings.isInWorkday(request.date) } returns false
-            coEvery { settings.isInWorktime(request.date) } returns false
+            coEvery { settings.isInWorktime(request.date, request.dateEnd) } returns false
             coEvery { settingsDataSource.getForUpdate(request.businessId) } returns settings
             coEvery { permissionsDataSource.getPermissions(userId, request.businessId) } returns EDIT.int
             coEvery { appointmentDataSource.hasOverlapsWith(request) } returns true
@@ -154,7 +154,7 @@ internal class CreateAppointmentImplTest {
 
         with(sutFixture) {
             coEvery { settings.isInWorkday(request.date) } returns true
-            coEvery { settings.isInWorktime(request.date) } returns false
+            coEvery { settings.isInWorktime(request.date, request.dateEnd) } returns false
             coEvery { settingsDataSource.getForUpdate(request.businessId) } returns settings
             coEvery { permissionsDataSource.getPermissions(userId, request.businessId) } returns EDIT.int
             coEvery { appointmentDataSource.hasOverlapsWith(request) } returns true
@@ -184,7 +184,7 @@ internal class CreateAppointmentImplTest {
 
         with(sutFixture) {
             coEvery { settings.isInWorkday(request.date) } returns false
-            coEvery { settings.isInWorktime(request.date) } returns false
+            coEvery { settings.isInWorktime(request.date, request.dateEnd) } returns false
             coEvery { settingsDataSource.getForUpdate(request.businessId) } returns settings
             coEvery { permissionsDataSource.getPermissions(userId, request.businessId) } returns READ.int
             coEvery { appointmentDataSource.hasOverlapsWith(request) } returns false
@@ -218,7 +218,7 @@ internal class CreateAppointmentImplTest {
             coEvery { settingsDataSource.getForUpdate(businessId) } returns settings
             coEvery { settings.automaticApproval } returns false
             coEvery { settings.isInWorkday(appointment.date) } returns true
-            coEvery { settings.isInWorktime(appointment.date) } returns true
+            coEvery { settings.isInWorktime(appointment.date, appointment.dateEnd) } returns true
             coEvery { permissionsDataSource.getPermissions(userId, businessId) } returns EDIT.int
             coEvery { appointmentDataSource.hasOverlapsWith(request) } returns false
             coEvery { appointmentDataSource.create(request) } returns appointment
@@ -251,7 +251,7 @@ internal class CreateAppointmentImplTest {
             coEvery { settingsDataSource.getForUpdate(businessId) } returns settings
             coEvery { settings.automaticApproval } returns false
             coEvery { settings.isInWorkday(appointment.date) } returns true
-            coEvery { settings.isInWorktime(appointment.date) } returns true
+            coEvery { settings.isInWorktime(appointment.date, appointment.dateEnd) } returns true
             coEvery { permissionsDataSource.getPermissions(userId, businessId) } returns EDIT.int
             coEvery { appointmentDataSource.hasOverlapsWith(request) } returns false
             coEvery { appointmentDataSource.create(request) } returns appointment
@@ -281,7 +281,7 @@ internal class CreateAppointmentImplTest {
         with(fixture) {
             coEvery { settingsDataSource.getForUpdate(appointment.businessId) } returns settings
             coEvery { settings.isInWorkday(appointment.date) } returns true
-            coEvery { settings.isInWorktime(appointment.date) } returns true
+            coEvery { settings.isInWorktime(appointment.date, appointment.dateEnd) } returns true
             coEvery { permissionsDataSource.getPermissions(userId, appointment.businessId) } returns EDIT.int
             coEvery { appointmentDataSource.hasOverlapsWith(appointment) } returns false
             coEvery { appointmentDataSource.create(appointment) } returns appointment
@@ -307,7 +307,7 @@ internal class CreateAppointmentImplTest {
         with(fixture) {
             coEvery { settingsDataSource.getForUpdate(appointment.businessId) } returns settings
             coEvery { settings.isInWorkday(appointment.date) } returns true
-            coEvery { settings.isInWorktime(appointment.date) } returns true
+            coEvery { settings.isInWorktime(appointment.date, appointment.dateEnd) } returns true
             coEvery { permissionsDataSource.getPermissions(userId, appointment.businessId) } returns EDIT.int
             coEvery { appointmentDataSource.hasOverlapsWith(appointment) } returns true
             transactionManager.mockTransaction()
@@ -332,7 +332,7 @@ internal class CreateAppointmentImplTest {
         with(fixture) {
             coEvery { settingsDataSource.getForUpdate(appointment.businessId) } returns settings
             coEvery { settings.isInWorkday(appointment.date) } returns false
-            coEvery { settings.isInWorktime(appointment.date) } returns false
+            coEvery { settings.isInWorktime(appointment.date, appointment.dateEnd) } returns false
             coEvery { permissionsDataSource.getPermissions(userId, appointment.businessId) } returns EDIT.int
             transactionManager.mockTransaction()
         }
@@ -356,7 +356,7 @@ internal class CreateAppointmentImplTest {
         with(fixture) {
             coEvery { settingsDataSource.getForUpdate(appointment.businessId) } returns settings
             coEvery { settings.isInWorkday(appointment.date) } returns true
-            coEvery { settings.isInWorktime(appointment.date) } returns false
+            coEvery { settings.isInWorktime(appointment.date, appointment.dateEnd) } returns false
             coEvery { permissionsDataSource.getPermissions(userId, appointment.businessId) } returns EDIT.int
             transactionManager.mockTransaction()
         }
@@ -380,7 +380,7 @@ internal class CreateAppointmentImplTest {
         with(fixture) {
             coEvery { settingsDataSource.getForUpdate(appointment.businessId) } returns settings
             coEvery { settings.isInWorkday(appointment.date) } returns false
-            coEvery { settings.isInWorktime(appointment.date) } returns false
+            coEvery { settings.isInWorktime(appointment.date, appointment.dateEnd) } returns false
             coEvery { permissionsDataSource.getPermissions(userId, appointment.businessId) } returns READ.int
             transactionManager.mockTransaction()
         }

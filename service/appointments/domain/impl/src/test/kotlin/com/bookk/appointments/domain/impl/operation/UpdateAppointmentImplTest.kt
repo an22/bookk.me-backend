@@ -37,7 +37,7 @@ internal class UpdateAppointmentImplTest {
         businessId = testBusinessId,
         client = ClientSnapshot(Uuid.random(), "Name", "123", "a@b.com"),
         services = listOf(ServiceSnapshot(Uuid.random(), "Svc", Uuid.random(), Money.of(CurrencyUnit.USD, 10.0), 30.minutes)),
-        date = Instant.fromEpochMilliseconds(0),
+        date = Instant.parse("2099-01-01T00:00:00Z"),
         note = "Note",
         status = AppointmentStatus.SCHEDULED,
         cancellationReason = ""
@@ -156,6 +156,34 @@ internal class UpdateAppointmentImplTest {
         then()
         assertTrue(result.isFailure)
         assertTrue(result.exceptionOrNull() is UpdateAppointment.Error.AppointmentForThisTimeExists)
+    }
+
+    @Test
+    fun `should return failure when date is in the past`() = runUnitTest {
+        val appointmentDataSource = mockk<AppointmentDataSource>()
+        val settingsDataSource = mockk<AppointmentSettingsDataSource>()
+        val permissionsDataSource = mockk<PermissionsDataSource>()
+        val transactionManager = mockk<TransactionManager>()
+        val sut = UpdateAppointmentImpl(
+            appointmentDataSource,
+            settingsDataSource,
+            permissionsDataSource,
+            transactionManager
+        )
+
+        given()
+        transactionManager.mockTransaction()
+        val settings = mockk<AppointmentSettings>()
+        val pastAppointment = testAppointment.copy(date = Instant.parse("2000-01-01T00:00:00Z"))
+        coEvery { settingsDataSource.getForUpdate(testBusinessId) } returns settings
+        coEvery { permissionsDataSource.getPermissions(testUserId, testBusinessId) } returns ObjectPermission.EDIT.int
+
+        whenn()
+        val result = sut(testUserId, pastAppointment)
+
+        then()
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is UpdateAppointment.Error.DateInThePastNotAllowed)
     }
 
     @Test

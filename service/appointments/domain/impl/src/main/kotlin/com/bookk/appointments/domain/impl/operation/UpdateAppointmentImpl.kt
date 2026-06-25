@@ -9,6 +9,7 @@ import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.entity.Error
 import library.permissions.ObjectPermission
 import library.permissions.assert
+import kotlin.time.Clock
 import kotlin.uuid.Uuid
 
 internal class UpdateAppointmentImpl(
@@ -20,6 +21,7 @@ internal class UpdateAppointmentImpl(
     override suspend fun invoke(userId: Uuid, appointment: Appointment): Result<Appointment> = transactionManager.transaction {
         val settings = settingsDataSource.getForUpdate(appointment.businessId) ?: throw Error.NotFound()
         permissionsDataSource.getPermissions(userId, appointment.businessId).assert(ObjectPermission.EDIT)
+        if (appointment.date < Clock.System.now()) throw UpdateAppointment.Error.DateInThePastNotAllowed()
         appointmentDataSource.update(appointment)
         if (!settings.isInWorkday(appointment.date)) throw UpdateAppointment.Error.RequestForThisDateNotAllowed()
         if (!settings.isInWorktime(appointment.date, appointment.dateEnd)) throw UpdateAppointment.Error.RequestForThisTimeNotAllowed()

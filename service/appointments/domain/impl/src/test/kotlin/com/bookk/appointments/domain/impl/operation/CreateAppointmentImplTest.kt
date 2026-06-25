@@ -27,9 +27,12 @@ import library.permissions.ObjectPermission.READ
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
 internal class CreateAppointmentImplTest {
+
+    private val futureDate = Instant.parse("2099-01-01T00:00:00Z")
 
     private class SutFixture {
         val appointmentDataSource = mockk<AppointmentDataSource>()
@@ -56,7 +59,7 @@ internal class CreateAppointmentImplTest {
         given()
 
         val userId = Uuid.random()
-        val request = AppointmentRequest.stub(userId = userId)
+        val request = AppointmentRequest.stub(userId = userId, date = futureDate)
         val appointment = Appointment.stub(userId = userId, businessId = request.businessId, date = request.date)
         val settings = mockk<AppointmentSettings>()
         val sutFixture = SutFixture()
@@ -87,7 +90,7 @@ internal class CreateAppointmentImplTest {
         given()
 
         val userId = Uuid.random()
-        val request = AppointmentRequest.stub(userId = userId)
+        val request = AppointmentRequest.stub(userId = userId, date = futureDate)
         val appointment = Appointment.stub(userId = userId, businessId = request.businessId, date = request.date)
         val settings = mockk<AppointmentSettings>()
         val sutFixture = SutFixture()
@@ -117,7 +120,7 @@ internal class CreateAppointmentImplTest {
     fun `should return failure when date is not in workday`() = runUnitTest {
         given()
         val userId = Uuid.random()
-        val request = AppointmentRequest.stub(userId = userId)
+        val request = AppointmentRequest.stub(userId = userId, date = futureDate)
         val appointment = Appointment.stub(userId = userId, businessId = request.businessId, date = request.date)
         val settings = mockk<AppointmentSettings>()
         val sutFixture = SutFixture()
@@ -144,10 +147,33 @@ internal class CreateAppointmentImplTest {
     }
 
     @Test
+    fun `should return failure when request date is in the past`() = runUnitTest {
+        given()
+        val userId = Uuid.random()
+        val pastDate = Instant.parse("2000-01-01T00:00:00Z")
+        val request = AppointmentRequest.stub(userId = userId, date = pastDate)
+        val settings = mockk<AppointmentSettings>()
+        val sutFixture = SutFixture()
+
+        with(sutFixture) {
+            coEvery { settingsDataSource.getForUpdate(request.businessId) } returns settings
+            coEvery { permissionsDataSource.getPermissions(userId, request.businessId) } returns EDIT.int
+            transactionManager.mockTransaction()
+        }
+
+        whenn()
+        val result = sutFixture.sut.invoke(userId, request)
+
+        then()
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is CreateAppointment.Error.DateInThePastNotAllowed)
+    }
+
+    @Test
     fun `should return failure when time is not in worktime`() = runUnitTest {
         given()
         val userId = Uuid.random()
-        val request = AppointmentRequest.stub(userId = userId)
+        val request = AppointmentRequest.stub(userId = userId, date = futureDate)
         val appointment = Appointment.stub(userId = userId, businessId = request.businessId, date = request.date)
         val settings = mockk<AppointmentSettings>()
         val sutFixture = SutFixture()
@@ -177,7 +203,7 @@ internal class CreateAppointmentImplTest {
     fun `should return failure when READ permissions`() = runUnitTest {
         given()
         val userId = Uuid.random()
-        val request = AppointmentRequest.stub(userId = userId)
+        val request = AppointmentRequest.stub(userId = userId, date = futureDate)
         val appointment = Appointment.stub(userId = userId, businessId = request.businessId, date = request.date)
         val settings = mockk<AppointmentSettings>()
         val sutFixture = SutFixture()
@@ -209,8 +235,8 @@ internal class CreateAppointmentImplTest {
         val fixture = SutFixture()
         val userId = Uuid.random()
         val businessId = Uuid.random()
-        val request = AppointmentRequest.stub(userId = userId, businessId = businessId)
-        val appointment = Appointment.stub(userId = userId, businessId = businessId)
+        val request = AppointmentRequest.stub(userId = userId, businessId = businessId, date = futureDate)
+        val appointment = Appointment.stub(userId = userId, businessId = businessId, date = futureDate)
         val settings = mockk<AppointmentSettings>()
         val businessSnapshot = BusinessSnapshot.stub()
 
@@ -242,8 +268,8 @@ internal class CreateAppointmentImplTest {
         val fixture = SutFixture()
         val userId = Uuid.random()
         val businessId = Uuid.random()
-        val request = AppointmentRequest.stub(userId = userId, businessId = businessId)
-        val appointment = Appointment.stub(userId = userId, businessId = businessId)
+        val request = AppointmentRequest.stub(userId = userId, businessId = businessId, date = futureDate)
+        val appointment = Appointment.stub(userId = userId, businessId = businessId, date = futureDate)
         val settings = mockk<AppointmentSettings>()
         val businessSnapshot = BusinessSnapshot.stub()
 
@@ -274,7 +300,7 @@ internal class CreateAppointmentImplTest {
     fun `should create instant appointment successfully`() = runUnitTest {
         given()
         val userId = Uuid.random()
-        val appointment = Appointment.stub(userId = userId)
+        val appointment = Appointment.stub(userId = userId, date = futureDate)
         val settings = mockk<AppointmentSettings>()
         val fixture = SutFixture()
 
@@ -300,7 +326,7 @@ internal class CreateAppointmentImplTest {
     fun `should return failure when instant appointment overlaps with existing appointment`() = runUnitTest {
         given()
         val userId = Uuid.random()
-        val appointment = Appointment.stub(userId = userId)
+        val appointment = Appointment.stub(userId = userId, date = futureDate)
         val settings = mockk<AppointmentSettings>()
         val fixture = SutFixture()
 
@@ -325,7 +351,7 @@ internal class CreateAppointmentImplTest {
     fun `should return failure when instant appointment date not allowed`() = runUnitTest {
         given()
         val userId = Uuid.random()
-        val appointment = Appointment.stub(userId = userId)
+        val appointment = Appointment.stub(userId = userId, date = futureDate)
         val settings = mockk<AppointmentSettings>()
         val fixture = SutFixture()
 
@@ -346,10 +372,33 @@ internal class CreateAppointmentImplTest {
     }
 
     @Test
+    fun `should return failure when instant appointment date is in the past`() = runUnitTest {
+        given()
+        val userId = Uuid.random()
+        val pastDate = Instant.parse("2000-01-01T00:00:00Z")
+        val appointment = Appointment.stub(userId = userId, date = pastDate)
+        val settings = mockk<AppointmentSettings>()
+        val fixture = SutFixture()
+
+        with(fixture) {
+            coEvery { settingsDataSource.getForUpdate(appointment.businessId) } returns settings
+            coEvery { permissionsDataSource.getPermissions(userId, appointment.businessId) } returns EDIT.int
+            transactionManager.mockTransaction()
+        }
+
+        whenn()
+        val result = fixture.sut.invoke(userId, appointment)
+
+        then()
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is CreateAppointment.Error.DateInThePastNotAllowed)
+    }
+
+    @Test
     fun `should return failure when instant appointment time not allowed`() = runUnitTest {
         given()
         val userId = Uuid.random()
-        val appointment = Appointment.stub(userId = userId)
+        val appointment = Appointment.stub(userId = userId, date = futureDate)
         val settings = mockk<AppointmentSettings>()
         val fixture = SutFixture()
 
@@ -373,7 +422,7 @@ internal class CreateAppointmentImplTest {
     fun `should return failure when instant appointment created with READ permissions`() = runUnitTest {
         given()
         val userId = Uuid.random()
-        val appointment = Appointment.stub(userId = userId)
+        val appointment = Appointment.stub(userId = userId, date = futureDate)
         val settings = mockk<AppointmentSettings>()
         val fixture = SutFixture()
 

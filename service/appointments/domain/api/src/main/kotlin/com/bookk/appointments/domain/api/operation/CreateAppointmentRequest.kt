@@ -27,5 +27,11 @@ interface CreateAppointmentRequest {
             code = AppointmentErrorCodes.DATE_NOT_ALLOWED,
             message = "Request for this date and time not allowed"
         ), Error
+
+        class DateInThePastNotAllowed : BusinessError(
+            statusCode = HttpStatusCode.UnprocessableEntity.value,
+            code = AppointmentErrorCodes.DATE_IN_PAST,
+            message = "Request date is in the past"
+        ), Error
     }
 }

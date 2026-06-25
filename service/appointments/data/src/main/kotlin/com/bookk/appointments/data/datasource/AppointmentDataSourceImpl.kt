@@ -5,21 +5,27 @@ import com.bookk.appointments.data.orm.entity.AppointmentServiceEntity
 import com.bookk.appointments.data.orm.table.AppointmentServicesTable
 import com.bookk.appointments.data.orm.table.AppointmentTable
 import com.bookk.appointments.domain.api.entity.Appointment
+import com.bookk.appointments.domain.api.entity.AppointmentPagination
 import com.bookk.appointments.domain.api.entity.AppointmentRepresentation
 import com.bookk.appointments.domain.api.entity.AppointmentRequest
 import com.bookk.appointments.domain.api.entity.AppointmentStatus
 import com.bookk.appointments.domain.datasource.AppointmentDataSource
 import com.bookk.core.data.DataSource
 import com.bookk.core.domain.entity.Error
-import com.bookk.core.domain.entity.Pagination
+import com.bookk.core.domain.entity.PaginationMetadata
 import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.greater
 import org.jetbrains.exposed.v1.core.greaterEq
+import org.jetbrains.exposed.v1.core.inSubQuery
 import org.jetbrains.exposed.v1.core.less
 import org.jetbrains.exposed.v1.core.lessEq
+import org.jetbrains.exposed.v1.core.like
+import org.jetbrains.exposed.v1.core.lowerCase
 import org.jetbrains.exposed.v1.core.neq
+import org.jetbrains.exposed.v1.core.or
+import org.jetbrains.exposed.v1.dao.with
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.update
@@ -54,22 +60,45 @@ internal class AppointmentDataSourceImpl : DataSource(), AppointmentDataSource {
         }
     }
 
-    override suspend fun getAllPaginated(businessId: Uuid, limit: Int, offset: Long): Pagination<Appointment> {
+    override suspend fun getAllPaginated(
+        businessId: Uuid,
+        limit: Int,
+        offset: Long,
+        query: String?
+    ): AppointmentPagination {
         return dbQuery {
-            val query = AppointmentEntity
-                .find { AppointmentTable.businessId.eq(businessId.toJavaUuid()) }
-                .orderBy(AppointmentTable.dateStart to SortOrder.ASC)
+            var condition = AppointmentTable.businessId.eq(businessId.toJavaUuid())
 
-            val total = query.count()
-            val result = query
+            if (!query.isNullOrBlank()) {
+                val pattern = "%${query.lowercase()}%"
+                val matchingServiceAppointmentIds = AppointmentServicesTable
+                    .select(AppointmentServicesTable.appointmentId)
+                    .where { AppointmentServicesTable.serviceName.lowerCase() like pattern }
+
+                condition = condition.and(
+                    AppointmentTable.clientName.lowerCase().like(pattern)
+                        .or(AppointmentTable.id.inSubQuery(matchingServiceAppointmentIds))
+                )
+            }
+
+            val appointmentsQuery = AppointmentEntity
+                .find { condition }
+                .orderBy(AppointmentTable.dateStart to SortOrder.DESC)
+
+            val total = appointmentsQuery.count()
+            val result = appointmentsQuery
                 .limit(limit)
                 .offset(offset)
+                .toList()
+                .with(AppointmentEntity::services)
                 .map { it.domain() }
-            Pagination(
+            AppointmentPagination(
                 data = result,
-                total = total,
-                pageSize = limit,
-                page = (offset / limit) + 1
+                metadata = PaginationMetadata(
+                    total = total,
+                    pageSize = limit,
+                    page = (offset / limit) + 1
+                ),
             )
         }
     }

@@ -14,4 +14,5 @@ object AppointmentErrorCodes {
     const val PLUGIN_ALREADY_ENABLED = BASE + 9
     const val ACTIVE_DAY_WITHOUT_WORK_HOURS = BASE + 10
     const val INVALID_DAY_OFF_RANGE = BASE + 11
+    const val DATE_IN_PAST = BASE + 12
 }

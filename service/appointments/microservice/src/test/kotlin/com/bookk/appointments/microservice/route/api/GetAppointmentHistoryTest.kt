@@ -1,9 +1,10 @@
 package com.bookk.appointments.microservice.route.api
 
 import com.bookk.appointments.domain.api.entity.Appointment
+import com.bookk.appointments.domain.api.entity.AppointmentPagination
 import com.bookk.appointments.domain.api.operation.GetAppointmentHistory
 import com.bookk.appointments.microservice.route.AppointmentsRouting
-import com.bookk.core.domain.entity.Pagination
+import com.bookk.core.domain.entity.PaginationMetadata
 import com.bookk.core.service.auth.AppPrincipal
 import com.bookk.core.service.test.createTestClient
 import com.bookk.core.service.test.routeTest
@@ -32,9 +33,12 @@ internal class GetAppointmentHistoryTest {
         val businessId = Uuid.random()
         val userId = Uuid.random()
         val appointments = listOf(Appointment.stub(userId = userId, businessId = businessId))
-        val pagination = Pagination(data = appointments, total = 1L, page = 0L, pageSize = 50)
+        val pagination = AppointmentPagination(
+            data = appointments,
+            metadata = PaginationMetadata(total = 1L, page = 0L, pageSize = 50)
+        )
 
-        coEvery { useCase.invoke(userId, businessId, 50, 0) } returns Result.success(pagination)
+        coEvery { useCase.invoke(userId, businessId, 50, 0, null) } returns Result.success(pagination)
 
         setupApplication(
             extension = {
@@ -57,6 +61,55 @@ internal class GetAppointmentHistoryTest {
         whenn()
         val client = createTestClient()
         val response = client.get(AppointmentsRouting.Api.AppointmentHistory(businessId = businessId, limit = 50, offset = 0))
+
+        then()
+        assertEquals(HttpStatusCode.OK, response.status)
+    }
+
+    @Test
+    fun `should get appointment history filtered by query`() = routeTest {
+        given()
+        val useCase: GetAppointmentHistory = mockk()
+        val businessId = Uuid.random()
+        val userId = Uuid.random()
+        val appointments = listOf(Appointment.stub(userId = userId, businessId = businessId))
+        val pagination = AppointmentPagination(
+            data = appointments,
+            metadata = PaginationMetadata(total = 1L, page = 0L, pageSize = 50)
+        )
+
+        coEvery {
+            useCase.invoke(userId, businessId, 50, 0, "John")
+        } returns Result.success(pagination)
+
+        setupApplication(
+            extension = {
+                install(Authentication) {
+                    provider {
+                        authenticate { context ->
+                            context.principal(AppPrincipal(Uuid.random(), userId, Uuid.random()))
+                        }
+                    }
+                }
+            },
+            diModule = module {
+                single { useCase }
+            },
+            routeUnderTest = {
+                appointment()
+            }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.get(
+            AppointmentsRouting.Api.AppointmentHistory(
+                businessId = businessId,
+                limit = 50,
+                offset = 0,
+                query = "John"
+            )
+        )
 
         then()
         assertEquals(HttpStatusCode.OK, response.status)
@@ -97,7 +150,9 @@ internal class GetAppointmentHistoryTest {
         val businessId = Uuid.random()
         val userId = Uuid.random()
 
-        coEvery { useCase.invoke(userId, businessId, 50, 0) } returns Result.failure(Exception("Database error"))
+        coEvery {
+            useCase.invoke(userId, businessId, 50, 0, null)
+        } returns Result.failure(Exception("Database error"))
 
         setupApplication(
             extension = {

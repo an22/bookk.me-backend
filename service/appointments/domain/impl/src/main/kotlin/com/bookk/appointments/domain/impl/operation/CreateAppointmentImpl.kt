@@ -18,6 +18,7 @@ import com.bookk.server.appointments.client.api.event.AppointmentEvent
 import library.permissions.ObjectPermission
 import library.permissions.assert
 import org.slf4j.LoggerFactory
+import kotlin.time.Clock
 import kotlin.uuid.Uuid
 
 private val createAppointmentLogger = LoggerFactory.getLogger(CreateAppointmentImpl::class.java)
@@ -58,6 +59,7 @@ internal class CreateAppointmentImpl(
     private suspend fun verifyAppointment(userId: Uuid, appointment: AppointmentRepresentation) {
         val settings = settingsDataSource.getForUpdate(appointment.businessId) ?: throw Error.NotFound()
         permissionsDataSource.getPermissions(userId, appointment.businessId).assert(ObjectPermission.EDIT)
+        if (appointment.date < Clock.System.now()) throw CreateAppointment.Error.DateInThePastNotAllowed()
         if (!settings.isInWorkday(appointment.date)) throw CreateAppointment.Error.RequestForThisDateNotAllowed()
         if (!settings.isInWorktime(appointment.date, appointment.dateEnd)) throw CreateAppointment.Error.RequestForThisTimeNotAllowed()
         if (appointmentDataSource.hasOverlapsWith(appointment)) throw CreateAppointment.Error.AppointmentForThisTimeExists()

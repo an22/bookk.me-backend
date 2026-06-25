@@ -38,7 +38,7 @@ fun Routing.appointment() {
          * Security: jwt
          * Body: application/x-protobuf [com.bookk.appointments.domain.api.entity.Appointment]
          * Response: 200 application/x-protobuf [com.bookk.appointments.domain.api.entity.Appointment] Updated appointment entity
-         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Update appointment errors<br>APPOINTMENT_EXISTS (300004) Appointment for this time already exists<br>DATE_NOT_ALLOWED (300003) Request for this date not allowed<br>TIME_NOT_ALLOWED (300002) Request for this time not allowed
+         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Update appointment errors<br>APPOINTMENT_EXISTS (300004) Appointment for this time already exists<br>DATE_NOT_ALLOWED (300003) Request for this date not allowed<br>TIME_NOT_ALLOWED (300002) Request for this time not allowed<br>DATE_IN_PAST (300012) Appointment date is in the past
          */
         put<Api.Appointment.Id> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
@@ -71,15 +71,24 @@ fun Routing.appointment() {
 
         /**
          * Summary: Get appointments history
+         * Description: Get paginated appointments history, optionally filtered by a query matching client name or service names
          * Tag: appointment
          * Security: jwt
-         * Response: 200 application/x-protobuf [com.bookk.core.domain.entity.Pagination<com.bookk.appointments.domain.api.entity.Appointment>] List of appointments
+         * Response: 200 application/x-protobuf [com.bookk.appointments.domain.api.entity.AppointmentPagination] List of appointments
          */
         get<Api.AppointmentHistory> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
             val getHistory by application.inject<GetAppointmentHistory>()
 
-            call.respondWith(getHistory(principal.userId, it.businessId, it.limit, it.offset))
+            call.respondWith(
+                getHistory(
+                    userId = principal.userId,
+                    businessId = it.businessId,
+                    limit = it.limit,
+                    offset = it.offset,
+                    query = it.query
+                )
+            )
         }
 
         /**
@@ -89,7 +98,7 @@ fun Routing.appointment() {
          * Security: jwt
          * Body: application/x-protobuf [com.bookk.appointments.microservice.route.api.AppointmentRequestId]
          * Response: 200 application/x-protobuf [com.bookk.appointments.domain.api.entity.Appointment] Created appointment entity
-         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Create appointment errors<br>APPOINTMENT_EXISTS (300004) Appointment for this time already exists<br>DATE_NOT_ALLOWED (300003) Request for this date not allowed<br>TIME_NOT_ALLOWED (300002) Request for this time not allowed
+         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Create appointment errors<br>APPOINTMENT_EXISTS (300004) Appointment for this time already exists<br>DATE_NOT_ALLOWED (300003) Request for this date not allowed<br>TIME_NOT_ALLOWED (300002) Request for this time not allowed<br>DATE_IN_PAST (300012) Appointment date is in the past
          */
         post<Api.Appointment> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
@@ -111,7 +120,7 @@ fun Routing.appointment() {
          * Security: jwt
          * Body: application/x-protobuf [com.bookk.appointments.domain.api.entity.Appointment]
          * Response: 200 application/x-protobuf [com.bookk.appointments.domain.api.entity.Appointment] Created appointment entity
-         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Create appointment errors<br>APPOINTMENT_EXISTS (300004) Appointment for this time already exists<br>DATE_NOT_ALLOWED (300003) Request for this date not allowed<br>TIME_NOT_ALLOWED (300002) Request for this time not allowed
+         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Create appointment errors<br>APPOINTMENT_EXISTS (300004) Appointment for this time already exists<br>DATE_NOT_ALLOWED (300003) Request for this date not allowed<br>TIME_NOT_ALLOWED (300002) Request for this time not allowed<br>DATE_IN_PAST (300012) Appointment date is in the past
          */
         post<Api.Appointment.Instant> {
             val principal = requireNotNull(call.principal<AppPrincipal>())

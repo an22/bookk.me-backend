@@ -1,12 +1,13 @@
 package com.bookk.appointments.domain.impl.operation
 
 import com.bookk.appointments.domain.api.entity.Appointment
+import com.bookk.appointments.domain.api.entity.AppointmentPagination
 import com.bookk.appointments.domain.datasource.AppointmentDataSource
 import com.bookk.appointments.domain.datasource.PermissionsDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.datasource.transaction.mockTransaction
 import com.bookk.core.domain.entity.Error
-import com.bookk.core.domain.entity.Pagination
+import com.bookk.core.domain.entity.PaginationMetadata
 import com.bookk.core.test.given
 import com.bookk.core.test.runUnitTest
 import com.bookk.core.test.then
@@ -35,16 +36,53 @@ internal class GetAppointmentHistoryImplTest {
         val userId = Uuid.random()
         val businessId = Uuid.random()
         val appointments = listOf(Appointment.stub(userId = userId, businessId = businessId))
-        val pagination = Pagination(data = appointments, total = 1L, page = 0L, pageSize = 50)
+        val pagination = AppointmentPagination(
+            data = appointments,
+            metadata = PaginationMetadata(total = 1L, page = 0L, pageSize = 50)
+        )
 
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { permissionsDataSource.getPermissions(userId, businessId) } returns ObjectPermission.READ.int
-            coEvery { dataSource.getAllPaginated(businessId, 50, 0) } returns pagination
+            coEvery { dataSource.getAllPaginated(businessId, 50, 0, null) } returns pagination
         }
 
         whenn()
         val result = fixture.sut(userId, businessId, limit = 50, offset = 0)
+
+        then()
+        assertTrue(result.isSuccess)
+        assertEquals(pagination, result.getOrNull())
+    }
+
+    @Test
+    fun `should pass query filter to data source`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+        val businessId = Uuid.random()
+        val appointments = listOf(Appointment.stub(userId = userId, businessId = businessId))
+        val pagination = AppointmentPagination(
+            data = appointments,
+            metadata = PaginationMetadata(total = 1L, page = 0L, pageSize = 50)
+        )
+
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { permissionsDataSource.getPermissions(userId, businessId) } returns ObjectPermission.READ.int
+            coEvery {
+                dataSource.getAllPaginated(businessId, 50, 0, "John")
+            } returns pagination
+        }
+
+        whenn()
+        val result = fixture.sut(
+            userId,
+            businessId,
+            limit = 50,
+            offset = 0,
+            query = "John"
+        )
 
         then()
         assertTrue(result.isSuccess)
@@ -82,7 +120,7 @@ internal class GetAppointmentHistoryImplTest {
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { permissionsDataSource.getPermissions(userId, businessId) } returns ObjectPermission.READ.int
-            coEvery { dataSource.getAllPaginated(businessId, 50, 0) } throws exception
+            coEvery { dataSource.getAllPaginated(businessId, 50, 0, null) } throws exception
         }
 
         whenn()

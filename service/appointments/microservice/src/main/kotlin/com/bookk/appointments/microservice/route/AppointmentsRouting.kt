@@ -43,7 +43,13 @@ object AppointmentsRouting {
         class Appointments(val parent: Api = Api(), val businessId: Uuid, val date: LocalDate)
 
         @Resource("/appointments/history/{businessId}")
-        class AppointmentHistory(val parent: Api = Api(), val businessId: Uuid, val limit: Int, val offset: Long)
+        class AppointmentHistory(
+            val parent: Api = Api(),
+            val businessId: Uuid,
+            val limit: Int,
+            val offset: Long,
+            val query: String? = null
+        )
     }
 
 }

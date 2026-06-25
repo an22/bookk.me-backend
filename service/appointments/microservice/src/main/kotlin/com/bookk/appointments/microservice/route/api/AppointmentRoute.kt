@@ -71,15 +71,24 @@ fun Routing.appointment() {
 
         /**
          * Summary: Get appointments history
+         * Description: Get paginated appointments history, optionally filtered by a query matching client name or service names
          * Tag: appointment
          * Security: jwt
-         * Response: 200 application/x-protobuf [com.bookk.core.domain.entity.Pagination<com.bookk.appointments.domain.api.entity.Appointment>] List of appointments
+         * Response: 200 application/x-protobuf [com.bookk.appointments.domain.api.entity.AppointmentPagination] List of appointments
          */
         get<Api.AppointmentHistory> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
             val getHistory by application.inject<GetAppointmentHistory>()
 
-            call.respondWith(getHistory(principal.userId, it.businessId, it.limit, it.offset))
+            call.respondWith(
+                getHistory(
+                    userId = principal.userId,
+                    businessId = it.businessId,
+                    limit = it.limit,
+                    offset = it.offset,
+                    query = it.query
+                )
+            )
         }
 
         /**

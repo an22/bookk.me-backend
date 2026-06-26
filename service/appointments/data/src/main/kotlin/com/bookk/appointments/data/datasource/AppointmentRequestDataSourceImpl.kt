@@ -33,6 +33,15 @@ internal class AppointmentRequestDataSourceImpl : DataSource(), AppointmentReque
             .map { it.domain() }
     }
 
+    override suspend fun getPending(businessId: Uuid): List<AppointmentRequest> = dbQuery {
+        AppointmentRequestEntity
+            .find {
+                AppointmentRequestTable.businessId.eq(businessId.toJavaUuid())
+                    .and(AppointmentRequestTable.status.eq(AppointmentRequestStatus.PENDING))
+            }
+            .map { it.domain() }
+    }
+
     override suspend fun create(request: AppointmentRequest): AppointmentRequest = dbQuery {
         val requestEntity = AppointmentRequestEntity.new(request)
         request.services.forEach {

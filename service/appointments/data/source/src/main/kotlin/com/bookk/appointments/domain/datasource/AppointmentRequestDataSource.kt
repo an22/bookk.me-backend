@@ -7,6 +7,7 @@ interface AppointmentRequestDataSource {
 
     suspend fun get(id: Uuid): AppointmentRequest?
     suspend fun getAll(businessId: Uuid): List<AppointmentRequest>
+    suspend fun getPending(businessId: Uuid): List<AppointmentRequest>
     suspend fun create(request: AppointmentRequest): AppointmentRequest
     suspend fun update(request: AppointmentRequest): AppointmentRequest
     suspend fun delete(request: AppointmentRequest)

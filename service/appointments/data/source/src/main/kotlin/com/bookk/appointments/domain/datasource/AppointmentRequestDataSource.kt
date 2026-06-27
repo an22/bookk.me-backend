@@ -1,6 +1,7 @@
 package com.bookk.appointments.domain.datasource
 
 import com.bookk.appointments.domain.api.entity.AppointmentRequest
+import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
 interface AppointmentRequestDataSource {
@@ -15,4 +16,5 @@ interface AppointmentRequestDataSource {
     suspend fun decline(id: Uuid, reason: String): AppointmentRequest
 
     suspend fun hasOverlapsWith(request: AppointmentRequest): Boolean
+    suspend fun cancelOutdated(before: Instant)
 }

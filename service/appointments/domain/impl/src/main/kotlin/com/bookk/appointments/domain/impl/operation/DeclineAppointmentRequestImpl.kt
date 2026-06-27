@@ -33,7 +33,8 @@ internal class DeclineAppointmentRequestImpl(
         val appointment = requestDataSource.get(cancellation.id) ?: throw Error.NotFound()
         val declined = when (appointment.status) {
             AppointmentRequestStatus.APPROVED -> throw DeclineAppointmentRequest.Error.AlreadyApproved()
-            AppointmentRequestStatus.DECLINED -> throw DeclineAppointmentRequest.Error.AlreadyDeclined()
+            AppointmentRequestStatus.DECLINED,
+            AppointmentRequestStatus.CANCELLED -> throw DeclineAppointmentRequest.Error.AlreadyDeclined()
             AppointmentRequestStatus.PENDING -> requestDataSource.decline(cancellation.id, cancellation.reason)
         }
         sendRequestDeclinedEvent(declined)

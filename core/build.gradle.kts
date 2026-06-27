@@ -9,7 +9,6 @@ dependencies {
     api(libs.kotlin.datetime)
     api(libs.ktor.logging)
     implementation(libs.kotlin.coroutines)
-    implementation(libs.kotlin.std)
     testImplementation(libs.kotlin.test)
     testFixturesImplementation(libs.mockk)
     testFixturesApi(libs.kotlin.coroutines.test)

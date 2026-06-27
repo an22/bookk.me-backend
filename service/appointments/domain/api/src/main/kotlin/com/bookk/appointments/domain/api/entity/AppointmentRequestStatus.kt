@@ -6,5 +6,6 @@ import kotlinx.serialization.Serializable
 enum class AppointmentRequestStatus {
     PENDING,
     APPROVED,
-    DECLINED
+    DECLINED,
+    CANCELLED
 }

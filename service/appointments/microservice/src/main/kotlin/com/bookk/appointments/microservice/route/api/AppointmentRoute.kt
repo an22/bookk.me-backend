@@ -10,7 +10,9 @@ import com.bookk.appointments.domain.api.operation.UpdateAppointment
 import com.bookk.appointments.microservice.route.AppointmentsRouting.Api
 import com.bookk.core.service.auth.AppPrincipal
 import com.bookk.core.service.enity.respondWith
+import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
+import io.ktor.openapi.jsonSchema
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.principal
 import io.ktor.server.request.receive
@@ -20,6 +22,7 @@ import io.ktor.server.resources.put
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Routing
 import io.ktor.server.routing.application
+import io.ktor.server.routing.openapi.describe
 import kotlinx.serialization.Serializable
 import org.koin.ktor.ext.inject
 import kotlin.uuid.Uuid
@@ -60,13 +63,20 @@ fun Routing.appointment() {
          * Summary: Get appointments for specific date
          * Tag: appointment
          * Security: jwt
-         * Response: 200 application/x-protobuf [kotlin.collections.List<com.bookk.appointments.domain.api.entity.Appointment>] List of appointments
          */
         get<Api.Appointments> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
             val getAppointments by application.inject<GetAppointmentsForDate>()
 
             call.respondWith(getAppointments(principal.userId, it.businessId, it.date))
+        }.describe {
+            responses {
+                response(HttpStatusCode.OK.value) {
+                    schema = jsonSchema<List<Appointment>>()
+                    description = "List of appointments"
+                    ContentType.Application.ProtoBuf()
+                }
+            }
         }
 
         /**

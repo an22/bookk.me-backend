@@ -100,7 +100,26 @@ fun Routing.thing() {
     }
 }
 ```
-3. KDoc OpenAPI rules (the ktor openApi plugin parses these): `Summary:`, optional `Description:`, `Tag:`, `Security: jwt` only when inside `authenticate {}`, **`Body:` (NEVER `RequestBody:`)**, one `Response:` line per status. Fully qualified type names in brackets. Every case of the operation's `sealed interface Error` must appear under the 422 response with `NAME (<n>) message`. 204 responses: `Response: 204 application/x-protobuf <description>` (no type). **Never use a colon (`:`) anywhere in the KDoc text after the field prefix** (e.g. `NAME (<n>) message`, not `NAME (<n>): message`) — the openApi plugin parses on `:` and an extra one breaks the field.
+3. KDoc OpenAPI rules (the ktor openApi plugin parses these): `Summary:`, optional `Description:`, `Tag:`, `Security: jwt` only when inside `authenticate {}`, **`Body:` (NEVER `RequestBody:`)**, one `Response:` line per status. Fully qualified type names in brackets. Every case of the operation's `sealed interface Error` must appear under the 422 response with `NAME (<n>) message`. 204 responses: `Response: 204 application/x-protobuf <description>` (no type). **Never use a colon (`:`) anywhere in the KDoc text after the field prefix** (e.g. `NAME (<n>) message`, not `NAME (<n>): message`) — the openApi plugin parses on `:` and an extra one breaks the field. **NEVER put a generic type in a `Response:` KDoc line** (e.g. `[kotlin.collections.List<Foo>]` silently produces no schema — the compiler plugin's `TypeReference$Link$Reference.asIrType()` passes the raw string including `<…>` to `FqName()` then `ClassId.topLevel()`, which finds no class and returns null). For any `List<T>` response, omit the `Response:` line from KDoc and chain a `.describe {}` block instead:
+```kotlin
+        /**
+         * Summary: Get things
+         * Tag: thing
+         * Security: jwt
+         */
+        get<Api.Things> {
+            // ...
+        }.describe {
+            responses {
+                response(HttpStatusCode.OK.value) {
+                    schema = jsonSchema<List<Thing>>()
+                    description = "List of things"
+                    ContentType.Application.ProtoBuf()
+                }
+            }
+        }
+```
+Required imports: `io.ktor.http.ContentType`, `io.ktor.openapi.jsonSchema`, `io.ktor.server.routing.openapi.describe`.
 4. When a path id duplicates a body id, validate: `if (it.id != body.id) call.respond(HttpStatusCode.BadRequest, "Invalid request") else ...`.
 5. Register the new route fn in `route/<Svc>Route.kt` aggregator (`fun Routing.<svc>Route()`); the aggregator is already wired in `<Svc>Microservice.kt`.
 6. `AppPrincipal` fields: `authId`, `userId`, `deviceId` (all `Uuid`).
@@ -120,6 +139,11 @@ Hard rules (enforced by fixtures or review):
 - If the operation sends events: include a test with `coVerify(exactly = 1) { eventProducer.send(any(SvcEvent.X::class), any()) }`.
 
 ### Operation (domain/impl) test template
+
+Using testing rules from AGENTS.md cover all ViewModels, Use cases(operations) and Data sources with unit tests. Afrer covering each feature (appointments, business etc.) Do a code review of your work and fix the issues if encountered. Make sure tests are fast, repeatable. Create utility functions or testFixtures in the core module for tools that are used across each tests. Do not share the state between unit tests, use private class SutFixture {
+val thingArgParameter = mockk<SomeArgClass>()
+val sut = ClassUnderTest(thingArgParameter)
+} pattern to init SUT to make sure new instance created for every unit test. Use mockk kotlinx.test and junit5 primarily to write unit test. After the work is done if any new useful knowledge acquired, insert it in AGENTS.md file.
 
 ```kotlin
 internal class DoThingImplTest {
@@ -213,3 +237,17 @@ Finish by emitting a Final Coverage Report mapping every checklist item to its t
 Report any gaps explicitly — never silently skip a case.
 
 ---
+
+### Development Workflow: Test-Driven Development
+
+Always implement features using strict TDD. For every requested feature or change:
+
+1. **Red** — Write a failing test first that captures the expected behavior. Do not write any implementation code before the test exists.
+2. **Green** — Write the minimum implementation needed to make the test pass.
+3. **Refactor** — Clean up the implementation and tests while keeping all tests green.
+
+Rules:
+- Never write production code without a failing test that requires it.
+- Run the test suite after each step and confirm the expected pass/fail state before proceeding.
+- Keep tests small and focused; one behavior per test.
+- If a requirement is ambiguous, write the test that encodes your assumption and state it explicitly.

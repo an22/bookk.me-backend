@@ -1,5 +1,6 @@
 package com.bookk.business.microservice.route.api
 
+import com.bookk.business.domain.api.client.entity.Client
 import com.bookk.business.domain.api.client.entity.ClientRemote
 import com.bookk.business.domain.api.client.entity.toDomain
 import com.bookk.business.domain.api.client.operation.CreateClient
@@ -7,6 +8,9 @@ import com.bookk.business.domain.api.client.operation.DeleteClient
 import com.bookk.business.domain.api.client.operation.GetClients
 import com.bookk.business.microservice.route.BusinessRouting.Api
 import com.bookk.core.service.enity.respondWith
+import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
+import io.ktor.openapi.jsonSchema
 import io.ktor.server.auth.authenticate
 import io.ktor.server.request.receive
 import io.ktor.server.resources.delete
@@ -14,6 +18,7 @@ import io.ktor.server.resources.get
 import io.ktor.server.resources.post
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.application
+import io.ktor.server.routing.openapi.describe
 import org.koin.ktor.ext.inject
 
 fun Route.clientCrud() {
@@ -44,12 +49,19 @@ fun Route.clientCrud() {
          * Description: Get clients list for specific business
          * Tag: business
          * Security: jwt
-         * Response: 200 application/x-protobuf [kotlin.collections.List<com.bookk.business.domain.api.client.entity.Client>] List of clients
          */
         get<Api.Clients> {
             val getClients by application.inject<GetClients>()
 
             call.respondWith(getClients(it.businessId))
+        }.describe {
+            responses {
+                response(HttpStatusCode.OK.value) {
+                    schema = jsonSchema<List<Client>>()
+                    description = "List of clients"
+                    ContentType.Application.ProtoBuf()
+                }
+            }
         }
 
         /**

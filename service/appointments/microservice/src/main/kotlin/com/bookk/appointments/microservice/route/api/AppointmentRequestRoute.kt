@@ -4,11 +4,13 @@ import com.bookk.appointments.domain.api.entity.AppointmentCancellation
 import com.bookk.appointments.domain.api.entity.AppointmentRequest
 import com.bookk.appointments.domain.api.operation.CreateAppointmentRequest
 import com.bookk.appointments.domain.api.operation.DeclineAppointmentRequest
-import com.bookk.appointments.domain.api.operation.GetAppointmentRequests
+import com.bookk.appointments.domain.api.operation.GetPendingAppointmentRequests
 import com.bookk.appointments.microservice.route.AppointmentsRouting.Api
 import com.bookk.core.service.auth.AppPrincipal
 import com.bookk.core.service.enity.respondWith
+import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
+import io.ktor.openapi.jsonSchema
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.principal
 import io.ktor.server.request.receive
@@ -17,21 +19,29 @@ import io.ktor.server.resources.post
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Routing
 import io.ktor.server.routing.application
+import io.ktor.server.routing.openapi.describe
 import org.koin.ktor.ext.inject
 
 fun Routing.requests() {
     authenticate {
         /**
-         * Summary: Get appointment requests
+         * Summary: Get pending appointment requests
          * Tag: appointment
          * Security: jwt
-         * Response: 200 application/x-protobuf [kotlin.collections.List<com.bookk.appointments.domain.api.entity.AppointmentRequest>] List of appointment requests
          */
         get<Api.Appointment.Requests> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
-            val getRequests by application.inject<GetAppointmentRequests>()
+            val getRequests by application.inject<GetPendingAppointmentRequests>()
 
             call.respondWith(getRequests(principal.userId, it.businessId))
+        }.describe {
+            responses {
+               response(HttpStatusCode.OK.value) {
+                   schema = jsonSchema<List<AppointmentRequest>>()
+                   description = "List of appointment requests"
+                   ContentType.Application.ProtoBuf()
+               }
+            }
         }
 
         /**

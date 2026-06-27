@@ -56,6 +56,14 @@ internal class CreateAppointmentImpl(
         return appointmentDataSource.create(appointment)
     }
 
+    private suspend fun createAppointment(userId: Uuid, request: AppointmentRequest): Appointment {
+        verifyAppointment(userId, request)
+        return appointmentDataSource.create(request).also {
+            requestDataSource.approve(request)
+            sendRequestApprovedNotification(request)
+        }
+    }
+
     private suspend fun verifyAppointment(userId: Uuid, appointment: AppointmentRepresentation) {
         val settings = settingsDataSource.getForUpdate(appointment.businessId) ?: throw Error.NotFound()
         permissionsDataSource.getPermissions(userId, appointment.businessId).assert(ObjectPermission.EDIT)
@@ -63,14 +71,6 @@ internal class CreateAppointmentImpl(
         if (!settings.isInWorkday(appointment.date)) throw CreateAppointment.Error.RequestForThisDateNotAllowed()
         if (!settings.isInWorktime(appointment.date, appointment.dateEnd)) throw CreateAppointment.Error.RequestForThisTimeNotAllowed()
         if (appointmentDataSource.hasOverlapsWith(appointment)) throw CreateAppointment.Error.AppointmentForThisTimeExists()
-    }
-
-    private suspend fun createAppointment(userId: Uuid, request: AppointmentRequest): Appointment {
-        verifyAppointment(userId, request)
-        return appointmentDataSource.create(request).also {
-            requestDataSource.approve(request)
-            sendRequestApprovedNotification(request)
-        }
     }
 
     private suspend fun sendRequestApprovedNotification(request: AppointmentRequest) {

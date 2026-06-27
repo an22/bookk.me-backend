@@ -10,6 +10,14 @@ volumes:
   redis_data:
     driver: local
 
+secrets:
+  mariadb_encryption_key:
+    external: true
+
+configs:
+  mariadb_encryption_config:
+    file: ./db/my.cnf
+
 services:
   database:
     image: mariadb:11.5.2-ubi9
@@ -23,6 +31,14 @@ services:
       MARIADB_USER: ${APPLICATION_DB_USER}
       MARIADB_PASSWORD: ${APPLICATION_DB_PASSWORD}
       MYSQL_TCP_PORT: ${APPLICATION_DB_PORT}
+    secrets:
+      - source: mariadb_encryption_key
+        target: /etc/mysql/encryption/encryption.key
+        mode: 0444
+    configs:
+      - source: mariadb_encryption_config
+        target: /etc/mysql/conf.d/encryption.cnf
+        mode: 0444
     volumes:
       - database_volume:/var/lib/mysql
     logging:

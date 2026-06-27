@@ -125,7 +125,6 @@ internal class AppointmentDataSourceImpl : DataSource(), AppointmentDataSource {
         request.services.forEach {
             AppointmentServiceEntity.new(appointment.id, it)
         }
-        appointment.refresh()
         appointment.domain()
     }
 

@@ -17,6 +17,7 @@ import org.jetbrains.exposed.v1.core.neq
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.update
+import kotlin.time.Instant
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 import kotlin.uuid.toKotlinUuid
@@ -30,6 +31,15 @@ internal class AppointmentRequestDataSourceImpl : DataSource(), AppointmentReque
     override suspend fun getAll(businessId: Uuid): List<AppointmentRequest> = dbQuery {
         AppointmentRequestEntity
             .find { AppointmentRequestTable.businessId eq businessId.toJavaUuid() }
+            .map { it.domain() }
+    }
+
+    override suspend fun getPending(businessId: Uuid): List<AppointmentRequest> = dbQuery {
+        AppointmentRequestEntity
+            .find {
+                AppointmentRequestTable.businessId.eq(businessId.toJavaUuid())
+                    .and(AppointmentRequestTable.status.eq(AppointmentRequestStatus.PENDING))
+            }
             .map { it.domain() }
     }
 
@@ -86,6 +96,17 @@ internal class AppointmentRequestDataSourceImpl : DataSource(), AppointmentReque
                 .limit(1)
                 .empty()
                 .not()
+        }
+    }
+
+    override suspend fun cancelOutdated(before: Instant) = dbQuery<Unit> {
+        AppointmentRequestTable.update(
+            where = {
+                AppointmentRequestTable.status.eq(AppointmentRequestStatus.PENDING)
+                    .and(AppointmentRequestTable.dateEnd.less(before))
+            }
+        ) {
+            it[AppointmentRequestTable.status] = AppointmentRequestStatus.CANCELLED
         }
     }
 }

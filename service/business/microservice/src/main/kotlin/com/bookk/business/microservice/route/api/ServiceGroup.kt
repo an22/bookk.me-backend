@@ -7,7 +7,9 @@ import com.bookk.business.domain.api.service.operation.GetServiceGroups
 import com.bookk.business.microservice.route.BusinessRouting.Api
 import com.bookk.core.service.auth.AppPrincipal
 import com.bookk.core.service.enity.respondWith
+import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
+import io.ktor.openapi.jsonSchema
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.principal
 import io.ktor.server.request.receive
@@ -17,6 +19,7 @@ import io.ktor.server.resources.post
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.application
+import io.ktor.server.routing.openapi.describe
 import org.koin.ktor.ext.inject
 
 fun Route.serviceGroupCrud() {
@@ -52,12 +55,19 @@ fun Route.serviceGroupCrud() {
          * Description: Get all service groups of a business with specific id
          * Tag: service_group
          * Security: jwt
-         * Response: 200 application/x-protobuf [kotlin.collections.List<com.bookk.business.domain.api.service.entity.ServiceGroup>] List of service groups
          */
         get<Api.ServiceGroup> {
             val getGroups by application.inject<GetServiceGroups>()
 
             call.respondWith(getGroups(it.businessId))
+        }.describe {
+            responses {
+                response(HttpStatusCode.OK.value) {
+                    schema = jsonSchema<List<ServiceGroup>>()
+                    description = "List of service groups"
+                    ContentType.Application.ProtoBuf()
+                }
+            }
         }
 
         /**

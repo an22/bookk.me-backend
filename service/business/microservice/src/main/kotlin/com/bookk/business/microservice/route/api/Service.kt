@@ -8,7 +8,9 @@ import com.bookk.business.domain.api.service.operation.UpdateService
 import com.bookk.business.microservice.route.BusinessRouting.Api
 import com.bookk.core.service.auth.AppPrincipal
 import com.bookk.core.service.enity.respondWith
+import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
+import io.ktor.openapi.jsonSchema
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.principal
 import io.ktor.server.request.receive
@@ -19,6 +21,7 @@ import io.ktor.server.resources.put
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.application
+import io.ktor.server.routing.openapi.describe
 import org.koin.ktor.ext.inject
 
 fun Route.serviceCrud() {
@@ -73,12 +76,19 @@ fun Route.serviceCrud() {
          * Description: Get all service offerings of a business with specific id
          * Tag: service
          * Security: jwt
-         * Response: 200 application/x-protobuf [kotlin.collections.List<com.bookk.business.domain.api.service.entity.Service>] List of services
          */
         get<Api.Service> {
             val getServices by application.inject<GetServices>()
 
             call.respondWith(getServices(it.businessId))
+        }.describe {
+            responses {
+                response(HttpStatusCode.OK.value) {
+                    schema = jsonSchema<List<Service>>()
+                    description = "List of services"
+                    ContentType.Application.ProtoBuf()
+                }
+            }
         }
 
         /**

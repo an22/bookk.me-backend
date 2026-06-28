@@ -28,48 +28,34 @@ internal class FinishRegistrationImpl(
     private val finishPasskeyRegistration: FinishPasskeyRegistration
 ) : FinishRegistration {
 
-    override suspend fun invoke(request: VerifyAccountCreationRequest): Result<AuthTokens> {
-        return runCatching {
-            val verifiedPasskey = finishPasskeyRegistration.verifyRequest(request).getOrThrow()
-            var userId: Uuid? = null
-            return transactionManager.transaction {
-                userId = saveUserExternal(request)
-                val ownerId = saveAuthorizationOwner(userId, verifiedPasskey.handle)
-                finishPasskeyRegistration.attachOwner(ownerId, verifiedPasskey).getOrThrow()
-                createAndSaveAuthCredentials(ownerId, request)
-            }.onFailure {
-                userId?.let { eventProducer.send(AuthEvent.UserDeleted(it)) }
-            }
+    override suspend fun invoke(request: VerifyAccountCreationRequest): Result<AuthTokens> = runCatching {
+        val verifiedPasskey = finishPasskeyRegistration.verifyRequest(request).getOrThrow()
+        val userId = userClient.createUser(createUserFrom(request.userInfo)).getOrThrow()
+        val deviceName = request.deviceInfo.deviceName
+        val deviceUuid = request.deviceInfo.deviceUUID
+
+        return transactionManager.transaction {
+            val authorization = Authentication(id = Uuid.random(), userId = userId, uuid = verifiedPasskey.handle)
+            val owner = accountDataSource.createAuthorization(authorization)
+
+            finishPasskeyRegistration.attachOwner(owner.id, verifiedPasskey)
+
+            deviceDataSource.insertDevice(
+                authId = owner.id,
+                uuid = deviceUuid,
+                name = deviceName
+            ) ?: throw FinishRegistration.Error.AccountCreationFailed()
+            eventProducer.send(AuthEvent.DeviceCreated(owner.id, userId, deviceUuid))
+            generateAuthToken(Source.InitialAuthentication(owner.id, deviceUuid)).getOrThrow()
+        }.onFailure {
+            eventProducer.send(AuthEvent.UserDeleted(userId))
+            eventProducer.send(AuthEvent.DeviceDeleted(deviceUuid))
         }
     }
 
-    private suspend fun createAndSaveAuthCredentials(ownerId: Uuid, request: VerifyAccountCreationRequest): AuthTokens {
-        deviceDataSource.createDeviceIfNotExist(
-            authId = ownerId,
-            uuid = request.deviceInfo.deviceUUID,
-            name = request.deviceInfo.deviceName
-        )
-        return generateAuthToken(Source.InitialAuthentication(ownerId, request.deviceInfo.deviceUUID)).getOrThrow()
-    }
-
-    private suspend fun saveUserExternal(request: VerifyAccountCreationRequest): Uuid {
-        return userClient.createUser(createUserFrom(request.userInfo)).getOrThrow()
-    }
-
-    private suspend fun saveAuthorizationOwner(userId: Uuid, handle: Uuid): Uuid {
-        val authentication = Authentication(
-            id = Uuid.random(),
-            userId = userId,
-            uuid = handle
-        )
-        return accountDataSource.createAuthorization(authentication).id
-    }
-
-    private fun createUserFrom(info: UserInfo): CreateUserRequest {
-        return CreateUserRequest(
-            name = info.name,
-            lastName = info.lastName,
-            email = info.email
-        )
-    }
+    private fun createUserFrom(info: UserInfo): CreateUserRequest = CreateUserRequest(
+        name = info.name,
+        lastName = info.lastName,
+        email = info.email
+    )
 }

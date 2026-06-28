@@ -37,6 +37,8 @@ object AppLevelConstants {
         get() = System.getenv("APPLICATION_AUTH_SERVICE_HOSTNAME")
     val signingKeyEncryptionKey: String
         get() = readSecret("signing_key_encryption_key")
+    val firebasePrivateKey: String
+        get() = readSecret("firebase_key")
 
     private fun readSecret(name: String): String {
         val envVarName = "APPLICATION_${name.uppercase()}_FILE"

@@ -4,7 +4,7 @@ import com.bookk.auth.domain.api.identification.entity.Device
 import kotlin.uuid.Uuid
 
 interface DeviceDataSource {
-    suspend fun createDeviceIfNotExist(authId: Uuid, uuid: Uuid, name: String)
+    suspend fun insertDevice(authId: Uuid, uuid: Uuid, name: String): Uuid?
     suspend fun getDeviceById(deviceId: Uuid): Device?
     suspend fun getDeviceByRefreshTokenId(tokenId: Uuid): Device?
     suspend fun getDeviceByAuthIdAndUUID(authId: Uuid, deviceUUID: Uuid): Device?

@@ -26,6 +26,12 @@ export $(grep -v '^#' appointments.env | xargs) || exit
 cd ../../.. || exit
 ./gradlew :service:appointments:microservice:publishImageToLocalRegistry --no-configuration-cache || exit
 
+#Notification service
+cd deployment/dev/service || exit
+export $(grep -v '^#' notifications.env | xargs) || exit
+cd ../../.. || exit
+./gradlew :service:notifications:microservice:publishImageToLocalRegistry --no-configuration-cache || exit
+
 docker context use default || exit
 cd deployment/dev || exit
 docker compose -f microservices-compose.yml up -d

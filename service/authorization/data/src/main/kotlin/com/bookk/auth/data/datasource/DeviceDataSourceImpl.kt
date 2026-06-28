@@ -13,13 +13,14 @@ import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.greater
 import org.jetbrains.exposed.v1.core.innerJoin
 import org.jetbrains.exposed.v1.core.or
-import org.jetbrains.exposed.v1.jdbc.insertIgnore
+import org.jetbrains.exposed.v1.jdbc.insertIgnoreAndGetId
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.update
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.days
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
+import kotlin.uuid.toKotlinUuid
 
 internal class DeviceDataSourceImpl : DataSource(), DeviceDataSource {
     override suspend fun attachRefreshTokenToDevice(deviceId: Uuid, tokenId: Uuid, tokenHash: String) = dbQuery<Unit> {
@@ -114,15 +115,14 @@ internal class DeviceDataSourceImpl : DataSource(), DeviceDataSource {
         }
     }
 
-    override suspend fun createDeviceIfNotExist(authId: Uuid, uuid: Uuid, name: String) = dbQuery<Unit> {
-        AuthDeviceTable.insertIgnore {
+    override suspend fun insertDevice(authId: Uuid, uuid: Uuid, name: String) = dbQuery<Uuid?> {
+        AuthDeviceTable.insertIgnoreAndGetId {
             it[userAuthId] = authId.toJavaUuid()
             it[deviceUUID] = uuid.toJavaUuid()
             it[deviceName] = name
-            it[refreshTokenId] = null
             it[isSignedIn] = false
             it[updatedAt] = Clock.System.now()
-        }
+        }?.value?.toKotlinUuid()
     }
 
     companion object {

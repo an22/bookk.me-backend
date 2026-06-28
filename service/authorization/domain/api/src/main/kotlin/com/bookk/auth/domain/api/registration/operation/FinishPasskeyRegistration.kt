@@ -9,7 +9,7 @@ import kotlin.uuid.Uuid
 
 interface FinishPasskeyRegistration {
     suspend fun verifyRequest(request: FinishRegistrationRequest): Result<PasskeyCredential>
-    suspend fun attachOwner(ownerId: Uuid, passkey: PasskeyCredential): Result<Unit>
+    suspend fun attachOwner(ownerId: Uuid, passkey: PasskeyCredential)
 
     sealed interface Error {
         class ChallengeWindowExpired : BusinessError(

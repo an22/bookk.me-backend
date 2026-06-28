@@ -26,8 +26,7 @@ internal class FinishAssertionImpl(
     private val transactionManager: TransactionManager
 ) : FinishAssertion {
     override suspend fun invoke(request: FinishAssertionRequest): Result<PasskeyCredential> = runCatching {
-        val cachedRequest =
-            passKeyDataSource.getCachedChallenge(request.requestId) ?: throw Error.ChallengeWindowExpired()
+        val cachedRequest = passKeyDataSource.getCachedChallenge(request.requestId) ?: throw Error.ChallengeWindowExpired()
         val challenge = AssertionRequest.fromJson(cachedRequest)
         val response = PublicKeyCredential.parseAssertionResponseJson(request.publicKeyCredentialJson)
         passKeyDataSource.deleteCachedChallenge(request.requestId)

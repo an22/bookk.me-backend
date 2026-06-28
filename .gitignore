@@ -52,3 +52,4 @@ deployment/elastic-stack/elasticsearch/certs/*
 local.properties
 !deployment/dev/security/*
 !deployment/orchestrator/dozzle/users.actual.yaml
+deployment/dev/security/firebase-private-key.json

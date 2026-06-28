@@ -17,6 +17,7 @@ jwks-rsa = "0.22.1"
 mockk = "1.14.11"
 money = "2.0.2"
 jackson = "2.17.1"
+firebase = "9.9.0"
 
 [libraries]
 jackson-core = { module = "com.fasterxml.jackson.core:jackson-core", version.ref = "jackson" }
@@ -72,6 +73,7 @@ exposed-migration-jdbc = { module = "org.jetbrains.exposed:exposed-migration-jdb
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 joda-money = { module = "org.joda:joda-money", version.ref = "money" }
 jwks-rsa = { module = "com.auth0:jwks-rsa", version.ref = "jwks-rsa" }
+firebase-admin = { module = "com.google.firebase:firebase-admin", version.ref = "firebase" }
 
 [plugins]
 bookk-data = { id = "com.bookk.data" }

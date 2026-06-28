@@ -74,3 +74,11 @@ include(":service:appointments:data:source")
 include(":service:appointments:data")
 include(":service:appointments:client")
 
+//Notifications
+include(":service:notifications:microservice")
+include(":service:notifications:domain:api")
+include(":service:notifications:domain:impl")
+include(":service:notifications:data:source")
+include(":service:notifications:data")
+include(":service:notifications:client")
+

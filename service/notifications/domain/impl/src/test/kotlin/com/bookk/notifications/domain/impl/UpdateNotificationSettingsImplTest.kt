@@ -6,6 +6,8 @@ import com.bookk.core.test.given
 import com.bookk.core.test.runUnitTest
 import com.bookk.core.test.then
 import com.bookk.core.test.whenn
+import com.bookk.notifications.domain.api.entity.CommunicationChannel
+import com.bookk.notifications.domain.api.entity.NotificationChannelSettings
 import com.bookk.notifications.domain.api.entity.NotificationSettings
 import com.bookk.notifications.domain.datasource.NotificationSettingsDataSource
 import io.mockk.coEvery
@@ -25,43 +27,29 @@ internal class UpdateNotificationSettingsImplTest {
     }
 
     @Test
-    fun `should update notification settings and return updated settings`() = runUnitTest {
+    fun `should update notification settings with channel enabled states`() = runUnitTest {
         given()
         val fixture = SutFixture()
         val userId = Uuid.random()
-        val updatedSettings = NotificationSettings.stub(userId = userId, appointmentEnabled = false)
+        val channels = listOf(
+            NotificationChannelSettings(CommunicationChannel.EMAIL, enabled = true),
+            NotificationChannelSettings(CommunicationChannel.TELEGRAM, enabled = false),
+            NotificationChannelSettings(CommunicationChannel.PUSH_NOTIFICATIONS, enabled = true),
+        )
+        val request = NotificationSettings(userId = userId, appointmentEnabled = false, channels = channels)
+        val updatedSettings = request.copy()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { notificationSettingsDataSource.upsert(userId, false) } returns updatedSettings
+            coEvery { notificationSettingsDataSource.upsert(request) } returns updatedSettings
         }
 
         whenn()
-        val result = fixture.sut.invoke(userId, false)
+        val result = fixture.sut.invoke(userId, false, channels)
 
         then()
         assertTrue(result.isSuccess)
         assertEquals(updatedSettings, result.getOrNull())
-        coVerify(exactly = 1) { fixture.notificationSettingsDataSource.upsert(userId, false) }
-    }
-
-    @Test
-    fun `should create notification settings when none exist`() = runUnitTest {
-        given()
-        val fixture = SutFixture()
-        val userId = Uuid.random()
-        val createdSettings = NotificationSettings.stub(userId = userId, appointmentEnabled = true)
-        with(fixture) {
-            transactionManager.mockTransaction()
-            coEvery { notificationSettingsDataSource.upsert(userId, true) } returns createdSettings
-        }
-
-        whenn()
-        val result = fixture.sut.invoke(userId, true)
-
-        then()
-        assertTrue(result.isSuccess)
-        assertEquals(createdSettings, result.getOrNull())
-        coVerify(exactly = 1) { fixture.notificationSettingsDataSource.upsert(userId, true) }
+        coVerify(exactly = 1) { fixture.notificationSettingsDataSource.upsert(request) }
     }
 
     @Test
@@ -71,11 +59,11 @@ internal class UpdateNotificationSettingsImplTest {
         val userId = Uuid.random()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { notificationSettingsDataSource.upsert(userId, any()) } throws RuntimeException("db error")
+            coEvery { notificationSettingsDataSource.upsert(any()) } throws RuntimeException("db error")
         }
 
         whenn()
-        val result = fixture.sut.invoke(userId, true)
+        val result = fixture.sut.invoke(userId, true, emptyList())
 
         then()
         assertTrue(result.isFailure)

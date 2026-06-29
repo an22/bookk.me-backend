@@ -6,6 +6,8 @@ import com.bookk.core.test.given
 import com.bookk.core.test.runUnitTest
 import com.bookk.core.test.then
 import com.bookk.core.test.whenn
+import com.bookk.notifications.domain.api.entity.CommunicationChannel
+import com.bookk.notifications.domain.api.entity.NotificationChannelSettings
 import com.bookk.notifications.domain.api.entity.NotificationSettings
 import com.bookk.notifications.domain.datasource.NotificationSettingsDataSource
 import io.mockk.coEvery
@@ -29,7 +31,14 @@ internal class GetNotificationSettingsImplTest {
         given()
         val fixture = SutFixture()
         val userId = Uuid.random()
-        val settings = NotificationSettings.stub(userId = userId)
+        val settings = NotificationSettings.stub(
+            userId = userId,
+            channels = listOf(
+                NotificationChannelSettings(CommunicationChannel.EMAIL, enabled = true),
+                NotificationChannelSettings(CommunicationChannel.PUSH_NOTIFICATIONS, enabled = false),
+                NotificationChannelSettings(CommunicationChannel.TELEGRAM, enabled = false),
+            )
+        )
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { notificationSettingsDataSource.getByUserId(userId) } returns settings
@@ -41,19 +50,28 @@ internal class GetNotificationSettingsImplTest {
         then()
         assertTrue(result.isSuccess)
         assertEquals(settings, result.getOrNull())
-        coVerify(exactly = 0) { fixture.notificationSettingsDataSource.upsert(any(), any()) }
+        coVerify(exactly = 0) { fixture.notificationSettingsDataSource.upsert(any()) }
     }
 
     @Test
-    fun `should create default settings when none exist`() = runUnitTest {
+    fun `should create default settings with all channels disabled when none exist`() = runUnitTest {
         given()
         val fixture = SutFixture()
         val userId = Uuid.random()
-        val defaultSettings = NotificationSettings.stub(userId = userId, appointmentEnabled = true)
+        val defaultSettingsRequest = NotificationSettings(
+            userId = userId,
+            appointmentEnabled = true,
+            channels = listOf(
+                NotificationChannelSettings(CommunicationChannel.PUSH_NOTIFICATIONS, enabled = false),
+                NotificationChannelSettings(CommunicationChannel.EMAIL, enabled = false),
+                NotificationChannelSettings(CommunicationChannel.TELEGRAM, enabled = false),
+            )
+        )
+        val defaultSettings = defaultSettingsRequest.copy()
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { notificationSettingsDataSource.getByUserId(userId) } returns null
-            coEvery { notificationSettingsDataSource.upsert(userId, appointmentEnabled = true) } returns defaultSettings
+            coEvery { notificationSettingsDataSource.upsert(defaultSettingsRequest) } returns defaultSettings
         }
 
         whenn()
@@ -62,6 +80,7 @@ internal class GetNotificationSettingsImplTest {
         then()
         assertTrue(result.isSuccess)
         assertEquals(defaultSettings, result.getOrNull())
-        coVerify(exactly = 1) { fixture.notificationSettingsDataSource.upsert(userId, appointmentEnabled = true) }
+        assertTrue(result.getOrNull()!!.channels.none { it.enabled })
+        coVerify(exactly = 1) { fixture.notificationSettingsDataSource.upsert(defaultSettingsRequest) }
     }
 }

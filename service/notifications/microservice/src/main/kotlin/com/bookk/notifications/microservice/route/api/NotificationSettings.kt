@@ -4,6 +4,7 @@ import com.bookk.core.service.auth.AppPrincipal
 import com.bookk.core.service.enity.respondWith
 import com.bookk.notifications.domain.api.GetNotificationSettings
 import com.bookk.notifications.domain.api.UpdateNotificationSettings
+import com.bookk.notifications.domain.api.entity.NotificationChannelSettings
 import com.bookk.notifications.microservice.route.NotificationsRouting.Api
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.principal
@@ -16,7 +17,10 @@ import kotlinx.serialization.Serializable
 import org.koin.ktor.ext.inject
 
 @Serializable
-internal class UpdateNotificationSettingsRequest(val appointmentEnabled: Boolean)
+internal class UpdateNotificationSettingsRequest(
+    val appointmentEnabled: Boolean,
+    val channels: List<NotificationChannelSettings>,
+)
 
 internal fun Route.notificationSettings() {
     authenticate {
@@ -45,7 +49,7 @@ internal fun Route.notificationSettings() {
             val principal = requireNotNull(call.principal<AppPrincipal>())
             val body = call.receive<UpdateNotificationSettingsRequest>()
             val updateNotificationSettings by application.inject<UpdateNotificationSettings>()
-            call.respondWith(updateNotificationSettings(principal.userId, body.appointmentEnabled))
+            call.respondWith(updateNotificationSettings(principal.userId, body.appointmentEnabled, body.channels))
         }
     }
 }

@@ -5,15 +5,15 @@ import kotlin.uuid.Uuid
 
 @Serializable
 data class NotificationSettings(
-    val id: Uuid,
     val userId: Uuid,
     val appointmentEnabled: Boolean,
+    val channels: List<NotificationChannelSettings>,
 ) {
     companion object {
         fun stub(
-            id: Uuid = Uuid.random(),
             userId: Uuid = Uuid.random(),
             appointmentEnabled: Boolean = true,
-        ) = NotificationSettings(id, userId, appointmentEnabled)
+            channels: List<NotificationChannelSettings> = emptyList(),
+        ) = NotificationSettings( userId, appointmentEnabled, channels)
     }
 }

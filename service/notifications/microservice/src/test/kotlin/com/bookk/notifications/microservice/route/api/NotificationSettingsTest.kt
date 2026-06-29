@@ -9,6 +9,8 @@ import com.bookk.core.test.then
 import com.bookk.core.test.whenn
 import com.bookk.notifications.domain.api.GetNotificationSettings
 import com.bookk.notifications.domain.api.UpdateNotificationSettings
+import com.bookk.notifications.domain.api.entity.CommunicationChannel
+import com.bookk.notifications.domain.api.entity.NotificationChannelSettings
 import com.bookk.notifications.domain.api.entity.NotificationSettings
 import com.bookk.notifications.microservice.route.NotificationsRouting.Api
 import io.ktor.client.call.body
@@ -33,7 +35,14 @@ internal class NotificationSettingsTest {
         given()
         val useCase: GetNotificationSettings = mockk()
         val userId = Uuid.random()
-        val settings = NotificationSettings.stub(userId = userId)
+        val settings = NotificationSettings.stub(
+            userId = userId,
+            channels = listOf(
+                NotificationChannelSettings(CommunicationChannel.EMAIL, enabled = true),
+                NotificationChannelSettings(CommunicationChannel.PUSH_NOTIFICATIONS, enabled = false),
+                NotificationChannelSettings(CommunicationChannel.TELEGRAM, enabled = false),
+            )
+        )
         coEvery { useCase.invoke(userId) } returns Result.success(settings)
         setupApplication(
             extension = {
@@ -81,12 +90,17 @@ internal class NotificationSettingsTest {
     }
 
     @Test
-    fun `should update notification settings successfully`() = routeTest {
+    fun `should update notification settings with channel enabled states successfully`() = routeTest {
         given()
         val useCase: UpdateNotificationSettings = mockk()
         val userId = Uuid.random()
-        val settings = NotificationSettings.stub(userId = userId, appointmentEnabled = false)
-        coEvery { useCase.invoke(userId, false) } returns Result.success(settings)
+        val channels = listOf(
+            NotificationChannelSettings(CommunicationChannel.TELEGRAM, enabled = true),
+            NotificationChannelSettings(CommunicationChannel.EMAIL, enabled = false),
+            NotificationChannelSettings(CommunicationChannel.PUSH_NOTIFICATIONS, enabled = true),
+        )
+        val settings = NotificationSettings.stub(userId = userId, appointmentEnabled = false, channels = channels)
+        coEvery { useCase.invoke(userId, false, channels) } returns Result.success(settings)
         setupApplication(
             extension = {
                 install(Authentication) {
@@ -104,7 +118,7 @@ internal class NotificationSettingsTest {
         whenn()
         val client = createTestClient()
         val response = client.put(Api.Notification.Settings()) {
-            setBody(UpdateNotificationSettingsRequest(appointmentEnabled = false))
+            setBody(UpdateNotificationSettingsRequest(appointmentEnabled = false, channels = channels))
         }
 
         then()
@@ -129,7 +143,7 @@ internal class NotificationSettingsTest {
         whenn()
         val client = createTestClient()
         val response = client.put(Api.Notification.Settings()) {
-            setBody(UpdateNotificationSettingsRequest(appointmentEnabled = true))
+            setBody(UpdateNotificationSettingsRequest(appointmentEnabled = true, channels = emptyList()))
         }
 
         then()

@@ -4,7 +4,7 @@ import com.bookk.appointments.domain.api.entity.AppointmentRequest
 import com.bookk.appointments.domain.api.entity.AppointmentRequestStatus
 import com.bookk.appointments.domain.api.entity.ClientSnapshot
 import com.bookk.appointments.domain.api.entity.ServiceSnapshot
-import com.bookk.appointments.domain.api.operation.GetAppointmentRequests
+import com.bookk.appointments.domain.api.operation.GetPendingAppointmentRequests
 import com.bookk.appointments.microservice.route.AppointmentsRouting
 import com.bookk.core.service.auth.AppPrincipal
 import com.bookk.core.service.test.createTestClient
@@ -33,7 +33,7 @@ internal class GetAppointmentRequestsTest {
     @Test
     fun `should get appointment requests successfully`() = routeTest {
         given()
-        val useCase: GetAppointmentRequests = mockk()
+        val useCase: GetPendingAppointmentRequests = mockk()
         val businessId = Uuid.random()
         val userId = Uuid.random()
         val requests = listOf(
@@ -87,7 +87,7 @@ internal class GetAppointmentRequestsTest {
     @Test
     fun `should return unauthorized when getting appointment requests without authentication`() = routeTest {
         given()
-        val useCase: GetAppointmentRequests = mockk()
+        val useCase: GetPendingAppointmentRequests = mockk()
         val businessId = Uuid.random()
 
         setupApplication(

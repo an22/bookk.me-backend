@@ -134,6 +134,42 @@ internal class SignInImplTest {
     }
 
     @Test
+    fun `should return failure when passkey verification fails`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val request = makeRequest()
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { finishAssertion(request) } returns Result.failure(FinishAssertion.Error.VerificationFailed())
+        }
+
+        whenn()
+        val result = fixture.sut.invoke(request)
+
+        then()
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is FinishAssertion.Error.VerificationFailed)
+    }
+
+    @Test
+    fun `should return failure when challenge window is expired`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val request = makeRequest()
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { finishAssertion(request) } returns Result.failure(FinishAssertion.Error.ChallengeWindowExpired())
+        }
+
+        whenn()
+        val result = fixture.sut.invoke(request)
+
+        then()
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is FinishAssertion.Error.ChallengeWindowExpired)
+    }
+
+    @Test
     fun `should return failure when token generation fails`() = runUnitTest {
         given()
         val fixture = SutFixture()

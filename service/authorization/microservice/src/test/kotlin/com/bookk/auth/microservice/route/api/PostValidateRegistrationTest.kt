@@ -2,6 +2,7 @@ package com.bookk.auth.microservice.route.api
 
 import com.bookk.auth.domain.api.error.AuthErrorCodes
 import com.bookk.auth.domain.api.registration.entity.VerifyAccountCreationRequest
+import com.bookk.auth.domain.api.registration.operation.FinishPasskeyRegistration.Error.ChallengeWindowExpired
 import com.bookk.auth.domain.api.registration.operation.FinishPasskeyRegistration.Error.VerificationFailed
 import com.bookk.auth.domain.api.registration.operation.FinishRegistration
 import com.bookk.auth.domain.api.registration.operation.FinishRegistration.Error.AccountCreationFailed
@@ -94,6 +95,31 @@ class PostValidateRegistrationTest {
         assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
         assertEquals(AuthErrorCodes.USER_ALREADY_EXIST, body.errorCode)
         assertEquals(UserAlreadyExist().message, body.message)
+    }
+
+    @Test
+    fun `should return unprocessable entity when challenge window is expired`() = routeTest {
+        given()
+        val useCase: FinishRegistration = mockk()
+        val client = createTestClient()
+        val request = createSimpleRequest()
+        coEvery { useCase.invoke(any()) } returns Result.failure(ChallengeWindowExpired())
+        setupApplication(
+            diModule = module {
+                single<FinishRegistration> { useCase }
+            },
+            routeUnderTest = { registration() }
+        )
+        whenn()
+        val response = client.post(AuthRouting.Api.Auth.SignUp()) {
+            setBody(request)
+        }
+        val body = response.body<SimpleServerError>()
+        then()
+        coVerify { useCase.invoke(eq(request)) }
+        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
+        assertEquals(AuthErrorCodes.CHALLENGE_WINDOW_EXPIRED, body.errorCode)
+        assertEquals(ChallengeWindowExpired().message, body.message)
     }
 
     @Test

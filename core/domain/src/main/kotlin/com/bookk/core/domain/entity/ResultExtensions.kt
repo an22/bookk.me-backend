@@ -16,6 +16,6 @@ inline fun <R, reified T> Result<R>.handle(
     }
 }
 
-inline fun <R> Result<R>.throwIf(condition: (Throwable) -> Boolean) {
+inline fun <R> Result<R>.rethrowIf(condition: (Throwable) -> Boolean) {
     onFailure { if (condition(it)) throw it }
 }

@@ -17,6 +17,7 @@ import org.jetbrains.exposed.v1.core.neq
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.update
+import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
@@ -73,6 +74,7 @@ internal class AppointmentRequestDataSourceImpl : DataSource(), AppointmentReque
             where = { AppointmentRequestTable.id eq request.id.toJavaUuid() },
         ) {
             it[AppointmentRequestTable.status] = AppointmentRequestStatus.APPROVED
+            it[AppointmentRequestTable.updatedAt] = Clock.System.now()
         }
     }
 
@@ -80,6 +82,7 @@ internal class AppointmentRequestDataSourceImpl : DataSource(), AppointmentReque
         AppointmentRequestEntity.findByIdAndUpdate(id.toJavaUuid()) {
             it.status = AppointmentRequestStatus.DECLINED
             it.declineReason = reason
+            it.updatedAt = Clock.System.now()
         }?.domain() ?: throw Error.NotFound()
     }
 
@@ -107,6 +110,7 @@ internal class AppointmentRequestDataSourceImpl : DataSource(), AppointmentReque
             }
         ) {
             it[AppointmentRequestTable.status] = AppointmentRequestStatus.CANCELLED
+            it[AppointmentRequestTable.updatedAt] = Clock.System.now()
         }
     }
 }

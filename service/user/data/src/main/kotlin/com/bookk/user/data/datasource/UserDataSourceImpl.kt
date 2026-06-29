@@ -49,6 +49,7 @@ internal class UserDataSourceImpl(
             user.email?.let { mail ->
                 it[email] = mail
             }
+            it[updatedAt] = Clock.System.now()
         }
         val isUpdated = updatedRowCount > 0
         if (isUpdated) {

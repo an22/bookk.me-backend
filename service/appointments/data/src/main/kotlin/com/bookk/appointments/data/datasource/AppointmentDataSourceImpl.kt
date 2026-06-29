@@ -29,6 +29,7 @@ import org.jetbrains.exposed.v1.dao.with
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.update
+import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
@@ -157,6 +158,7 @@ internal class AppointmentDataSourceImpl : DataSource(), AppointmentDataSource {
         AppointmentEntity.findByIdAndUpdate(id.toJavaUuid()) {
             it.status = AppointmentStatus.CANCELLED
             it.cancellationReason = reason
+            it.updatedAt = Clock.System.now()
         }?.domain() ?: throw Error.NotFound()
     }
 
@@ -168,6 +170,7 @@ internal class AppointmentDataSourceImpl : DataSource(), AppointmentDataSource {
             }
         ) {
             it[AppointmentTable.status] = AppointmentStatus.COMPLETED
+            it[AppointmentTable.updatedAt] = Clock.System.now()
         }
     }
 }

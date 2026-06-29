@@ -12,6 +12,7 @@ import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import org.jetbrains.exposed.v1.jdbc.update
+import kotlin.time.Clock
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 import kotlin.uuid.toKotlinUuid
@@ -42,6 +43,7 @@ internal class ServiceDataSourceImpl : DataSource(), ServiceDataSource {
             it[priceUnscaled] = service.price.amount.unscaledValue().longValueExact()
             it[priceScale] = service.price.scale
             it[available] = service.isAvailable
+            it[updatedAt] = Clock.System.now()
         }
         service
     }

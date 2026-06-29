@@ -10,6 +10,7 @@ dependencies {
     implementation(projects.core.domain.datasource)
     implementation(projects.core.data.eventstreaming.api)
     implementation(projects.service.authorization.domain.api)
+    implementation(projects.library.signing.impl)
     implementation(projects.service.authorization.data.source)
     implementation(projects.service.authorization.client)
     implementation(projects.service.user.client)

@@ -4,12 +4,9 @@ import com.bookk.auth.domain.api.authentication.entity.Authentication
 import com.bookk.auth.domain.api.identification.entity.Device
 import com.bookk.auth.domain.api.identification.entity.DeviceInfo
 import com.bookk.auth.domain.api.token.entity.SafeRefreshToken
-import com.bookk.auth.domain.api.token.entity.SigningKey
-import com.bookk.auth.domain.api.token.entity.SigningKeyStatus
 import com.bookk.auth.domain.api.token.entity.UnsafeRefreshToken
 import com.bookk.auth.domain.api.token.operation.GenerateAuthToken.Error.InvalidCredentials
 import com.bookk.auth.domain.api.token.operation.GenerateAuthToken.Source
-import com.bookk.auth.domain.api.token.operation.GetActiveSigningKey
 import com.bookk.auth.domain.datasource.DeviceDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.datasource.transaction.mockTransaction
@@ -20,6 +17,10 @@ import com.bookk.core.test.whenn
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import library.signing.GetActiveSigningKey
+import library.signing.SigningKey
+import library.signing.SigningKeyStatus
+import library.signing.impl.key.RsaSigningKeyFactory
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test

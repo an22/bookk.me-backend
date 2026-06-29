@@ -41,6 +41,9 @@ include(":library:money")
 include(":library:idempotency")
 include(":library:permissions")
 include(":library:scheduler")
+include(":library:signing:api")
+include(":library:signing:impl")
+include(":library:signing:route")
 
 //Authorization
 include(":service:authorization:microservice")

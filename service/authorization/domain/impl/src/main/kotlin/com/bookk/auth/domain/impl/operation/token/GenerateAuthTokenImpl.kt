@@ -8,11 +8,12 @@ import com.bookk.auth.domain.api.token.entity.AuthTokens
 import com.bookk.auth.domain.api.token.operation.GenerateAuthToken
 import com.bookk.auth.domain.api.token.operation.GenerateAuthToken.Error.InvalidCredentials
 import com.bookk.auth.domain.api.token.operation.GenerateAuthToken.Source
-import com.bookk.auth.domain.api.token.operation.GetActiveSigningKey
 import com.bookk.auth.domain.datasource.DeviceDataSource
 import com.bookk.core.AppLevelConstants
 import com.bookk.core.AppLevelConstants.Claim
 import com.bookk.core.domain.datasource.transaction.TransactionManager
+import library.signing.GetActiveSigningKey
+import library.signing.impl.key.RsaSigningKeyFactory
 import java.security.interfaces.RSAPrivateKey
 import java.security.interfaces.RSAPublicKey
 import kotlin.time.Clock

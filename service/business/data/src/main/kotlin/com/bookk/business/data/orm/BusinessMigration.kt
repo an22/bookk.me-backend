@@ -8,15 +8,16 @@ import com.bookk.business.data.orm.table.ServiceGroupTable
 import com.bookk.business.data.orm.table.ServiceTable
 import com.bookk.core.data.database.createMigrationScriptFor
 import kotlinx.coroutines.runBlocking
+import library.signing.impl.orm.table.signingKeyTables
 import org.jetbrains.exposed.v1.core.Table
 
 fun main() {
     runBlocking {
         createMigrationScriptFor(
-            referenceVersion = 6,
-            targetVersion = 7,
+            referenceVersion = 7,
+            targetVersion = 8,
             schemaName = "business",
-            tables = tables()
+            tables = tables() + signingKeyTables()
         )
     }
 }

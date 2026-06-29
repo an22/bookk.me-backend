@@ -15,6 +15,9 @@ object NotificationsRouting {
 
             @Resource("/{deviceUuid}/token")
             class Token(val parent: Notification = Notification(), val deviceUuid: Uuid)
+
+            @Resource("/settings")
+            class Settings(val parent: Notification = Notification())
         }
     }
 }

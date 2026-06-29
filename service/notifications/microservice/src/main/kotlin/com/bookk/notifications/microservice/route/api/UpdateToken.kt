@@ -14,7 +14,7 @@ import org.koin.ktor.ext.inject
 @Serializable
 internal class UpdateTokenRequest(val token: String)
 
-internal fun Route.updateToken() {
+internal fun Route.notificationToken() {
     authenticate {
         /**
          * Summary: Update push notification token

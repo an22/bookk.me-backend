@@ -12,6 +12,7 @@ import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.update
+import kotlin.time.Clock
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 
@@ -45,6 +46,7 @@ internal class AppointmentSubscriptionDataSourceImpl : DataSource(), Appointment
                 it[address] = snapshot.address
                 it[enabled] = snapshot.isEnabled
                 it[timeZone] = snapshot.timeZone.id
+                it[updatedAt] = Clock.System.now()
             }
         }
     }
@@ -57,6 +59,7 @@ internal class AppointmentSubscriptionDataSourceImpl : DataSource(), Appointment
                 it[AppointmentBusinessTable.name] = name
                 it[AppointmentBusinessTable.address] = address
                 it[AppointmentBusinessTable.timeZone] = timeZone.id
+                it[AppointmentBusinessTable.updatedAt] = Clock.System.now()
             }
         }
     }
@@ -75,6 +78,7 @@ internal class AppointmentSubscriptionDataSourceImpl : DataSource(), Appointment
                 where = { AppointmentBusinessTable.id eq businessId.toJavaUuid() }
             ) {
                 it[enabled] = true
+                it[updatedAt] = Clock.System.now()
             }
         }
     }
@@ -92,6 +96,7 @@ internal class AppointmentSubscriptionDataSourceImpl : DataSource(), Appointment
                 where = { AppointmentBusinessTable.id eq businessId.toJavaUuid() }
             ) {
                 it[enabled] = false
+                it[updatedAt] = Clock.System.now()
             }
         }
     }

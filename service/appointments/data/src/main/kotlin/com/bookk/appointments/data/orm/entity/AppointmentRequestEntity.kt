@@ -15,6 +15,7 @@ import org.joda.money.Money
 import java.math.BigDecimal
 import java.math.BigInteger
 import java.util.UUID
+import kotlin.time.Clock
 import kotlin.time.Duration.Companion.minutes
 import kotlin.uuid.toJavaUuid
 import kotlin.uuid.toKotlinUuid
@@ -33,6 +34,7 @@ internal class AppointmentRequestEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var note by AppointmentRequestTable.note
     var status by AppointmentRequestTable.status
     var declineReason by AppointmentRequestTable.declineReason
+    var updatedAt by AppointmentRequestTable.updatedAt
 
     fun domain(): AppointmentRequest {
         return AppointmentRequest(
@@ -92,6 +94,7 @@ internal class AppointmentRequestEntity(id: EntityID<UUID>) : UUIDEntity(id) {
             it.note = request.note
             it.status = request.status
             it.declineReason = request.declineReason
+            it.updatedAt = Clock.System.now()
         }
     }
 }

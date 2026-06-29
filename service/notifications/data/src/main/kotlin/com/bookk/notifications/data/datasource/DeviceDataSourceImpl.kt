@@ -26,9 +26,9 @@ internal class DeviceDataSourceImpl : DataSource(), DeviceDataSource {
         DeviceEntity.findById(id.toJavaUuid())?.domain()
     }
 
-    override suspend fun getByDeviceId(deviceId: Uuid): Device? = dbQuery {
+    override suspend fun getByDeviceUuid(deviceUuid: Uuid): Device? = dbQuery {
         DeviceEntity
-            .find { DeviceTable.deviceUuid eq deviceId.toJavaUuid() }
+            .find { DeviceTable.deviceUuid eq deviceUuid.toJavaUuid() }
             .firstOrNull()
             ?.domain()
     }
@@ -46,16 +46,16 @@ internal class DeviceDataSourceImpl : DataSource(), DeviceDataSource {
             .map { it.domain() }
     }
 
-    override suspend fun updateToken(deviceId: Uuid, token: String): Device = dbQuery {
+    override suspend fun updateToken(deviceUuid: Uuid, token: String): Device = dbQuery {
         DeviceEntity
-            .find { DeviceTable.deviceUuid eq deviceId.toJavaUuid() }
+            .find { DeviceTable.deviceUuid eq deviceUuid.toJavaUuid() }
             .firstOrNull()
             ?.also { it.notificationToken = token }
             ?.domain()
             ?: throw Error.NotFound()
     }
 
-    override suspend fun deleteByDeviceId(deviceId: Uuid) = dbQuery<Unit> {
-        DeviceTable.deleteWhere { DeviceTable.deviceUuid eq deviceId.toJavaUuid() }
+    override suspend fun deleteByDeviceUuid(deviceUuid: Uuid) = dbQuery<Unit> {
+        DeviceTable.deleteWhere { DeviceTable.deviceUuid eq deviceUuid.toJavaUuid() }
     }
 }

@@ -11,6 +11,8 @@ object AppLevelConstants {
         get() = System.getenv("APPLICATION_DOMAIN_NAME").orEmpty()
     val serviceName: String
         get() = System.getenv("APPLICATION_SERVICE_NAME").orEmpty()
+    val serviceHostName: String
+        get() = System.getenv("APPLICATION_SERVICE_HOST_NAME").orEmpty()
     val serviceVersion: String
         get() = System.getenv("APPLICATION_SERVICE_VERSION").orEmpty()
     val cacheHost: String
@@ -33,8 +35,6 @@ object AppLevelConstants {
         get() = System.getenv("APPLICATION_DB_USER")
     val dbPassword: String
         get() = System.getenv("APPLICATION_DB_PASSWORD")
-    val authServiceHostname: String
-        get() = System.getenv("APPLICATION_AUTH_SERVICE_HOSTNAME")
     val signingKeyEncryptionKey: String
         get() = readSecret("signing_key_encryption_key")
     val firebasePrivateKey: String
@@ -64,11 +64,5 @@ object AppLevelConstants {
         data object RELEASE : BuildType {
             const val STR = "RELEASE"
         }
-    }
-
-    enum class Claim(val key: String) {
-        AUTH_ID("auth_id"),
-        USER_ID("user_id"),
-        DEVICE_ID("device_id")
     }
 }

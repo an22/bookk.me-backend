@@ -14,6 +14,7 @@ import com.bookk.core.service.startServer
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import library.scheduler.Scheduler
+import library.signing.impl.di.signingModule
 import org.koin.dsl.module
 import org.koin.ktor.ext.get
 import kotlin.time.Duration.Companion.days
@@ -22,6 +23,7 @@ import kotlin.time.Duration.Companion.minutes
 
 fun appointmentsModule() = module {
     includes(
+        signingModule(),
         appointmentsDomainModule(),
         appointmentsDataModule(),
         eventStreamingModule(),

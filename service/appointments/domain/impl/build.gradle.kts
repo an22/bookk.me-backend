@@ -13,6 +13,7 @@ dependencies {
     implementation(projects.service.appointments.client)
     implementation(projects.library.permissions)
     implementation(projects.library.money)
+    implementation(projects.library.signing.api)
     testImplementation(testFixtures(projects.core))
     testImplementation(testFixtures(projects.core.domain.datasource))
     testImplementation(libs.joda.money)

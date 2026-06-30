@@ -1,6 +1,5 @@
 package com.bookk.notifications.microservice.route.api
 
-import com.bookk.core.service.auth.AppPrincipal
 import com.bookk.core.service.test.createTestClient
 import com.bookk.core.service.test.routeTest
 import com.bookk.core.service.test.setupApplication
@@ -13,6 +12,7 @@ import com.bookk.notifications.domain.api.entity.CommunicationChannel
 import com.bookk.notifications.domain.api.entity.NotificationChannelSettings
 import com.bookk.notifications.domain.api.entity.NotificationSettings
 import com.bookk.notifications.microservice.route.NotificationsRouting.Api
+import com.bookk.server.auth.client.AppPrincipal
 import io.ktor.client.call.body
 import io.ktor.client.plugins.resources.get
 import io.ktor.client.plugins.resources.put

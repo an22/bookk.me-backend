@@ -3,7 +3,6 @@ package library.signing.impl
 import com.bookk.core.AppLevelConstants
 import com.bookk.core.data.DataSource
 import library.signing.SigningKey
-import library.signing.SigningKeyDataSource
 import library.signing.SigningKeyStatus
 import library.signing.impl.key.SigningKeyCipher
 import library.signing.impl.orm.entity.SigningKeyEntity
@@ -21,15 +20,15 @@ import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 import kotlin.uuid.toKotlinUuid
 
-internal class SigningKeyDataSourceImpl : DataSource(), SigningKeyDataSource {
+internal class SigningKeyDataSource : DataSource() {
 
-    override suspend fun getActiveKey(): SigningKey? = dbQuery {
+    suspend fun getActiveKey(): SigningKey? = dbQuery {
         SigningKeyEntity.find { SigningKeyTable.status eq SigningKeyStatus.ACTIVE }
             .map { it.toDomain() }
             .singleOrNull()
     }
 
-    override suspend fun getVerificationKeys(): List<SigningKey> = dbQuery {
+    suspend fun getVerificationKeys(): List<SigningKey> = dbQuery {
         SigningKeyTable
             .selectAll()
             .where {
@@ -41,7 +40,7 @@ internal class SigningKeyDataSourceImpl : DataSource(), SigningKeyDataSource {
             .toList()
     }
 
-    override suspend fun insertKey(publicKeyPem: String, privateKeyPem: String): SigningKey = dbQuery {
+    suspend fun insertKey(publicKeyPem: String, privateKeyPem: String): SigningKey = dbQuery {
         SigningKeyEntity.new {
             publicKey = publicKeyPem
             privateKey = SigningKeyCipher.encrypt(privateKeyPem, AppLevelConstants.signingKeyEncryptionKey)
@@ -50,14 +49,14 @@ internal class SigningKeyDataSourceImpl : DataSource(), SigningKeyDataSource {
         }.toDomain()
     }
 
-    override suspend fun updateStatus(id: Uuid, status: SigningKeyStatus, retiredAt: Instant?) = dbQuery<Unit> {
+    suspend fun updateStatus(id: Uuid, status: SigningKeyStatus, retiredAt: Instant?) = dbQuery<Unit> {
         SigningKeyEntity.findById(id.toJavaUuid())?.apply {
             this.status = status
             this.retiredAt = retiredAt
         }
     }
 
-    override suspend fun deleteRetiredBefore(threshold: Instant) = dbQuery<Unit> {
+    suspend fun deleteRetiredBefore(threshold: Instant) = dbQuery<Unit> {
         SigningKeyTable.deleteWhere {
             status.eq(SigningKeyStatus.RETIRING).and(retiredAt.less(threshold))
         }

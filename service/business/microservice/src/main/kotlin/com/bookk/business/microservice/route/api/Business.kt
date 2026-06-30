@@ -7,8 +7,8 @@ import com.bookk.business.domain.api.business.operation.GetBusinessById
 import com.bookk.business.domain.api.business.operation.GetUserBusinesses
 import com.bookk.business.domain.api.business.operation.UpdateBusiness
 import com.bookk.business.microservice.route.BusinessRouting.Api
-import com.bookk.core.service.auth.AppPrincipal
 import com.bookk.core.service.enity.respondWith
+import com.bookk.server.auth.client.AppPrincipal
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.principal
 import io.ktor.server.request.receive

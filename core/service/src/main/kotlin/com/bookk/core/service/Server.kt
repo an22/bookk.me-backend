@@ -2,8 +2,8 @@ package com.bookk.core.service
 
 import com.bookk.core.AppLevelConstants
 import com.bookk.core.AppLevelConstants.SupportedSerializers
-import com.bookk.core.service.auth.TokenValidation
 import com.bookk.core.service.di.commonModule
+import com.bookk.server.auth.client.authTokenValidator
 import io.ktor.http.HttpStatusCode
 import io.ktor.openapi.OpenApiInfo
 import io.ktor.serialization.kotlinx.json.json
@@ -34,6 +34,8 @@ import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.protobuf.ProtoBuf
 import library.idempotency.IdempotencyPlugin
+import library.signing.TokenValidatorFactory
+import library.signing.ValidationType
 import org.koin.core.module.Module
 import org.koin.ktor.ext.get
 import org.koin.ktor.plugin.Koin
@@ -107,14 +109,14 @@ fun startServer(
 }
 
 private fun Application.installAuthPlugin() {
+    val validatorFactory: TokenValidatorFactory = get()
     install(Authentication) {
         jwt {
             challenge { _, _ ->
                 call.respond(HttpStatusCode.Unauthorized, "Unauthorized")
             }
-            val validation = TokenValidation()
-            verifier(validation.verifier)
-            validate(validation.validator)
+            verifier(validatorFactory.forType(ValidationType.AUTH_TOKEN).verifier)
+            validate(authTokenValidator)
         }
     }
 }

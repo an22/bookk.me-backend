@@ -17,27 +17,23 @@ import com.bookk.core.test.whenn
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
-import library.signing.GetActiveSigningKey
-import library.signing.SigningKey
-import library.signing.SigningKeyStatus
-import library.signing.impl.key.RsaSigningKeyFactory
+import library.signing.TokenIssuer
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import kotlin.time.Clock
 import kotlin.uuid.Uuid
 
 internal class GenerateAuthTokenImplTest {
 
     private class SutFixture {
-        val getActiveSigningKey = mockk<GetActiveSigningKey>()
         val deviceDataSource = mockk<DeviceDataSource>()
         val transactionManager = mockk<TransactionManager>()
+        val tokenIssuer = mockk<TokenIssuer>()
 
         val sut = GenerateAuthTokenImpl(
-            getActiveSigningKey,
             deviceDataSource,
-            transactionManager
+            transactionManager,
+            tokenIssuer
         )
     }
 
@@ -55,18 +51,6 @@ internal class GenerateAuthTokenImplTest {
         )
     }
 
-    private fun signingKey(): SigningKey {
-        val (publicKeyPem, privateKeyPem) = RsaSigningKeyFactory.generate()
-        return SigningKey(
-            id = Uuid.random(),
-            publicKeyPem = publicKeyPem,
-            privateKeyPem = privateKeyPem,
-            status = SigningKeyStatus.ACTIVE,
-            createdAt = Clock.System.now(),
-            retiredAt = null
-        )
-    }
-
     private fun UnsafeRefreshToken.toSafe() = SafeRefreshToken(id, secretHash)
 
     @Test
@@ -77,7 +61,7 @@ internal class GenerateAuthTokenImplTest {
         val deviceRecord = device(refreshToken = refreshToken.toSafe())
 
         with(fixture) {
-            coEvery { getActiveSigningKey() } returns Result.success(signingKey())
+            coEvery { tokenIssuer.issue(any(), any()) } returns "access-token"
             coEvery { deviceDataSource.getDeviceByRefreshTokenId(refreshToken.id) } returns deviceRecord
             coEvery { deviceDataSource.rotateRefreshToken(any(), any(), any()) } returns Unit
             transactionManager.mockTransaction()

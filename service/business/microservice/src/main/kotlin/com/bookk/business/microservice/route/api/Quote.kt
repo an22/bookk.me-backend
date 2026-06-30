@@ -2,8 +2,8 @@ package com.bookk.business.microservice.route.api
 
 import com.bookk.business.domain.api.service.operation.IssueQuote
 import com.bookk.business.microservice.route.BusinessRouting.Api
-import com.bookk.core.service.auth.AppPrincipal
 import com.bookk.core.service.enity.respondWith
+import com.bookk.server.auth.client.AppPrincipal
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.principal
 import io.ktor.server.request.receive

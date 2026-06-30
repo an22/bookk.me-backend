@@ -14,6 +14,7 @@ redis = "6.4.0.RELEASE"
 passkey = "2.7.0"
 exposed = "1.0.0-rc-4"
 jwks-rsa = "0.22.1"
+jwt = "4.5.2"
 mockk = "1.14.11"
 money = "2.0.2"
 jackson = "2.17.1"
@@ -72,7 +73,8 @@ exposed-migration = { module = "org.jetbrains.exposed:exposed-migration-core", v
 exposed-migration-jdbc = { module = "org.jetbrains.exposed:exposed-migration-jdbc", version.ref = "exposed" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 joda-money = { module = "org.joda:joda-money", version.ref = "money" }
-jwks-rsa = { module = "com.auth0:jwks-rsa", version.ref = "jwks-rsa" }
+auth0-jwks = { module = "com.auth0:jwks-rsa", version.ref = "jwks-rsa" }
+auth0-jwt = { module = "com.auth0:java-jwt", version.ref = "jwt" }
 firebase-admin = { module = "com.google.firebase:firebase-admin", version.ref = "firebase" }
 
 [plugins]

@@ -8,13 +8,13 @@ import com.bookk.appointments.domain.api.entity.ServiceSnapshot
 import com.bookk.appointments.domain.api.operation.CreateAppointment
 import com.bookk.appointments.microservice.route.AppointmentsRouting
 import com.bookk.core.domain.entity.SimpleServerError
-import com.bookk.core.service.auth.AppPrincipal
 import com.bookk.core.service.test.createTestClient
 import com.bookk.core.service.test.routeTest
 import com.bookk.core.service.test.setupApplication
 import com.bookk.core.test.given
 import com.bookk.core.test.then
 import com.bookk.core.test.whenn
+import com.bookk.server.auth.client.AppPrincipal
 import io.ktor.client.call.body
 import io.ktor.client.plugins.resources.post
 import io.ktor.client.request.setBody

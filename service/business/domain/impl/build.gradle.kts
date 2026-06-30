@@ -4,7 +4,6 @@ plugins {
 
 dependencies {
     implementation(libs.kotlin.coroutines)
-    implementation(libs.ktor.jwt)
     implementation(projects.core)
     implementation(projects.core.domain)
     implementation(projects.core.domain.datasource)
@@ -14,7 +13,7 @@ dependencies {
     implementation(projects.service.authorization.client)
     implementation(projects.service.business.data.source)
     implementation(projects.library.permissions)
-    implementation(projects.library.signing.impl)
+    implementation(projects.library.signing.api)
     testImplementation(testFixtures(projects.core))
     testImplementation(testFixtures(projects.core.domain.datasource))
 }

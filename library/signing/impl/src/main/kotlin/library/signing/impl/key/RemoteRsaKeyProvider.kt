@@ -1,4 +1,4 @@
-package com.bookk.core.service.auth
+package library.signing.impl.key
 
 import com.auth0.jwk.JwkProviderBuilder
 import com.auth0.jwt.interfaces.RSAKeyProvider
@@ -7,7 +7,7 @@ import java.security.interfaces.RSAPrivateKey
 import java.security.interfaces.RSAPublicKey
 import java.util.concurrent.TimeUnit
 
-class RemoteRsaKeyProvider(hostname: String) : RSAKeyProvider {
+internal class RemoteRsaKeyProvider(hostname: String) : RSAKeyProvider {
 
     private val provider = JwkProviderBuilder(URI("http://${hostname}/jwks.json").toURL())
         .cached(10, 1, TimeUnit.HOURS)

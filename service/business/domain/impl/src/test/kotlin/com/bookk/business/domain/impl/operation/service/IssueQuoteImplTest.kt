@@ -11,35 +11,19 @@ import com.bookk.core.test.then
 import com.bookk.core.test.whenn
 import io.mockk.coEvery
 import io.mockk.mockk
-import library.signing.GetActiveSigningKey
-import library.signing.SigningKey
-import library.signing.SigningKeyStatus
-import library.signing.impl.key.RsaSigningKeyFactory
+import library.signing.TokenIssuer
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import kotlin.time.Clock
 import kotlin.uuid.Uuid
 
 internal class IssueQuoteImplTest {
 
     private class SutFixture {
         val serviceDataSource = mockk<ServiceDataSource>()
-        val getActiveSigningKey = mockk<GetActiveSigningKey>()
         val transactionManager = mockk<TransactionManager>()
-        val sut = IssueQuoteImpl(serviceDataSource, getActiveSigningKey, transactionManager)
-    }
-
-    private fun realSigningKey(): SigningKey {
-        val (publicKeyPem, privateKeyPem) = RsaSigningKeyFactory.generate()
-        return SigningKey(
-            id = Uuid.random(),
-            publicKeyPem = publicKeyPem,
-            privateKeyPem = privateKeyPem,
-            status = SigningKeyStatus.ACTIVE,
-            createdAt = Clock.System.now(),
-            retiredAt = null
-        )
+        val tokenIssuer = mockk<TokenIssuer>()
+        val sut = IssueQuoteImpl(serviceDataSource, transactionManager, tokenIssuer)
     }
 
     @Test
@@ -55,7 +39,7 @@ internal class IssueQuoteImplTest {
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { serviceDataSource.getServicesByIds(serviceIds) } returns services
-            coEvery { getActiveSigningKey() } returns Result.success(realSigningKey())
+            coEvery { tokenIssuer.issue(any(), any()) } returns "signed-token"
         }
 
         whenn()
@@ -70,6 +54,20 @@ internal class IssueQuoteImplTest {
     }
 
     @Test
+    fun `should return EmptyServiceList when service ids list is empty`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val businessId = Uuid.random()
+
+        whenn()
+        val result = fixture.sut(businessId, emptyList())
+
+        then()
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is IssueQuote.Error.EmptyServiceList)
+    }
+
+    @Test
     fun `should return ServiceNotFound when a requested service id is missing`() = runUnitTest {
         given()
         val fixture = SutFixture()
@@ -80,7 +78,6 @@ internal class IssueQuoteImplTest {
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { serviceDataSource.getServicesByIds(serviceIds) } returns listOf(existingService)
-            coEvery { getActiveSigningKey() } returns Result.success(realSigningKey())
         }
 
         whenn()

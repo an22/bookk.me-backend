@@ -20,4 +20,5 @@ object BusinessErrorCodes {
     const val BUSINESS_SERVICE_GROUP_NOT_EXISTS = BASE + 12
 
     const val BUSINESS_QUOTE_SERVICE_NOT_FOUND = BASE + 13
+    const val BUSINESS_QUOTE_EMPTY_SERVICE_LIST = BASE + 14
 }

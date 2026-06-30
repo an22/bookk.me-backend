@@ -1,7 +1,7 @@
 package com.bookk.user.microservice.route.api
 
-import com.bookk.core.service.auth.AppPrincipal
 import com.bookk.core.service.enity.respondWith
+import com.bookk.server.auth.client.AppPrincipal
 import com.bookk.user.domain.api.operation.GetUserById
 import com.bookk.user.microservice.route.UserRouting.Api
 import io.ktor.server.auth.authenticate

@@ -8,6 +8,9 @@ import com.bookk.appointments.domain.api.entity.AppointmentRequest
 import com.bookk.appointments.domain.api.entity.AppointmentRequestStatus
 import com.bookk.appointments.domain.datasource.AppointmentRequestDataSource
 import com.bookk.core.data.DataSource
+import com.bookk.core.data.cache.CacheClient
+import com.bookk.core.data.cache.get
+import com.bookk.core.data.cache.set
 import com.bookk.core.domain.entity.Error
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
@@ -18,12 +21,15 @@ import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.update
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 import kotlin.uuid.toKotlinUuid
 
-internal class AppointmentRequestDataSourceImpl : DataSource(), AppointmentRequestDataSource {
+internal class AppointmentRequestDataSourceImpl(
+    private val cacheClient: CacheClient<String>
+) : DataSource(), AppointmentRequestDataSource {
     override suspend fun get(id: Uuid): AppointmentRequest? = dbQuery {
         AppointmentRequestEntity.findById(id.toJavaUuid())
             ?.domain()
@@ -112,5 +118,17 @@ internal class AppointmentRequestDataSourceImpl : DataSource(), AppointmentReque
             it[AppointmentRequestTable.status] = AppointmentRequestStatus.CANCELLED
             it[AppointmentRequestTable.updatedAt] = Clock.System.now()
         }
+    }
+
+    override suspend fun cacheOfferToken(token: String) = mapExceptions {
+        cacheClient.withTransaction {
+            set(token, "marker")
+            setExpiration(token, 10.minutes)
+        }
+    }
+
+    override suspend fun isTokenInCache(token: String): Boolean = mapExceptions {
+        val entry: String? = cacheClient.get(token)
+        entry != null
     }
 }

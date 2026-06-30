@@ -2,6 +2,7 @@ package com.bookk.appointments.domain.api.entity
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
+import org.joda.money.Money
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
@@ -24,9 +25,7 @@ data class Appointment(
     }
 
     @Transient
-    val totalAmount = services.fold(services[0].price) { acc, service ->
-        acc + service.price
-    }
+    val totalAmount: Money = services.map { it.price }.reduce { acc, price -> acc + price }
 
     companion object {
         fun stub(

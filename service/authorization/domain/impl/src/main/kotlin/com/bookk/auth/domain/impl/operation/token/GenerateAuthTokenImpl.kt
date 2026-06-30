@@ -1,8 +1,5 @@
 package com.bookk.auth.domain.impl.operation.token
 
-import com.auth0.jwt.JWT
-import com.auth0.jwt.algorithms.Algorithm
-import com.auth0.jwt.interfaces.RSAKeyProvider
 import com.bookk.auth.domain.api.identification.entity.Device
 import com.bookk.auth.domain.api.token.entity.AuthTokens
 import com.bookk.auth.domain.api.token.operation.GenerateAuthToken
@@ -10,21 +7,16 @@ import com.bookk.auth.domain.api.token.operation.GenerateAuthToken.Error.Invalid
 import com.bookk.auth.domain.api.token.operation.GenerateAuthToken.Source
 import com.bookk.auth.domain.datasource.DeviceDataSource
 import com.bookk.core.AppLevelConstants
-import com.bookk.core.AppLevelConstants.Claim
 import com.bookk.core.domain.datasource.transaction.TransactionManager
-import library.signing.GetActiveSigningKey
-import library.signing.impl.key.RsaSigningKeyFactory
-import java.security.interfaces.RSAPrivateKey
-import java.security.interfaces.RSAPublicKey
-import kotlin.time.Clock
-import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.toJavaInstant
+import com.bookk.server.auth.client.AuthClaim
+import library.signing.TokenIssuer
+import kotlin.time.Duration.Companion.minutes
 import kotlin.uuid.Uuid
 
 internal class GenerateAuthTokenImpl(
-    private val getActiveSigningKey: GetActiveSigningKey,
     private val deviceDataSource: DeviceDataSource,
-    private val transactionManager: TransactionManager
+    private val transactionManager: TransactionManager,
+    private val tokenIssuer: TokenIssuer
 ) : GenerateAuthToken {
 
     override suspend fun invoke(source: Source): Result<AuthTokens> = transactionManager.transaction {
@@ -48,28 +40,13 @@ internal class GenerateAuthTokenImpl(
     }
 
     private suspend fun createAccessToken(record: Device): String {
-        val signingKey = getActiveSigningKey().getOrThrow()
-        val keyProvider = object : RSAKeyProvider {
-            override fun getPublicKeyById(id: String?): RSAPublicKey =
-                RsaSigningKeyFactory.parsePublicKey(signingKey.publicKeyPem)
-
-            override fun getPrivateKey(): RSAPrivateKey =
-                RsaSigningKeyFactory.parsePrivateKey(signingKey.privateKeyPem)
-
-            override fun getPrivateKeyId(): String = signingKey.id.toString()
+        return tokenIssuer.issue(ACCESS_TTL) {
+            withJWTId(Uuid.random().toString())
+                .withAudience(AppLevelConstants.domainName)
+                .withClaim(AuthClaim.AUTH_ID.key, record.authRecord.id.toString())
+                .withClaim(AuthClaim.USER_ID.key, record.authRecord.userId.toString())
+                .withClaim(AuthClaim.DEVICE_ID.key, record.deviceInfo.id.toString())
         }
-        return JWT.create()
-            .withKeyId(signingKey.id.toString())
-            .withAudience("https://${AppLevelConstants.domainName}")
-            .withIssuer("https://${AppLevelConstants.domainName}/api/auth")
-            .withJWTId(Uuid.random().toString())
-            .withClaim(Claim.AUTH_ID.key, record.authRecord.id.toString())
-            .withClaim(Claim.USER_ID.key, record.authRecord.userId.toString())
-            .withClaim(Claim.DEVICE_ID.key, record.deviceInfo.id.toString())
-            .withIssuedAt(Clock.System.now().toJavaInstant())
-            .withNotBefore(Clock.System.now().toJavaInstant())
-            .withExpiresAt(Clock.System.now().plus(ACCESS_EXPIRATION_TIME.milliseconds).toJavaInstant())
-            .sign(Algorithm.RSA256(keyProvider))
     }
 
     private suspend fun Source.getDevice(): Device? {
@@ -96,6 +73,6 @@ internal class GenerateAuthTokenImpl(
     }
 
     companion object {
-        private const val ACCESS_EXPIRATION_TIME = 1000L * 60 * 5 // 5 Minutes
+        private val ACCESS_TTL = 5.minutes
     }
 }

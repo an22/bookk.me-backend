@@ -1,13 +1,13 @@
 package com.bookk.user.microservice.route.api
 
 import com.bookk.core.domain.entity.SimpleServerError
-import com.bookk.core.service.auth.AppPrincipal
 import com.bookk.core.service.test.createTestClient
 import com.bookk.core.service.test.routeTest
 import com.bookk.core.service.test.setupApplication
 import com.bookk.core.test.given
 import com.bookk.core.test.then
 import com.bookk.core.test.whenn
+import com.bookk.server.auth.client.AppPrincipal
 import com.bookk.user.domain.api.entity.User
 import com.bookk.user.domain.api.entity.UserEditModel
 import com.bookk.user.domain.api.error.UserErrorCodes

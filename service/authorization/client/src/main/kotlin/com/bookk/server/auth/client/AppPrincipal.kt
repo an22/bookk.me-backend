@@ -1,4 +1,4 @@
-package com.bookk.core.service.auth
+package com.bookk.server.auth.client
 
 import kotlin.uuid.Uuid
 

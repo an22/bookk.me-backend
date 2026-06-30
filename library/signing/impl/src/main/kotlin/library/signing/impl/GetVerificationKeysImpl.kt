@@ -3,7 +3,6 @@ package library.signing.impl
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import library.signing.GetVerificationKeys
 import library.signing.SigningKey
-import library.signing.SigningKeyDataSource
 
 internal class GetVerificationKeysImpl(
     private val signingKeyDataSource: SigningKeyDataSource,

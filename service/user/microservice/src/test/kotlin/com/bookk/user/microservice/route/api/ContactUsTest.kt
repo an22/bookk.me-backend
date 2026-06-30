@@ -1,12 +1,12 @@
 package com.bookk.user.microservice.route.api
 
-import com.bookk.core.service.auth.AppPrincipal
 import com.bookk.core.service.test.createTestClient
 import com.bookk.core.service.test.routeTest
 import com.bookk.core.service.test.setupApplication
 import com.bookk.core.test.given
 import com.bookk.core.test.then
 import com.bookk.core.test.whenn
+import com.bookk.server.auth.client.AppPrincipal
 import com.bookk.user.domain.api.operation.CreateContactForm
 import com.bookk.user.microservice.route.UserRouting
 import io.ktor.client.plugins.resources.post

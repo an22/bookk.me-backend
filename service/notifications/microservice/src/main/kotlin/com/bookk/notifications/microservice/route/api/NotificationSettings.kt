@@ -1,11 +1,11 @@
 package com.bookk.notifications.microservice.route.api
 
-import com.bookk.core.service.auth.AppPrincipal
 import com.bookk.core.service.enity.respondWith
 import com.bookk.notifications.domain.api.GetNotificationSettings
 import com.bookk.notifications.domain.api.UpdateNotificationSettings
 import com.bookk.notifications.domain.api.entity.NotificationChannelSettings
 import com.bookk.notifications.microservice.route.NotificationsRouting.Api
+import com.bookk.server.auth.client.AppPrincipal
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.principal
 import io.ktor.server.request.receive

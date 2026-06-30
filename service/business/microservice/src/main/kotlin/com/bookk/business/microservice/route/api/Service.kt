@@ -6,8 +6,8 @@ import com.bookk.business.domain.api.service.operation.DeleteService
 import com.bookk.business.domain.api.service.operation.GetServices
 import com.bookk.business.domain.api.service.operation.UpdateService
 import com.bookk.business.microservice.route.BusinessRouting.Api
-import com.bookk.core.service.auth.AppPrincipal
 import com.bookk.core.service.enity.respondWith
+import com.bookk.server.auth.client.AppPrincipal
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.openapi.jsonSchema

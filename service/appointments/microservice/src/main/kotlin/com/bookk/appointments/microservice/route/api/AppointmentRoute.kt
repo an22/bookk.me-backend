@@ -8,8 +8,8 @@ import com.bookk.appointments.domain.api.operation.GetAppointmentHistory
 import com.bookk.appointments.domain.api.operation.GetAppointmentsForDate
 import com.bookk.appointments.domain.api.operation.UpdateAppointment
 import com.bookk.appointments.microservice.route.AppointmentsRouting.Api
-import com.bookk.core.service.auth.AppPrincipal
 import com.bookk.core.service.enity.respondWith
+import com.bookk.server.auth.client.AppPrincipal
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.openapi.jsonSchema
@@ -140,7 +140,8 @@ fun Routing.appointment() {
             call.respondWith(
                 createAppointment(
                     userId = principal.userId,
-                    appointment = body
+                    appointment = body,
+                    isInstant = true
                 )
             )
         }

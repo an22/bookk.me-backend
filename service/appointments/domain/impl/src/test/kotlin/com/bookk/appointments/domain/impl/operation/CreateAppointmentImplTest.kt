@@ -315,7 +315,7 @@ internal class CreateAppointmentImplTest {
         }
 
         whenn()
-        val result = fixture.sut.invoke(userId, appointment)
+        val result = fixture.sut.invoke(userId, appointment, isInstant = true)
 
         then()
         assertTrue(result.isSuccess)
@@ -340,7 +340,7 @@ internal class CreateAppointmentImplTest {
         }
 
         whenn()
-        val result = fixture.sut.invoke(userId, appointment)
+        val result = fixture.sut.invoke(userId, appointment, isInstant = true)
 
         then()
         assertTrue(result.isFailure)
@@ -364,7 +364,7 @@ internal class CreateAppointmentImplTest {
         }
 
         whenn()
-        val result = fixture.sut.invoke(userId, appointment)
+        val result = fixture.sut.invoke(userId, appointment, isInstant = true)
 
         then()
         assertTrue(result.isFailure)
@@ -387,7 +387,7 @@ internal class CreateAppointmentImplTest {
         }
 
         whenn()
-        val result = fixture.sut.invoke(userId, appointment)
+        val result = fixture.sut.invoke(userId, appointment, isInstant = true)
 
         then()
         assertTrue(result.isFailure)
@@ -411,7 +411,7 @@ internal class CreateAppointmentImplTest {
         }
 
         whenn()
-        val result = fixture.sut.invoke(userId, appointment)
+        val result = fixture.sut.invoke(userId, appointment, isInstant = true)
 
         then()
         assertTrue(result.isFailure)
@@ -435,10 +435,79 @@ internal class CreateAppointmentImplTest {
         }
 
         whenn()
-        val result = fixture.sut.invoke(userId, appointment)
+        val result = fixture.sut.invoke(userId, appointment, isInstant = true)
 
         then()
         assertTrue(result.isFailure)
         assertTrue(result.exceptionOrNull() is Error.OperationNotAllowed)
+    }
+
+    @Test
+    fun `should return failure when instant appointment is booked for another user`() = runUnitTest {
+        given()
+        val userId = Uuid.random()
+        val otherUserId = Uuid.random()
+        val appointment = Appointment.stub(userId = otherUserId, date = futureDate)
+        val fixture = SutFixture()
+
+        whenn()
+        val result = fixture.sut.invoke(userId, appointment, isInstant = true)
+
+        then()
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is CreateAppointment.Error.InstantAppointmentOnlySelfAllowed)
+    }
+
+    // invoke(userId, appointmentRequestId: Uuid)
+
+    @Test
+    fun `should create appointment from request id successfully`() = runUnitTest {
+        given()
+        val userId = Uuid.random()
+        val request = AppointmentRequest.stub(userId = userId, date = futureDate)
+        val appointment = Appointment.stub(userId = userId, businessId = request.businessId, date = request.date)
+        val settings = mockk<AppointmentSettings>()
+        val fixture = SutFixture()
+
+        with(fixture) {
+            coEvery { requestDataSource.get(request.id) } returns request
+            coEvery { settingsDataSource.getForUpdate(request.businessId) } returns settings
+            coEvery { settings.isInWorkday(request.date) } returns true
+            coEvery { settings.isInWorktime(request.date, request.dateEnd) } returns true
+            coEvery { permissionsDataSource.getPermissions(userId, request.businessId) } returns EDIT.int
+            coEvery { appointmentDataSource.hasOverlapsWith(request) } returns false
+            coEvery { appointmentDataSource.create(request) } returns appointment
+            coEvery { requestDataSource.approve(request) } returns Unit
+            coEvery { subscriptionDataSource.getBusinessSnapshot(request.businessId) } returns mockk(relaxed = true)
+            coEvery { eventProducer.send(any(), any()) } returns Unit
+            transactionManager.mockTransaction()
+        }
+
+        whenn()
+        val result = fixture.sut.invoke(userId, request.id)
+
+        then()
+        assertTrue(result.isSuccess)
+        assertEquals(appointment, result.getOrNull())
+    }
+
+    @Test
+    fun `should return NotFound when appointment request id does not exist`() = runUnitTest {
+        given()
+        val userId = Uuid.random()
+        val requestId = Uuid.random()
+        val fixture = SutFixture()
+
+        with(fixture) {
+            coEvery { requestDataSource.get(requestId) } returns null
+            transactionManager.mockTransaction()
+        }
+
+        whenn()
+        val result = fixture.sut.invoke(userId, requestId)
+
+        then()
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is Error.NotFound)
     }
 }

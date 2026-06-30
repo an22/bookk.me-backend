@@ -15,6 +15,7 @@ import library.signing.SigningKeyStatus
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.days
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
@@ -47,7 +48,7 @@ internal class RotateSigningKeysImplTest {
         }
 
         whenn()
-        val result = fixture.sut.invoke()
+        val result = fixture.sut.invoke(retireInterval = 1.days)
 
         then()
         assertTrue(result.isSuccess)
@@ -70,7 +71,7 @@ internal class RotateSigningKeysImplTest {
         }
 
         whenn()
-        val result = fixture.sut.invoke()
+        val result = fixture.sut.invoke(retireInterval = 1.days)
 
         then()
         assertTrue(result.isSuccess)

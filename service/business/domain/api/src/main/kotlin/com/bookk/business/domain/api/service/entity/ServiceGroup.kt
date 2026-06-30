@@ -10,4 +10,13 @@ data class ServiceGroup(
     val businessId: Uuid,
     val name: String,
     val createdAt: Instant
-)
+) {
+    companion object {
+        fun stub(
+            id: Uuid = Uuid.random(),
+            businessId: Uuid = Uuid.random(),
+            name: String = "stub-group",
+            createdAt: Instant = Instant.fromEpochMilliseconds(0)
+        ) = ServiceGroup(id = id, businessId = businessId, name = name, createdAt = createdAt)
+    }
+}

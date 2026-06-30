@@ -2,7 +2,7 @@ package com.bookk.core.service
 
 import com.bookk.core.AppLevelConstants
 import com.bookk.core.AppLevelConstants.SupportedSerializers
-import com.bookk.core.service.auth.AccessVerifier
+import com.bookk.core.service.auth.TokenValidation
 import com.bookk.core.service.di.commonModule
 import io.ktor.http.HttpStatusCode
 import io.ktor.openapi.OpenApiInfo
@@ -112,8 +112,9 @@ private fun Application.installAuthPlugin() {
             challenge { _, _ ->
                 call.respond(HttpStatusCode.Unauthorized, "Unauthorized")
             }
-            verifier(AccessVerifier.verifier)
-            validate(AccessVerifier.validator)
+            val validation = TokenValidation()
+            verifier(validation.verifier)
+            validate(validation.validator)
         }
     }
 }

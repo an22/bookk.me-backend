@@ -9,6 +9,7 @@ import com.bookk.business.domain.api.service.entity.ServiceGroup
 import com.bookk.business.domain.datasource.ServiceDataSource
 import com.bookk.core.data.DataSource
 import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.inList
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import org.jetbrains.exposed.v1.jdbc.update
@@ -51,6 +52,12 @@ internal class ServiceDataSourceImpl : DataSource(), ServiceDataSource {
     override suspend fun getServices(businessId: Uuid): List<Service> = dbQuery {
         ServiceEntity.find {
             ServiceTable.businessId eq businessId.toJavaUuid()
+        }.map { it.toDomain() }
+    }
+
+    override suspend fun getServicesByIds(ids: List<Uuid>): List<Service> = dbQuery {
+        ServiceEntity.find {
+            ServiceTable.id inList ids.map { it.toJavaUuid() }
         }.map { it.toDomain() }
     }
 

@@ -53,13 +53,15 @@ internal class GenerateAuthTokenImpl(
             override fun getPublicKeyById(id: String?): RSAPublicKey =
                 RsaSigningKeyFactory.parsePublicKey(signingKey.publicKeyPem)
 
-            override fun getPrivateKey(): RSAPrivateKey = RsaSigningKeyFactory.parsePrivateKey(signingKey.privateKeyPem)
+            override fun getPrivateKey(): RSAPrivateKey =
+                RsaSigningKeyFactory.parsePrivateKey(signingKey.privateKeyPem)
+
             override fun getPrivateKeyId(): String = signingKey.id.toString()
         }
         return JWT.create()
             .withKeyId(signingKey.id.toString())
             .withAudience("https://${AppLevelConstants.domainName}")
-            .withIssuer("https://${AppLevelConstants.domainName}")
+            .withIssuer("https://${AppLevelConstants.domainName}/api/auth")
             .withJWTId(Uuid.random().toString())
             .withClaim(Claim.AUTH_ID.key, record.authRecord.id.toString())
             .withClaim(Claim.USER_ID.key, record.authRecord.userId.toString())

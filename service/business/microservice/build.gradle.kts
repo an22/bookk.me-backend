@@ -26,7 +26,6 @@ dependencies {
     implementation(projects.core.data.cache.api)
     implementation(projects.core.data.cache.impl)
     implementation(projects.library.signing.api)
-    implementation(projects.library.signing.impl)
     implementation(projects.library.signing.route)
     implementation(projects.library.scheduler)
     implementation(projects.service.business.data)

@@ -4,6 +4,7 @@ import com.bookk.appointments.domain.api.entity.Appointment
 import com.bookk.appointments.domain.api.entity.AppointmentErrorCodes
 import com.bookk.appointments.domain.api.entity.AppointmentStatus
 import com.bookk.appointments.domain.api.entity.ClientSnapshot
+import com.bookk.appointments.domain.api.entity.EmployeeSnapshot
 import com.bookk.appointments.domain.api.entity.ServiceSnapshot
 import com.bookk.appointments.domain.api.operation.CreateAppointment
 import com.bookk.appointments.microservice.route.AppointmentsRouting
@@ -44,6 +45,7 @@ internal class CreateAppointmentTest {
             id = Uuid.random(),
             userId = userId,
             businessId = Uuid.random(),
+            employee = EmployeeSnapshot.stub(),
             client = ClientSnapshot(Uuid.random(), "Full Name", "123456789", "test@example.com"),
             services = listOf(ServiceSnapshot(
                 Uuid.random(),

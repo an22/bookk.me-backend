@@ -3,6 +3,7 @@ package com.bookk.appointments.domain.impl.operation
 import com.bookk.appointments.domain.api.entity.AppointmentRequest
 import com.bookk.appointments.domain.api.entity.AppointmentRequestStatus
 import com.bookk.appointments.domain.api.entity.ClientSnapshot
+import com.bookk.appointments.domain.api.entity.EmployeeSnapshot
 import com.bookk.appointments.domain.api.entity.ServiceSnapshot
 import com.bookk.appointments.domain.datasource.AppointmentRequestDataSource
 import com.bookk.appointments.domain.datasource.PermissionsDataSource
@@ -45,6 +46,7 @@ internal class GetAppointmentRequestsImplTest {
                 id = Uuid.random(),
                 userId = userId,
                 businessId = businessId,
+                employee = EmployeeSnapshot.stub(),
                 client = ClientSnapshot(Uuid.random(), "Client Name", "phone", "client@example.com"),
                 services = listOf(ServiceSnapshot(Uuid.random(), "Service Name", Uuid.random(), Money.of(CurrencyUnit.of("USD"), 10.0), 30.minutes)),
                 date = Instant.fromEpochMilliseconds(0),

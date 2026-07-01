@@ -28,6 +28,7 @@ dependencies {
     implementation(projects.core.domain.datasource)
     implementation(projects.library.idempotency)
     implementation(projects.library.signing.api)
+    implementation(projects.library.signing.impl)
     api(projects.service.authorization.client)
     testFixturesImplementation(libs.ktor.server.resources)
     testFixturesImplementation(libs.ktor.protobuf)

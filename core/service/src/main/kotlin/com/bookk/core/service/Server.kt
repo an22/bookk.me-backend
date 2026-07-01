@@ -36,6 +36,7 @@ import kotlinx.serialization.protobuf.ProtoBuf
 import library.idempotency.IdempotencyPlugin
 import library.signing.TokenValidatorFactory
 import library.signing.ValidationType
+import library.signing.impl.di.signingModule
 import org.koin.core.module.Module
 import org.koin.ktor.ext.get
 import org.koin.ktor.plugin.Koin
@@ -58,7 +59,13 @@ fun startServer(
             install(MicrometerMetrics) {
                 registry = prometheusRegistry
             }
-            install(Koin) { modules(*diModules.toTypedArray(), commonModule()) }
+            install(Koin) {
+                modules(
+                    *diModules.toTypedArray(),
+                    commonModule(),
+                    signingModule()
+                )
+            }
             install(CallLogging) {
                 level = when (AppLevelConstants.BUILD_TYPE) {
                     AppLevelConstants.BuildType.DEBUG.STR -> Level.DEBUG

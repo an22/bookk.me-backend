@@ -4,6 +4,7 @@ import com.bookk.appointments.domain.api.entity.Appointment
 import com.bookk.appointments.domain.api.entity.AppointmentErrorCodes
 import com.bookk.appointments.domain.api.entity.AppointmentStatus
 import com.bookk.appointments.domain.api.entity.ClientSnapshot
+import com.bookk.appointments.domain.api.entity.EmployeeSnapshot
 import com.bookk.appointments.domain.api.entity.ServiceSnapshot
 import com.bookk.appointments.domain.api.operation.UpdateAppointment
 import com.bookk.appointments.microservice.route.AppointmentsRouting.Api
@@ -38,6 +39,7 @@ internal class UpdateAppointmentTest {
         id = Uuid.random(),
         userId = Uuid.random(),
         businessId = Uuid.random(),
+        employee = EmployeeSnapshot.stub(),
         client = ClientSnapshot(Uuid.random(), "Name", "123", "a@b.com"),
         services = listOf(ServiceSnapshot(Uuid.random(), "Svc", Uuid.random(), Money.parse("USD 100"), 30.minutes)),
         date = Instant.fromEpochMilliseconds(0),

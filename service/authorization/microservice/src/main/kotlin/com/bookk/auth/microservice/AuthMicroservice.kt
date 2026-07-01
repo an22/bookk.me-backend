@@ -11,14 +11,12 @@ import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import library.scheduler.Scheduler
 import library.signing.RotateSigningKeys
-import library.signing.impl.di.signingModule
 import org.koin.dsl.module
 import org.koin.ktor.ext.get
 import kotlin.time.Duration.Companion.days
 
 fun authModule() = module {
     includes(
-        signingModule(),
         authDomainModule(),
         authDataModule(),
         eventStreamingModule(),

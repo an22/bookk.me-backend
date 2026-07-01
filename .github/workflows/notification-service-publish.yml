@@ -1,30 +1,29 @@
-name: Publish business service
+name: Publish notification service
 on:
   push:
     tags:
-      - 'business/*'
+      - 'notification/*'
 
 jobs:
   publish:
-    name: Publish Business Microservice
+    name: Publish Notifications Microservice
     uses: ./.github/workflows/service-publish-template.yml
     secrets:
       gradleEncryption: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
     with:
-      module: "service:business:microservice"
-      serviceName: "com.bookk.server.microservice.business"
+      module: "service:notifications:microservice"
+      serviceName: "com.bookk.server.microservice.notifications"
 
   deploy:
     needs: publish
-    name: Deploy Business Microservice
+    name: Deploy Notifications Microservice
     uses: ./.github/workflows/service-deploy-template.yml
     secrets:
-      envFile: ${{ secrets.BUSINESS_ENV_FILE }}
+      envFile: ${{ secrets.NOTIFICATIONS_ENV_FILE }}
       privateKey: ${{ secrets.SSH_PRIVATE_KEY }}
       remoteUri: ${{ secrets.SWARM_MANAGER }}
       knownHosts: ${{ secrets.SSH_KNOWN_HOSTS }}
     with:
-      image: "ghcr.io/an22/com.bookk.server.microservice.business"
-      stackName: "business"
+      image: "ghcr.io/an22/com.bookk.server.microservice.notifications"
+      stackName: "notifications"
       version: ${{ needs.publish.outputs.version }}
-      extension: "ext/business-extension.yml"

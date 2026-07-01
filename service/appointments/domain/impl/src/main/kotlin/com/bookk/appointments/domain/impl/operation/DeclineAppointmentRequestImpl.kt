@@ -50,7 +50,7 @@ internal class DeclineAppointmentRequestImpl(
                 from = appointment.date,
                 to = appointment.dateEnd,
                 businessName = business.name,
-                executioner = "TODO",
+                executioner = appointment.employee.fullName,
                 address = business.address,
                 price = moneyFormatter.print(appointment.totalAmount),
                 declineReason = appointment.declineReason

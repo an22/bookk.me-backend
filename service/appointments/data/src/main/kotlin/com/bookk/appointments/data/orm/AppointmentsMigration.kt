@@ -16,8 +16,8 @@ import org.jetbrains.exposed.v1.core.Table
 fun main() {
     runBlocking {
         createMigrationScriptFor(
-            referenceVersion = 4,
-            targetVersion = 5,
+            referenceVersion = 5,
+            targetVersion = 6,
             schemaName = "appointments",
             tables = tables()
         )

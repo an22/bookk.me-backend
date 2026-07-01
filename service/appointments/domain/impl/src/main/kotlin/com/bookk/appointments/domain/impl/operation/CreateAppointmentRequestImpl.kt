@@ -98,7 +98,7 @@ internal class CreateAppointmentRequestImpl(
                 from = request.date,
                 to = request.dateEnd,
                 businessName = business.name,
-                executioner = "TODO",
+                executioner = request.employee.fullName,
                 address = business.address,
                 price = moneyFormatter.print(request.totalAmount)
             )

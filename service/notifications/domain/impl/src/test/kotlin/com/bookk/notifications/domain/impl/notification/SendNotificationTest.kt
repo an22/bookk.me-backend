@@ -32,6 +32,7 @@ internal class SendNotificationTest {
     }
 
     private fun notificationParams() = NotificationParameters(
+        type = NotificationType.APPOINTMENT,
         push = PushNotification(title = "Title", subtitle = "Subtitle"),
         email = EmailNotification(subject = "Subject", body = "Body"),
         text = TextNotification(text = "Text"),
@@ -78,6 +79,34 @@ internal class SendNotificationTest {
                 NotificationChannelSettings.stub(channel = CommunicationChannel.EMAIL, enabled = false),
                 NotificationChannelSettings.stub(channel = CommunicationChannel.TELEGRAM, enabled = false),
                 NotificationChannelSettings.stub(channel = CommunicationChannel.PUSH_NOTIFICATIONS, enabled = false),
+            )
+        )
+        with(fixture) {
+            coEvery { notificationDataSource.getByUserId(userId) } returns settings
+        }
+
+        whenn()
+        val result = fixture.sut.invoke(userId, notificationParams())
+
+        then()
+        assertTrue(result.isSuccess)
+        coVerify(exactly = 0) { fixture.emailSender.send(any(), any()) }
+        coVerify(exactly = 0) { fixture.telegramSender.send(any(), any()) }
+        coVerify(exactly = 0) { fixture.pushSender.send(any(), any()) }
+    }
+
+    @Test
+    fun `should not send when notification type is disabled in settings`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+        val settings = NotificationSettings.stub(
+            userId = userId,
+            appointmentEnabled = false,
+            channels = listOf(
+                NotificationChannelSettings.stub(channel = CommunicationChannel.EMAIL, enabled = true),
+                NotificationChannelSettings.stub(channel = CommunicationChannel.TELEGRAM, enabled = true),
+                NotificationChannelSettings.stub(channel = CommunicationChannel.PUSH_NOTIFICATIONS, enabled = true),
             )
         )
         with(fixture) {

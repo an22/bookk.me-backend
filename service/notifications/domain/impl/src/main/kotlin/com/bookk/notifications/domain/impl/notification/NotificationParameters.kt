@@ -1,21 +1,26 @@
 package com.bookk.notifications.domain.impl.notification
 
-class NotificationParameters(
+internal class NotificationParameters(
+    val type: NotificationType,
     val push: PushNotification,
     val email: EmailNotification,
     val text: TextNotification
 )
 
-class PushNotification(
+internal class PushNotification(
     val title: String,
     val subtitle: String,
 )
 
-class EmailNotification(
+internal class EmailNotification(
     val subject: String,
     val body: String,
 )
 
-class TextNotification(
+internal class TextNotification(
     val text: String
 )
+
+internal enum class NotificationType {
+    APPOINTMENT
+}

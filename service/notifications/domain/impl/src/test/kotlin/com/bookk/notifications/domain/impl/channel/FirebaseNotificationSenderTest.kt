@@ -10,6 +10,7 @@ import com.bookk.notifications.domain.api.entity.Device
 import com.bookk.notifications.domain.datasource.DeviceDataSource
 import com.bookk.notifications.domain.impl.notification.EmailNotification
 import com.bookk.notifications.domain.impl.notification.NotificationParameters
+import com.bookk.notifications.domain.impl.notification.NotificationType
 import com.bookk.notifications.domain.impl.notification.PushNotification
 import com.bookk.notifications.domain.impl.notification.TextNotification
 import com.google.firebase.messaging.FirebaseMessaging
@@ -34,6 +35,7 @@ internal class FirebaseNotificationSenderTest {
     }
 
     private fun notificationParams() = NotificationParameters(
+        type = NotificationType.APPOINTMENT,
         push = PushNotification(title = "Title", subtitle = "Subtitle"),
         email = EmailNotification(subject = "Subject", body = "Body"),
         text = TextNotification(text = "Text"),

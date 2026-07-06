@@ -1,6 +1,7 @@
 package com.bookk.notifications.domain.impl.notification
 
 import com.bookk.notifications.domain.api.entity.CommunicationChannel
+import com.bookk.notifications.domain.api.entity.NotificationSettings
 import com.bookk.notifications.domain.datasource.NotificationSettingsDataSource
 import com.bookk.notifications.domain.impl.channel.NotificationSender
 import kotlin.uuid.Uuid
@@ -11,9 +12,17 @@ internal class SendNotification(
 ) {
     suspend operator fun invoke(to: Uuid, notification: NotificationParameters): Result<Unit> = runCatching {
         val settings = notificationDataSource.getByUserId(to) ?: throw IllegalArgumentException("Settings not found")
+        if (!settings.isTypeAllowed(notification.type)) return@runCatching
         val enabledChannelSettings = settings.channels.filter { it.enabled }
         enabledChannelSettings.forEach { settings ->
             senderMap[settings.channel]?.send(to, notification)
+        }
+    }
+
+
+    private fun NotificationSettings.isTypeAllowed(type: NotificationType): Boolean {
+        return when (type) {
+            NotificationType.APPOINTMENT -> appointmentEnabled
         }
     }
 }

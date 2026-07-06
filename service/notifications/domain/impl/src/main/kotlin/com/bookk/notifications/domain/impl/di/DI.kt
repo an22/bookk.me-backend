@@ -12,6 +12,7 @@ import com.bookk.notifications.domain.impl.DeleteDeviceByUUIDImpl
 import com.bookk.notifications.domain.impl.GetNotificationSettingsImpl
 import com.bookk.notifications.domain.impl.UpdateNotificationSettingsImpl
 import com.bookk.notifications.domain.impl.UpdatePushNotificationTokenImpl
+import com.bookk.notifications.domain.impl.UpdateTargetInformation
 import com.bookk.notifications.domain.impl.channel.EmailNotificationSender
 import com.bookk.notifications.domain.impl.channel.FirebaseNotificationSender
 import com.bookk.notifications.domain.impl.channel.NotificationSender
@@ -31,11 +32,11 @@ fun notificationsDomainModule() = module {
     factoryOf(::UpdatePushNotificationTokenImpl) bind UpdatePushNotificationToken::class
     factoryOf(::UpdateNotificationSettingsImpl) bind UpdateNotificationSettings::class
     factoryOf(::GetNotificationSettingsImpl) bind GetNotificationSettings::class
-    single { FirebaseMessaging.getInstance() }
     singleOf(::FirebaseNotificationSender) bind NotificationSender::class
     singleOf(::EmailNotificationSender) bind NotificationSender::class
     singleOf(::TelegramNotificationSender) bind NotificationSender::class
     singleOf(::SendNotification)
+    singleOf(::UpdateTargetInformation)
     single<Map<CommunicationChannel, NotificationSender>> {
         mapOf(
             CommunicationChannel.EMAIL to get<EmailNotificationSender>(),
@@ -43,4 +44,5 @@ fun notificationsDomainModule() = module {
             CommunicationChannel.PUSH_NOTIFICATIONS to get<FirebaseNotificationSender>()
         )
     }
+    single { FirebaseMessaging.getInstance() }
 }

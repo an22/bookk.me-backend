@@ -18,7 +18,13 @@ internal class NotificationSettingsEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     fun domain() = NotificationSettings(
         userId = userId.toKotlinUuid(),
         appointmentEnabled = appointmentEnabled,
-        channels = channels.map { NotificationChannelSettings(it.channel, it.enabled) },
+        channels = channels.map {
+            NotificationChannelSettings(
+                id = it.id.value.toKotlinUuid(),
+                channel = it.channel,
+                enabled = it.enabled,
+            )
+        },
     )
 
     companion object : DecoratorUUIDEntityClass<NotificationSettingsEntity>(NotificationSettingsTable)

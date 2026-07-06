@@ -9,6 +9,6 @@ interface DeviceDataSource {
     suspend fun getByDeviceUuid(deviceUuid: Uuid): Device?
     suspend fun getByAuthId(authId: Uuid): Device?
     suspend fun getByUserId(userId: Uuid): List<Device>
-    suspend fun updateToken(deviceUuid: Uuid, token: String): Device
+    suspend fun updateToken(deviceUuid: Uuid, token: String?): Device
     suspend fun deleteByDeviceUuid(deviceUuid: Uuid)
 }

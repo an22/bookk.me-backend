@@ -46,7 +46,7 @@ internal class DeviceDataSourceImpl : DataSource(), DeviceDataSource {
             .map { it.domain() }
     }
 
-    override suspend fun updateToken(deviceUuid: Uuid, token: String): Device = dbQuery {
+    override suspend fun updateToken(deviceUuid: Uuid, token: String?): Device = dbQuery {
         DeviceEntity
             .find { DeviceTable.deviceUuid eq deviceUuid.toJavaUuid() }
             .firstOrNull()

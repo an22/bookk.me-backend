@@ -34,9 +34,9 @@ internal class GetNotificationSettingsImplTest {
         val settings = NotificationSettings.stub(
             userId = userId,
             channels = listOf(
-                NotificationChannelSettings(CommunicationChannel.EMAIL, enabled = true),
-                NotificationChannelSettings(CommunicationChannel.PUSH_NOTIFICATIONS, enabled = false),
-                NotificationChannelSettings(CommunicationChannel.TELEGRAM, enabled = false),
+                NotificationChannelSettings.stub(channel = CommunicationChannel.EMAIL, enabled = true),
+                NotificationChannelSettings.stub(channel = CommunicationChannel.PUSH_NOTIFICATIONS, enabled = false),
+                NotificationChannelSettings.stub(channel = CommunicationChannel.TELEGRAM, enabled = false),
             )
         )
         with(fixture) {
@@ -50,7 +50,7 @@ internal class GetNotificationSettingsImplTest {
         then()
         assertTrue(result.isSuccess)
         assertEquals(settings, result.getOrNull())
-        coVerify(exactly = 0) { fixture.notificationSettingsDataSource.upsert(any()) }
+        coVerify(exactly = 0) { fixture.notificationSettingsDataSource.upsert(any<NotificationSettings>()) }
     }
 
     @Test
@@ -58,20 +58,15 @@ internal class GetNotificationSettingsImplTest {
         given()
         val fixture = SutFixture()
         val userId = Uuid.random()
-        val defaultSettingsRequest = NotificationSettings(
-            userId = userId,
-            appointmentEnabled = true,
-            channels = listOf(
-                NotificationChannelSettings(CommunicationChannel.PUSH_NOTIFICATIONS, enabled = false),
-                NotificationChannelSettings(CommunicationChannel.EMAIL, enabled = false),
-                NotificationChannelSettings(CommunicationChannel.TELEGRAM, enabled = false),
-            )
-        )
-        val defaultSettings = defaultSettingsRequest.copy()
+        val defaultSettings = NotificationSettings.stub(userId = userId, appointmentEnabled = true, channels = listOf(
+            NotificationChannelSettings.stub(channel = CommunicationChannel.PUSH_NOTIFICATIONS, enabled = false),
+            NotificationChannelSettings.stub(channel = CommunicationChannel.EMAIL, enabled = false),
+            NotificationChannelSettings.stub(channel = CommunicationChannel.TELEGRAM, enabled = false),
+        ))
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { notificationSettingsDataSource.getByUserId(userId) } returns null
-            coEvery { notificationSettingsDataSource.upsert(defaultSettingsRequest) } returns defaultSettings
+            coEvery { notificationSettingsDataSource.upsert(any<NotificationSettings>()) } returns defaultSettings
         }
 
         whenn()
@@ -81,6 +76,29 @@ internal class GetNotificationSettingsImplTest {
         assertTrue(result.isSuccess)
         assertEquals(defaultSettings, result.getOrNull())
         assertTrue(result.getOrNull()!!.channels.none { it.enabled })
-        coVerify(exactly = 1) { fixture.notificationSettingsDataSource.upsert(defaultSettingsRequest) }
+        coVerify(exactly = 1) {
+            fixture.notificationSettingsDataSource.upsert(
+                match<NotificationSettings> { s ->
+                    s.userId == userId && s.appointmentEnabled && s.channels.none { ch -> ch.enabled }
+                }
+            )
+        }
+    }
+
+    @Test
+    fun `should return failure when datasource throws`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { notificationSettingsDataSource.getByUserId(userId) } throws RuntimeException("db error")
+        }
+
+        whenn()
+        val result = fixture.sut.invoke(userId)
+
+        then()
+        assertTrue(result.isFailure)
     }
 }

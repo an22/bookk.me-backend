@@ -32,9 +32,9 @@ internal class UpdateNotificationSettingsImplTest {
         val fixture = SutFixture()
         val userId = Uuid.random()
         val channels = listOf(
-            NotificationChannelSettings(CommunicationChannel.EMAIL, enabled = true),
-            NotificationChannelSettings(CommunicationChannel.TELEGRAM, enabled = false),
-            NotificationChannelSettings(CommunicationChannel.PUSH_NOTIFICATIONS, enabled = true),
+            NotificationChannelSettings.stub(channel = CommunicationChannel.EMAIL, enabled = true),
+            NotificationChannelSettings.stub(channel = CommunicationChannel.TELEGRAM, enabled = false),
+            NotificationChannelSettings.stub(channel = CommunicationChannel.PUSH_NOTIFICATIONS, enabled = true),
         )
         val request = NotificationSettings(userId = userId, appointmentEnabled = false, channels = channels)
         val updatedSettings = request.copy()
@@ -59,7 +59,7 @@ internal class UpdateNotificationSettingsImplTest {
         val userId = Uuid.random()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { notificationSettingsDataSource.upsert(any()) } throws RuntimeException("db error")
+            coEvery { notificationSettingsDataSource.upsert(any<NotificationSettings>()) } throws RuntimeException("db error")
         }
 
         whenn()

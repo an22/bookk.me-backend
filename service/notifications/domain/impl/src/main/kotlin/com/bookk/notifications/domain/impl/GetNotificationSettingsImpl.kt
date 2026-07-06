@@ -19,9 +19,9 @@ internal class GetNotificationSettingsImpl(
                     userId = userId,
                     appointmentEnabled = true,
                     channels = listOf(
-                        NotificationChannelSettings(CommunicationChannel.PUSH_NOTIFICATIONS, false),
-                        NotificationChannelSettings(CommunicationChannel.EMAIL, false),
-                        NotificationChannelSettings(CommunicationChannel.TELEGRAM, false)
+                        NotificationChannelSettings(Uuid.random(), CommunicationChannel.PUSH_NOTIFICATIONS, false),
+                        NotificationChannelSettings(Uuid.random(), CommunicationChannel.EMAIL, false),
+                        NotificationChannelSettings(Uuid.random(), CommunicationChannel.TELEGRAM, false)
                     )
                 )
             )

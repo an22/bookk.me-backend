@@ -95,10 +95,13 @@ internal class CreateAppointmentRequestImpl(
         }
         eventProducer.send(
             AppointmentEvent.RequestCreated(
+                clientUserId = request.client.id,
+                clientName = request.client.fullName,
+                employeeUserId = request.employee.id,
+                employeeName = request.employee.fullName,
                 from = request.date,
                 to = request.dateEnd,
                 businessName = business.name,
-                executioner = request.employee.fullName,
                 address = business.address,
                 price = moneyFormatter.print(request.totalAmount)
             )

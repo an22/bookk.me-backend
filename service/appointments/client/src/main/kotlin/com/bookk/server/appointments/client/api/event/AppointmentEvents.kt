@@ -9,11 +9,14 @@ interface AppointmentEvent : EventStreaming.Event<String> {
 
     @Serializable
     data class RequestCreated(
+        val clientUserId: Uuid,
+        val clientName: String,
+        val employeeUserId: Uuid,
+        val employeeName: String,
         val from: Instant,
         val to: Instant,
         val businessName: String,
         val address: String,
-        val executioner: String,
         val price: String,
         override val idempotencyKey: String = Uuid.random().toString()
     ) : AppointmentEvent {
@@ -26,11 +29,14 @@ interface AppointmentEvent : EventStreaming.Event<String> {
 
     @Serializable
     data class RequestApproved(
+        val clientUserId: Uuid,
+        val clientName: String,
+        val employeeUserId: Uuid,
+        val employeeName: String,
         val from: Instant,
         val to: Instant,
         val businessName: String,
         val address: String,
-        val executioner: String,
         val price: String,
         override val idempotencyKey: String = Uuid.random().toString()
     ) : AppointmentEvent {
@@ -43,11 +49,14 @@ interface AppointmentEvent : EventStreaming.Event<String> {
 
     @Serializable
     data class RequestRejected(
+        val clientUserId: Uuid,
+        val clientName: String,
+        val employeeUserId: Uuid,
+        val employeeName: String,
         val from: Instant,
         val to: Instant,
         val address: String,
         val businessName: String,
-        val executioner: String,
         val price: String,
         val declineReason: String,
         override val idempotencyKey: String = Uuid.random().toString()
@@ -61,11 +70,14 @@ interface AppointmentEvent : EventStreaming.Event<String> {
 
     @Serializable
     data class Cancelled(
+        val clientUserId: Uuid,
+        val clientName: String,
+        val employeeUserId: Uuid,
+        val employeeName: String,
         val from: Instant,
         val to: Instant,
         val address: String,
         val businessName: String,
-        val executioner: String,
         val price: String,
         val reason: String,
         override val idempotencyKey: String = Uuid.random().toString()

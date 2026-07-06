@@ -5,13 +5,21 @@ import com.bookk.core.data.eventstreaming.StandardEventConsumer
 import com.bookk.core.data.eventstreaming.registerResultReceiver
 import com.bookk.notifications.domain.api.CreateDeviceEntry
 import com.bookk.notifications.domain.api.DeleteDeviceByUUID
+import com.bookk.notifications.domain.impl.UpdateTargetInformation
+import com.bookk.notifications.domain.impl.UpdateTargetInformation.Target
+import com.bookk.notifications.domain.impl.notification.SendNotification
+import com.bookk.notifications.domain.impl.notification.renderer.appointment.notification
+import com.bookk.server.appointments.client.api.event.AppointmentEvent
 import com.bookk.server.auth.client.AuthEvent
+import com.bookk.server.user.client.api.event.UserEvent
 import kotlinx.coroutines.CoroutineScope
 
 internal class NotificationEventHandler(
     private val consumer: StandardEventConsumer,
     private val createDeviceEntry: CreateDeviceEntry,
     private val deleteDeviceByUUID: DeleteDeviceByUUID,
+    private val updateTargetInformation: UpdateTargetInformation,
+    private val sendNotification: SendNotification
 ) : EventHandler {
     override fun start(scope: CoroutineScope) {
         consumer
@@ -20,6 +28,21 @@ internal class NotificationEventHandler(
             }
             .registerResultReceiver(AuthEvent.DeviceDeleted.TOPIC) { event: AuthEvent.DeviceDeleted ->
                 deleteDeviceByUUID(event.deviceUuid)
+            }
+            .registerResultReceiver(UserEvent.Updated.TOPIC) { event : UserEvent.Updated ->
+                updateTargetInformation(event.userId, Target.Email(event.email))
+            }
+            .registerResultReceiver(AppointmentEvent.RequestCreated.TOPIC) { event : AppointmentEvent.RequestCreated ->
+                sendNotification(event.employeeUserId, event.notification)
+            }
+            .registerResultReceiver(AppointmentEvent.RequestApproved.TOPIC) { event : AppointmentEvent.RequestApproved ->
+                sendNotification(event.clientUserId, event.notification)
+            }
+            .registerResultReceiver(AppointmentEvent.RequestRejected.TOPIC) { event : AppointmentEvent.RequestRejected ->
+                sendNotification(event.clientUserId, event.notification)
+            }
+            .registerResultReceiver(AppointmentEvent.Cancelled.TOPIC) { event : AppointmentEvent.Cancelled ->
+                sendNotification(event.clientUserId, event.notification)
             }
             .start(scope)
     }

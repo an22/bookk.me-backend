@@ -31,7 +31,7 @@ internal class NotificationSettingsDataSourceImpl : DataSource(), NotificationSe
             where = { NotificationSettingsTable.userId eq settings.userId.toJavaUuid() },
         ) {
             it[NotificationSettingsTable.userId] = settings.userId.toJavaUuid()
-            it[NotificationSettingsTable.appointmentEnabled] = appointmentEnabled
+            it[NotificationSettingsTable.appointmentEnabled] = settings.appointmentEnabled
             it[NotificationSettingsTable.updatedAt] = Clock.System.now()
         }
             .map { NotificationSettingsEntity.wrapRow(it) }
@@ -43,7 +43,7 @@ internal class NotificationSettingsDataSourceImpl : DataSource(), NotificationSe
         val enabledByChannel = settings.channels.associate { it.channel to it.enabled }
         CommunicationChannel.entries
             .map { channel ->
-                NotificationChannelSettings(channel, enabled = enabledByChannel[channel] ?: false)
+                NotificationChannelSettings(Uuid.random(), channel, enabled = enabledByChannel[channel] ?: false)
             }
             .forEach { channelSettings ->
                 NotificationChannelsEntity.new {
@@ -54,5 +54,11 @@ internal class NotificationSettingsDataSourceImpl : DataSource(), NotificationSe
             }
 
         settingsEntity.domain()
+    }
+
+    override suspend fun upsert(channel: NotificationChannelSettings) = dbQuery<Unit> {
+        NotificationChannelsEntity.findByIdAndUpdate(channel.id.toJavaUuid()) {
+            it.enabled = channel.enabled
+        }
     }
 }

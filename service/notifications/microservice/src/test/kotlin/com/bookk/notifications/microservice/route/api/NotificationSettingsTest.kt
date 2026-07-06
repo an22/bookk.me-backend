@@ -38,9 +38,9 @@ internal class NotificationSettingsTest {
         val settings = NotificationSettings.stub(
             userId = userId,
             channels = listOf(
-                NotificationChannelSettings(CommunicationChannel.EMAIL, enabled = true),
-                NotificationChannelSettings(CommunicationChannel.PUSH_NOTIFICATIONS, enabled = false),
-                NotificationChannelSettings(CommunicationChannel.TELEGRAM, enabled = false),
+                NotificationChannelSettings.stub(channel = CommunicationChannel.EMAIL, enabled = true),
+                NotificationChannelSettings.stub(channel = CommunicationChannel.PUSH_NOTIFICATIONS, enabled = false),
+                NotificationChannelSettings.stub(channel = CommunicationChannel.TELEGRAM, enabled = false),
             )
         )
         coEvery { useCase.invoke(userId) } returns Result.success(settings)
@@ -65,6 +65,34 @@ internal class NotificationSettingsTest {
         then()
         assertEquals(HttpStatusCode.OK, response.status)
         assertEquals(settings, response.body<NotificationSettings>())
+    }
+
+    @Test
+    fun `should return 500 when get notification settings fails`() = routeTest {
+        given()
+        val useCase: GetNotificationSettings = mockk()
+        val userId = Uuid.random()
+        coEvery { useCase.invoke(userId) } returns Result.failure(RuntimeException("db error"))
+        setupApplication(
+            extension = {
+                install(Authentication) {
+                    provider {
+                        authenticate { context ->
+                            context.principal(AppPrincipal(Uuid.random(), userId, Uuid.random()))
+                        }
+                    }
+                }
+            },
+            diModule = module { single { useCase } },
+            routeUnderTest = { notificationSettings() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.get(Api.Notification.Settings())
+
+        then()
+        assertEquals(HttpStatusCode.InternalServerError, response.status)
     }
 
     @Test
@@ -95,9 +123,9 @@ internal class NotificationSettingsTest {
         val useCase: UpdateNotificationSettings = mockk()
         val userId = Uuid.random()
         val channels = listOf(
-            NotificationChannelSettings(CommunicationChannel.TELEGRAM, enabled = true),
-            NotificationChannelSettings(CommunicationChannel.EMAIL, enabled = false),
-            NotificationChannelSettings(CommunicationChannel.PUSH_NOTIFICATIONS, enabled = true),
+            NotificationChannelSettings.stub(channel = CommunicationChannel.TELEGRAM, enabled = true),
+            NotificationChannelSettings.stub(channel = CommunicationChannel.EMAIL, enabled = false),
+            NotificationChannelSettings.stub(channel = CommunicationChannel.PUSH_NOTIFICATIONS, enabled = true),
         )
         val settings = NotificationSettings.stub(userId = userId, appointmentEnabled = false, channels = channels)
         coEvery { useCase.invoke(userId, false, channels) } returns Result.success(settings)
@@ -124,6 +152,36 @@ internal class NotificationSettingsTest {
         then()
         assertEquals(HttpStatusCode.OK, response.status)
         assertEquals(settings, response.body<NotificationSettings>())
+    }
+
+    @Test
+    fun `should return 500 when update notification settings fails`() = routeTest {
+        given()
+        val useCase: UpdateNotificationSettings = mockk()
+        val userId = Uuid.random()
+        coEvery { useCase.invoke(userId, any(), any()) } returns Result.failure(RuntimeException("db error"))
+        setupApplication(
+            extension = {
+                install(Authentication) {
+                    provider {
+                        authenticate { context ->
+                            context.principal(AppPrincipal(Uuid.random(), userId, Uuid.random()))
+                        }
+                    }
+                }
+            },
+            diModule = module { single { useCase } },
+            routeUnderTest = { notificationSettings() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.put(Api.Notification.Settings()) {
+            setBody(UpdateNotificationSettingsRequest(appointmentEnabled = true, channels = emptyList()))
+        }
+
+        then()
+        assertEquals(HttpStatusCode.InternalServerError, response.status)
     }
 
     @Test

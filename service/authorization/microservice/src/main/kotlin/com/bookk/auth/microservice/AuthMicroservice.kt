@@ -1,6 +1,7 @@
 package com.bookk.auth.microservice
 
 import com.bookk.auth.data.di.authDataModule
+import com.bookk.auth.domain.api.device.operation.DeleteInactiveDevices
 import com.bookk.auth.domain.impl.di.authDomainModule
 import com.bookk.auth.microservice.route.authRoute
 import com.bookk.core.data.cache.impl.di.cacheModule
@@ -36,6 +37,9 @@ fun Application.installScheduler() {
     install(Scheduler) {
         job("rotateSigningKeys", interval = 1.days) {
             get<RotateSigningKeys>().invoke(retireInterval = 7.days).getOrThrow()
+        }
+        job("deleteInactiveDevices", interval = 1.days) {
+            get<DeleteInactiveDevices>().invoke().getOrThrow()
         }
     }
 }

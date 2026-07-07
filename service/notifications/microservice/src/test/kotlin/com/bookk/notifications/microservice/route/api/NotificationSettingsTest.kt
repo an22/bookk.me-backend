@@ -128,7 +128,7 @@ internal class NotificationSettingsTest {
             NotificationChannelSettings.stub(channel = CommunicationChannel.PUSH_NOTIFICATIONS, enabled = true),
         )
         val settings = NotificationSettings.stub(userId = userId, appointmentEnabled = false, channels = channels)
-        coEvery { useCase.invoke(userId, false, channels) } returns Result.success(settings)
+        coEvery { useCase.invoke(userId, any()) } returns Result.success(settings)
         setupApplication(
             extension = {
                 install(Authentication) {
@@ -146,7 +146,7 @@ internal class NotificationSettingsTest {
         whenn()
         val client = createTestClient()
         val response = client.put(Api.Notification.Settings()) {
-            setBody(UpdateNotificationSettingsRequest(appointmentEnabled = false, channels = channels))
+            setBody(NotificationSettings.Update(id = Uuid.random(), appointmentEnabled = false, channels = channels))
         }
 
         then()
@@ -159,7 +159,7 @@ internal class NotificationSettingsTest {
         given()
         val useCase: UpdateNotificationSettings = mockk()
         val userId = Uuid.random()
-        coEvery { useCase.invoke(userId, any(), any()) } returns Result.failure(RuntimeException("db error"))
+        coEvery { useCase.invoke(userId, any()) } returns Result.failure(RuntimeException("db error"))
         setupApplication(
             extension = {
                 install(Authentication) {
@@ -177,7 +177,7 @@ internal class NotificationSettingsTest {
         whenn()
         val client = createTestClient()
         val response = client.put(Api.Notification.Settings()) {
-            setBody(UpdateNotificationSettingsRequest(appointmentEnabled = true, channels = emptyList()))
+            setBody(NotificationSettings.Update(id = Uuid.random(), appointmentEnabled = true, channels = emptyList()))
         }
 
         then()
@@ -201,7 +201,7 @@ internal class NotificationSettingsTest {
         whenn()
         val client = createTestClient()
         val response = client.put(Api.Notification.Settings()) {
-            setBody(UpdateNotificationSettingsRequest(appointmentEnabled = true, channels = emptyList()))
+            setBody(NotificationSettings.Update(id = Uuid.random(), appointmentEnabled = true, channels = emptyList()))
         }
 
         then()

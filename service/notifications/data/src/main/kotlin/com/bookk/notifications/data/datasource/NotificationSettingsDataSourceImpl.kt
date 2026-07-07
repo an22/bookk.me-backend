@@ -6,12 +6,11 @@ import com.bookk.notifications.data.orm.entity.NotificationChannelsEntity
 import com.bookk.notifications.data.orm.entity.NotificationSettingsEntity
 import com.bookk.notifications.data.orm.table.NotificationChannelsTable
 import com.bookk.notifications.data.orm.table.NotificationSettingsTable
-import com.bookk.notifications.domain.api.entity.CommunicationChannel
 import com.bookk.notifications.domain.api.entity.NotificationChannelSettings
 import com.bookk.notifications.domain.api.entity.NotificationSettings
 import com.bookk.notifications.domain.datasource.NotificationSettingsDataSource
 import org.jetbrains.exposed.v1.core.eq
-import org.jetbrains.exposed.v1.jdbc.deleteWhere
+import org.jetbrains.exposed.v1.jdbc.upsert
 import org.jetbrains.exposed.v1.jdbc.upsertReturning
 import kotlin.time.Clock
 import kotlin.uuid.Uuid
@@ -27,31 +26,26 @@ internal class NotificationSettingsDataSourceImpl : DataSource(), NotificationSe
     }
 
     override suspend fun upsert(settings: NotificationSettings): NotificationSettings = dbQuery {
-        val settingsEntity = NotificationSettingsTable.upsertReturning {
+        val settingId = NotificationSettingsTable.upsertReturning(returning = listOf(NotificationSettingsTable.id)) {
+            it[NotificationSettingsTable.id] = settings.id.toJavaUuid()
             it[NotificationSettingsTable.userId] = settings.userId.toJavaUuid()
             it[NotificationSettingsTable.appointmentEnabled] = settings.appointmentEnabled
             it[NotificationSettingsTable.updatedAt] = Clock.System.now()
         }
-            .map { NotificationSettingsEntity.wrapRow(it) }
+            .map { it[NotificationSettingsTable.id] }
             .singleOrNull() ?: throw Error.NotFound()
 
-        NotificationChannelsTable
-            .deleteWhere { NotificationChannelsTable.settingsId eq settingsEntity.id }
-
-        val enabledByChannel = settings.channels.associate { it.channel to it.enabled }
-        CommunicationChannel.entries
-            .map { channel ->
-                NotificationChannelSettings(Uuid.random(), channel, enabled = enabledByChannel[channel] ?: false)
+        settings.channels.forEach { channel ->
+            NotificationChannelsTable.upsert {
+                it[NotificationChannelsTable.id] = channel.id.toJavaUuid()
+                it[NotificationChannelsTable.settingsId] = settingId
+                it[NotificationChannelsTable.channel] = channel.channel
+                it[NotificationChannelsTable.enabled] = channel.enabled
+                it[NotificationChannelsTable.updatedAt] = Clock.System.now()
             }
-            .forEach { channelSettings ->
-                NotificationChannelsEntity.new {
-                    settingsId = settingsEntity.id
-                    channel = channelSettings.channel
-                    enabled = channelSettings.enabled
-                }
-            }
+        }
 
-        settingsEntity.domain()
+        NotificationSettingsEntity[settingId].domain()
     }
 
     override suspend fun upsert(channel: NotificationChannelSettings) = dbQuery<Unit> {

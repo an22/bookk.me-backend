@@ -4,6 +4,7 @@ import com.bookk.auth.domain.api.authentication.operation.FinishAssertion
 import com.bookk.auth.domain.api.authentication.operation.SignIn
 import com.bookk.auth.domain.api.authentication.operation.StartAssertion
 import com.bookk.auth.domain.api.delete_account.operation.DeleteAccount
+import com.bookk.auth.domain.api.device.operation.DeleteInactiveDevices
 import com.bookk.auth.domain.api.identification.operation.DeletePasskey
 import com.bookk.auth.domain.api.identification.operation.GetAttachPasskeyToAccountChallenge
 import com.bookk.auth.domain.api.identification.operation.GetAvailablePasskeys
@@ -20,6 +21,7 @@ import com.bookk.auth.domain.impl.operation.SignOutImpl
 import com.bookk.auth.domain.impl.operation.authentication.FinishAssertionImpl
 import com.bookk.auth.domain.impl.operation.authentication.SignInImpl
 import com.bookk.auth.domain.impl.operation.authentication.StartAssertionImpl
+import com.bookk.auth.domain.impl.operation.device.DeleteInactiveDevicesImpl
 import com.bookk.auth.domain.impl.operation.identification.DeletePasskeyImpl
 import com.bookk.auth.domain.impl.operation.identification.GetAttachPasskeyToAccountChallengeImpl
 import com.bookk.auth.domain.impl.operation.identification.GetAvailablePasskeysImpl
@@ -53,4 +55,5 @@ fun authDomainModule() = module {
     singleOf(::StartPasskeyRegistrationImpl) bind StartPasskeyRegistration::class
     singleOf(::FinishPasskeyRegistrationImpl) bind FinishPasskeyRegistration::class
     singleOf(::AttachNewPasskeyToAccountImpl) bind AttachNewPasskeyToAccount::class
+    singleOf(::DeleteInactiveDevicesImpl) bind DeleteInactiveDevices::class
 }

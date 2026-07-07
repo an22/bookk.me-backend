@@ -16,6 +16,7 @@ internal class NotificationSettingsEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     val channels by NotificationChannelsEntity referrersOn NotificationChannelsTable.settingsId
 
     fun domain() = NotificationSettings(
+        id = id.value.toKotlinUuid(),
         userId = userId.toKotlinUuid(),
         appointmentEnabled = appointmentEnabled,
         channels = channels.map {

@@ -18,7 +18,7 @@ jwt = "4.5.2"
 mockk = "1.14.11"
 money = "2.0.2"
 jackson = "2.17.1"
-firebase = "9.9.0"
+firebase = "9.10.0"
 
 [libraries]
 jackson-core = { module = "com.fasterxml.jackson.core:jackson-core", version.ref = "jackson" }

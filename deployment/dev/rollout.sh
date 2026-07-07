@@ -1,11 +1,12 @@
 #!/usr/bin/env sh
 docker compose -f environment-compose.yml up -d
+#Sometimes gradle daemon cannot resolve docker from ENV, daemon restart helps
+./gradlew --stop
+
 #Auth service
 cd service || exit
 export $(grep -v '^#' auth.env | xargs) || exit
 cd ../../.. || exit
-#Sometimes gradle daemon cannot resolve docker from END, daemon restart helps
-./gradlew --stop
 ./gradlew :service:authorization:microservice:publishImageToLocalRegistry --no-configuration-cache || exit
 
 #User service

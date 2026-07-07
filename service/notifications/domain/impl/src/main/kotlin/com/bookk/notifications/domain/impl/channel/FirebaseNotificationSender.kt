@@ -25,7 +25,7 @@ internal class FirebaseNotificationSender(
             .mapNotNull { it.notificationToken }
             .associateWith { token ->
                 Message.builder()
-                    .setToken(token)
+                    .setFid(token)
                     .setNotification(
                         Notification.builder()
                             .setTitle(params.push.title)

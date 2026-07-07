@@ -17,6 +17,7 @@ internal class AuthDeviceEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var previousRefreshTokenId by AuthDeviceTable.previousRefreshTokenId
     var previousRefreshTokenHash by AuthDeviceTable.previousRefreshTokenHash
     var isSignedIn by AuthDeviceTable.isSignedIn
+    var lastLogInAt by AuthDeviceTable.lastLogInAt
     var createdAt by AuthDeviceTable.createdAt
     var updatedAt by AuthDeviceTable.updatedAt
 

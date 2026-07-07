@@ -15,6 +15,7 @@ internal object AuthDeviceTable : UUIDTable("auth_device") {
     val previousRefreshTokenId = uuid("previous_refresh_token_id").nullable()
     val previousRefreshTokenHash = varchar("previous_refresh_token_hash", 64).nullable()
     val isSignedIn = bool("is_signed_in")
+    val lastLogInAt = timestamp("last_log_in_at").nullable()
     val createdAt = timestamp("created_at").clientDefault { Clock.System.now() }
     val updatedAt = timestamp("updated_at").clientDefault { Clock.System.now() }
 

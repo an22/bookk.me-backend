@@ -34,6 +34,7 @@ internal fun AuthDeviceEntity.toDomain(): Device {
             previousRefreshToken = SafeRefreshToken.from(previousRefreshTokenId?.toKotlinUuid(), previousRefreshTokenHash),
             deviceName = deviceName,
             isSignedIn = isSignedIn,
+            lastLogInAt = lastLogInAt,
         )
     )
 }

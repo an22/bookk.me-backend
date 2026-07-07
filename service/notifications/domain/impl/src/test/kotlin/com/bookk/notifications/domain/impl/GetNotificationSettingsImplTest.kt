@@ -58,7 +58,7 @@ internal class GetNotificationSettingsImplTest {
         given()
         val fixture = SutFixture()
         val userId = Uuid.random()
-        val defaultSettings = NotificationSettings.stub(userId = userId, appointmentEnabled = true, channels = listOf(
+        val defaultSettings = NotificationSettings.stub(userId = userId, appointmentEnabled = false, channels = listOf(
             NotificationChannelSettings.stub(channel = CommunicationChannel.PUSH_NOTIFICATIONS, enabled = false),
             NotificationChannelSettings.stub(channel = CommunicationChannel.EMAIL, enabled = false),
             NotificationChannelSettings.stub(channel = CommunicationChannel.TELEGRAM, enabled = false),
@@ -79,7 +79,7 @@ internal class GetNotificationSettingsImplTest {
         coVerify(exactly = 1) {
             fixture.notificationSettingsDataSource.upsert(
                 match<NotificationSettings> { s ->
-                    s.userId == userId && s.appointmentEnabled && s.channels.none { ch -> ch.enabled }
+                    s.userId == userId && !s.appointmentEnabled && s.channels.none { ch -> ch.enabled }
                 }
             )
         }

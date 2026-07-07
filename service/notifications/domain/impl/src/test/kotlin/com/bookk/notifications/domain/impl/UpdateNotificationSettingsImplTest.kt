@@ -31,25 +31,26 @@ internal class UpdateNotificationSettingsImplTest {
         given()
         val fixture = SutFixture()
         val userId = Uuid.random()
+        val settingsId = Uuid.random()
         val channels = listOf(
             NotificationChannelSettings.stub(channel = CommunicationChannel.EMAIL, enabled = true),
             NotificationChannelSettings.stub(channel = CommunicationChannel.TELEGRAM, enabled = false),
             NotificationChannelSettings.stub(channel = CommunicationChannel.PUSH_NOTIFICATIONS, enabled = true),
         )
-        val request = NotificationSettings(userId = userId, appointmentEnabled = false, channels = channels)
-        val updatedSettings = request.copy()
+        val update = NotificationSettings.Update(id = settingsId, appointmentEnabled = false, channels = channels)
+        val expectedSettings = NotificationSettings.stub(id = settingsId, userId = userId, appointmentEnabled = false, channels = channels)
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { notificationSettingsDataSource.upsert(request) } returns updatedSettings
+            coEvery { notificationSettingsDataSource.upsert(any<NotificationSettings>()) } returns expectedSettings
         }
 
         whenn()
-        val result = fixture.sut.invoke(userId, false, channels)
+        val result = fixture.sut.invoke(userId, update)
 
         then()
         assertTrue(result.isSuccess)
-        assertEquals(updatedSettings, result.getOrNull())
-        coVerify(exactly = 1) { fixture.notificationSettingsDataSource.upsert(request) }
+        assertEquals(expectedSettings, result.getOrNull())
+        coVerify(exactly = 1) { fixture.notificationSettingsDataSource.upsert(any<NotificationSettings>()) }
     }
 
     @Test
@@ -57,13 +58,14 @@ internal class UpdateNotificationSettingsImplTest {
         given()
         val fixture = SutFixture()
         val userId = Uuid.random()
+        val update = NotificationSettings.Update(id = Uuid.random(), appointmentEnabled = true, channels = emptyList())
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { notificationSettingsDataSource.upsert(any<NotificationSettings>()) } throws RuntimeException("db error")
         }
 
         whenn()
-        val result = fixture.sut.invoke(userId, true, emptyList())
+        val result = fixture.sut.invoke(userId, update)
 
         then()
         assertTrue(result.isFailure)

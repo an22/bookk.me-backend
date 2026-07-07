@@ -308,7 +308,11 @@ server {
       proxy_pass http://$upstream;
   }
   location /api/appointments {
-        set $upstream appointments.service;
-        proxy_pass http://$upstream;
-    }
+      set $upstream appointments.service;
+      proxy_pass http://$upstream;
+  }
+  location /api/notifications {
+      set $upstream notifications.service;
+      proxy_pass http://$upstream;
+  }
 }

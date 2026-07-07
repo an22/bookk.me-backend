@@ -12,7 +12,7 @@ object AppLevelConstants {
     val serviceName: String
         get() = System.getenv("APPLICATION_SERVICE_NAME").orEmpty()
     val serviceHostName: String
-        get() = System.getenv("APPLICATION_SERVICE_HOST_NAME").orEmpty()
+        get() = System.getenv("APPLICATION_SERVICE_HOSTNAME").orEmpty()
     val serviceVersion: String
         get() = System.getenv("APPLICATION_SERVICE_VERSION").orEmpty()
     val cacheHost: String

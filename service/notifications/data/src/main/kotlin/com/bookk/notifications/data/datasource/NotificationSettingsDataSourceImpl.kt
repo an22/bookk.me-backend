@@ -27,9 +27,7 @@ internal class NotificationSettingsDataSourceImpl : DataSource(), NotificationSe
     }
 
     override suspend fun upsert(settings: NotificationSettings): NotificationSettings = dbQuery {
-        val settingsEntity = NotificationSettingsTable.upsertReturning(
-            where = { NotificationSettingsTable.userId eq settings.userId.toJavaUuid() },
-        ) {
+        val settingsEntity = NotificationSettingsTable.upsertReturning {
             it[NotificationSettingsTable.userId] = settings.userId.toJavaUuid()
             it[NotificationSettingsTable.appointmentEnabled] = settings.appointmentEnabled
             it[NotificationSettingsTable.updatedAt] = Clock.System.now()

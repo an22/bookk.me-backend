@@ -35,4 +35,40 @@ data class PasskeyCredential(
         val type: String,
         val transports: Set<String>
     )
+
+    companion object {
+        fun stub(
+            id: Uuid = Uuid.random(),
+            authInfo: Authentication = Authentication.stub(),
+            name: String = "My key",
+            credDescriptor: CredentialDescriptor = CredentialDescriptor(
+                id = ByteArray(24) { it.toByte() },
+                type = "public-key",
+                transports = setOf("internal")
+            ),
+            publicKey: String = "base64pubkey==",
+            signatureCount: Long = 0L,
+            isDiscoverable: Boolean = true,
+            isBackupEligible: Boolean = false,
+            isBackedUp: Boolean = false,
+            attestationObject: ByteArray = ByteArray(32) { 0 },
+            clientData: String = "{}"
+        ) = PasskeyCredential(
+            id = id,
+            authId = authInfo.id,
+            authInfo = authInfo,
+            handle = authInfo.uuid,
+            name = name,
+            credDescriptor = credDescriptor,
+            publicKey = publicKey,
+            signatureCount = signatureCount,
+            isDiscoverable = isDiscoverable,
+            isBackupEligible = isBackupEligible,
+            isBackedUp = isBackedUp,
+            attestationObject = attestationObject,
+            clientData = clientData,
+            createdAt = Instant.fromEpochMilliseconds(0),
+            lastUsedAt = Instant.fromEpochMilliseconds(0)
+        )
+    }
 }

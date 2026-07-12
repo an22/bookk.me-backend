@@ -15,8 +15,6 @@ import io.mockk.mockk
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import kotlin.uuid.Uuid
-
 internal class GetUserByEmailImplTest {
 
     private class SutFixture {
@@ -25,19 +23,12 @@ internal class GetUserByEmailImplTest {
         val sut = GetUserByEmailImpl(userDataSource, transactionManager)
     }
 
-    private fun makeUser(email: String = "john@example.com"): User = User(
-        id = Uuid.random(),
-        name = "John",
-        lastName = "Doe",
-        email = email
-    )
-
     @Test
     fun `should return user when found by email`() = runUnitTest {
         given()
         val fixture = SutFixture()
         val email = "john@example.com"
-        val user = makeUser(email)
+        val user = User.stub(email = email)
         val body = EmailBody(email)
         with(fixture) {
             transactionManager.mockTransaction()

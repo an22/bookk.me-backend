@@ -12,7 +12,7 @@ internal val AppointmentEvent.Cancelled.notification: NotificationParameters
         type = NotificationType.APPOINTMENT,
         push = PushNotification(
             title = "",
-            subtitle = "",
+            body = "",
         ),
         email = EmailNotification(
             subject = "",

@@ -12,7 +12,7 @@ internal val AppointmentEvent.RequestRejected.notification: NotificationParamete
         type = NotificationType.APPOINTMENT,
         push = PushNotification(
             title = "",
-            subtitle = "",
+            body = "",
         ),
         email = EmailNotification(
             subject = "",

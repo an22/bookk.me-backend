@@ -22,6 +22,7 @@ internal class IssueQuoteImpl(
         return transactionManager.transaction {
             val services = serviceDataSource.getServicesByIds(serviceIds)
             if (services.size != serviceIds.size) throw IssueQuote.Error.ServiceNotFound()
+            if (services.any { it.businessId != businessId }) throw IssueQuote.Error.ServiceNotFound()
 
             val quoteId = Uuid.random()
             val token = buildToken(quoteId, businessId, services)

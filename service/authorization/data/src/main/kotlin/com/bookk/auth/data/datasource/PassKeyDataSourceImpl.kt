@@ -32,10 +32,7 @@ internal class PassKeyDataSourceImpl(
 ) : DataSource(), PassKeyDataSource {
 
     override suspend fun saveChallengeToCache(requestId: String, challenge: String) = mapExceptions {
-        cacheClient.withTransaction {
-            set(requestId, challenge)
-            setExpiration(requestId, 5.minutes)
-        }
+        cacheClient.set(requestId, challenge, 5.minutes)
     }
 
     override suspend fun getCachedChallenge(requestId: String): String? {

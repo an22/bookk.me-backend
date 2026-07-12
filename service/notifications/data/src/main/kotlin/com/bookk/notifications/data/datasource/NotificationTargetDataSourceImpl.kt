@@ -27,18 +27,14 @@ internal class NotificationTargetDataSourceImpl : DataSource(), NotificationTarg
     }
 
     override suspend fun upsertEmail(userId: Uuid, email: String) = dbQuery<Unit> {
-        NotificationEmailTargetTable.upsert(
-            where = { NotificationEmailTargetTable.userId eq userId.toJavaUuid() }
-        ) {
+        NotificationEmailTargetTable.upsert {
             it[NotificationEmailTargetTable.userId] = userId.toJavaUuid()
             it[NotificationEmailTargetTable.email] = email
         }
     }
 
     override suspend fun upsertTelegram(userId: Uuid, telegramTag: String) = dbQuery<Unit> {
-        NotificationTelegramTargetTable.upsert(
-            where = { NotificationTelegramTargetTable.userId eq userId.toJavaUuid() }
-        ) {
+        NotificationTelegramTargetTable.upsert {
             it[NotificationTelegramTargetTable.userId] = userId.toJavaUuid()
             it[NotificationTelegramTargetTable.telegramTag] = telegramTag
         }

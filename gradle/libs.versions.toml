@@ -1,5 +1,6 @@
 [versions]
 apache-common-pool = "2.4.3"
+h2 = "2.3.232"
 coroutines = "1.10.2"
 flyway = "11.11.2"
 hikari = "5.1.0"
@@ -19,6 +20,7 @@ mockk = "1.14.11"
 money = "2.0.2"
 jackson = "2.17.1"
 firebase = "9.10.0"
+inmemcache = "3.2.4"
 
 [libraries]
 jackson-core = { module = "com.fasterxml.jackson.core:jackson-core", version.ref = "jackson" }
@@ -76,6 +78,8 @@ joda-money = { module = "org.joda:joda-money", version.ref = "money" }
 auth0-jwks = { module = "com.auth0:jwks-rsa", version.ref = "jwks-rsa" }
 auth0-jwt = { module = "com.auth0:java-jwt", version.ref = "jwt" }
 firebase-admin = { module = "com.google.firebase:firebase-admin", version.ref = "firebase" }
+h2 = { module = "com.h2database:h2", version.ref = "h2" }
+memcache = {module = "com.github.ben-manes.caffeine:caffeine", version.ref = "inmemcache"}
 
 [plugins]
 bookk-data = { id = "com.bookk.data" }

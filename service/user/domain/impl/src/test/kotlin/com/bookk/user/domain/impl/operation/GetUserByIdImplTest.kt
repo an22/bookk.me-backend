@@ -24,19 +24,12 @@ internal class GetUserByIdImplTest {
         val sut = GetUserByIdImpl(userDataSource, transactionManager)
     }
 
-    private fun makeUser(id: Uuid = Uuid.random()): User = User(
-        id = id,
-        name = "John",
-        lastName = "Doe",
-        email = "john@example.com"
-    )
-
     @Test
     fun `should return user when found by id`() = runUnitTest {
         given()
         val fixture = SutFixture()
         val userId = Uuid.random()
-        val user = makeUser(userId)
+        val user = User.stub(id = userId)
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { userDataSource.getUserById(userId) } returns user

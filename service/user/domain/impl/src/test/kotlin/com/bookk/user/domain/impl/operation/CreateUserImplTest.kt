@@ -14,8 +14,6 @@ import io.mockk.mockk
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import kotlin.uuid.Uuid
-
 internal class CreateUserImplTest {
 
     private class SutFixture {
@@ -24,18 +22,11 @@ internal class CreateUserImplTest {
         val sut = CreateUserImpl(userDataSource, transactionManager)
     }
 
-    private fun makeUser(id: Uuid = Uuid.random()): User = User(
-        id = id,
-        name = "John",
-        lastName = "Doe",
-        email = "john@example.com"
-    )
-
     @Test
     fun `should insert user and return its id`() = runUnitTest {
         given()
         val fixture = SutFixture()
-        val user = makeUser()
+        val user = User.stub()
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { userDataSource.insertNewUser(user) } returns user
@@ -54,7 +45,7 @@ internal class CreateUserImplTest {
     fun `should return failure when datasource throws`() = runUnitTest {
         given()
         val fixture = SutFixture()
-        val user = makeUser()
+        val user = User.stub()
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { userDataSource.insertNewUser(user) } throws RuntimeException("constraint violation")

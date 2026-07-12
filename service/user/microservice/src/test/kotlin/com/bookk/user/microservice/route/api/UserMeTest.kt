@@ -37,7 +37,7 @@ internal class UserMeTest {
     fun `should get current user`() = routeTest {
         given()
         val useCase: GetUserById = mockk()
-        val user = User(userId, "John", "Doe", "john@example.com")
+        val user = User.stub(id = userId)
         
         coEvery { useCase.invoke(userId) } returns Result.success(user)
         

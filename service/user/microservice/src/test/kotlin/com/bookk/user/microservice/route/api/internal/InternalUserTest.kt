@@ -33,7 +33,7 @@ internal class InternalUserTest {
     fun `should create user`() = routeTest {
         given()
         val useCase: CreateUser = mockk()
-        val user = User(Uuid.random(), "John", "Doe", email)
+        val user = User.stub(email = email)
         
         coEvery { useCase.invoke(user) } returns Result.success(UserId(userId))
         
@@ -58,7 +58,7 @@ internal class InternalUserTest {
     fun `should return user by email`() = routeTest {
         given()
         val useCase: GetUserByEmail = mockk()
-        val user = User(userId, "John", "Doe", email)
+        val user = User.stub(id = userId, email = email)
         val emailBody = EmailBody(email)
         
         coEvery { useCase.invoke(emailBody) } returns Result.success(user)
@@ -84,7 +84,7 @@ internal class InternalUserTest {
     fun `should return user by id`() = routeTest {
         given()
         val useCase: GetUserById = mockk()
-        val user = User(userId, "John", "Doe", email)
+        val user = User.stub(id = userId, email = email)
         
         coEvery { useCase.invoke(userId) } returns Result.success(user)
         

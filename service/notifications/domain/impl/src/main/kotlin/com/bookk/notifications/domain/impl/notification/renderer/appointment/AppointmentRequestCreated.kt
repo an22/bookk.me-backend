@@ -12,7 +12,7 @@ internal val AppointmentEvent.RequestCreated.notification: NotificationParameter
         type = NotificationType.APPOINTMENT,
         push = PushNotification(
             title = "",
-            subtitle = "",
+            body = "",
         ),
         email = EmailNotification(
             subject = "",

@@ -9,7 +9,7 @@ internal class NotificationParameters(
 
 internal class PushNotification(
     val title: String,
-    val subtitle: String,
+    val body: String,
 )
 
 internal class EmailNotification(

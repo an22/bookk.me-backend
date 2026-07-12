@@ -29,7 +29,7 @@ internal class FirebaseNotificationSender(
                     .setNotification(
                         Notification.builder()
                             .setTitle(params.push.title)
-                            .setBody(params.push.subtitle)
+                            .setBody(params.push.body)
                             .build()
                     )
                     .build()

@@ -121,10 +121,7 @@ internal class AppointmentRequestDataSourceImpl(
     }
 
     override suspend fun cacheOfferToken(token: String) = mapExceptions {
-        cacheClient.withTransaction {
-            set(token, "marker")
-            setExpiration(token, 10.minutes)
-        }
+        cacheClient.set(token, "marker", 10.minutes)
     }
 
     override suspend fun isTokenInCache(token: String): Boolean = mapExceptions {

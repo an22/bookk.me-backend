@@ -41,6 +41,7 @@ internal class NotificationSettingsDataSourceImpl : DataSource(), NotificationSe
                 it[NotificationChannelsTable.settingsId] = settingId
                 it[NotificationChannelsTable.channel] = channel.channel
                 it[NotificationChannelsTable.enabled] = channel.enabled
+                it[NotificationChannelsTable.availableToClients] = channel.availableToClients
                 it[NotificationChannelsTable.updatedAt] = Clock.System.now()
             }
         }
@@ -51,6 +52,7 @@ internal class NotificationSettingsDataSourceImpl : DataSource(), NotificationSe
     override suspend fun upsert(channel: NotificationChannelSettings) = dbQuery<Unit> {
         NotificationChannelsEntity.findByIdAndUpdate(channel.id.toJavaUuid()) {
             it.enabled = channel.enabled
+            it.availableToClients = channel.availableToClients
         }
     }
 }

@@ -9,8 +9,7 @@ internal class EmailNotificationSender(
     private val transactionManager: TransactionManager,
     private val targetDataSource: NotificationTargetDataSource
 ) : NotificationSender {
-    override suspend fun send(toUserId: Uuid, params: NotificationParameters) = transactionManager.transaction {
-        val target = targetDataSource.getEmail(toUserId)
-
+    override suspend fun send(toUserId: Uuid, params: NotificationParameters): Result<Unit> {
+        return Result.failure(UnsupportedOperationException("Not implemented yet"))
     }
 }

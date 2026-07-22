@@ -24,6 +24,7 @@ internal class NotificationSettingsEntity(id: EntityID<UUID>) : UUIDEntity(id) {
                 id = it.id.value.toKotlinUuid(),
                 channel = it.channel,
                 enabled = it.enabled,
+                availableToClients = it.availableToClients,
             )
         },
     )

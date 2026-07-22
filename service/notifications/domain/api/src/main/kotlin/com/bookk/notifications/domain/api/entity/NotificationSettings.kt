@@ -23,9 +23,9 @@ data class NotificationSettings(
         userId = userId,
         appointmentEnabled = false,
         channels = listOf(
-            NotificationChannelSettings(Uuid.random(), CommunicationChannel.PUSH_NOTIFICATIONS, false),
-            NotificationChannelSettings(Uuid.random(), CommunicationChannel.EMAIL, false),
-            NotificationChannelSettings(Uuid.random(), CommunicationChannel.TELEGRAM, false)
+            NotificationChannelSettings(Uuid.random(), CommunicationChannel.PUSH_NOTIFICATIONS, false, true),
+            NotificationChannelSettings(Uuid.random(), CommunicationChannel.EMAIL, false, true),
+            NotificationChannelSettings(Uuid.random(), CommunicationChannel.TELEGRAM, false, true)
         )
     )
 

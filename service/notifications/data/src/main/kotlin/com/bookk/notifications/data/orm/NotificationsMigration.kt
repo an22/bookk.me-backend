@@ -12,8 +12,8 @@ import org.jetbrains.exposed.v1.core.Table
 fun main() {
     runBlocking {
         createMigrationScriptFor(
-            referenceVersion = 2,
-            targetVersion = 3,
+            referenceVersion = 3,
+            targetVersion = 4,
             schemaName = "notifications",
             tables = tables()
         )

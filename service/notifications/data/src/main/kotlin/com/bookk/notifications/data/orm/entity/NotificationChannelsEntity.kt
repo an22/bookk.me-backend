@@ -10,6 +10,7 @@ internal class NotificationChannelsEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var settingsId by NotificationChannelsTable.settingsId
     var channel by NotificationChannelsTable.channel
     var enabled by NotificationChannelsTable.enabled
+    var availableToClients by NotificationChannelsTable.availableToClients
 
     companion object : DecoratorUUIDEntityClass<NotificationChannelsEntity>(NotificationChannelsTable)
 }

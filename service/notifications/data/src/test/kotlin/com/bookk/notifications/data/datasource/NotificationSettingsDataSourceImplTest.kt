@@ -38,13 +38,19 @@ internal class NotificationSettingsDataSourceImplTest {
             return settingsId
         }
 
-        suspend fun insertChannel(settingsId: Uuid, channel: CommunicationChannel, enabled: Boolean): Uuid {
+        suspend fun insertChannel(
+            settingsId: Uuid,
+            channel: CommunicationChannel,
+            enabled: Boolean,
+            availableToClients: Boolean = true,
+        ): Uuid {
             val channelId = Uuid.random()
             suspendTransaction {
                 NotificationChannelsEntity.new(channelId.toJavaUuid()) {
                     this.settingsId = EntityID(settingsId.toJavaUuid(), NotificationSettingsTable)
                     this.channel = channel
                     this.enabled = enabled
+                    this.availableToClients = availableToClients
                 }
             }
             return channelId
@@ -109,7 +115,7 @@ internal class NotificationSettingsDataSourceImplTest {
         whenn()
         suspendTransaction {
             fixture.sut.upsert(
-                NotificationChannelSettings(channelId, CommunicationChannel.EMAIL, enabled = false)
+                NotificationChannelSettings(channelId, CommunicationChannel.EMAIL, enabled = false, availableToClients = false)
             )
         }
         val found = suspendTransaction { fixture.sut.getByUserId(userId) }
@@ -117,6 +123,7 @@ internal class NotificationSettingsDataSourceImplTest {
         then()
         val channel = found!!.channels.first { it.channel == CommunicationChannel.EMAIL }
         assertFalse(channel.enabled)
+        assertFalse(channel.availableToClients)
     }
 
     // upsert(NotificationSettings) uses upsertReturning which is PostgreSQL-only and not

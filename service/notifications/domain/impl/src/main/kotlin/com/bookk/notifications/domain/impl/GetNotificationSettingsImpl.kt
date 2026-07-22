@@ -11,7 +11,8 @@ internal class GetNotificationSettingsImpl(
     private val transactionManager: TransactionManager,
 ) : GetNotificationSettings {
     override suspend fun invoke(userId: Uuid) = transactionManager.transaction {
-        notificationSettingsDataSource.getByUserId(userId)
+        val settings = notificationSettingsDataSource.getByUserId(userId)
             ?: notificationSettingsDataSource.upsert(NotificationSettings(userId = userId))
+        settings.copy(channels = settings.channels.filter { it.availableToClients })
     }
 }

@@ -86,6 +86,35 @@ internal class GetNotificationSettingsImplTest {
     }
 
     @Test
+    fun `should only return channels available to clients`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+        val settings = NotificationSettings.stub(
+            userId = userId,
+            channels = listOf(
+                NotificationChannelSettings.stub(channel = CommunicationChannel.EMAIL, availableToClients = true),
+                NotificationChannelSettings.stub(channel = CommunicationChannel.PUSH_NOTIFICATIONS, availableToClients = false),
+                NotificationChannelSettings.stub(channel = CommunicationChannel.TELEGRAM, availableToClients = true),
+            )
+        )
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { notificationSettingsDataSource.getByUserId(userId) } returns settings
+        }
+
+        whenn()
+        val result = fixture.sut.invoke(userId)
+
+        then()
+        assertTrue(result.isSuccess)
+        val channels = result.getOrNull()!!.channels
+        assertEquals(2, channels.size)
+        assertTrue(channels.all { it.availableToClients })
+        assertTrue(channels.none { it.channel == CommunicationChannel.PUSH_NOTIFICATIONS })
+    }
+
+    @Test
     fun `should return failure when datasource throws`() = runUnitTest {
         given()
         val fixture = SutFixture()

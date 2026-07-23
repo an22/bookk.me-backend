@@ -1,5 +1,6 @@
 package com.bookk.notifications.domain.api.entity
 
+import com.bookk.core.domain.entity.Language
 import kotlinx.serialization.Serializable
 import kotlin.uuid.Uuid
 
@@ -10,6 +11,7 @@ data class Device(
     val deviceUuid: Uuid,
     val userId: Uuid,
     val notificationToken: String?,
+    val language: Language,
 ) {
     companion object {
         fun stub(
@@ -18,6 +20,7 @@ data class Device(
             deviceId: Uuid = Uuid.random(),
             userId: Uuid = Uuid.random(),
             notificationToken: String? = null,
-        ) = Device(id, authId, deviceId, userId, notificationToken)
+            language: Language = Language.EN,
+        ) = Device(id, authId, deviceId, userId, notificationToken, language)
     }
 }

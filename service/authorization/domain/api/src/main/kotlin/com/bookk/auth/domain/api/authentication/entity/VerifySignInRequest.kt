@@ -4,7 +4,7 @@ import kotlinx.serialization.Serializable
 import kotlin.uuid.Uuid
 
 @Serializable
-class VerifySignInRequest(
+data class VerifySignInRequest(
     override val requestId: String,
     override val publicKeyCredentialJson: String,
     val deviceInfo: DeviceInfo

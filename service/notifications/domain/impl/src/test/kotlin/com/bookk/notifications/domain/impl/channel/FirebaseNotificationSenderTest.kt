@@ -2,6 +2,7 @@ package com.bookk.notifications.domain.impl.channel
 
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.datasource.transaction.mockTransaction
+import com.bookk.core.domain.entity.Language
 import com.bookk.core.test.given
 import com.bookk.core.test.runUnitTest
 import com.bookk.core.test.then
@@ -36,9 +37,9 @@ internal class FirebaseNotificationSenderTest {
 
     private fun notificationParams() = NotificationParameters(
         type = NotificationType.APPOINTMENT,
-        push = PushNotification(title = "Title", body = "Subtitle"),
-        email = EmailNotification(subject = "Subject", body = "Body"),
-        text = TextNotification(text = "Text"),
+        push = { language -> PushNotification(title = "Title-${language.name}", body = "Subtitle-${language.name}") },
+        email = { EmailNotification(subject = "Subject", body = "Body") },
+        text = { TextNotification(text = "Text") },
     )
 
     @Test
@@ -59,6 +60,38 @@ internal class FirebaseNotificationSenderTest {
         then()
         assertTrue(result.isSuccess)
         verify(exactly = 1) { fixture.firebaseMessaging.send(any()) }
+    }
+
+    @Test
+    fun `should render push content using each device's own language`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+        val englishDevice = Device.stub(userId = userId, notificationToken = "fcm-token-en", language = Language.EN)
+        val ukrainianDevice = Device.stub(userId = userId, notificationToken = "fcm-token-uk", language = Language.UK)
+        val pushRenderer = mockk<(Language) -> PushNotification>()
+        val params = NotificationParameters(
+            type = NotificationType.APPOINTMENT,
+            push = pushRenderer,
+            email = { EmailNotification(subject = "Subject", body = "Body") },
+            text = { TextNotification(text = "Text") },
+        )
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { deviceDataSource.getByUserId(userId) } returns listOf(englishDevice, ukrainianDevice)
+            every { pushRenderer(Language.EN) } returns PushNotification(title = "Title-EN", body = "Subtitle-EN")
+            every { pushRenderer(Language.UK) } returns PushNotification(title = "Title-UK", body = "Subtitle-UK")
+            every { firebaseMessaging.send(any()) } returns "message-id"
+        }
+
+        whenn()
+        val result = fixture.sut.send(userId, params)
+
+        then()
+        assertTrue(result.isSuccess)
+        verify(exactly = 1) { pushRenderer(Language.EN) }
+        verify(exactly = 1) { pushRenderer(Language.UK) }
+        verify(exactly = 2) { fixture.firebaseMessaging.send(any()) }
     }
 
     @Test

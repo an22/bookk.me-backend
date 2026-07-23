@@ -13,6 +13,7 @@ import com.bookk.auth.domain.datasource.DeviceDataSource
 import com.bookk.core.data.eventstreaming.StandardEventProducer
 import com.bookk.core.data.eventstreaming.send
 import com.bookk.core.domain.datasource.transaction.TransactionManager
+import com.bookk.core.domain.entity.Language
 import com.bookk.server.auth.client.AuthEvent
 import com.bookk.server.user.client.UserClient
 import com.bookk.server.user.client.api.CreateUserRequest
@@ -28,7 +29,7 @@ internal class FinishRegistrationImpl(
     private val finishPasskeyRegistration: FinishPasskeyRegistration
 ) : FinishRegistration {
 
-    override suspend fun invoke(request: VerifyAccountCreationRequest): Result<AuthTokens> = runCatching {
+    override suspend fun invoke(request: VerifyAccountCreationRequest, language: Language): Result<AuthTokens> = runCatching {
         val verifiedPasskey = finishPasskeyRegistration.verifyRequest(request).getOrThrow()
         val userId = userClient.createUser(createUserFrom(request.userInfo)).getOrThrow()
         val deviceName = request.deviceInfo.deviceName
@@ -43,9 +44,10 @@ internal class FinishRegistrationImpl(
             deviceDataSource.insertDevice(
                 authId = owner.id,
                 uuid = deviceUuid,
-                name = deviceName
+                name = deviceName,
+                language = language
             ) ?: throw FinishRegistration.Error.AccountCreationFailed()
-            eventProducer.send(AuthEvent.DeviceCreated(owner.id, userId, deviceUuid))
+            eventProducer.send(AuthEvent.DeviceCreated(owner.id, userId, deviceUuid, language))
             generateAuthToken(Source.InitialAuthentication(owner.id, deviceUuid)).getOrThrow()
         }.onFailure {
             eventProducer.send(AuthEvent.UserDeleted(userId))

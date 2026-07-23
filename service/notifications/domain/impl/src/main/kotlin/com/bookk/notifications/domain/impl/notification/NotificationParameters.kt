@@ -1,10 +1,12 @@
 package com.bookk.notifications.domain.impl.notification
 
+import com.bookk.core.domain.entity.Language
+
 internal class NotificationParameters(
     val type: NotificationType,
-    val push: PushNotification,
-    val email: EmailNotification,
-    val text: TextNotification
+    val push: (Language) -> PushNotification,
+    val email: (Language) -> EmailNotification,
+    val text: (Language) -> TextNotification
 )
 
 internal class PushNotification(

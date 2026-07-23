@@ -53,6 +53,7 @@ internal class DeclineAppointmentRequestImpl(
                 employeeName = appointment.employee.fullName,
                 from = appointment.date,
                 to = appointment.dateEnd,
+                timeZone = business.timeZone,
                 businessName = business.name,
                 address = business.address,
                 price = moneyFormatter.print(appointment.totalAmount),

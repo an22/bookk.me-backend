@@ -22,6 +22,8 @@ import com.bookk.server.appointments.client.api.event.AppointmentEvent
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import io.mockk.slot
+import kotlinx.datetime.TimeZone
 import library.permissions.ObjectPermission.EDIT
 import library.permissions.ObjectPermission.READ
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -509,5 +511,39 @@ internal class CreateAppointmentImplTest {
         then()
         assertTrue(result.isFailure)
         assertTrue(result.exceptionOrNull() is Error.NotFound)
+    }
+
+    @Test
+    fun `should propagate business time zone onto the published event`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+        val businessId = Uuid.random()
+        val request = AppointmentRequest.stub(userId = userId, businessId = businessId, date = futureDate)
+        val appointment = Appointment.stub(userId = userId, businessId = businessId, date = futureDate)
+        val settings = mockk<AppointmentSettings>()
+        val businessSnapshot = BusinessSnapshot.stub().copy(timeZone = TimeZone.of("Europe/Kyiv"))
+        val eventSlot = slot<AppointmentEvent.RequestApproved>()
+
+        with(fixture) {
+            coEvery { settingsDataSource.getForUpdate(businessId) } returns settings
+            coEvery { settings.automaticApproval } returns false
+            coEvery { settings.isInWorkday(appointment.date) } returns true
+            coEvery { settings.isInWorktime(appointment.date, appointment.dateEnd) } returns true
+            coEvery { permissionsDataSource.getPermissions(userId, businessId) } returns EDIT.int
+            coEvery { appointmentDataSource.hasOverlapsWith(request) } returns false
+            coEvery { appointmentDataSource.create(request) } returns appointment
+            coEvery { requestDataSource.approve(request) } returns Unit
+            coEvery { subscriptionDataSource.getBusinessSnapshot(businessId) } returns businessSnapshot
+            coEvery { eventProducer.send(capture(eventSlot), any()) } returns Unit
+            transactionManager.mockTransaction()
+        }
+
+        whenn()
+        val result = fixture.sut.invoke(userId, request)
+
+        then()
+        assertTrue(result.isSuccess)
+        assertEquals(TimeZone.of("Europe/Kyiv"), eventSlot.captured.timeZone)
     }
 }

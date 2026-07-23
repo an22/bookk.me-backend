@@ -13,6 +13,7 @@ internal class DeviceEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var deviceUUID by DeviceTable.deviceUuid
     var userId by DeviceTable.userId
     var notificationToken by DeviceTable.notificationToken
+    var language by DeviceTable.language
 
     fun domain() = Device(
         id = id.value.toKotlinUuid(),
@@ -20,6 +21,7 @@ internal class DeviceEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         deviceUuid = deviceUUID.toKotlinUuid(),
         userId = userId.toKotlinUuid(),
         notificationToken = notificationToken,
+        language = language,
     )
 
     companion object : DecoratorUUIDEntityClass<DeviceEntity>(DeviceTable)

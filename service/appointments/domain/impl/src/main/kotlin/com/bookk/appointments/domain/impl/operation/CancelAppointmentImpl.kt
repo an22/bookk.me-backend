@@ -54,6 +54,7 @@ internal class CancelAppointmentImpl(
                 clientName = appointment.client.fullName,
                 from = appointment.date,
                 to = appointment.dateEnd,
+                timeZone = business.timeZone,
                 businessName = business.name,
                 employeeUserId = appointment.employee.id,
                 employeeName = appointment.employee.fullName,

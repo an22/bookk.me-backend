@@ -1,6 +1,7 @@
 package com.bookk.server.appointments.client.api.event
 
 import com.bookk.core.data.eventstreaming.EventStreaming
+import kotlinx.datetime.TimeZone
 import kotlinx.serialization.Serializable
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
@@ -15,6 +16,7 @@ interface AppointmentEvent : EventStreaming.Event<String> {
         val employeeName: String,
         val from: Instant,
         val to: Instant,
+        val timeZone: TimeZone,
         val businessName: String,
         val address: String,
         val price: String,
@@ -35,6 +37,7 @@ interface AppointmentEvent : EventStreaming.Event<String> {
         val employeeName: String,
         val from: Instant,
         val to: Instant,
+        val timeZone: TimeZone,
         val businessName: String,
         val address: String,
         val price: String,
@@ -55,6 +58,7 @@ interface AppointmentEvent : EventStreaming.Event<String> {
         val employeeName: String,
         val from: Instant,
         val to: Instant,
+        val timeZone: TimeZone,
         val address: String,
         val businessName: String,
         val price: String,
@@ -76,6 +80,7 @@ interface AppointmentEvent : EventStreaming.Event<String> {
         val employeeName: String,
         val from: Instant,
         val to: Instant,
+        val timeZone: TimeZone,
         val address: String,
         val businessName: String,
         val price: String,

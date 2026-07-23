@@ -11,6 +11,7 @@ import com.bookk.auth.domain.datasource.DeviceDataSource
 import com.bookk.core.data.eventstreaming.StandardEventProducer
 import com.bookk.core.data.eventstreaming.send
 import com.bookk.core.domain.datasource.transaction.TransactionManager
+import com.bookk.core.domain.entity.Language
 import com.bookk.server.auth.client.AuthEvent
 import kotlin.uuid.Uuid
 
@@ -22,11 +23,11 @@ internal class SignInImpl(
     private val producer: StandardEventProducer
 ) : SignIn {
 
-    override suspend fun invoke(request: VerifySignInRequest): Result<AuthTokens> = transactionManager.transaction {
+    override suspend fun invoke(request: VerifySignInRequest, language: Language): Result<AuthTokens> = transactionManager.transaction {
         val credentials = finishAssertion(request).getOrThrow()
         val ownerId = credentials.authInfo.id
         val userId = credentials.authInfo.userId
-        createDeviceIfNotExist(ownerId, userId, request.deviceInfo)
+        createOrRefreshDevice(ownerId, userId, request.deviceInfo, language)
         generateAuthToken(
             Source.InitialAuthentication(
                 credentials.authInfo.id,
@@ -35,14 +36,18 @@ internal class SignInImpl(
         ).getOrThrow()
     }
 
-    private suspend fun createDeviceIfNotExist(ownerId: Uuid, userId: Uuid, deviceInfo: DeviceInfo) {
+    private suspend fun createOrRefreshDevice(ownerId: Uuid, userId: Uuid, deviceInfo: DeviceInfo, language: Language) {
         val newId = deviceDataSource.insertDevice(
             authId = ownerId,
             uuid = deviceInfo.deviceUUID,
-            name = deviceInfo.deviceName
+            name = deviceInfo.deviceName,
+            language = language
         )
         if (newId != null) {
-            producer.send(AuthEvent.DeviceCreated(ownerId, userId, deviceInfo.deviceUUID))
+            producer.send(AuthEvent.DeviceCreated(ownerId, userId, deviceInfo.deviceUUID, language))
+        } else {
+            deviceDataSource.updateLanguage(ownerId, deviceInfo.deviceUUID, language)
+            producer.send(AuthEvent.DeviceLanguageUpdated(deviceInfo.deviceUUID, language))
         }
     }
 }

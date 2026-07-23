@@ -29,9 +29,9 @@ internal class EmailNotificationSenderTest {
 
     private fun notificationParams() = NotificationParameters(
         type = NotificationType.APPOINTMENT,
-        push = PushNotification(title = "Title", body = "Subtitle"),
-        email = EmailNotification(subject = "Subject", body = "Body"),
-        text = TextNotification(text = "Text"),
+        push = { PushNotification(title = "Title", body = "Subtitle") },
+        email = { EmailNotification(subject = "Subject", body = "Body") },
+        text = { TextNotification(text = "Text") },
     )
 
     @Test

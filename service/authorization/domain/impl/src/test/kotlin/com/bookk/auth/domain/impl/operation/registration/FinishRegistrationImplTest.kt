@@ -12,6 +12,7 @@ import com.bookk.auth.domain.datasource.DeviceDataSource
 import com.bookk.core.data.eventstreaming.StandardEventProducer
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.datasource.transaction.mockTransaction
+import com.bookk.core.domain.entity.Language
 import com.bookk.core.test.given
 import com.bookk.core.test.runUnitTest
 import com.bookk.core.test.then
@@ -92,12 +93,12 @@ internal class FinishRegistrationImplTest {
             coEvery { userClient.createUser(any()) } returns Result.success(userId)
             coEvery { accountDataSource.createAuthorization(any()) } returns authRecord
             coEvery { finishPasskeyRegistration.attachOwner(authRecord.id, passkey) } returns Unit
-            coEvery { deviceDataSource.insertDevice(authRecord.id, deviceId, any()) } returns Uuid.random()
+            coEvery { deviceDataSource.insertDevice(authRecord.id, deviceId, any(), Language.EN) } returns Uuid.random()
             coEvery { generateAuthToken(any<GenerateAuthToken.Source.InitialAuthentication>()) } returns Result.success(tokens)
         }
 
         whenn()
-        val result = fixture.sut.invoke(request)
+        val result = fixture.sut.invoke(request, Language.EN)
 
         then()
         assertTrue(result.isSuccess)
@@ -122,7 +123,7 @@ internal class FinishRegistrationImplTest {
         }
 
         whenn()
-        val result = fixture.sut.invoke(request)
+        val result = fixture.sut.invoke(request, Language.EN)
 
         then()
         assertTrue(result.isFailure)
@@ -145,11 +146,11 @@ internal class FinishRegistrationImplTest {
             coEvery { userClient.createUser(any()) } returns Result.success(userId)
             coEvery { accountDataSource.createAuthorization(any()) } returns authRecord
             coEvery { finishPasskeyRegistration.attachOwner(authRecord.id, passkey) } returns Unit
-            coEvery { deviceDataSource.insertDevice(authRecord.id, deviceId, any()) } returns null
+            coEvery { deviceDataSource.insertDevice(authRecord.id, deviceId, any(), Language.EN) } returns null
         }
 
         whenn()
-        val result = fixture.sut.invoke(request)
+        val result = fixture.sut.invoke(request, Language.EN)
 
         then()
         assertTrue(result.isFailure)
@@ -170,7 +171,7 @@ internal class FinishRegistrationImplTest {
         }
 
         whenn()
-        val result = fixture.sut.invoke(request)
+        val result = fixture.sut.invoke(request, Language.EN)
 
         then()
         assertTrue(result.isFailure)
@@ -190,7 +191,7 @@ internal class FinishRegistrationImplTest {
         }
 
         whenn()
-        val result = fixture.sut.invoke(request)
+        val result = fixture.sut.invoke(request, Language.EN)
 
         then()
         assertTrue(result.isFailure)

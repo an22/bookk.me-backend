@@ -2,6 +2,7 @@ package com.bookk.notifications.domain.impl
 
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.datasource.transaction.mockTransaction
+import com.bookk.core.domain.entity.Language
 import com.bookk.core.test.given
 import com.bookk.core.test.runUnitTest
 import com.bookk.core.test.then
@@ -31,19 +32,19 @@ internal class CreateDeviceEntryImplTest {
         val deviceId = Uuid.random()
         val authId = Uuid.random()
         val userId = Uuid.random()
-        val device = Device.stub(authId = authId, deviceId = deviceId, userId = userId)
+        val device = Device.stub(authId = authId, deviceId = deviceId, userId = userId, language = Language.UK)
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { deviceDataSource.create(authId, deviceId, userId) } returns device
+            coEvery { deviceDataSource.create(authId, deviceId, userId, Language.UK) } returns device
         }
 
         whenn()
-        val result = fixture.sut.invoke(deviceId, authId, userId)
+        val result = fixture.sut.invoke(deviceId, authId, userId, Language.UK)
 
         then()
         assertTrue(result.isSuccess)
         assertEquals(device, result.getOrNull())
-        coVerify(exactly = 1) { fixture.deviceDataSource.create(authId, deviceId, userId) }
+        coVerify(exactly = 1) { fixture.deviceDataSource.create(authId, deviceId, userId, Language.UK) }
     }
 
     @Test
@@ -55,11 +56,11 @@ internal class CreateDeviceEntryImplTest {
         val userId = Uuid.random()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { deviceDataSource.create(authId, deviceId, userId) } throws RuntimeException("db error")
+            coEvery { deviceDataSource.create(authId, deviceId, userId, Language.EN) } throws RuntimeException("db error")
         }
 
         whenn()
-        val result = fixture.sut.invoke(deviceId, authId, userId)
+        val result = fixture.sut.invoke(deviceId, authId, userId, Language.EN)
 
         then()
         assertTrue(result.isFailure)

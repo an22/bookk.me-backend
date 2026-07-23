@@ -88,6 +88,7 @@ internal class CreateAppointmentImpl(
                 employeeName = request.employee.fullName,
                 from = request.date,
                 to = request.dateEnd,
+                timeZone = business.timeZone,
                 businessName = business.name,
                 address = business.address,
                 price = moneyFormatter.print(request.totalAmount)

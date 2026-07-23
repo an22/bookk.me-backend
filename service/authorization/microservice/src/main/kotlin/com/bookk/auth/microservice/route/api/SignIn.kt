@@ -4,7 +4,10 @@ import com.bookk.auth.domain.api.authentication.entity.VerifySignInRequest
 import com.bookk.auth.domain.api.authentication.operation.SignIn
 import com.bookk.auth.domain.api.authentication.operation.StartAssertion
 import com.bookk.auth.microservice.route.AuthRouting.Api
+import com.bookk.core.domain.entity.Language
+import com.bookk.core.domain.entity.fromAcceptLanguage
 import com.bookk.core.service.enity.respondWith
+import io.ktor.http.HttpHeaders
 import io.ktor.server.request.receive
 import io.ktor.server.resources.get
 import io.ktor.server.resources.post
@@ -33,7 +36,8 @@ internal fun Route.signIn() {
      */
     post<Api.Auth.SignIn> {
         val request = call.receive<VerifySignInRequest>()
+        val language = Language.fromAcceptLanguage(call.request.headers[HttpHeaders.AcceptLanguage])
         val startSigningIn: SignIn by application.inject()
-        call.respondWith(startSigningIn(request))
+        call.respondWith(startSigningIn(request, language))
     }
 }

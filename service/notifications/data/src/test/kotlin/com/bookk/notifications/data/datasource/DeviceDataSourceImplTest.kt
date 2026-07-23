@@ -1,6 +1,7 @@
 package com.bookk.notifications.data.datasource
 
 import com.bookk.core.data.test.createTestDatabase
+import com.bookk.core.domain.entity.Language
 import com.bookk.core.test.given
 import com.bookk.core.test.runUnitTest
 import com.bookk.core.test.then
@@ -30,7 +31,7 @@ internal class DeviceDataSourceImplTest {
         val userId = Uuid.random()
 
         whenn()
-        val created = suspendTransaction { fixture.sut.create(authId, deviceUuid, userId) }
+        val created = suspendTransaction { fixture.sut.create(authId, deviceUuid, userId, Language.EN) }
         val found = suspendTransaction { fixture.sut.getById(created.id) }
 
         then()
@@ -39,6 +40,7 @@ internal class DeviceDataSourceImplTest {
         assertEquals(deviceUuid, found.deviceUuid)
         assertEquals(userId, found.userId)
         assertNull(found.notificationToken)
+        assertEquals(Language.EN, found.language)
     }
 
     @Test
@@ -58,7 +60,7 @@ internal class DeviceDataSourceImplTest {
         given()
         val fixture = SutFixture()
         val deviceUuid = Uuid.random()
-        val created = suspendTransaction { fixture.sut.create(Uuid.random(), deviceUuid, Uuid.random()) }
+        val created = suspendTransaction { fixture.sut.create(Uuid.random(), deviceUuid, Uuid.random(), Language.EN) }
 
         whenn()
         val found = suspendTransaction { fixture.sut.getByDeviceUuid(deviceUuid) }
@@ -85,7 +87,7 @@ internal class DeviceDataSourceImplTest {
         given()
         val fixture = SutFixture()
         val authId = Uuid.random()
-        val created = suspendTransaction { fixture.sut.create(authId, Uuid.random(), Uuid.random()) }
+        val created = suspendTransaction { fixture.sut.create(authId, Uuid.random(), Uuid.random(), Language.EN) }
 
         whenn()
         val found = suspendTransaction { fixture.sut.getByAuthId(authId) }
@@ -112,8 +114,8 @@ internal class DeviceDataSourceImplTest {
         given()
         val fixture = SutFixture()
         val userId = Uuid.random()
-        suspendTransaction { fixture.sut.create(Uuid.random(), Uuid.random(), userId) }
-        suspendTransaction { fixture.sut.create(Uuid.random(), Uuid.random(), userId) }
+        suspendTransaction { fixture.sut.create(Uuid.random(), Uuid.random(), userId, Language.EN) }
+        suspendTransaction { fixture.sut.create(Uuid.random(), Uuid.random(), userId, Language.UK) }
 
         whenn()
         val devices = suspendTransaction { fixture.sut.getByUserId(userId) }
@@ -140,7 +142,7 @@ internal class DeviceDataSourceImplTest {
         given()
         val fixture = SutFixture()
         val deviceUuid = Uuid.random()
-        suspendTransaction { fixture.sut.create(Uuid.random(), deviceUuid, Uuid.random()) }
+        suspendTransaction { fixture.sut.create(Uuid.random(), deviceUuid, Uuid.random(), Language.EN) }
 
         whenn()
         val updated = suspendTransaction { fixture.sut.updateToken(deviceUuid, "fcm-token-123") }
@@ -154,7 +156,7 @@ internal class DeviceDataSourceImplTest {
         given()
         val fixture = SutFixture()
         val deviceUuid = Uuid.random()
-        suspendTransaction { fixture.sut.create(Uuid.random(), deviceUuid, Uuid.random()) }
+        suspendTransaction { fixture.sut.create(Uuid.random(), deviceUuid, Uuid.random(), Language.EN) }
         suspendTransaction { fixture.sut.updateToken(deviceUuid, "fcm-token-123") }
 
         whenn()
@@ -165,11 +167,25 @@ internal class DeviceDataSourceImplTest {
     }
 
     @Test
+    fun `should update language for an existing device`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val deviceUuid = Uuid.random()
+        suspendTransaction { fixture.sut.create(Uuid.random(), deviceUuid, Uuid.random(), Language.EN) }
+
+        whenn()
+        val updated = suspendTransaction { fixture.sut.updateLanguage(deviceUuid, Language.UK) }
+
+        then()
+        assertEquals(Language.UK, updated.language)
+    }
+
+    @Test
     fun `should delete device by device uuid`() = runUnitTest {
         given()
         val fixture = SutFixture()
         val deviceUuid = Uuid.random()
-        suspendTransaction { fixture.sut.create(Uuid.random(), deviceUuid, Uuid.random()) }
+        suspendTransaction { fixture.sut.create(Uuid.random(), deviceUuid, Uuid.random(), Language.EN) }
 
         whenn()
         suspendTransaction { fixture.sut.deleteByDeviceUuid(deviceUuid) }

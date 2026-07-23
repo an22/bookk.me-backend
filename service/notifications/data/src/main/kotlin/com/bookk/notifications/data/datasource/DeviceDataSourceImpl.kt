@@ -2,6 +2,7 @@ package com.bookk.notifications.data.datasource
 
 import com.bookk.core.data.DataSource
 import com.bookk.core.domain.entity.Error
+import com.bookk.core.domain.entity.Language
 import com.bookk.notifications.data.orm.entity.DeviceEntity
 import com.bookk.notifications.data.orm.table.DeviceTable
 import com.bookk.notifications.domain.api.entity.Device
@@ -13,12 +14,13 @@ import kotlin.uuid.toJavaUuid
 
 internal class DeviceDataSourceImpl : DataSource(), DeviceDataSource {
 
-    override suspend fun create(authId: Uuid, deviceUUID: Uuid, userId: Uuid): Device = dbQuery {
+    override suspend fun create(authId: Uuid, deviceUUID: Uuid, userId: Uuid, language: Language): Device = dbQuery {
         DeviceEntity.new {
             this.authId = authId.toJavaUuid()
             this.deviceUUID = deviceUUID.toJavaUuid()
             this.userId = userId.toJavaUuid()
             this.notificationToken = null
+            this.language = language
         }.domain()
     }
 
@@ -51,6 +53,15 @@ internal class DeviceDataSourceImpl : DataSource(), DeviceDataSource {
             .find { DeviceTable.deviceUuid eq deviceUuid.toJavaUuid() }
             .firstOrNull()
             ?.also { it.notificationToken = token }
+            ?.domain()
+            ?: throw Error.NotFound()
+    }
+
+    override suspend fun updateLanguage(deviceUuid: Uuid, language: Language): Device = dbQuery {
+        DeviceEntity
+            .find { DeviceTable.deviceUuid eq deviceUuid.toJavaUuid() }
+            .firstOrNull()
+            ?.also { it.language = language }
             ?.domain()
             ?: throw Error.NotFound()
     }

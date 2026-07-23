@@ -8,6 +8,7 @@ import com.bookk.auth.domain.api.identification.entity.Device
 import com.bookk.auth.domain.datasource.DeviceDataSource
 import com.bookk.core.data.DataSource
 import com.bookk.core.domain.entity.Error
+import com.bookk.core.domain.entity.Language
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.greater
@@ -120,14 +121,24 @@ internal class DeviceDataSourceImpl : DataSource(), DeviceDataSource {
         }
     }
 
-    override suspend fun insertDevice(authId: Uuid, uuid: Uuid, name: String) = dbQuery<Uuid?> {
+    override suspend fun insertDevice(authId: Uuid, uuid: Uuid, name: String, language: Language) = dbQuery<Uuid?> {
         AuthDeviceTable.insertIgnoreAndGetId {
             it[userAuthId] = authId.toJavaUuid()
             it[deviceUUID] = uuid.toJavaUuid()
             it[deviceName] = name
+            it[AuthDeviceTable.language] = language
             it[isSignedIn] = false
             it[updatedAt] = Clock.System.now()
         }?.value?.toKotlinUuid()
+    }
+
+    override suspend fun updateLanguage(authId: Uuid, deviceUuid: Uuid, language: Language) = dbQuery<Unit> {
+        AuthDeviceTable.update(
+            where = { AuthDeviceTable.userAuthId.eq(authId.toJavaUuid()).and(AuthDeviceTable.deviceUUID.eq(deviceUuid.toJavaUuid())) }
+        ) {
+            it[AuthDeviceTable.language] = language
+            it[updatedAt] = Clock.System.now()
+        }
     }
 
     override suspend fun deleteInactiveDevices(olderThan: Instant): List<Uuid> = dbQuery {

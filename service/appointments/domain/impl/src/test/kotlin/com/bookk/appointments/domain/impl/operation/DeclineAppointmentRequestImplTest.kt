@@ -3,6 +3,7 @@ package com.bookk.appointments.domain.impl.operation
 import com.bookk.appointments.domain.api.entity.AppointmentCancellation
 import com.bookk.appointments.domain.api.entity.AppointmentRequest
 import com.bookk.appointments.domain.api.entity.AppointmentRequestStatus
+import com.bookk.appointments.domain.api.entity.BusinessSnapshot
 import com.bookk.appointments.domain.api.operation.DeclineAppointmentRequest
 import com.bookk.appointments.domain.datasource.AppointmentRequestDataSource
 import com.bookk.appointments.domain.datasource.AppointmentSubscriptionDataSource
@@ -18,7 +19,10 @@ import com.bookk.server.appointments.client.api.event.AppointmentEvent
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import io.mockk.slot
+import kotlinx.datetime.TimeZone
 import library.permissions.ObjectPermission
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import kotlin.uuid.Uuid
@@ -125,5 +129,28 @@ internal class DeclineAppointmentRequestImplTest {
 
         then()
         coVerify(exactly = 1) { fixture.eventProducer.send(any(AppointmentEvent.RequestRejected::class), any()) }
+    }
+
+    @Test
+    fun `should propagate business time zone onto the published event`() = runUnitTest {
+        val fixture = SutFixture()
+        given()
+        fixture.transactionManager.mockTransaction()
+        val request = AppointmentRequest.stub(id = testCancellation.id, businessId = testBusinessId)
+            .copy(status = AppointmentRequestStatus.PENDING)
+        val businessSnapshot = BusinessSnapshot.stub().copy(timeZone = TimeZone.of("Europe/Kyiv"))
+        val eventSlot = slot<AppointmentEvent.RequestRejected>()
+
+        coEvery { fixture.permissionsDataSource.getPermissions(testUserId, testBusinessId) } returns ObjectPermission.EDIT.int
+        coEvery { fixture.requestDataSource.get(testCancellation.id) } returns request
+        coEvery { fixture.requestDataSource.decline(testCancellation.id, testCancellation.reason) } returns request.copy(status = AppointmentRequestStatus.DECLINED)
+        coEvery { fixture.subscriptionDataSource.getBusinessSnapshot(testBusinessId) } returns businessSnapshot
+        coEvery { fixture.eventProducer.send(capture(eventSlot), any()) } returns Unit
+
+        whenn()
+        fixture.sut.invoke(testUserId, testCancellation)
+
+        then()
+        assertEquals(TimeZone.of("Europe/Kyiv"), eventSlot.captured.timeZone)
     }
 }

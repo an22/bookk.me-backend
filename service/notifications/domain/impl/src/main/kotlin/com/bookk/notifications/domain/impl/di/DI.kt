@@ -10,6 +10,7 @@ import com.bookk.notifications.domain.api.entity.CommunicationChannel
 import com.bookk.notifications.domain.impl.CreateDeviceEntryImpl
 import com.bookk.notifications.domain.impl.DeleteDeviceByUUIDImpl
 import com.bookk.notifications.domain.impl.GetNotificationSettingsImpl
+import com.bookk.notifications.domain.impl.UpdateDeviceLanguage
 import com.bookk.notifications.domain.impl.UpdateNotificationSettingsImpl
 import com.bookk.notifications.domain.impl.UpdatePushNotificationTokenImpl
 import com.bookk.notifications.domain.impl.UpdateTargetInformation
@@ -37,6 +38,7 @@ fun notificationsDomainModule() = module {
     singleOf(::TelegramNotificationSender) bind NotificationSender::class
     singleOf(::SendNotification)
     singleOf(::UpdateTargetInformation)
+    singleOf(::UpdateDeviceLanguage)
     single<Map<CommunicationChannel, NotificationSender>> {
         mapOf(
             CommunicationChannel.EMAIL to get<EmailNotificationSender>(),

@@ -1,5 +1,6 @@
 package com.bookk.auth.data.orm.table
 
+import com.bookk.core.domain.entity.Language
 import org.jetbrains.exposed.v1.core.ReferenceOption
 import org.jetbrains.exposed.v1.core.dao.id.UUIDTable
 import org.jetbrains.exposed.v1.datetime.timestamp
@@ -9,6 +10,7 @@ internal object AuthDeviceTable : UUIDTable("auth_device") {
     val userAuthId = reference("user_auth_id", AuthenticationTable, onDelete = ReferenceOption.CASCADE).index()
     val deviceUUID = uuid("device_uuid")
     val deviceName = varchar("device_name", 255)
+    val language = enumeration("language", Language::class)
     val refreshTokenId = uuid("refresh_token_id").nullable()
     val refreshTokenHash = varchar("refresh_token_hash", 64).nullable()
     val refreshTokenExpiresAt = timestamp("refresh_token_expires_at").nullable()

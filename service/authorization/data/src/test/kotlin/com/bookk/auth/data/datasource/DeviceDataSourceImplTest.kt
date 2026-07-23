@@ -4,6 +4,7 @@ import com.bookk.auth.data.orm.table.AuthDeviceTable
 import com.bookk.auth.data.orm.table.AuthenticationTable
 import com.bookk.auth.domain.api.authentication.entity.Authentication
 import com.bookk.core.data.test.createTestDatabase
+import com.bookk.core.domain.entity.Language
 import com.bookk.core.test.given
 import com.bookk.core.test.runUnitTest
 import com.bookk.core.test.then
@@ -36,7 +37,7 @@ internal class DeviceDataSourceImplTest {
         val deviceUuid = Uuid.random()
 
         whenn()
-        val deviceId = suspendTransaction { fixture.sut.insertDevice(auth.id, deviceUuid, "iPhone") }
+        val deviceId = suspendTransaction { fixture.sut.insertDevice(auth.id, deviceUuid, "iPhone", Language.EN) }
         val found = suspendTransaction { fixture.sut.getDeviceById(deviceId!!) }
 
         then()
@@ -63,7 +64,7 @@ internal class DeviceDataSourceImplTest {
         val fixture = SutFixture()
         val auth = fixture.insertAuth()
         val deviceUuid = Uuid.random()
-        suspendTransaction { fixture.sut.insertDevice(auth.id, deviceUuid, "Android") }
+        suspendTransaction { fixture.sut.insertDevice(auth.id, deviceUuid, "Android", Language.EN) }
 
         whenn()
         val found = suspendTransaction { fixture.sut.getDeviceByAuthIdAndUUID(auth.id, deviceUuid) }
@@ -91,8 +92,8 @@ internal class DeviceDataSourceImplTest {
         given()
         val fixture = SutFixture()
         val auth = fixture.insertAuth()
-        suspendTransaction { fixture.sut.insertDevice(auth.id, Uuid.random(), "iPhone") }
-        suspendTransaction { fixture.sut.insertDevice(auth.id, Uuid.random(), "iPad") }
+        suspendTransaction { fixture.sut.insertDevice(auth.id, Uuid.random(), "iPhone", Language.EN) }
+        suspendTransaction { fixture.sut.insertDevice(auth.id, Uuid.random(), "iPad", Language.EN) }
 
         whenn()
         val devices = suspendTransaction { fixture.sut.getDevices(auth.id) }
@@ -107,7 +108,7 @@ internal class DeviceDataSourceImplTest {
         val fixture = SutFixture()
         val auth = fixture.insertAuth()
         val deviceUuid = Uuid.random()
-        val deviceId = suspendTransaction { fixture.sut.insertDevice(auth.id, deviceUuid, "iPhone") }!!
+        val deviceId = suspendTransaction { fixture.sut.insertDevice(auth.id, deviceUuid, "iPhone", Language.EN) }!!
         val tokenId = Uuid.random()
 
         whenn()
@@ -125,7 +126,7 @@ internal class DeviceDataSourceImplTest {
         given()
         val fixture = SutFixture()
         val auth = fixture.insertAuth()
-        val deviceId = suspendTransaction { fixture.sut.insertDevice(auth.id, Uuid.random(), "iPhone") }!!
+        val deviceId = suspendTransaction { fixture.sut.insertDevice(auth.id, Uuid.random(), "iPhone", Language.EN) }!!
         val firstTokenId = Uuid.random()
         suspendTransaction { fixture.sut.attachRefreshTokenToDevice(deviceId, firstTokenId, "first-hash") }
         val secondTokenId = Uuid.random()
@@ -144,7 +145,7 @@ internal class DeviceDataSourceImplTest {
         given()
         val fixture = SutFixture()
         val auth = fixture.insertAuth()
-        val deviceId = suspendTransaction { fixture.sut.insertDevice(auth.id, Uuid.random(), "iPhone") }!!
+        val deviceId = suspendTransaction { fixture.sut.insertDevice(auth.id, Uuid.random(), "iPhone", Language.EN) }!!
         val tokenId = Uuid.random()
         suspendTransaction { fixture.sut.attachRefreshTokenToDevice(deviceId, tokenId, "hash") }
 
@@ -164,13 +165,44 @@ internal class DeviceDataSourceImplTest {
         val fixture = SutFixture()
         val auth = fixture.insertAuth()
         val deviceUuid = Uuid.random()
-        suspendTransaction { fixture.sut.insertDevice(auth.id, deviceUuid, "iPhone") }
+        suspendTransaction { fixture.sut.insertDevice(auth.id, deviceUuid, "iPhone", Language.EN) }
 
         whenn()
-        val duplicateId = suspendTransaction { fixture.sut.insertDevice(auth.id, deviceUuid, "iPhone duplicate") }
+        val duplicateId = suspendTransaction { fixture.sut.insertDevice(auth.id, deviceUuid, "iPhone duplicate", Language.EN) }
 
         then()
         assertNull(duplicateId)
+    }
+
+    @Test
+    fun `should insert device with the given language`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val auth = fixture.insertAuth()
+        val deviceUuid = Uuid.random()
+
+        whenn()
+        suspendTransaction { fixture.sut.insertDevice(auth.id, deviceUuid, "iPhone", Language.UK) }
+        val found = suspendTransaction { fixture.sut.getDeviceByAuthIdAndUUID(auth.id, deviceUuid) }
+
+        then()
+        assertNotNull(found)
+    }
+
+    @Test
+    fun `should update language for an existing device`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val auth = fixture.insertAuth()
+        val deviceUuid = Uuid.random()
+        suspendTransaction { fixture.sut.insertDevice(auth.id, deviceUuid, "iPhone", Language.EN) }
+
+        whenn()
+        suspendTransaction { fixture.sut.updateLanguage(auth.id, deviceUuid, Language.UK) }
+
+        then()
+        val found = suspendTransaction { fixture.sut.getDeviceByAuthIdAndUUID(auth.id, deviceUuid) }
+        assertNotNull(found)
     }
 
     // deleteInactiveDevices uses deleteReturning which is not supported by H2.

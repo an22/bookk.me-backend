@@ -19,13 +19,13 @@ data class AppointmentSettings(
     val appointmentNote: String
 ) {
     companion object {
-        fun stub(businessId: Uuid = Uuid.random()) = AppointmentSettings(businessId = businessId)
+        fun stub(businessId: Uuid = Uuid.random()) = AppointmentSettings(businessId = businessId, TimeZone.of("UTC"))
     }
 
-    constructor(businessId: Uuid) : this(
+    constructor(businessId: Uuid, timeZone: TimeZone) : this(
         id = Uuid.random(),
         businessId = businessId,
-        timeZone = TimeZone.of("UTC"),
+        timeZone = timeZone,
         schedule = WorkingSchedule(),
         automaticApproval = false,
         dayOffs = listOf(),

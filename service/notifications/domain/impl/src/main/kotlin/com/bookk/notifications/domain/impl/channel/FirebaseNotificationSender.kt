@@ -21,30 +21,29 @@ internal class FirebaseNotificationSender(
 
     override suspend fun send(toUserId: Uuid, params: NotificationParameters) = transactionManager.transaction {
         val devices = deviceDataSource.getByUserId(toUserId)
-        val messages = devices
-            .mapNotNull { it.notificationToken }
-            .associateWith { token ->
-                Message.builder()
-                    .setFid(token)
-                    .setNotification(
-                        Notification.builder()
-                            .setTitle(params.push.title)
-                            .setBody(params.push.body)
-                            .build()
-                    )
-                    .build()
-            }
+        val devicesWithTokens = devices.filter { it.notificationToken != null }
 
-        messages.forEach { (token, message) ->
+        devicesWithTokens.forEach { device ->
+            val token = requireNotNull(device.notificationToken)
+            val content = params.push(device.language)
+            val message = Message.builder()
+                .setFid(token)
+                .setNotification(
+                    Notification.builder()
+                        .setTitle(content.title)
+                        .setBody(content.body)
+                        .build()
+                )
+                .build()
+
             runCatching {
                 firebaseMessaging.send(message)
             }.onFailure { error ->
-                val deviceUuid = devices.first { it.notificationToken == token }.deviceUuid
                 when {
                     error is FirebaseMessagingException && error.messagingErrorCode == UNREGISTERED -> {
-                        deviceDataSource.updateToken(deviceUuid, null)
+                        deviceDataSource.updateToken(device.deviceUuid, null)
                     }
-                    else -> logger.error("Failed to send message to device: $deviceUuid", error)
+                    else -> logger.error("Failed to send message to device: ${device.deviceUuid}", error)
                 }
             }
         }

@@ -10,6 +10,7 @@ import com.bookk.auth.domain.datasource.DeviceDataSource
 import com.bookk.core.data.eventstreaming.StandardEventProducer
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.datasource.transaction.mockTransaction
+import com.bookk.core.domain.entity.Language
 import com.bookk.core.test.given
 import com.bookk.core.test.runUnitTest
 import com.bookk.core.test.then
@@ -29,7 +30,7 @@ internal class SignInImplTest {
     private class SutFixture {
         val finishAssertion = mockk<FinishAssertion>()
         val generateAuthToken = mockk<GenerateAuthToken>()
-        val deviceDataSource = mockk<DeviceDataSource>()
+        val deviceDataSource = mockk<DeviceDataSource>(relaxed = true)
         val transactionManager = mockk<TransactionManager>()
         val producer = mockk<StandardEventProducer>(relaxed = true)
         val sut = SignInImpl(finishAssertion, generateAuthToken, deviceDataSource, transactionManager, producer)
@@ -76,17 +77,17 @@ internal class SignInImplTest {
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { finishAssertion(request) } returns Result.success(credential)
-            coEvery { deviceDataSource.insertDevice(authId, deviceId, any()) } returns null
+            coEvery { deviceDataSource.insertDevice(authId, deviceId, any(), Language.EN) } returns null
             coEvery { generateAuthToken(any<GenerateAuthToken.Source.InitialAuthentication>()) } returns Result.success(tokens)
         }
 
         whenn()
-        val result = fixture.sut.invoke(request)
+        val result = fixture.sut.invoke(request, Language.EN)
 
         then()
         assertTrue(result.isSuccess)
         assertEquals(tokens, result.getOrNull())
-        coVerify(exactly = 1) { fixture.deviceDataSource.insertDevice(authId, deviceId, any()) }
+        coVerify(exactly = 1) { fixture.deviceDataSource.insertDevice(authId, deviceId, any(), Language.EN) }
         coVerify(exactly = 0) { fixture.producer.send(any<AuthEvent.DeviceCreated>(), any()) }
     }
 
@@ -102,17 +103,44 @@ internal class SignInImplTest {
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { finishAssertion(request) } returns Result.success(credential)
-            coEvery { deviceDataSource.insertDevice(authId, deviceId, any()) } returns Uuid.random()
+            coEvery { deviceDataSource.insertDevice(authId, deviceId, any(), Language.EN) } returns Uuid.random()
             coEvery { generateAuthToken(any<GenerateAuthToken.Source.InitialAuthentication>()) } returns Result.success(tokens)
         }
 
         whenn()
-        val result = fixture.sut.invoke(request)
+        val result = fixture.sut.invoke(request, Language.EN)
 
         then()
         assertTrue(result.isSuccess)
         assertEquals(tokens, result.getOrNull())
         coVerify(exactly = 1) { fixture.producer.send(any<AuthEvent.DeviceCreated>(), any()) }
+        coVerify(exactly = 0) { fixture.deviceDataSource.updateLanguage(any(), any(), any()) }
+    }
+
+    @Test
+    fun `should refresh language and emit DeviceLanguageUpdated when device already exists`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val authId = Uuid.random()
+        val deviceId = Uuid.random()
+        val request = makeRequest(deviceId)
+        val credential = makePasskeyCredential(authId)
+        val tokens = AuthTokens(accessToken = "access-token", refreshToken = "refresh-token")
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { finishAssertion(request) } returns Result.success(credential)
+            coEvery { deviceDataSource.insertDevice(authId, deviceId, any(), Language.UK) } returns null
+            coEvery { generateAuthToken(any<GenerateAuthToken.Source.InitialAuthentication>()) } returns Result.success(tokens)
+        }
+
+        whenn()
+        val result = fixture.sut.invoke(request, Language.UK)
+
+        then()
+        assertTrue(result.isSuccess)
+        coVerify(exactly = 1) { fixture.deviceDataSource.updateLanguage(authId, deviceId, Language.UK) }
+        coVerify(exactly = 1) { fixture.producer.send(any<AuthEvent.DeviceLanguageUpdated>(), any()) }
+        coVerify(exactly = 0) { fixture.producer.send(any<AuthEvent.DeviceCreated>(), any()) }
     }
 
     @Test
@@ -126,7 +154,7 @@ internal class SignInImplTest {
         }
 
         whenn()
-        val result = fixture.sut.invoke(request)
+        val result = fixture.sut.invoke(request, Language.EN)
 
         then()
         assertTrue(result.isFailure)
@@ -144,7 +172,7 @@ internal class SignInImplTest {
         }
 
         whenn()
-        val result = fixture.sut.invoke(request)
+        val result = fixture.sut.invoke(request, Language.EN)
 
         then()
         assertTrue(result.isFailure)
@@ -162,7 +190,7 @@ internal class SignInImplTest {
         }
 
         whenn()
-        val result = fixture.sut.invoke(request)
+        val result = fixture.sut.invoke(request, Language.EN)
 
         then()
         assertTrue(result.isFailure)
@@ -180,14 +208,14 @@ internal class SignInImplTest {
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { finishAssertion(request) } returns Result.success(credential)
-            coEvery { deviceDataSource.insertDevice(authId, deviceId, any()) } returns null
+            coEvery { deviceDataSource.insertDevice(authId, deviceId, any(), Language.EN) } returns null
             coEvery { generateAuthToken(any<GenerateAuthToken.Source.InitialAuthentication>()) } returns Result.failure(
                 GenerateAuthToken.Error.InvalidCredentials()
             )
         }
 
         whenn()
-        val result = fixture.sut.invoke(request)
+        val result = fixture.sut.invoke(request, Language.EN)
 
         then()
         assertTrue(result.isFailure)

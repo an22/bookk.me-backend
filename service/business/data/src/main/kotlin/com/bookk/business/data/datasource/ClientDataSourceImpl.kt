@@ -9,6 +9,7 @@ import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insertAndGetId
+import org.jetbrains.exposed.v1.jdbc.update
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 import kotlin.uuid.toKotlinUuid
@@ -60,5 +61,22 @@ internal class ClientDataSourceImpl : DataSource(), ClientDataSource {
         ClientTable.deleteWhere {
             (ClientTable.businessId eq businessId.toJavaUuid()) and (ClientTable.id eq id.toJavaUuid())
         } != 0
+    }
+
+    override suspend fun updateIntegratedClients(
+        userId: Uuid,
+        name: String,
+        lastName: String,
+        phone: String,
+        email: String
+    ): Int = dbQuery {
+        ClientTable.update(
+            where = { ClientTable.userId eq userId.toJavaUuid() }
+        ) {
+            it[this.name] = name.trim()
+            it[this.lastName] = lastName.trim()
+            it[this.phone] = phone.trim()
+            it[this.email] = email.trim()
+        }
     }
 }

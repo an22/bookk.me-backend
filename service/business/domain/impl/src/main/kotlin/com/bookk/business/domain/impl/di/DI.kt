@@ -17,6 +17,7 @@ import com.bookk.business.domain.api.service.operation.GetServiceGroups
 import com.bookk.business.domain.api.service.operation.GetServices
 import com.bookk.business.domain.api.service.operation.IssueQuote
 import com.bookk.business.domain.api.service.operation.UpdateService
+import com.bookk.business.domain.api.user.operation.SyncUserProfile
 import com.bookk.business.domain.impl.event.BusinessEventHandlerImpl
 import com.bookk.business.domain.impl.operation.business.CreateBusinessImpl
 import com.bookk.business.domain.impl.operation.business.DeleteBusinessImpl
@@ -35,6 +36,7 @@ import com.bookk.business.domain.impl.operation.service.GetServiceGroupsImpl
 import com.bookk.business.domain.impl.operation.service.GetServicesImpl
 import com.bookk.business.domain.impl.operation.service.IssueQuoteImpl
 import com.bookk.business.domain.impl.operation.service.UpdateServiceImpl
+import com.bookk.business.domain.impl.operation.user.SyncUserProfileImpl
 import com.bookk.core.data.eventstreaming.EventHandler
 import org.koin.core.module.dsl.factoryOf
 import org.koin.core.module.dsl.singleOf
@@ -52,6 +54,7 @@ fun businessDomainModule() = module {
     singleOf(::CreateClientImpl) bind CreateClient::class
     singleOf(::GetClientsImpl) bind GetClients::class
     singleOf(::DeleteClientImpl) bind DeleteClient::class
+    singleOf(::SyncUserProfileImpl) bind SyncUserProfile::class
     singleOf(::CreateServiceImpl) bind CreateService::class
     singleOf(::DeleteServiceGroupImpl) bind DeleteServiceGroup::class
     singleOf(::CreateServiceGroupImpl) bind CreateServiceGroup::class

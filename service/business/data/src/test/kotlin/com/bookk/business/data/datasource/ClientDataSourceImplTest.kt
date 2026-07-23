@@ -150,4 +150,57 @@ internal class ClientDataSourceImplTest {
         then()
         assertTrue(!deleted)
     }
+
+    @Test
+    fun `should update integrated client fields by user id`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val userId = Uuid.random()
+        val phone = "+5556667777"
+        val client = Client.Integrated(
+            id = Uuid.random(), name = "Old", lastName = "Name",
+            phone = phone, email = "old@test.com", userId = userId
+        )
+        suspendTransaction { fixture.sut.createIntegratedClient(fixture.businessId, client) }
+
+        whenn()
+        val updated = suspendTransaction {
+            fixture.sut.updateIntegratedClients(userId, "New", "Surname", phone, "new@test.com")
+        }
+        val found = suspendTransaction { fixture.sut.getClient(fixture.businessId, phone) }
+
+        then()
+        assertEquals(1, updated)
+        assertNotNull(found)
+        assertTrue(found is Client.Integrated)
+        assertEquals("New", found!!.name)
+        assertEquals("Surname", found.lastName)
+        assertEquals("new@test.com", found.email)
+        assertEquals(userId, (found as Client.Integrated).userId)
+    }
+
+    @Test
+    fun `should not update detached clients when updating by user id`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val detachedPhone = "+1010101010"
+        val detached = Client.Detached(
+            id = Uuid.random(), name = "Keep", lastName = "Me",
+            phone = detachedPhone, email = "keep@test.com"
+        )
+        suspendTransaction { fixture.sut.createDetachedClient(fixture.businessId, detached) }
+
+        whenn()
+        val updated = suspendTransaction {
+            fixture.sut.updateIntegratedClients(Uuid.random(), "New", "Surname", "+9999999999", "new@test.com")
+        }
+        val found = suspendTransaction { fixture.sut.getClient(fixture.businessId, detachedPhone) }
+
+        then()
+        assertEquals(0, updated)
+        assertNotNull(found)
+        assertEquals("Keep", found!!.name)
+    }
 }

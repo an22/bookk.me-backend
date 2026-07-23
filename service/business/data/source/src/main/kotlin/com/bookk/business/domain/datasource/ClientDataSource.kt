@@ -9,4 +9,11 @@ interface ClientDataSource {
     suspend fun getClients(businessId: Uuid): List<Client>
     suspend fun getClient(businessId: Uuid, phone: String): Client?
     suspend fun deleteClient(businessId: Uuid, id: Uuid): Boolean
+    suspend fun updateIntegratedClients(
+        userId: Uuid,
+        name: String,
+        lastName: String,
+        phone: String,
+        email: String
+    ): Int
 }

@@ -12,7 +12,7 @@ internal class UpdateNotificationSettingsImpl(
 ) : UpdateNotificationSettings {
     override suspend fun invoke(userId: Uuid, settings: NotificationSettings.Update): Result<NotificationSettings> =
         transactionManager.transaction {
-            notificationSettingsDataSource.upsert(
+            val settings = notificationSettingsDataSource.upsert(
                 NotificationSettings(
                     id = settings.id,
                     userId = userId,
@@ -20,5 +20,6 @@ internal class UpdateNotificationSettingsImpl(
                     channels = settings.channels
                 )
             )
+            settings.copy(channels = settings.channels.filter { it.availableToClients })
         }
 }

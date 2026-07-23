@@ -11,10 +11,12 @@ start_service () {
   ./gradlew :service:$1:microservice:publishImageToLocalRegistry --no-configuration-cache || exit
 }
 
+start_service "auth"
 start_service "user"
 start_service "business"
 start_service "appointments"
 start_service "notifications"
 
 docker context use default || exit
+cd deployment/dev || exit
 docker compose -f microservices-compose.yml up -d

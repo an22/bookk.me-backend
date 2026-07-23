@@ -3,8 +3,8 @@ package com.bookk.auth.microservice.route.api
 import com.bookk.auth.domain.api.delete_account.entity.VerifyDeleteAccRequest
 import com.bookk.auth.domain.api.delete_account.operation.DeleteAccount
 import com.bookk.auth.microservice.route.AuthRouting.Api
-import com.bookk.core.service.auth.AppPrincipal
 import com.bookk.core.service.enity.respondWith
+import com.bookk.server.auth.client.AppPrincipal
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.principal
 import io.ktor.server.request.receive

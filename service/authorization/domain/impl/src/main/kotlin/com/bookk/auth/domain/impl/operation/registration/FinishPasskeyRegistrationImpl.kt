@@ -45,7 +45,7 @@ internal class FinishPasskeyRegistrationImpl(
         }
     }
 
-    override suspend fun attachOwner(ownerId: Uuid, passkey: PasskeyCredential): Result<Unit> = transactionManager.transaction {
+    override suspend fun attachOwner(ownerId: Uuid, passkey: PasskeyCredential) {
         val passkeyWithOwner = passkey.copy(authId = ownerId)
         passKeyDS.createPasskeyCredential(passkeyWithOwner)
     }

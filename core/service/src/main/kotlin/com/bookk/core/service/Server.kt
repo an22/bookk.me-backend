@@ -2,8 +2,8 @@ package com.bookk.core.service
 
 import com.bookk.core.AppLevelConstants
 import com.bookk.core.AppLevelConstants.SupportedSerializers
-import com.bookk.core.service.auth.AccessVerifier
 import com.bookk.core.service.di.commonModule
+import com.bookk.server.auth.client.authTokenValidator
 import io.ktor.http.HttpStatusCode
 import io.ktor.openapi.OpenApiInfo
 import io.ktor.serialization.kotlinx.json.json
@@ -34,6 +34,9 @@ import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.protobuf.ProtoBuf
 import library.idempotency.IdempotencyPlugin
+import library.signing.TokenValidatorFactory
+import library.signing.ValidationType
+import library.signing.impl.di.signingModule
 import org.koin.core.module.Module
 import org.koin.ktor.ext.get
 import org.koin.ktor.plugin.Koin
@@ -56,7 +59,13 @@ fun startServer(
             install(MicrometerMetrics) {
                 registry = prometheusRegistry
             }
-            install(Koin) { modules(*diModules.toTypedArray(), commonModule()) }
+            install(Koin) {
+                modules(
+                    *diModules.toTypedArray(),
+                    commonModule(),
+                    signingModule()
+                )
+            }
             install(CallLogging) {
                 level = when (AppLevelConstants.BUILD_TYPE) {
                     AppLevelConstants.BuildType.DEBUG.STR -> Level.DEBUG
@@ -107,13 +116,14 @@ fun startServer(
 }
 
 private fun Application.installAuthPlugin() {
+    val validatorFactory: TokenValidatorFactory = get()
     install(Authentication) {
         jwt {
             challenge { _, _ ->
                 call.respond(HttpStatusCode.Unauthorized, "Unauthorized")
             }
-            verifier(AccessVerifier.verifier)
-            validate(AccessVerifier.validator)
+            verifier(validatorFactory.forType(ValidationType.AUTH_TOKEN).verifier)
+            validate(authTokenValidator)
         }
     }
 }

@@ -5,7 +5,10 @@ import com.bookk.auth.domain.api.registration.entity.VerifyAccountCreationReques
 import com.bookk.auth.domain.api.registration.operation.FinishRegistration
 import com.bookk.auth.domain.api.registration.operation.StartRegistration
 import com.bookk.auth.microservice.route.AuthRouting.Api
+import com.bookk.core.domain.entity.Language
+import com.bookk.core.domain.entity.fromAcceptLanguage
 import com.bookk.core.service.enity.respondWith
+import io.ktor.http.HttpHeaders
 import io.ktor.server.request.receive
 import io.ktor.server.resources.post
 import io.ktor.server.routing.Route
@@ -37,7 +40,8 @@ internal fun Route.registration() {
      */
     post<Api.Auth.SignUp> {
         val info = call.receive<VerifyAccountCreationRequest>()
+        val language = Language.fromAcceptLanguage(call.request.headers[HttpHeaders.AcceptLanguage])
         val finishRegistration by application.inject<FinishRegistration>()
-        call.respondWith(finishRegistration(info))
+        call.respondWith(finishRegistration(info, language))
     }
 }

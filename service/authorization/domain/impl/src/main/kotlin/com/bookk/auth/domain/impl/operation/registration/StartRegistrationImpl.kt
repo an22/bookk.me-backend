@@ -5,8 +5,7 @@ import com.bookk.auth.domain.api.registration.operation.StartPasskeyRegistration
 import com.bookk.auth.domain.api.registration.operation.StartRegistration
 import com.bookk.auth.domain.api.registration.operation.StartRegistration.Error.EmailAlreadyExist
 import com.bookk.auth.domain.api.registration.operation.StartRegistration.Error.InvalidEmailFormat
-import com.bookk.core.domain.entity.BusinessError
-import com.bookk.core.domain.entity.throwIf
+import com.bookk.core.domain.entity.rethrowBusinessIf
 import com.bookk.server.user.client.UserClient
 import io.ktor.http.HttpStatusCode
 import kotlin.uuid.Uuid
@@ -22,8 +21,7 @@ internal class StartRegistrationImpl(
         if (!emailRegex.matches(request.email)) throw InvalidEmailFormat()
         userClient.getUserByEmail(request.email)
             .onSuccess { throw EmailAlreadyExist() }
-            //TODO Very questionable check. Rework
-            .throwIf { (it as? BusinessError)?.statusCode != HttpStatusCode.NotFound.value }
+            .rethrowBusinessIf { it.statusCode != HttpStatusCode.NotFound.value }
         startPasskeyRegistration(
             userHandle = Uuid.random(),
             passkeyDisplayName = "${request.firstName} ${request.lastName}"

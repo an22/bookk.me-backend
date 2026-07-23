@@ -3,8 +3,10 @@ package com.bookk.core.test
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withTimeout
 import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.CoroutineContext
+import kotlin.time.Duration.Companion.seconds
 
 internal class TestContext(
     var givenCalled: Boolean = false,
@@ -38,8 +40,10 @@ class TestHolder : AbstractCoroutineContextElement(Key) {
 }
 
 fun runUnitTest(context: CoroutineContext = TestHolder(), body: suspend TestScope.() -> Unit) = runTest(context) {
-    body()
-    requireNotNull(currentCoroutineContext()[TestHolder.Key]).assertFormat()
+    withTimeout(2.seconds) {
+        body()
+        requireNotNull(currentCoroutineContext()[TestHolder.Key]).assertFormat()
+    }
 }
 
 suspend fun given() {

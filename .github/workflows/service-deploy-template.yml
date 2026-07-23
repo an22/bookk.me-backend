@@ -46,7 +46,7 @@ jobs:
           env_variables='${{ secrets.envFile }}'
           without_blanks=${env_variables//[[:blank:]]/}
           echo "${without_blanks}" >> $GITHUB_ENV
-          echo "${without_blanks}" >> "deployment/microservice/microservice.env"
+          echo "${without_blanks}" >> "deployment/prod/microservice/microservice.env"
 
       - name: Install SSH Key
         uses: shimataro/ssh-key-action@v2
@@ -79,7 +79,7 @@ jobs:
           APPLICATION_SERVICE_VERSION: ${{ inputs.version }}
           APPLICATION_SERVICE_IMAGE: ${{ inputs.image }}
         run: |
-          cd deployment/microservice
+          cd deployment/prod/microservice
           docker stack deploy --prune --with-registry-auth --resolve-image=always --compose-file microservice-container-compose.yml --compose-file ${{ inputs.extension }} ${{ inputs.stackName }}
 
 

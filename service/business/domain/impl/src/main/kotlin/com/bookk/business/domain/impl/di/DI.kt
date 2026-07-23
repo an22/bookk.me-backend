@@ -15,6 +15,7 @@ import com.bookk.business.domain.api.service.operation.DeleteService
 import com.bookk.business.domain.api.service.operation.DeleteServiceGroup
 import com.bookk.business.domain.api.service.operation.GetServiceGroups
 import com.bookk.business.domain.api.service.operation.GetServices
+import com.bookk.business.domain.api.service.operation.IssueQuote
 import com.bookk.business.domain.api.service.operation.UpdateService
 import com.bookk.business.domain.impl.event.BusinessEventHandlerImpl
 import com.bookk.business.domain.impl.operation.business.CreateBusinessImpl
@@ -32,6 +33,7 @@ import com.bookk.business.domain.impl.operation.service.DeleteServiceGroupImpl
 import com.bookk.business.domain.impl.operation.service.DeleteServiceImpl
 import com.bookk.business.domain.impl.operation.service.GetServiceGroupsImpl
 import com.bookk.business.domain.impl.operation.service.GetServicesImpl
+import com.bookk.business.domain.impl.operation.service.IssueQuoteImpl
 import com.bookk.business.domain.impl.operation.service.UpdateServiceImpl
 import com.bookk.core.data.eventstreaming.EventHandler
 import org.koin.core.module.dsl.factoryOf
@@ -57,4 +59,5 @@ fun businessDomainModule() = module {
     singleOf(::UpdateServiceImpl) bind UpdateService::class
     singleOf(::GetServicesImpl) bind GetServices::class
     singleOf(::GetServiceGroupsImpl) bind GetServiceGroups::class
+    singleOf(::IssueQuoteImpl) bind IssueQuote::class
 }

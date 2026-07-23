@@ -9,4 +9,13 @@ data class User(
     val name: String,
     val lastName: String,
     val email: String
-)
+) {
+    companion object {
+        fun stub(
+            id: Uuid = Uuid.random(),
+            name: String = "Alice",
+            lastName: String = "Smith",
+            email: String = "user@example.com"
+        ) = User(id, name, lastName, email)
+    }
+}

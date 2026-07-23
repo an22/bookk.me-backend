@@ -1,0 +1,23 @@
+package com.bookk.server.user.client.api.event
+
+import com.bookk.core.data.eventstreaming.EventStreaming
+import kotlinx.serialization.Serializable
+import kotlin.uuid.Uuid
+
+sealed interface UserEvent : EventStreaming.Event<String> {
+    @Serializable
+    data class Updated(
+        val userId: Uuid,
+        val name: String,
+        val lastName: String,
+        val email: String,
+        val phone: String,
+        override val idempotencyKey: String = Uuid.random().toString()
+    ) : UserEvent {
+        override val topic: String = TOPIC
+
+        companion object {
+            const val TOPIC = "user.updated"
+        }
+    }
+}

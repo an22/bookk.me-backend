@@ -4,12 +4,9 @@ import com.bookk.auth.domain.api.authentication.entity.Authentication
 import com.bookk.auth.domain.api.identification.entity.Device
 import com.bookk.auth.domain.api.identification.entity.DeviceInfo
 import com.bookk.auth.domain.api.token.entity.SafeRefreshToken
-import com.bookk.auth.domain.api.token.entity.SigningKey
-import com.bookk.auth.domain.api.token.entity.SigningKeyStatus
 import com.bookk.auth.domain.api.token.entity.UnsafeRefreshToken
 import com.bookk.auth.domain.api.token.operation.GenerateAuthToken.Error.InvalidCredentials
 import com.bookk.auth.domain.api.token.operation.GenerateAuthToken.Source
-import com.bookk.auth.domain.api.token.operation.GetActiveSigningKey
 import com.bookk.auth.domain.datasource.DeviceDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.datasource.transaction.mockTransaction
@@ -20,23 +17,23 @@ import com.bookk.core.test.whenn
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import library.signing.TokenIssuer
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import kotlin.time.Clock
 import kotlin.uuid.Uuid
 
 internal class GenerateAuthTokenImplTest {
 
     private class SutFixture {
-        val getActiveSigningKey = mockk<GetActiveSigningKey>()
         val deviceDataSource = mockk<DeviceDataSource>()
         val transactionManager = mockk<TransactionManager>()
+        val tokenIssuer = mockk<TokenIssuer>()
 
         val sut = GenerateAuthTokenImpl(
-            getActiveSigningKey,
             deviceDataSource,
-            transactionManager
+            transactionManager,
+            tokenIssuer
         )
     }
 
@@ -54,18 +51,6 @@ internal class GenerateAuthTokenImplTest {
         )
     }
 
-    private fun signingKey(): SigningKey {
-        val (publicKeyPem, privateKeyPem) = RsaSigningKeyFactory.generate()
-        return SigningKey(
-            id = Uuid.random(),
-            publicKeyPem = publicKeyPem,
-            privateKeyPem = privateKeyPem,
-            status = SigningKeyStatus.ACTIVE,
-            createdAt = Clock.System.now(),
-            retiredAt = null
-        )
-    }
-
     private fun UnsafeRefreshToken.toSafe() = SafeRefreshToken(id, secretHash)
 
     @Test
@@ -76,7 +61,7 @@ internal class GenerateAuthTokenImplTest {
         val deviceRecord = device(refreshToken = refreshToken.toSafe())
 
         with(fixture) {
-            coEvery { getActiveSigningKey() } returns Result.success(signingKey())
+            coEvery { tokenIssuer.issue(any(), any()) } returns "access-token"
             coEvery { deviceDataSource.getDeviceByRefreshTokenId(refreshToken.id) } returns deviceRecord
             coEvery { deviceDataSource.rotateRefreshToken(any(), any(), any()) } returns Unit
             transactionManager.mockTransaction()

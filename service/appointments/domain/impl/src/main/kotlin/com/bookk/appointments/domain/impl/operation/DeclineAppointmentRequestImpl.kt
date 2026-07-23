@@ -47,10 +47,14 @@ internal class DeclineAppointmentRequestImpl(
         }
         eventProducer.send(
             AppointmentEvent.RequestRejected(
+                clientUserId = appointment.client.id,
+                clientName = appointment.client.fullName,
+                employeeUserId = appointment.employee.id,
+                employeeName = appointment.employee.fullName,
                 from = appointment.date,
                 to = appointment.dateEnd,
+                timeZone = business.timeZone,
                 businessName = business.name,
-                executioner = "TODO",
                 address = business.address,
                 price = moneyFormatter.print(appointment.totalAmount),
                 declineReason = appointment.declineReason

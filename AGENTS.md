@@ -19,6 +19,7 @@ service/<svc>/
 New gradle modules must be registered in `settings.gradle.kts` (one `include` per submodule, grouped per service). Convention plugins (`libs.plugins.bookk.microservice`, `bookk.domain.impl`, `bookk.domain.api`, `bookk.data`, …) already add Ktor/Koin/MockK/kotlin-test deps and JUnit platform — do not re-add them.
 
 **Never generate database migrations.** When an ORM table changes (new column, new index, etc.), leave the table definition updated but do NOT bump `referenceVersion`/`targetVersion` in `<Svc>Migration.kt` or run its `main()` to produce a new `V<n>__migration_script.sql`. The user runs that generation step themselves.
+**Ignore all git operations.** Managing Git is the responsibility of the developer, do not automatically commit, push or merge
 
 ## Core conventions (apply everywhere)
 
@@ -251,3 +252,43 @@ Rules:
 - Run the test suite after each step and confirm the expected pass/fail state before proceeding.
 - Keep tests small and focused; one behavior per test.
 - If a requirement is ambiguous, write the test that encodes your assumption and state it explicitly.
+
+---
+
+## Datasource (H2 integration) test conventions
+
+`createTestDatabase(vararg tables: Table)` in `core/data/src/testFixtures` creates a per-test H2 database in `MODE=MySQL`. Call datasource methods inside `suspendTransaction { fixture.sut.method() }` within `runUnitTest { }`. Use `dbQuery`-based methods inside `suspendTransaction {}`. Cache-based methods (those using `mapExceptions` without `dbQuery`) are called directly without wrapping.
+
+### CacheClient in datasource tests
+
+Use `InMemoryCacheClient` from `testFixtures(projects.core.data.cache.impl)` — do NOT use `mockk<CacheClient<String>>`. The relaxed mock returns a non-null mock for `get()` which fails the reified cast. Example fixture:
+```kotlin
+private class SutFixture {
+    val db = createTestDatabase(...)
+    val cacheClient = InMemoryCacheClient()
+    val sut = MyDataSourceImpl(cacheClient)
+}
+```
+See `PassKeyDataSourceImplTest` and `AppointmentRequestDataSourceImplTest` as reference.
+
+### H2 dialect limitations — untestable operations
+
+These throw `UnsupportedByDialectException` in H2 even with `MODE=MySQL`. Omit their tests and leave a comment in the test file:
+
+| Operation | Used by | Workaround for reads |
+|---|---|---|
+| `updateReturning` | `BusinessDataSourceImpl.updateBusiness` | — |
+| `deleteReturning` | `BusinessDataSourceImpl.deleteUserBusinesses`, `DeviceDataSourceImpl.deleteInactiveDevices` | — |
+| `upsertReturning` | `NotificationSettingsDataSourceImpl.upsert(settings)` | insert via DAO entity directly |
+
+For read methods whose writes use an unsupported upsert, insert test data directly via the DAO entity (e.g. `NotificationSettingsEntity.new(id) { ... }`).
+
+Plain `upsert {}` (no `where` parameter) **is** supported by H2 and resolves conflicts via `uniqueIndex` columns — use it freely in datasource tests.
+
+### Batch-update / batch-cancel patterns
+
+`markCompleted(before: Instant)` and `cancelOutdated(before: Instant)` update rows where `dateEnd < before`. Test the happy path by creating entities at `Instant.fromEpochMilliseconds(0)` (epoch → well in the past) and calling with `Clock.System.now()`. Test the boundary by creating entities at `Clock.System.now() + 24.hours` and verifying they are NOT affected.
+
+### Cleanup methods (deleteDayOffsInThePast)
+
+Insert `DayOffRange(LocalDate(2020,1,1), LocalDate(2020,1,2))` for a past day-off and `DayOffRange(LocalDate(2099,12,30), LocalDate(2099,12,31))` for a future one. After calling `deleteDayOffsInThePast()` re-read via `sut.get(businessId)` and assert counts.

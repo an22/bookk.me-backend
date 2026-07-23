@@ -8,6 +8,7 @@ interface ServiceDataSource {
     suspend fun createService(service: Service): Service
     suspend fun editService(service: Service): Service
     suspend fun getServices(businessId: Uuid): List<Service>
+    suspend fun getServicesByIds(ids: List<Uuid>): List<Service>
     suspend fun deleteService(id: Uuid)
     suspend fun createServiceGroup(group: ServiceGroup): ServiceGroup
     suspend fun deleteServiceGroup(id: Uuid)

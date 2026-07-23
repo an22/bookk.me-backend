@@ -4,8 +4,8 @@ import com.bookk.appointments.domain.api.entity.AppointmentSettings
 import com.bookk.appointments.domain.api.operation.EditSettings
 import com.bookk.appointments.domain.api.operation.GetSettings
 import com.bookk.appointments.microservice.route.AppointmentsRouting.Api
-import com.bookk.core.service.auth.AppPrincipal
 import com.bookk.core.service.enity.respondWith
+import com.bookk.server.auth.client.AppPrincipal
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.principal
 import io.ktor.server.request.receive

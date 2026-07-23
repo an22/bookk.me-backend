@@ -1,0 +1,29 @@
+name: Publish notification service
+on:
+  push:
+    tags:
+      - 'notification/*'
+
+jobs:
+  publish:
+    name: Publish Notifications Microservice
+    uses: ./.github/workflows/service-publish-template.yml
+    secrets:
+      gradleEncryption: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
+    with:
+      module: "service:notifications:microservice"
+      serviceName: "com.bookk.server.microservice.notifications"
+
+  deploy:
+    needs: publish
+    name: Deploy Notifications Microservice
+    uses: ./.github/workflows/service-deploy-template.yml
+    secrets:
+      envFile: ${{ secrets.NOTIFICATIONS_ENV_FILE }}
+      privateKey: ${{ secrets.SSH_PRIVATE_KEY }}
+      remoteUri: ${{ secrets.SWARM_MANAGER }}
+      knownHosts: ${{ secrets.SSH_KNOWN_HOSTS }}
+    with:
+      image: "ghcr.io/an22/com.bookk.server.microservice.notifications"
+      stackName: "notifications"
+      version: ${{ needs.publish.outputs.version }}

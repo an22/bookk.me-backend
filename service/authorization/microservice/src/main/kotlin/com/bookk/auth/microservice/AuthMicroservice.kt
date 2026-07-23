@@ -1,7 +1,7 @@
 package com.bookk.auth.microservice
 
 import com.bookk.auth.data.di.authDataModule
-import com.bookk.auth.domain.api.token.operation.RotateSigningKeys
+import com.bookk.auth.domain.api.device.operation.DeleteInactiveDevices
 import com.bookk.auth.domain.impl.di.authDomainModule
 import com.bookk.auth.microservice.route.authRoute
 import com.bookk.core.data.cache.impl.di.cacheModule
@@ -11,6 +11,7 @@ import com.bookk.core.service.startServer
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import library.scheduler.Scheduler
+import library.signing.RotateSigningKeys
 import org.koin.dsl.module
 import org.koin.ktor.ext.get
 import kotlin.time.Duration.Companion.days
@@ -35,7 +36,10 @@ fun main() {
 fun Application.installScheduler() {
     install(Scheduler) {
         job("rotateSigningKeys", interval = 1.days) {
-            get<RotateSigningKeys>().invoke().getOrThrow()
+            get<RotateSigningKeys>().invoke(retireInterval = 7.days).getOrThrow()
+        }
+        job("deleteInactiveDevices", interval = 1.days) {
+            get<DeleteInactiveDevices>().invoke().getOrThrow()
         }
     }
 }

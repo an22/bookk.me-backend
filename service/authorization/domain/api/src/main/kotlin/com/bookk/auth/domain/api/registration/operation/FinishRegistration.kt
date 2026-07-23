@@ -4,10 +4,11 @@ import com.bookk.auth.domain.api.error.AuthErrorCodes
 import com.bookk.auth.domain.api.registration.entity.VerifyAccountCreationRequest
 import com.bookk.auth.domain.api.token.entity.AuthTokens
 import com.bookk.core.domain.entity.BusinessError
+import com.bookk.core.domain.entity.Language
 
 interface FinishRegistration {
 
-    suspend operator fun invoke(request: VerifyAccountCreationRequest): Result<AuthTokens>
+    suspend operator fun invoke(request: VerifyAccountCreationRequest, language: Language): Result<AuthTokens>
 
     sealed interface Error {
         class InvalidEmailFormat : BusinessError(422, AuthErrorCodes.INVALID_EMAIL_FORMAT, "Invalid email format"), Error

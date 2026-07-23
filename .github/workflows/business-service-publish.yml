@@ -27,3 +27,4 @@ jobs:
       image: "ghcr.io/an22/com.bookk.server.microservice.business"
       stackName: "business"
       version: ${{ needs.publish.outputs.version }}
+      extension: "ext/business-extension.yml"

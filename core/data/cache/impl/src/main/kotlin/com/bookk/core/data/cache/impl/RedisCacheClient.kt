@@ -5,9 +5,10 @@ import com.bookk.core.data.cache.impl.codec.ProtobufRedisCodec
 import io.lettuce.core.ExperimentalLettuceCoroutinesApi
 import io.lettuce.core.RedisClient
 import io.lettuce.core.RedisURI
+import io.lettuce.core.SetArgs
 import io.lettuce.core.api.coroutines
-import io.lettuce.core.api.sync.RedisCommands
-import io.lettuce.core.api.sync.multi
+import io.lettuce.core.api.coroutines.RedisCoroutinesCommands
+import io.lettuce.core.api.coroutines.multi
 import io.lettuce.core.support.ConnectionPoolSupport
 import kotlinx.serialization.protobuf.ProtoBuf
 import kotlinx.serialization.serializer
@@ -37,11 +38,15 @@ class RedisCacheClient(
         client.connect(ProtobufRedisCodec())
     }
 
-    override suspend fun <V : Any> set(key: String, value: V, kType: KType) {
+    override suspend fun <V : Any> set(key: String, value: V, kType: KType, expiration: Duration?) {
         with(connectionPool.borrowObject()) {
             val serializer = protobuf.serializersModule.serializer(kType)
             coroutines().apply {
-                set(key, ByteBuffer.wrap(protobuf.encodeToByteArray(serializer, value)))
+                set(
+                    key,
+                    ByteBuffer.wrap(protobuf.encodeToByteArray(serializer, value)),
+                    expiration?.let { SetArgs.Builder.ex(it.toJavaDuration()) } ?: SetArgs()
+                )
             }
         }
     }
@@ -57,10 +62,10 @@ class RedisCacheClient(
         }
     }
 
-    override suspend fun withTransaction(action: CacheClient.CacheTransaction<String>.() -> Unit) {
+    override suspend fun withTransaction(action: suspend CacheClient<String>.() -> Unit) {
         with(connectionPool.borrowObject()) {
-            sync().multi {
-                action(asCacheTransactionTransaction())
+            coroutines().multi {
+                action(asCache())
             }
         }
     }
@@ -76,28 +81,33 @@ class RedisCacheClient(
         client.shutdown()
     }
 
-    private fun <K> RedisCommands<K, ByteBuffer>.asCacheTransactionTransaction() =
-        object : CacheClient.CacheTransaction<K> {
-            override fun <V> set(key: K, value: V, kType: KType) {
+    private fun <K: Any> RedisCoroutinesCommands<K, ByteBuffer>.asCache() =
+        object : CacheClient<K> {
+            override suspend fun <V : Any> set(key: K, value: V, kType: KType, expiration: Duration?) {
                 val serializer = protobuf.serializersModule.serializer(kType)
-                this@asCacheTransactionTransaction.set(
+                this@asCache.set(
                     key,
-                    ByteBuffer.wrap(protobuf.encodeToByteArray(serializer, value))
+                    ByteBuffer.wrap(protobuf.encodeToByteArray(serializer, value)),
+                    expiration?.let { SetArgs.Builder.ex(it.toJavaDuration()) } ?: SetArgs()
                 )
             }
 
             @Suppress("UNCHECKED_CAST")
-            override fun <V> get(key: K, kType: KType): V? {
+            override suspend fun <V : Any> get(key: K, kType: KType): V? {
                 val deserializer = protobuf.serializersModule.serializer(kType)
                 return get(key)?.let { protobuf.decodeFromByteArray(deserializer, it.array()) as V }
             }
 
-            override fun setExpiration(key: K, expiration: Duration) {
-                this@asCacheTransactionTransaction.expire(key, expiration.toJavaDuration())
+            override suspend fun delete(key: K) {
+                this@asCache.del(key)
             }
 
-            override fun delete(key: K) {
-                this@asCacheTransactionTransaction.del(key)
+            override suspend fun withTransaction(action: suspend CacheClient<K>.() -> Unit) {
+                throw UnsupportedOperationException("Transaction inside transaction is not supported")
+            }
+
+            override fun close() {
+                throw UnsupportedOperationException("Redis transaction is not closeable")
             }
 
         }

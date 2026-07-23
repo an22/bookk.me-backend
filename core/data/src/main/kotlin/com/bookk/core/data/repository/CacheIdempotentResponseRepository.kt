@@ -28,10 +28,7 @@ class CacheIdempotentResponseRepository(
     ) {
         val key = "$resource:$idempotencyKey"
         val value = SerializableIdempotencyResponse(isInProgress = false, response = response)
-        cacheClient.withTransaction {
-            set(key, value)
-            setExpiration(key, 10.minutes)
-        }
+        cacheClient.set(key, value, 10.minutes)
     }
 
     override suspend fun getResponseOrLock(
@@ -41,11 +38,8 @@ class CacheIdempotentResponseRepository(
         val key = "$resource:$idempotencyKey"
         val response: SerializableIdempotencyResponse? = cacheClient.get(key)
         if (response == null) {
-            cacheClient.withTransaction {
-                val lock = SerializableIdempotencyResponse(isInProgress = true, response = ByteArray(0))
-                set(key, lock)
-                setExpiration(key, 10.minutes)
-            }
+            val lock = SerializableIdempotencyResponse(isInProgress = true, response = ByteArray(0))
+            cacheClient.set(key, lock, 10.minutes)
         }
         return response?.let {
             IdempotencyResponse(
@@ -57,9 +51,7 @@ class CacheIdempotentResponseRepository(
 
     override suspend fun release(resource: String, idempotencyKey: IdempotencyKey) {
         val key = "$resource:$idempotencyKey"
-        cacheClient.withTransaction {
-            delete(key)
-        }
+        cacheClient.delete(key)
     }
 
     override suspend fun deleteExpiredResponses(lastValidDate: OffsetDateTime) {

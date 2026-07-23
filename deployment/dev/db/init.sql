@@ -16,6 +16,10 @@ CREATE DATABASE IF NOT EXISTS `appointments`;
 CREATE USER IF NOT EXISTS 'appointments'@'%' IDENTIFIED BY 'eDVR6pBIlqVgidtvjQiUErgr7VeMD5pj';
 GRANT ALL PRIVILEGES ON `appointments`.* TO 'appointments'@'%';
 
+CREATE DATABASE IF NOT EXISTS `notifications`;
+CREATE USER IF NOT EXISTS 'notifications'@'%' IDENTIFIED BY '94DVwSITc8AUpL7r0ErOYrZ6iFQt4OJh';
+GRANT ALL PRIVILEGES ON `notifications`.* TO 'notifications'@'%';
+
 CREATE DATABASE IF NOT EXISTS `keycloak`;
 CREATE USER IF NOT EXISTS 'keycloak'@'%' IDENTIFIED BY '4FB3P4y3mbRKAxASQjM6cBA52qKMFDqW';
 GRANT ALL PRIVILEGES ON `keycloak`.* TO 'keycloak'@'%';

@@ -16,6 +16,7 @@ import org.jetbrains.exposed.v1.dao.UUIDEntity
 import java.util.UUID
 import kotlin.experimental.and
 import kotlin.experimental.or
+import kotlin.time.Clock
 import kotlin.uuid.toJavaUuid
 import kotlin.uuid.toKotlinUuid
 
@@ -28,6 +29,7 @@ internal class SettingsEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var automaticApproval by SettingsTable.automaticApproval
     var inBetweenBreakInMinutes by SettingsTable.inBetweenBreakInMinutes
     var appointmentNote by SettingsTable.appointmentNote
+    var updatedAt by SettingsTable.updatedAt
 
     fun domain(): AppointmentSettings = AppointmentSettings(
         id = id.value.toKotlinUuid(),
@@ -79,6 +81,7 @@ internal class SettingsEntity(id: EntityID<UUID>) : UUIDEntity(id) {
             it.inBetweenBreakInMinutes = settings.inBetweenBreakInMinutes
             it.appointmentNote = settings.appointmentNote
             it.automaticApproval = settings.automaticApproval
+            it.updatedAt = Clock.System.now()
         }
     }
 }

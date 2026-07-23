@@ -3,6 +3,8 @@ version: "3.9"
 secrets:
   signing_key_encryption_key:
     file: security/signing_key_encryption_key
+  firebase_key:
+    file: security/firebase-private-key.json
 
 services:
   service-auth:
@@ -62,6 +64,23 @@ services:
     environment:
       JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,address=*:8000,server=y,suspend=n -ea"
       TZ: "UTC"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  service-notifications:
+    image: com.bookk.server.microservice.notifications
+    hostname: notifications.service
+    ports:
+      - '8004:8000'
+    env_file:
+      - service/notifications.env
+    environment:
+      JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,address=*:8000,server=y,suspend=n -ea"
+      TZ: "UTC"
+    secrets:
+      - firebase_key
     deploy:
       resources:
         limits:

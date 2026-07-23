@@ -4,8 +4,8 @@ import com.bookk.appointments.domain.api.entity.BusinessSnapshot
 import com.bookk.appointments.domain.api.operation.EnableAppointmentsForBusiness
 import com.bookk.appointments.domain.api.operation.IsAppointmentsEnabled
 import com.bookk.appointments.microservice.route.AppointmentsRouting.Api
-import com.bookk.core.service.auth.AppPrincipal
 import com.bookk.core.service.enity.respondWith
+import com.bookk.server.auth.client.AppPrincipal
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.principal

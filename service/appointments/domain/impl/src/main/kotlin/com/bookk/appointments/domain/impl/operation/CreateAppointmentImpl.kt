@@ -46,10 +46,12 @@ internal class CreateAppointmentImpl(
             createAppointment(userId, request)
         }
 
-    override suspend fun invoke(userId: Uuid, appointment: Appointment): Result<Appointment> =
-        transactionManager.transaction {
+    override suspend fun invoke(userId: Uuid, appointment: Appointment, isInstant: Boolean): Result<Appointment> {
+        if (isInstant && userId != appointment.userId) return Result.failure(CreateAppointment.Error.InstantAppointmentOnlySelfAllowed())
+        return transactionManager.transaction {
             createAppointment(userId, appointment)
         }
+    }
 
     private suspend fun createAppointment(userId: Uuid, appointment: Appointment): Appointment {
         verifyAppointment(userId, appointment)
@@ -80,10 +82,14 @@ internal class CreateAppointmentImpl(
         }
         eventProducer.send(
             AppointmentEvent.RequestApproved(
+                clientUserId = request.client.id,
+                clientName = request.client.fullName,
+                employeeUserId = request.employee.id,
+                employeeName = request.employee.fullName,
                 from = request.date,
                 to = request.dateEnd,
+                timeZone = business.timeZone,
                 businessName = business.name,
-                executioner = "TODO",
                 address = business.address,
                 price = moneyFormatter.print(request.totalAmount)
             )

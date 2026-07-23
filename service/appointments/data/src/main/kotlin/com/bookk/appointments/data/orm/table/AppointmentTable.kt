@@ -8,6 +8,8 @@ import org.jetbrains.exposed.v1.datetime.timestamp
 object AppointmentTable: BaseUUIDTable("appointment") {
     val userId = uuid("user_id")
     val businessId = reference("business_id", AppointmentBusinessTable.id, onDelete = ReferenceOption.CASCADE)
+    val employeeId = uuid("employee_id")
+    val employeeName = varchar("employee_name", 1024)
     val clientId = uuid("client_id").index()
     val clientName = varchar("client_name", 1024)
     val clientPhone = varchar("client_phone", 24).nullable()

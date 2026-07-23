@@ -20,7 +20,7 @@ internal class EnableAppointmentsForBusinessImpl(
     override suspend fun invoke(userId: Uuid, snapshot: BusinessSnapshot): Result<Unit> = transactionManager.transaction<Unit> {
         subscriptionSource.attachBusiness(snapshot)
         permissionsDataSource.initPermissions(userId, snapshot.id, ObjectPermission.OWNER.int)
-        settingsDataSource.create(AppointmentSettings(snapshot.id))
+        settingsDataSource.create(AppointmentSettings(snapshot.id, snapshot.timeZone))
     }.onConstraintFailure {
         throw EnableAppointmentsForBusiness.Error.AlreadyEnabled()
     }

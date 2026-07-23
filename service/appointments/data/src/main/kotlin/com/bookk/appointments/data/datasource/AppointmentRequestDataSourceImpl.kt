@@ -8,6 +8,9 @@ import com.bookk.appointments.domain.api.entity.AppointmentRequest
 import com.bookk.appointments.domain.api.entity.AppointmentRequestStatus
 import com.bookk.appointments.domain.datasource.AppointmentRequestDataSource
 import com.bookk.core.data.DataSource
+import com.bookk.core.data.cache.CacheClient
+import com.bookk.core.data.cache.get
+import com.bookk.core.data.cache.set
 import com.bookk.core.domain.entity.Error
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
@@ -17,12 +20,16 @@ import org.jetbrains.exposed.v1.core.neq
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.update
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 import kotlin.uuid.toKotlinUuid
 
-internal class AppointmentRequestDataSourceImpl : DataSource(), AppointmentRequestDataSource {
+internal class AppointmentRequestDataSourceImpl(
+    private val cacheClient: CacheClient<String>
+) : DataSource(), AppointmentRequestDataSource {
     override suspend fun get(id: Uuid): AppointmentRequest? = dbQuery {
         AppointmentRequestEntity.findById(id.toJavaUuid())
             ?.domain()
@@ -73,6 +80,7 @@ internal class AppointmentRequestDataSourceImpl : DataSource(), AppointmentReque
             where = { AppointmentRequestTable.id eq request.id.toJavaUuid() },
         ) {
             it[AppointmentRequestTable.status] = AppointmentRequestStatus.APPROVED
+            it[AppointmentRequestTable.updatedAt] = Clock.System.now()
         }
     }
 
@@ -80,6 +88,7 @@ internal class AppointmentRequestDataSourceImpl : DataSource(), AppointmentReque
         AppointmentRequestEntity.findByIdAndUpdate(id.toJavaUuid()) {
             it.status = AppointmentRequestStatus.DECLINED
             it.declineReason = reason
+            it.updatedAt = Clock.System.now()
         }?.domain() ?: throw Error.NotFound()
     }
 
@@ -107,6 +116,16 @@ internal class AppointmentRequestDataSourceImpl : DataSource(), AppointmentReque
             }
         ) {
             it[AppointmentRequestTable.status] = AppointmentRequestStatus.CANCELLED
+            it[AppointmentRequestTable.updatedAt] = Clock.System.now()
         }
+    }
+
+    override suspend fun cacheOfferToken(token: String) = mapExceptions {
+        cacheClient.set(token, "marker", 10.minutes)
+    }
+
+    override suspend fun isTokenInCache(token: String): Boolean = mapExceptions {
+        val entry: String? = cacheClient.get(token)
+        entry != null
     }
 }

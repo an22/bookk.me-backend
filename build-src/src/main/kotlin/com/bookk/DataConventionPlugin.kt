@@ -43,6 +43,8 @@ class DataConventionPlugin : Plugin<Project> {
                 add("implementation", libs.ktor.logging)
                 add("testImplementation", libs.kotlin.test)
                 add("testImplementation", libs.mockk)
+                add("testImplementation", libs.h2)
+                add("testImplementation", libs.kotlin.coroutines.test)
             }
         }
     }

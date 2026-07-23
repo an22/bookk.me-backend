@@ -21,6 +21,7 @@ money = "2.0.2"
 jackson = "2.17.1"
 firebase = "9.10.0"
 inmemcache = "3.2.4"
+icu4j = "78.3"
 
 [libraries]
 jackson-core = { module = "com.fasterxml.jackson.core:jackson-core", version.ref = "jackson" }
@@ -80,6 +81,7 @@ auth0-jwt = { module = "com.auth0:java-jwt", version.ref = "jwt" }
 firebase-admin = { module = "com.google.firebase:firebase-admin", version.ref = "firebase" }
 h2 = { module = "com.h2database:h2", version.ref = "h2" }
 memcache = {module = "com.github.ben-manes.caffeine:caffeine", version.ref = "inmemcache"}
+icu4j = { module = "com.ibm.icu:icu4j", version.ref = "icu4j" }
 
 [plugins]
 bookk-data = { id = "com.bookk.data" }

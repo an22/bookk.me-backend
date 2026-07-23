@@ -6,6 +6,7 @@ dependencies {
     implementation(projects.core)
     implementation(projects.core.domain)
     implementation(projects.core.domain.datasource)
+    implementation(projects.core.i18n)
     implementation(projects.core.data.eventstreaming.api)
     implementation(projects.service.authorization.client)
     implementation(projects.service.appointments.client)

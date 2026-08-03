@@ -58,6 +58,14 @@ internal class EmployeeDataSourceImpl : DataSource(), EmployeeDataSource {
             ?.toDomain()
     }
 
+    override suspend fun getEmployeeByUserId(businessId: Uuid, userId: Uuid): Employee? = dbQuery {
+        EmployeeEntity.find {
+            (EmployeeTable.businessId eq businessId.toJavaUuid()) and (EmployeeTable.userId eq userId.toJavaUuid())
+        }
+            .firstOrNull()
+            ?.toDomain()
+    }
+
     override suspend fun deleteEmployee(businessId: Uuid, id: Uuid): Boolean = dbQuery {
         EmployeeTable.deleteWhere {
             (EmployeeTable.businessId eq businessId.toJavaUuid()) and (EmployeeTable.id eq id.toJavaUuid())

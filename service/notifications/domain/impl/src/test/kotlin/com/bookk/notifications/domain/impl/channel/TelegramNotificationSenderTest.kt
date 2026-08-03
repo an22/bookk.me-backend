@@ -1,7 +1,6 @@
 package com.bookk.notifications.domain.impl.channel
 
 import com.bookk.core.domain.datasource.transaction.TransactionManager
-import com.bookk.core.domain.datasource.transaction.mockTransaction
 import com.bookk.core.test.given
 import com.bookk.core.test.runUnitTest
 import com.bookk.core.test.then
@@ -12,13 +11,17 @@ import com.bookk.notifications.domain.impl.notification.NotificationParameters
 import com.bookk.notifications.domain.impl.notification.NotificationType
 import com.bookk.notifications.domain.impl.notification.PushNotification
 import com.bookk.notifications.domain.impl.notification.TextNotification
-import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import kotlin.uuid.Uuid
 
+/**
+ * [TelegramNotificationSender] is still a placeholder — it delivers nothing and reports the failure so
+ * [com.bookk.notifications.domain.impl.notification.SendNotification] can surface it. These tests pin that
+ * contract; replace them with delivery assertions once the sender is implemented.
+ */
 internal class TelegramNotificationSenderTest {
 
     private class SutFixture {
@@ -27,45 +30,51 @@ internal class TelegramNotificationSenderTest {
         val sut = TelegramNotificationSender(transactionManager, targetDataSource)
     }
 
-    private fun notificationParams() = NotificationParameters(
-        type = NotificationType.APPOINTMENT,
+    private fun notificationParams(type: NotificationType = NotificationType.APPOINTMENT) = NotificationParameters(
+        type = type,
         push = { PushNotification(title = "Title", body = "Subtitle") },
         email = { EmailNotification(subject = "Subject", body = "Body") },
         text = { TextNotification(text = "Text") },
     )
 
     @Test
-    fun `should fetch telegram target and return success`() = runUnitTest {
+    fun `should report telegram delivery as not implemented`() = runUnitTest {
         given()
         val fixture = SutFixture()
         val userId = Uuid.random()
-        with(fixture) {
-            transactionManager.mockTransaction()
-            coEvery { targetDataSource.getTelegram(userId) } returns "@user_tag"
-        }
 
         whenn()
         val result = fixture.sut.send(userId, notificationParams())
 
         then()
-        assertTrue(result.isSuccess)
-        coVerify(exactly = 1) { fixture.targetDataSource.getTelegram(userId) }
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is UnsupportedOperationException)
     }
 
     @Test
-    fun `should return success when telegram target is not configured`() = runUnitTest {
+    fun `should report telegram delivery as not implemented for employee notifications`() = runUnitTest {
         given()
         val fixture = SutFixture()
         val userId = Uuid.random()
-        with(fixture) {
-            transactionManager.mockTransaction()
-            coEvery { targetDataSource.getTelegram(userId) } returns null
-        }
 
         whenn()
-        val result = fixture.sut.send(userId, notificationParams())
+        val result = fixture.sut.send(userId, notificationParams(NotificationType.EMPLOYEE))
 
         then()
-        assertTrue(result.isSuccess)
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is UnsupportedOperationException)
+    }
+
+    @Test
+    fun `should not resolve the telegram target while delivery is not implemented`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+
+        whenn()
+        fixture.sut.send(userId, notificationParams())
+
+        then()
+        coVerify(exactly = 0) { fixture.targetDataSource.getTelegram(any()) }
     }
 }

@@ -23,6 +23,9 @@ internal class SendNotification(
     private fun NotificationSettings.isTypeAllowed(type: NotificationType): Boolean {
         return when (type) {
             NotificationType.APPOINTMENT -> appointmentEnabled
+            // Employee invitations are account-level and actionable, so they are not user-suppressible.
+            // They still only go out through the channels the user has enabled.
+            NotificationType.EMPLOYEE -> true
         }
     }
 }

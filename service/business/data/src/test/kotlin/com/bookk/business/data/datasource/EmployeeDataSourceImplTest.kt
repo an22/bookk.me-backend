@@ -471,4 +471,42 @@ internal class EmployeeDataSourceImplTest {
         then()
         assertTrue(serviceIds.isEmpty())
     }
+
+    @Test
+    fun `should return employee by user id`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val userId = Uuid.random()
+        val created = suspendTransaction {
+            fixture.sut.createEmployee(Employee.stub(businessId = fixture.businessId, userId = userId))
+        }
+
+        whenn()
+        val found = suspendTransaction { fixture.sut.getEmployeeByUserId(fixture.businessId, userId) }
+
+        then()
+        assertNotNull(found)
+        assertEquals(created.id, found?.id)
+        assertEquals(userId, found?.userId)
+    }
+
+    @Test
+    fun `should return null when user is not an employee of the business`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val userId = Uuid.random()
+        suspendTransaction {
+            fixture.sut.createEmployee(Employee.stub(businessId = fixture.businessId, userId = userId))
+        }
+
+        whenn()
+        val otherUser = suspendTransaction { fixture.sut.getEmployeeByUserId(fixture.businessId, Uuid.random()) }
+        val otherBusiness = suspendTransaction { fixture.sut.getEmployeeByUserId(Uuid.random(), userId) }
+
+        then()
+        assertNull(otherUser)
+        assertNull(otherBusiness)
+    }
 }

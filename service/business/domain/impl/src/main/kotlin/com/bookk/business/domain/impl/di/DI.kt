@@ -9,6 +9,8 @@ import com.bookk.business.domain.api.business.operation.UpdateBusiness
 import com.bookk.business.domain.api.client.operation.CreateClient
 import com.bookk.business.domain.api.client.operation.DeleteClient
 import com.bookk.business.domain.api.client.operation.GetClients
+import com.bookk.business.domain.api.employee.operation.ApproveEmployeeInvitation
+import com.bookk.business.domain.api.employee.operation.CreateEmployeeInvitation
 import com.bookk.business.domain.api.service.operation.CreateService
 import com.bookk.business.domain.api.service.operation.CreateServiceGroup
 import com.bookk.business.domain.api.service.operation.DeleteService
@@ -28,6 +30,8 @@ import com.bookk.business.domain.impl.operation.business.UpdateBusinessImpl
 import com.bookk.business.domain.impl.operation.client.CreateClientImpl
 import com.bookk.business.domain.impl.operation.client.DeleteClientImpl
 import com.bookk.business.domain.impl.operation.client.GetClientsImpl
+import com.bookk.business.domain.impl.operation.employee.ApproveEmployeeInvitationImpl
+import com.bookk.business.domain.impl.operation.employee.CreateEmployeeInvitationImpl
 import com.bookk.business.domain.impl.operation.service.CreateServiceGroupImpl
 import com.bookk.business.domain.impl.operation.service.CreateServiceImpl
 import com.bookk.business.domain.impl.operation.service.DeleteServiceGroupImpl
@@ -63,4 +67,6 @@ fun businessDomainModule() = module {
     singleOf(::GetServicesImpl) bind GetServices::class
     singleOf(::GetServiceGroupsImpl) bind GetServiceGroups::class
     singleOf(::IssueQuoteImpl) bind IssueQuote::class
+    singleOf(::CreateEmployeeInvitationImpl) bind CreateEmployeeInvitation::class
+    singleOf(::ApproveEmployeeInvitationImpl) bind ApproveEmployeeInvitation::class
 }

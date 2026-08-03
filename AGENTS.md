@@ -285,6 +285,18 @@ For read methods whose writes use an unsupported upsert, insert test data direct
 
 Plain `upsert {}` (no `where` parameter) **is** supported by H2 and resolves conflicts via `uniqueIndex` columns — use it freely in datasource tests.
 
+### Asserting unique-constraint violations
+
+`runUnitTest` cannot be nested inside `assertThrows` (its body is `suspend`, and the outer `TestHolder` context would be lost). Assert constraint failures with `runCatching` instead:
+```kotlin
+whenn()
+val result = runCatching { suspendTransaction { fixture.sut.createX(duplicate) } }
+
+then()
+assertTrue(result.exceptionOrNull() is Error.UniqueConstraintFailed)
+```
+`dbQuery { }` maps the driver exception to `com.bookk.core.domain.entity.Error.UniqueConstraintFailed`, which operations turn into a domain error via `.onConstraintFailure { }`.
+
 ### Batch-update / batch-cancel patterns
 
 `markCompleted(before: Instant)` and `cancelOutdated(before: Instant)` update rows where `dateEnd < before`. Test the happy path by creating entities at `Instant.fromEpochMilliseconds(0)` (epoch → well in the past) and calling with `Clock.System.now()`. Test the boundary by creating entities at `Clock.System.now() + 24.hours` and verifying they are NOT affected.

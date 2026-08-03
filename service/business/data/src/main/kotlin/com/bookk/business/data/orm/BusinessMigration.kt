@@ -5,6 +5,7 @@ import com.bookk.business.data.orm.table.BusinessPermissionsTable
 import com.bookk.business.data.orm.table.BusinessTable
 import com.bookk.business.data.orm.table.ClientTable
 import com.bookk.business.data.orm.table.EmployeeCanProvideServiceTable
+import com.bookk.business.data.orm.table.EmployeeInvitationTable
 import com.bookk.business.data.orm.table.EmployeeTable
 import com.bookk.business.data.orm.table.ServiceGroupTable
 import com.bookk.business.data.orm.table.ServiceTable
@@ -33,6 +34,7 @@ private fun tables(): Array<Table> {
         ServiceTable,
         ServiceGroupTable,
         EmployeeTable,
-        EmployeeCanProvideServiceTable
+        EmployeeCanProvideServiceTable,
+        EmployeeInvitationTable
     )
 }

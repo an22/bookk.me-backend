@@ -38,4 +38,35 @@ interface BusinessEvent : EventStreaming.Event<String> {
             const val TOPIC = "business.updated"
         }
     }
+
+    @Serializable
+    data class EmployeeInvitationCreated(
+        val invitedUserId: Uuid,
+        val invitedName: String,
+        val businessId: Uuid,
+        val businessName: String,
+        override val idempotencyKey: String = Uuid.random().toString()
+    ) : BusinessEvent {
+        override val topic: String = TOPIC
+
+        companion object {
+            const val TOPIC = "business.employee_invitation_created"
+        }
+    }
+
+    @Serializable
+    data class EmployeeInvitationApproved(
+        val inviterUserId: Uuid,
+        val employeeUserId: Uuid,
+        val employeeName: String,
+        val businessId: Uuid,
+        val businessName: String,
+        override val idempotencyKey: String = Uuid.random().toString()
+    ) : BusinessEvent {
+        override val topic: String = TOPIC
+
+        companion object {
+            const val TOPIC = "business.employee_invitation_approved"
+        }
+    }
 }

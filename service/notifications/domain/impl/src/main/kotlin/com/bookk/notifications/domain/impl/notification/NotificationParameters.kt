@@ -24,5 +24,6 @@ internal class TextNotification(
 )
 
 internal enum class NotificationType {
-    APPOINTMENT
+    APPOINTMENT,
+    EMPLOYEE
 }

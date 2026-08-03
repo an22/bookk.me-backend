@@ -38,6 +38,9 @@ internal class SendNotificationTest {
         text = { TextNotification(text = "Text") },
     )
 
+    private fun NotificationParameters.copyWithType(type: NotificationType) =
+        NotificationParameters(type = type, push = push, email = email, text = text)
+
     @Test
     fun `should send to all enabled channels`() = runUnitTest {
         given()
@@ -115,6 +118,62 @@ internal class SendNotificationTest {
 
         whenn()
         val result = fixture.sut.invoke(userId, notificationParams())
+
+        then()
+        assertTrue(result.isSuccess)
+        coVerify(exactly = 0) { fixture.emailSender.send(any(), any()) }
+        coVerify(exactly = 0) { fixture.telegramSender.send(any(), any()) }
+        coVerify(exactly = 0) { fixture.pushSender.send(any(), any()) }
+    }
+
+    @Test
+    fun `should send employee notifications even when appointment notifications are disabled`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+        val notification = notificationParams().copyWithType(NotificationType.EMPLOYEE)
+        val settings = NotificationSettings.stub(
+            userId = userId,
+            appointmentEnabled = false,
+            channels = listOf(
+                NotificationChannelSettings.stub(channel = CommunicationChannel.EMAIL, enabled = true),
+                NotificationChannelSettings.stub(channel = CommunicationChannel.PUSH_NOTIFICATIONS, enabled = false),
+            )
+        )
+        with(fixture) {
+            coEvery { notificationDataSource.getByUserId(userId) } returns settings
+            coEvery { emailSender.send(userId, notification) } returns Result.success(Unit)
+        }
+
+        whenn()
+        val result = fixture.sut.invoke(userId, notification)
+
+        then()
+        assertTrue(result.isSuccess)
+        coVerify(exactly = 1) { fixture.emailSender.send(userId, notification) }
+        coVerify(exactly = 0) { fixture.pushSender.send(any(), any()) }
+    }
+
+    @Test
+    fun `should not send employee notifications through disabled channels`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+        val notification = notificationParams().copyWithType(NotificationType.EMPLOYEE)
+        val settings = NotificationSettings.stub(
+            userId = userId,
+            channels = listOf(
+                NotificationChannelSettings.stub(channel = CommunicationChannel.EMAIL, enabled = false),
+                NotificationChannelSettings.stub(channel = CommunicationChannel.TELEGRAM, enabled = false),
+                NotificationChannelSettings.stub(channel = CommunicationChannel.PUSH_NOTIFICATIONS, enabled = false),
+            )
+        )
+        with(fixture) {
+            coEvery { notificationDataSource.getByUserId(userId) } returns settings
+        }
+
+        whenn()
+        val result = fixture.sut.invoke(userId, notification)
 
         then()
         assertTrue(result.isSuccess)

@@ -2,12 +2,14 @@ package com.bookk.business.domain.impl.operation.user
 
 import com.bookk.business.domain.api.user.operation.SyncUserProfile
 import com.bookk.business.domain.datasource.ClientDataSource
+import com.bookk.business.domain.datasource.EmployeeDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import kotlin.uuid.Uuid
 
 internal class SyncUserProfileImpl(
     private val transactionManager: TransactionManager,
-    private val clientDataSource: ClientDataSource
+    private val clientDataSource: ClientDataSource,
+    private val employeeDataSource: EmployeeDataSource
 ) : SyncUserProfile {
     override suspend fun invoke(
         userId: Uuid,
@@ -17,6 +19,7 @@ internal class SyncUserProfileImpl(
         email: String
     ): Result<Unit> = transactionManager.transaction {
         clientDataSource.updateIntegratedClients(userId, name, lastName, phone, email)
+        employeeDataSource.updateIntegratedEmployees(userId, name, lastName, phone, email)
         Unit
     }
 }

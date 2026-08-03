@@ -4,6 +4,8 @@ import com.bookk.business.data.orm.table.BusinessDashboardTable
 import com.bookk.business.data.orm.table.BusinessPermissionsTable
 import com.bookk.business.data.orm.table.BusinessTable
 import com.bookk.business.data.orm.table.ClientTable
+import com.bookk.business.data.orm.table.EmployeeCanProvideServiceTable
+import com.bookk.business.data.orm.table.EmployeeTable
 import com.bookk.business.data.orm.table.ServiceGroupTable
 import com.bookk.business.data.orm.table.ServiceTable
 import com.bookk.core.data.database.createMigrationScriptFor
@@ -14,8 +16,8 @@ import org.jetbrains.exposed.v1.core.Table
 fun main() {
     runBlocking {
         createMigrationScriptFor(
-            referenceVersion = 7,
-            targetVersion = 8,
+            referenceVersion = 8,
+            targetVersion = 9,
             schemaName = "business",
             tables = tables() + signingKeyTables()
         )
@@ -29,6 +31,8 @@ private fun tables(): Array<Table> {
         ClientTable,
         BusinessPermissionsTable,
         ServiceTable,
-        ServiceGroupTable
+        ServiceGroupTable,
+        EmployeeTable,
+        EmployeeCanProvideServiceTable
     )
 }

@@ -33,7 +33,7 @@ class KafkaEventProducer(
     override suspend fun <T : EventStreaming.Event<String>> send(data: T, kType: KType) {
         suspendCancellableCoroutine { continuation ->
             val encodedData = protoBuf.encodeToByteArray(protoBuf.serializersModule.serializer(kType), data)
-            producer.send(ProducerRecord(data.topic, encodedData)) { metadata, exception ->
+            producer.send(ProducerRecord(data.topic, data.partitionKey, encodedData)) { metadata, exception ->
                 when {
                     metadata != null -> continuation.resume(Unit)
                     else -> continuation.cancel(exception)

@@ -8,4 +8,6 @@ dependencies {
     implementation(projects.core.data.eventstreaming.api)
     api(projects.service.business.domain.api)
     api(projects.library.schedule)
+
+    testImplementation(testFixtures(projects.core))
 }

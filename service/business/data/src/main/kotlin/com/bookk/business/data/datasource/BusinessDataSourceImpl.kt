@@ -23,6 +23,7 @@ import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.upsert
 import kotlin.time.Clock
+import kotlin.time.Instant
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 import kotlin.uuid.toKotlinUuid
@@ -38,8 +39,8 @@ internal class BusinessDataSourceImpl : DataSource(), BusinessDataSource {
         entity.toDomain()
     }
 
-    override suspend fun updateBusiness(model: BusinessUpdateModel) = dbQuery<Business> {
-        val entity = BusinessEntity.findByIdAndUpdate(model) ?: throw Error.NotFound()
+    override suspend fun updateBusiness(model: BusinessUpdateModel, updatedAt: Instant) = dbQuery<Business> {
+        val entity = BusinessEntity.findByIdAndUpdate(model, updatedAt) ?: throw Error.NotFound()
         entity.toDomain()
     }
 

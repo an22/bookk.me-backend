@@ -91,7 +91,9 @@ class KafkaEventConsumer(
         }
             .onEach { records ->
                 coroutineScope {
-                    records.map { processRecord(it) }.awaitAll()
+                    records.partitions()
+                        .map { partition -> async { processPartition(records.records(partition)) } }
+                        .awaitAll()
                     consumer.commitSync()
                 }
             }
@@ -99,7 +101,7 @@ class KafkaEventConsumer(
             .launchIn(scope)
     }
 
-    private fun CoroutineScope.processRecord(record: ConsumerRecord<String, ByteArray>) = async {
-        receivers[record.topic()]?.invoke(record.value())
+    private suspend fun processPartition(records: List<ConsumerRecord<String, ByteArray>>) {
+        records.forEach { record -> receivers[record.topic()]?.invoke(record.value()) }
     }
 }

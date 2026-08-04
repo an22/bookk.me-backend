@@ -18,6 +18,8 @@ import kotlinx.datetime.TimeZone
 import library.schedule.DayOffRange
 import library.schedule.Schedule
 import library.schedule.WorkHour
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -25,7 +27,10 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import kotlin.time.Clock
+import kotlin.time.Instant
 import kotlin.uuid.Uuid
+import kotlin.uuid.toJavaUuid
 
 internal class BusinessDataSourceImplTest {
 
@@ -149,7 +154,7 @@ internal class BusinessDataSourceImplTest {
 
         whenn()
         suspendTransaction {
-            fixture.sut.updateBusiness(updateModel(created.id, schedule = schedule, dayOffs = dayOffs))
+            fixture.sut.updateBusiness(updateModel(created.id, schedule = schedule, dayOffs = dayOffs), Clock.System.now())
         }
         val found = suspendTransaction { fixture.sut.getBusinessById(created.id) }
 
@@ -171,7 +176,7 @@ internal class BusinessDataSourceImplTest {
         )
 
         whenn()
-        suspendTransaction { fixture.sut.updateBusiness(updateModel(created.id, schedule = schedule)) }
+        suspendTransaction { fixture.sut.updateBusiness(updateModel(created.id, schedule = schedule), Clock.System.now()) }
         val found = suspendTransaction { fixture.sut.getBusinessById(created.id) }
 
         then()
@@ -181,13 +186,32 @@ internal class BusinessDataSourceImplTest {
     }
 
     @Test
+    fun `should persist the supplied updated at on the business row`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val created = suspendTransaction { fixture.sut.createBusiness(Uuid.random(), "Salon", "USD", TimeZone.UTC) }
+        val updatedAt = Instant.fromEpochMilliseconds(1_700_000_000_000)
+
+        whenn()
+        suspendTransaction { fixture.sut.updateBusiness(updateModel(created.id, name = "New name"), updatedAt) }
+        val stored = suspendTransaction {
+            BusinessTable.select(BusinessTable.updatedAt)
+                .where { BusinessTable.id eq created.id.toJavaUuid() }
+                .single()[BusinessTable.updatedAt]
+        }
+
+        then()
+        assertEquals(updatedAt, stored)
+    }
+
+    @Test
     fun `should keep schedule when update does not contain it`() = runUnitTest {
         given()
         val fixture = SutFixture()
         val created = suspendTransaction { fixture.sut.createBusiness(Uuid.random(), "Salon", "USD", TimeZone.UTC) }
 
         whenn()
-        suspendTransaction { fixture.sut.updateBusiness(updateModel(created.id, name = "New name")) }
+        suspendTransaction { fixture.sut.updateBusiness(updateModel(created.id, name = "New name"), Clock.System.now()) }
         val found = suspendTransaction { fixture.sut.getBusinessById(created.id) }
 
         then()
@@ -211,7 +235,8 @@ internal class BusinessDataSourceImplTest {
                     created.id,
                     schedule = created.schedule,
                     dayOffs = listOf(DayOffRange(LocalDate(2020, 1, 1), LocalDate(2020, 1, 2)), future)
-                )
+                ),
+                Clock.System.now()
             )
         }
 

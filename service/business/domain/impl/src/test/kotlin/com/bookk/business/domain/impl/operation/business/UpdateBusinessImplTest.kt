@@ -16,6 +16,7 @@ import com.bookk.server.business.client.api.event.BusinessEvent
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import io.mockk.slot
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
@@ -28,6 +29,7 @@ import library.schedule.WorkHour
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
 internal class UpdateBusinessImplTest {
@@ -105,7 +107,7 @@ internal class UpdateBusinessImplTest {
                 it.address?.length == Business.MAX_ADDRESS_LENGTH &&
                 it.currencyCode?.length == Business.MAX_CURRENCY_CODE &&
                 it.socials?.firstOrNull()?.value?.length == Business.MAX_SOCIAL_LENGTH
-            })
+            }, any())
         }
     }
 
@@ -124,7 +126,7 @@ internal class UpdateBusinessImplTest {
         coVerify(exactly = 1) {
             fixture.businessDataSource.updateBusiness(match {
                 it.name == null && it.description == null && it.address == null && it.socials?.isEmpty() == true
-            })
+            }, any())
         }
     }
 
@@ -141,7 +143,7 @@ internal class UpdateBusinessImplTest {
             address = "New Address",
             schedule = schedule
         )
-        coEvery { fixture.businessDataSource.updateBusiness(any()) } returns updatedBusiness
+        coEvery { fixture.businessDataSource.updateBusiness(any(), any()) } returns updatedBusiness
         val updateModel = updateModel(
             id = businessId,
             name = "New Name",
@@ -205,7 +207,7 @@ internal class UpdateBusinessImplTest {
         val schedule = scheduleOf(DayOfWeek.SATURDAY)
         val dayOffs = listOf(DayOffRange(LocalDate(2099, 12, 30), LocalDate(2099, 12, 31)))
         val updatedBusiness = Business.stub(id = businessId, schedule = schedule.copy(dayOffs = dayOffs))
-        coEvery { fixture.businessDataSource.updateBusiness(any()) } returns updatedBusiness
+        coEvery { fixture.businessDataSource.updateBusiness(any(), any()) } returns updatedBusiness
 
         whenn()
         val result = fixture.sut(requestUserId, updateModel(id = businessId, schedule = schedule, dayOffs = dayOffs))
@@ -232,7 +234,7 @@ internal class UpdateBusinessImplTest {
         fixture.transactionManager.mockTransaction()
         val businessId = Uuid.random()
         val schedule = scheduleOf(DayOfWeek.MONDAY)
-        coEvery { fixture.businessDataSource.updateBusiness(any()) } returns
+        coEvery { fixture.businessDataSource.updateBusiness(any(), any()) } returns
             Business.stub(id = businessId, schedule = schedule)
 
         whenn()
@@ -248,13 +250,37 @@ internal class UpdateBusinessImplTest {
     }
 
     @Test
+    fun `should publish the event with the timestamp persisted on the business row`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.transactionManager.mockTransaction()
+        val businessId = Uuid.random()
+        val persistedAt = slot<Instant>()
+        coEvery {
+            fixture.businessDataSource.updateBusiness(any(), capture(persistedAt))
+        } returns Business.stub(id = businessId)
+
+        whenn()
+        val result = fixture.sut(requestUserId, updateModel(id = businessId, name = "New Name"))
+
+        then()
+        assertTrue(result.isSuccess)
+        coVerify(exactly = 1) {
+            fixture.eventProducer.send(
+                match<BusinessEvent.Updated> { it.updatedAt == persistedAt.captured },
+                any()
+            )
+        }
+    }
+
+    @Test
     fun `should publish exactly one event per update`() = runUnitTest {
         given()
         val fixture = SutFixture()
         fixture.transactionManager.mockTransaction()
         val businessId = Uuid.random()
         val schedule = scheduleOf(DayOfWeek.MONDAY)
-        coEvery { fixture.businessDataSource.updateBusiness(any()) } returns
+        coEvery { fixture.businessDataSource.updateBusiness(any(), any()) } returns
             Business.stub(id = businessId, schedule = schedule)
 
         whenn()
@@ -305,7 +331,7 @@ internal class UpdateBusinessImplTest {
 
         then()
         assertEquals(false, result.isSuccess)
-        coVerify(exactly = 0) { fixture.businessDataSource.updateBusiness(any()) }
+        coVerify(exactly = 0) { fixture.businessDataSource.updateBusiness(any(), any()) }
         coVerify(exactly = 0) { fixture.eventProducer.send(any(BusinessEvent.Updated::class), any()) }
     }
 
@@ -336,6 +362,6 @@ internal class UpdateBusinessImplTest {
 
         then()
         assertEquals(false, result.isSuccess)
-        coVerify(exactly = 0) { fixture.businessDataSource.updateBusiness(any()) }
+        coVerify(exactly = 0) { fixture.businessDataSource.updateBusiness(any(), any()) }
     }
 }

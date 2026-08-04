@@ -13,7 +13,7 @@ import library.schedule.toWorkingDaysMask
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.jetbrains.exposed.v1.dao.UUIDEntity
 import java.util.UUID
-import kotlin.time.Clock
+import kotlin.time.Instant
 import kotlin.uuid.toJavaUuid
 import kotlin.uuid.toKotlinUuid
 
@@ -90,7 +90,7 @@ internal class BusinessEntity(id: EntityID<UUID>) : UUIDEntity(id) {
             timezone = timeZone.id
         }.apply { replaceSchedule(Schedule()) }
 
-        fun findByIdAndUpdate(model: BusinessUpdateModel) = findByIdAndUpdate(model.id.toJavaUuid()) {
+        fun findByIdAndUpdate(model: BusinessUpdateModel, updatedAt: Instant) = findByIdAndUpdate(model.id.toJavaUuid()) {
             model.name?.let { name -> it.name = name }
             model.description?.let { description -> it.description = description }
             model.address?.let { address -> it.address = address }
@@ -102,7 +102,7 @@ internal class BusinessEntity(id: EntityID<UUID>) : UUIDEntity(id) {
             model.currencyCode?.let { currencyCode -> it.currency = currencyCode }
             model.socials?.let { socials -> it.updateSocials(socials) }
             model.schedule?.let { schedule -> it.replaceSchedule(schedule) }
-            it.updatedAt = Clock.System.now()
+            it.updatedAt = updatedAt
         }
     }
 }

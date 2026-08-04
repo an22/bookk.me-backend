@@ -44,11 +44,12 @@ internal class UpdateBusinessImpl(
                 address = address,
                 socials = socials
             )
-            businessDataSource.updateBusiness(updatedModel).also { business ->
+            val updatedAt = Clock.System.now()
+            businessDataSource.updateBusiness(updatedModel, updatedAt).also { business ->
                 eventProducer.send(
                     BusinessEvent.Updated(
                         business = BusinessDTO.from(business),
-                        updatedAt = Clock.System.now()
+                        updatedAt = updatedAt
                     )
                 )
             }

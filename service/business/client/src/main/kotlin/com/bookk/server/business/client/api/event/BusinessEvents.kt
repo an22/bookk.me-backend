@@ -14,6 +14,7 @@ interface BusinessEvent : EventStreaming.Event<String> {
         override val idempotencyKey: String = Uuid.random().toString()
     ) : BusinessEvent {
         override val topic: String = TOPIC
+        override val partitionKey: String get() = businessId.toString()
 
         companion object {
             const val TOPIC = "business.deleted"
@@ -27,6 +28,7 @@ interface BusinessEvent : EventStreaming.Event<String> {
         override val idempotencyKey: String = Uuid.random().toString()
     ) : BusinessEvent {
         override val topic: String = TOPIC
+        override val partitionKey: String get() = business.id.toString()
 
         companion object {
             const val TOPIC = "business.updated"

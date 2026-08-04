@@ -5,14 +5,22 @@ import com.bookk.appointments.data.orm.table.DayOffsTable
 import com.bookk.appointments.data.orm.table.SettingsTable
 import com.bookk.appointments.data.orm.table.WorkingHoursTable
 import com.bookk.appointments.domain.api.entity.AppointmentSettings
+import com.bookk.appointments.domain.api.entity.AppointmentSettingsUpdate
 import com.bookk.appointments.domain.api.entity.BusinessSnapshot
-import com.bookk.appointments.domain.api.entity.DayOffRange
 import com.bookk.core.data.test.createTestDatabase
 import com.bookk.core.test.given
 import com.bookk.core.test.runUnitTest
 import com.bookk.core.test.then
 import com.bookk.core.test.whenn
+import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalTime
+import library.schedule.DayOffRange
+import library.schedule.Schedule
+import library.schedule.WorkHour
+import org.jetbrains.exposed.v1.core.SqlLogger
+import org.jetbrains.exposed.v1.core.Transaction
+import org.jetbrains.exposed.v1.core.statements.StatementContext
 import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -20,6 +28,14 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import kotlin.uuid.Uuid
+
+private class CapturingSqlLogger : SqlLogger {
+    val statements = mutableListOf<String>()
+
+    override fun log(context: StatementContext, transaction: Transaction) {
+        statements += context.sql(transaction)
+    }
+}
 
 internal class AppointmentSettingsDataSourceImplTest {
 
@@ -31,8 +47,8 @@ internal class AppointmentSettingsDataSourceImplTest {
         val subscriptionSut = AppointmentSubscriptionDataSourceImpl()
         lateinit var businessId: Uuid
 
-        suspend fun setup() {
-            val snapshot = BusinessSnapshot.stub()
+        suspend fun setup(schedule: Schedule = Schedule()) {
+            val snapshot = BusinessSnapshot.stub(schedule = schedule)
             suspendTransaction { subscriptionSut.attachBusiness(snapshot) }
             businessId = snapshot.id
         }
@@ -73,12 +89,18 @@ internal class AppointmentSettingsDataSourceImplTest {
         given()
         val fixture = SutFixture()
         fixture.setup()
-        val settings = AppointmentSettings.stub(fixture.businessId)
-        val created = suspendTransaction { fixture.sut.create(settings) }
+        suspendTransaction { fixture.sut.create(AppointmentSettings.stub(fixture.businessId)) }
 
         whenn()
-        val modified = created.copy(inBetweenBreakInMinutes = 20, appointmentNote = "Updated note")
-        val updated = suspendTransaction { fixture.sut.update(modified) }
+        val updated = suspendTransaction {
+            fixture.sut.update(
+                AppointmentSettingsUpdate.stub(
+                    businessId = fixture.businessId,
+                    inBetweenBreakInMinutes = 20,
+                    appointmentNote = "Updated note"
+                )
+            )
+        }
 
         then()
         assertEquals(20, updated.inBetweenBreakInMinutes)
@@ -86,12 +108,79 @@ internal class AppointmentSettingsDataSourceImplTest {
     }
 
     @Test
+    fun `should lock the settings row while updating it`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        suspendTransaction { fixture.sut.create(AppointmentSettings.stub(fixture.businessId)) }
+        val capturedSql = CapturingSqlLogger()
+
+        whenn()
+        suspendTransaction {
+            addLogger(capturedSql)
+            fixture.sut.update(AppointmentSettingsUpdate.stub(businessId = fixture.businessId))
+        }
+
+        then()
+        val selects = capturedSql.statements.filter { it.startsWith("SELECT", ignoreCase = true) }
+        assertTrue(selects.any { it.contains("FOR UPDATE", ignoreCase = true) })
+    }
+
+    @Test
+    fun `should expose the business schedule on the settings`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val schedule = Schedule(
+            workingDays = listOf(DayOfWeek.SATURDAY),
+            workingHours = mapOf(
+                DayOfWeek.SATURDAY to listOf(WorkHour(LocalTime(10, 0), LocalTime(14, 0)))
+            ),
+            dayOffs = listOf(DayOffRange(LocalDate(2099, 12, 30), LocalDate(2099, 12, 31)))
+        )
+        val dayOffs = schedule.dayOffs
+        fixture.setup(schedule = schedule)
+        suspendTransaction { fixture.sut.create(AppointmentSettings.stub(fixture.businessId)) }
+
+        whenn()
+        val found = suspendTransaction { fixture.sut.get(fixture.businessId) }
+
+        then()
+        assertEquals(listOf(DayOfWeek.SATURDAY), found!!.schedule.activeDays())
+        assertEquals(
+            listOf(WorkHour(LocalTime(10, 0), LocalTime(14, 0))),
+            found.schedule[DayOfWeek.SATURDAY].workingTime
+        )
+        assertEquals(dayOffs, found.schedule.dayOffs)
+    }
+
+    @Test
+    fun `should keep the business schedule when updating settings`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val created = suspendTransaction { fixture.sut.create(AppointmentSettings.stub(fixture.businessId)) }
+
+        whenn()
+        val updated = suspendTransaction {
+            fixture.sut.update(
+                AppointmentSettingsUpdate.stub(businessId = fixture.businessId, appointmentNote = "Updated note")
+            )
+        }
+
+        then()
+        assertEquals(created.schedule.activeDays().sorted(), updated.schedule.activeDays().sorted())
+        assertEquals(
+            created.schedule[DayOfWeek.MONDAY].workingTime,
+            updated.schedule[DayOfWeek.MONDAY].workingTime
+        )
+    }
+
+    @Test
     fun `should retrieve settings for update with lock`() = runUnitTest {
         given()
         val fixture = SutFixture()
         fixture.setup()
-        val settings = AppointmentSettings.stub(fixture.businessId)
-        suspendTransaction { fixture.sut.create(settings) }
+        suspendTransaction { fixture.sut.create(AppointmentSettings.stub(fixture.businessId)) }
 
         whenn()
         val found = suspendTransaction { fixture.sut.getForUpdate(fixture.businessId) }
@@ -112,43 +201,5 @@ internal class AppointmentSettingsDataSourceImplTest {
 
         then()
         assertNull(found)
-    }
-
-    @Test
-    fun `should delete past day offs`() = runUnitTest {
-        given()
-        val fixture = SutFixture()
-        fixture.setup()
-        val pastDayOff = DayOffRange(LocalDate(2020, 1, 1), LocalDate(2020, 1, 2))
-        val settings = AppointmentSettings.stub(fixture.businessId).copy(dayOffs = listOf(pastDayOff))
-        suspendTransaction { fixture.sut.create(settings) }
-
-        whenn()
-        suspendTransaction { fixture.sut.deleteDayOffsInThePast() }
-
-        then()
-        val found = suspendTransaction { fixture.sut.get(fixture.businessId) }
-        assertNotNull(found)
-        assertTrue(found!!.dayOffs.isEmpty())
-    }
-
-    @Test
-    fun `should preserve future day offs when deleting past ones`() = runUnitTest {
-        given()
-        val fixture = SutFixture()
-        fixture.setup()
-        val pastDayOff = DayOffRange(LocalDate(2020, 1, 1), LocalDate(2020, 1, 2))
-        val futureDayOff = DayOffRange(LocalDate(2099, 12, 30), LocalDate(2099, 12, 31))
-        val settings = AppointmentSettings.stub(fixture.businessId).copy(dayOffs = listOf(pastDayOff, futureDayOff))
-        suspendTransaction { fixture.sut.create(settings) }
-
-        whenn()
-        suspendTransaction { fixture.sut.deleteDayOffsInThePast() }
-
-        then()
-        val found = suspendTransaction { fixture.sut.get(fixture.businessId) }
-        assertNotNull(found)
-        assertEquals(1, found!!.dayOffs.size)
-        assertEquals(futureDayOff, found.dayOffs.first())
     }
 }

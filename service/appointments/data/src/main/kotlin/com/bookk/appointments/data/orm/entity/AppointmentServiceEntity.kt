@@ -2,19 +2,17 @@ package com.bookk.appointments.data.orm.entity
 
 import com.bookk.appointments.data.orm.table.AppointmentServicesTable
 import com.bookk.appointments.domain.api.entity.ServiceSnapshot
-import com.bookk.core.data.DecoratorUUIDEntityClass
+import com.bookk.core.data.DecoratorUuidEntityClass
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
-import org.jetbrains.exposed.v1.dao.UUIDEntity
+import org.jetbrains.exposed.v1.dao.UuidEntity
 import org.joda.money.CurrencyUnit
 import org.joda.money.Money
 import java.math.BigDecimal
 import java.math.BigInteger
-import java.util.UUID
 import kotlin.time.Duration.Companion.minutes
-import kotlin.uuid.toJavaUuid
-import kotlin.uuid.toKotlinUuid
+import kotlin.uuid.Uuid
 
-internal class AppointmentServiceEntity(id: EntityID<UUID>) : UUIDEntity(id) {
+internal class AppointmentServiceEntity(id: EntityID<Uuid>) : UuidEntity(id) {
 
     var appointmentId by AppointmentServicesTable.appointmentId
     var serviceId by AppointmentServicesTable.serviceId
@@ -27,9 +25,9 @@ internal class AppointmentServiceEntity(id: EntityID<UUID>) : UUIDEntity(id) {
 
     fun domain(): ServiceSnapshot {
         return ServiceSnapshot(
-            id = serviceId.toKotlinUuid(),
+            id = serviceId,
             name = serviceName,
-            groupId = serviceGroupId.toKotlinUuid(),
+            groupId = serviceGroupId,
             price = Money.of(
                 CurrencyUnit.of(priceCurrency),
                 BigDecimal(BigInteger.valueOf(priceUnscaled), priceScale)
@@ -38,12 +36,12 @@ internal class AppointmentServiceEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         )
     }
 
-    companion object : DecoratorUUIDEntityClass<AppointmentServiceEntity>(AppointmentServicesTable) {
-        fun new(ownerId: EntityID<UUID>, service: ServiceSnapshot): AppointmentServiceEntity = new {
+    companion object : DecoratorUuidEntityClass<AppointmentServiceEntity>(AppointmentServicesTable) {
+        fun new(ownerId: EntityID<Uuid>, service: ServiceSnapshot): AppointmentServiceEntity = new {
             appointmentId = ownerId
-            serviceId = service.id.toJavaUuid()
+            serviceId = service.id
             serviceName = service.name
-            serviceGroupId = service.groupId.toJavaUuid()
+            serviceGroupId = service.groupId
             priceCurrency = service.price.currencyUnit.code
             priceUnscaled = service.price.amount.unscaledValue().longValueExact()
             priceScale = service.price.amount.scale()

@@ -2,18 +2,17 @@ package com.bookk.business.data.orm.entity
 
 import com.bookk.business.data.orm.table.ServiceTable
 import com.bookk.business.domain.api.service.entity.Service
-import com.bookk.core.data.DecoratorUUIDEntityClass
+import com.bookk.core.data.DecoratorUuidEntityClass
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
-import org.jetbrains.exposed.v1.dao.UUIDEntity
+import org.jetbrains.exposed.v1.dao.UuidEntity
 import org.joda.money.CurrencyUnit
 import org.joda.money.Money
 import java.math.BigDecimal
 import java.math.BigInteger
-import java.util.UUID
 import kotlin.time.Duration.Companion.minutes
-import kotlin.uuid.toKotlinUuid
+import kotlin.uuid.Uuid
 
-internal class ServiceEntity(id: EntityID<UUID>) : UUIDEntity(id) {
+internal class ServiceEntity(id: EntityID<Uuid>) : UuidEntity(id) {
 
     var businessId by ServiceTable.businessId
     var group by ServiceGroupEntity referencedOn ServiceTable.groupId
@@ -26,12 +25,12 @@ internal class ServiceEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var createdAt by ServiceTable.createdAt
     var updatedAt by ServiceTable.updatedAt
 
-    companion object : DecoratorUUIDEntityClass<ServiceEntity>(ServiceTable)
+    companion object : DecoratorUuidEntityClass<ServiceEntity>(ServiceTable)
 
     fun toDomain(): Service {
         return Service(
-            id = id.value.toKotlinUuid(),
-            businessId = businessId.value.toKotlinUuid(),
+            id = id.value,
+            businessId = businessId.value,
             group = group.toDomain(),
             duration = duration.minutes,
             name = name,

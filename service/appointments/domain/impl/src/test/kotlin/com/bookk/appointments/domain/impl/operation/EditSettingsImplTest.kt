@@ -1,9 +1,7 @@
 package com.bookk.appointments.domain.impl.operation
 
 import com.bookk.appointments.domain.api.entity.AppointmentSettings
-import com.bookk.appointments.domain.api.entity.DayOffRange
-import com.bookk.appointments.domain.api.entity.WorkingSchedule
-import com.bookk.appointments.domain.api.operation.EditSettings
+import com.bookk.appointments.domain.api.entity.AppointmentSettingsUpdate
 import com.bookk.appointments.domain.datasource.AppointmentSettingsDataSource
 import com.bookk.appointments.domain.datasource.PermissionsDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
@@ -14,9 +12,8 @@ import com.bookk.core.test.runUnitTest
 import com.bookk.core.test.then
 import com.bookk.core.test.whenn
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
-import kotlinx.datetime.DayOfWeek
-import kotlinx.datetime.LocalDate
 import library.permissions.ObjectPermission
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -38,15 +35,16 @@ internal class EditSettingsImplTest {
         val fixture = SutFixture()
         val userId = Uuid.random()
         val businessId = Uuid.random()
+        val update = AppointmentSettingsUpdate.stub(businessId = businessId, inBetweenBreakInMinutes = 20)
         val settings = AppointmentSettings.stub(businessId = businessId)
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { permissionsSource.getPermissions(userId, businessId) } returns ObjectPermission.EDIT.int
-            coEvery { settingsSource.update(settings) } returns settings
+            coEvery { settingsSource.update(update) } returns settings
         }
 
         whenn()
-        val result = fixture.sut.invoke(userId, settings)
+        val result = fixture.sut.invoke(userId, update)
 
         then()
         assertTrue(result.isSuccess)
@@ -59,64 +57,19 @@ internal class EditSettingsImplTest {
         val fixture = SutFixture()
         val userId = Uuid.random()
         val businessId = Uuid.random()
-        val settings = mockk<AppointmentSettings>()
+        val update = AppointmentSettingsUpdate.stub(businessId = businessId)
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { settings.businessId } returns businessId
             coEvery { permissionsSource.getPermissions(userId, businessId) } returns ObjectPermission.READ.int
         }
 
         whenn()
-        val result = fixture.sut.invoke(userId, settings)
+        val result = fixture.sut.invoke(userId, update)
 
         then()
         assertTrue(result.isFailure)
         assertTrue(result.exceptionOrNull() is Error.OperationNotAllowed)
-    }
-
-    @Test
-    fun `should return active day without work hours error when active day has no work hours`() = runUnitTest {
-        given()
-        val fixture = SutFixture()
-        val userId = Uuid.random()
-        val businessId = Uuid.random()
-        val settings = AppointmentSettings.stub(businessId = businessId).copy(
-            schedule = WorkingSchedule(workingDays = listOf(DayOfWeek.MONDAY), workingHours = mapOf())
-        )
-        with(fixture) {
-            transactionManager.mockTransaction()
-            coEvery { permissionsSource.getPermissions(userId, businessId) } returns ObjectPermission.EDIT.int
-        }
-
-        whenn()
-        val result = fixture.sut.invoke(userId, settings)
-
-        then()
-        assertTrue(result.isFailure)
-        assertTrue(result.exceptionOrNull() is EditSettings.Error.ActiveDayWithoutWorkHours)
-    }
-
-    @Test
-    fun `should return invalid day off range error when start date is not before end date`() = runUnitTest {
-        given()
-        val fixture = SutFixture()
-        val userId = Uuid.random()
-        val businessId = Uuid.random()
-        val date = LocalDate(2026, 6, 22)
-        val settings = AppointmentSettings.stub(businessId = businessId).copy(
-            dayOffs = listOf(DayOffRange(start = date, end = date))
-        )
-        with(fixture) {
-            transactionManager.mockTransaction()
-            coEvery { permissionsSource.getPermissions(userId, businessId) } returns ObjectPermission.EDIT.int
-        }
-
-        whenn()
-        val result = fixture.sut.invoke(userId, settings)
-
-        then()
-        assertTrue(result.isFailure)
-        assertTrue(result.exceptionOrNull() is EditSettings.Error.InvalidDayOffRange)
+        coVerify(exactly = 0) { fixture.settingsSource.update(any()) }
     }
 
     @Test
@@ -125,15 +78,15 @@ internal class EditSettingsImplTest {
         val fixture = SutFixture()
         val userId = Uuid.random()
         val businessId = Uuid.random()
-        val settings = AppointmentSettings.stub(businessId = businessId)
+        val update = AppointmentSettingsUpdate.stub(businessId = businessId)
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { permissionsSource.getPermissions(userId, businessId) } returns ObjectPermission.EDIT.int
-            coEvery { settingsSource.update(settings) } answers { throw IllegalStateException() }
+            coEvery { settingsSource.update(update) } answers { throw IllegalStateException() }
         }
 
         whenn()
-        val result = fixture.sut.invoke(userId, settings)
+        val result = fixture.sut.invoke(userId, update)
 
         then()
         assertTrue(result.isFailure)

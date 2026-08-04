@@ -1,11 +1,11 @@
 package com.bookk.user.data.orm.table
 
 import org.jetbrains.exposed.v1.core.ReferenceOption
-import org.jetbrains.exposed.v1.core.dao.id.UUIDTable
+import org.jetbrains.exposed.v1.core.dao.id.UuidTable
 import org.jetbrains.exposed.v1.datetime.timestamp
 import kotlin.time.Clock
 
-object ContactFormTable : UUIDTable("contact_form") {
+object ContactFormTable : UuidTable("contact_form") {
     val userId = reference("user_id", UserTable, onDelete = ReferenceOption.CASCADE).index()
     val text = text("text")
     val usageLogs = text("usage_logs").nullable()

@@ -8,7 +8,6 @@ import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.insertIgnore
 import org.jetbrains.exposed.v1.jdbc.select
 import kotlin.uuid.Uuid
-import kotlin.uuid.toJavaUuid
 
 internal class PermissionsDataSourceImpl : DataSource(), PermissionsDataSource {
 
@@ -19,8 +18,8 @@ internal class PermissionsDataSourceImpl : DataSource(), PermissionsDataSource {
     ) {
         dbQuery {
             UserHasAppointmentPermissions.insertIgnore {
-                it[this.userId] = userId.toJavaUuid()
-                it[this.businessId] = businessId.toJavaUuid()
+                it[this.userId] = userId
+                it[this.businessId] = businessId
                 it[this.permission] = permissions
             }
         }
@@ -29,7 +28,7 @@ internal class PermissionsDataSourceImpl : DataSource(), PermissionsDataSource {
     override suspend fun getPermissions(userId: Uuid, businessId: Uuid): Int? {
         return dbQuery {
             UserHasAppointmentPermissions.select(UserHasAppointmentPermissions.permission)
-                .where { (UserHasAppointmentPermissions.userId eq userId.toJavaUuid()) and (UserHasAppointmentPermissions.businessId eq businessId.toJavaUuid()) }
+                .where { (UserHasAppointmentPermissions.userId eq userId) and (UserHasAppointmentPermissions.businessId eq businessId) }
                 .singleOrNull()?.let { it[UserHasAppointmentPermissions.permission] }
         }
     }

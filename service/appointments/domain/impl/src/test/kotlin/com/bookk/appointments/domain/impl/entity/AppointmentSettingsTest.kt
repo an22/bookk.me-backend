@@ -1,9 +1,6 @@
 package com.bookk.appointments.domain.impl.entity
 
 import com.bookk.appointments.domain.api.entity.AppointmentSettings
-import com.bookk.appointments.domain.api.entity.DayOffRange
-import com.bookk.appointments.domain.api.entity.WorkHour
-import com.bookk.appointments.domain.api.entity.WorkingSchedule
 import com.bookk.core.test.given
 import com.bookk.core.test.runUnitTest
 import com.bookk.core.test.then
@@ -15,6 +12,9 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.atTime
 import kotlinx.datetime.toInstant
+import library.schedule.DayOffRange
+import library.schedule.Schedule
+import library.schedule.WorkHour
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -26,11 +26,11 @@ internal class AppointmentSettingsTest {
         id = Uuid.random(),
         businessId = Uuid.random(),
         timeZone = TimeZone.of("UTC"),
-        schedule = WorkingSchedule(
+        schedule = Schedule(
             workingDays = listOf(DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY, DayOfWeek.THURSDAY, DayOfWeek.FRIDAY),
-            workingHours = mapOf()
+            workingHours = mapOf(),
+            dayOffs = dayOffs
         ),
-        dayOffs = dayOffs,
         automaticApproval = false,
         inBetweenBreakInMinutes = 10,
         appointmentNote = ""
@@ -40,11 +40,10 @@ internal class AppointmentSettingsTest {
         id = Uuid.random(),
         businessId = Uuid.random(),
         timeZone = TimeZone.of("UTC"),
-        schedule = WorkingSchedule(
+        schedule = Schedule(
             workingDays = listOf(DayOfWeek.MONDAY),
             workingHours = mapOf(DayOfWeek.MONDAY to workingHours)
         ),
-        dayOffs = listOf(),
         automaticApproval = false,
         inBetweenBreakInMinutes = 10,
         appointmentNote = ""
@@ -121,7 +120,7 @@ internal class AppointmentSettingsTest {
     @Test
     fun `should return true when appointment range is fully contained in a working time slot`() = runUnitTest {
         given()
-        val settings = settingsWithWorkingHours(listOf(WorkHour(DayOfWeek.MONDAY, LocalTime(9, 0), LocalTime(17, 0))))
+        val settings = settingsWithWorkingHours(listOf(WorkHour(LocalTime(9, 0), LocalTime(17, 0))))
         val monday = LocalDate(2026, 6, 22)
         val start = monday.atTime(10, 0).toInstant(settings.timeZone)
         val end = monday.atTime(11, 0).toInstant(settings.timeZone)
@@ -136,7 +135,7 @@ internal class AppointmentSettingsTest {
     @Test
     fun `should return true when appointment range exactly matches a working time slot`() = runUnitTest {
         given()
-        val settings = settingsWithWorkingHours(listOf(WorkHour(DayOfWeek.MONDAY, LocalTime(9, 0), LocalTime(17, 0))))
+        val settings = settingsWithWorkingHours(listOf(WorkHour(LocalTime(9, 0), LocalTime(17, 0))))
         val monday = LocalDate(2026, 6, 22)
         val start = monday.atTime(9, 0).toInstant(settings.timeZone)
         val end = monday.atTime(17, 0).toInstant(settings.timeZone)
@@ -151,7 +150,7 @@ internal class AppointmentSettingsTest {
     @Test
     fun `should return false when appointment starts before the working time slot`() = runUnitTest {
         given()
-        val settings = settingsWithWorkingHours(listOf(WorkHour(DayOfWeek.MONDAY, LocalTime(9, 0), LocalTime(17, 0))))
+        val settings = settingsWithWorkingHours(listOf(WorkHour(LocalTime(9, 0), LocalTime(17, 0))))
         val monday = LocalDate(2026, 6, 22)
         val start = monday.atTime(8, 0).toInstant(settings.timeZone)
         val end = monday.atTime(10, 0).toInstant(settings.timeZone)
@@ -166,7 +165,7 @@ internal class AppointmentSettingsTest {
     @Test
     fun `should return false when appointment ends after the working time slot`() = runUnitTest {
         given()
-        val settings = settingsWithWorkingHours(listOf(WorkHour(DayOfWeek.MONDAY, LocalTime(9, 0), LocalTime(17, 0))))
+        val settings = settingsWithWorkingHours(listOf(WorkHour(LocalTime(9, 0), LocalTime(17, 0))))
         val monday = LocalDate(2026, 6, 22)
         val start = monday.atTime(16, 0).toInstant(settings.timeZone)
         val end = monday.atTime(18, 0).toInstant(settings.timeZone)
@@ -198,8 +197,8 @@ internal class AppointmentSettingsTest {
         given()
         val settings = settingsWithWorkingHours(
             listOf(
-                WorkHour(DayOfWeek.MONDAY, LocalTime(9, 0), LocalTime(12, 0)),
-                WorkHour(DayOfWeek.MONDAY, LocalTime(13, 0), LocalTime(17, 0))
+                WorkHour(LocalTime(9, 0), LocalTime(12, 0)),
+                WorkHour(LocalTime(13, 0), LocalTime(17, 0))
             )
         )
         val monday = LocalDate(2026, 6, 22)
@@ -218,8 +217,8 @@ internal class AppointmentSettingsTest {
         given()
         val settings = settingsWithWorkingHours(
             listOf(
-                WorkHour(DayOfWeek.MONDAY, LocalTime(9, 0), LocalTime(12, 0)),
-                WorkHour(DayOfWeek.MONDAY, LocalTime(13, 0), LocalTime(17, 0))
+                WorkHour(LocalTime(9, 0), LocalTime(12, 0)),
+                WorkHour(LocalTime(13, 0), LocalTime(17, 0))
             )
         )
         val monday = LocalDate(2026, 6, 22)

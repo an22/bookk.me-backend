@@ -1,25 +1,40 @@
 package com.bookk.business.domain.impl.operation.client
 
 import com.bookk.business.domain.api.client.operation.DeleteClient
+import com.bookk.business.domain.datasource.BusinessDataSource
 import com.bookk.business.domain.datasource.ClientDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.datasource.transaction.mockTransaction
+import com.bookk.core.domain.entity.Error
 import com.bookk.core.test.given
 import com.bookk.core.test.runUnitTest
 import com.bookk.core.test.then
 import com.bookk.core.test.whenn
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
+import library.permissions.ObjectPermission
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import kotlin.uuid.Uuid
 
 internal class DeleteClientImplTest {
 
+    private val requestUserId = Uuid.random()
+
     private class SutFixture {
         val clientDataSource = mockk<ClientDataSource>()
+        val businessDataSource = mockk<BusinessDataSource>()
         val transactionManager = mockk<TransactionManager>()
-        val sut = DeleteClientImpl(transactionManager, clientDataSource)
+        val sut = DeleteClientImpl(transactionManager, clientDataSource, businessDataSource)
+
+        init {
+            coEvery { businessDataSource.getPermission(any(), any()) } returns ObjectPermission.OWNER.int
+        }
+
+        fun grantPermission(permission: ObjectPermission?) {
+            coEvery { businessDataSource.getPermission(any(), any()) } returns permission?.int
+        }
     }
 
     @Test
@@ -34,7 +49,7 @@ internal class DeleteClientImplTest {
         }
 
         whenn()
-        val result = fixture.sut(businessId, id)
+        val result = fixture.sut(requestUserId, businessId, id)
 
         then()
         assertTrue(result.isSuccess)
@@ -52,10 +67,67 @@ internal class DeleteClientImplTest {
         }
 
         whenn()
-        val result = fixture.sut(businessId, id)
+        val result = fixture.sut(requestUserId, businessId, id)
 
         then()
         assertTrue(result.isFailure)
         assertTrue(result.exceptionOrNull() is DeleteClient.Error.NotFound)
+    }
+
+    @Test
+    fun `should return failure when user has read permission only`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val businessId = Uuid.random()
+        val id = Uuid.random()
+        with(fixture) {
+            transactionManager.mockTransaction()
+            grantPermission(ObjectPermission.READ)
+        }
+
+        whenn()
+        val result = fixture.sut(requestUserId, businessId, id)
+
+        then()
+        assertTrue(result.exceptionOrNull() is Error.OperationNotAllowed)
+        coVerify(exactly = 0) { fixture.clientDataSource.deleteClient(any(), any()) }
+    }
+
+    @Test
+    fun `should return failure when user has no permission for the business`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val businessId = Uuid.random()
+        val id = Uuid.random()
+        with(fixture) {
+            transactionManager.mockTransaction()
+            grantPermission(null)
+        }
+
+        whenn()
+        val result = fixture.sut(requestUserId, businessId, id)
+
+        then()
+        assertTrue(result.exceptionOrNull() is Error.OperationNotAllowed)
+        coVerify(exactly = 0) { fixture.clientDataSource.deleteClient(any(), any()) }
+    }
+
+    @Test
+    fun `should assert permission against the requested business`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val businessId = Uuid.random()
+        val id = Uuid.random()
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { clientDataSource.deleteClient(businessId, id) } returns true
+        }
+
+        whenn()
+        val result = fixture.sut(requestUserId, businessId, id)
+
+        then()
+        assertTrue(result.isSuccess)
+        coVerify(exactly = 1) { fixture.businessDataSource.getPermission(requestUserId, businessId) }
     }
 }

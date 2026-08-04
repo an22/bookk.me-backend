@@ -14,21 +14,20 @@ import org.jetbrains.exposed.v1.jdbc.upsert
 import org.jetbrains.exposed.v1.jdbc.upsertReturning
 import kotlin.time.Clock
 import kotlin.uuid.Uuid
-import kotlin.uuid.toJavaUuid
 
 internal class NotificationSettingsDataSourceImpl : DataSource(), NotificationSettingsDataSource {
 
     override suspend fun getByUserId(userId: Uuid): NotificationSettings? = dbQuery {
         NotificationSettingsEntity
-            .find { NotificationSettingsTable.userId eq userId.toJavaUuid() }
+            .find { NotificationSettingsTable.userId eq userId }
             .firstOrNull()
             ?.domain()
     }
 
     override suspend fun upsert(settings: NotificationSettings): NotificationSettings = dbQuery {
         val settingId = NotificationSettingsTable.upsertReturning(returning = listOf(NotificationSettingsTable.id)) {
-            it[NotificationSettingsTable.id] = settings.id.toJavaUuid()
-            it[NotificationSettingsTable.userId] = settings.userId.toJavaUuid()
+            it[NotificationSettingsTable.id] = settings.id
+            it[NotificationSettingsTable.userId] = settings.userId
             it[NotificationSettingsTable.appointmentEnabled] = settings.appointmentEnabled
             it[NotificationSettingsTable.updatedAt] = Clock.System.now()
         }
@@ -37,7 +36,7 @@ internal class NotificationSettingsDataSourceImpl : DataSource(), NotificationSe
 
         settings.channels.forEach { channel ->
             NotificationChannelsTable.upsert {
-                it[NotificationChannelsTable.id] = channel.id.toJavaUuid()
+                it[NotificationChannelsTable.id] = channel.id
                 it[NotificationChannelsTable.settingsId] = settingId
                 it[NotificationChannelsTable.channel] = channel.channel
                 it[NotificationChannelsTable.enabled] = channel.enabled
@@ -50,7 +49,7 @@ internal class NotificationSettingsDataSourceImpl : DataSource(), NotificationSe
     }
 
     override suspend fun upsert(channel: NotificationChannelSettings) = dbQuery<Unit> {
-        NotificationChannelsEntity.findByIdAndUpdate(channel.id.toJavaUuid()) {
+        NotificationChannelsEntity.findByIdAndUpdate(channel.id) {
             it.enabled = channel.enabled
             it.availableToClients = channel.availableToClients
         }

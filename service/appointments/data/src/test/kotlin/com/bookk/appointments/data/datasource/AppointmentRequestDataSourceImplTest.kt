@@ -3,6 +3,8 @@ package com.bookk.appointments.data.datasource
 import com.bookk.appointments.data.orm.table.AppointmentBusinessTable
 import com.bookk.appointments.data.orm.table.AppointmentRequestServicesTable
 import com.bookk.appointments.data.orm.table.AppointmentRequestTable
+import com.bookk.appointments.data.orm.table.DayOffsTable
+import com.bookk.appointments.data.orm.table.WorkingHoursTable
 import com.bookk.appointments.domain.api.entity.AppointmentRequest
 import com.bookk.appointments.domain.api.entity.AppointmentRequestStatus
 import com.bookk.appointments.domain.api.entity.BusinessSnapshot
@@ -29,7 +31,7 @@ internal class AppointmentRequestDataSourceImplTest {
 
     private class SutFixture {
         val db = createTestDatabase(
-            AppointmentBusinessTable, AppointmentRequestTable, AppointmentRequestServicesTable
+            AppointmentBusinessTable, WorkingHoursTable, DayOffsTable, AppointmentRequestTable, AppointmentRequestServicesTable
         )
         val cacheClient = InMemoryCacheClient()
         val sut = AppointmentRequestDataSourceImpl(cacheClient)

@@ -1,12 +1,12 @@
 package com.bookk.auth.data.orm.entity
 
 import com.bookk.auth.data.orm.table.PasskeyCredentialTable
-import com.bookk.core.data.DecoratorUUIDEntityClass
+import com.bookk.core.data.DecoratorUuidEntityClass
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
-import org.jetbrains.exposed.v1.dao.UUIDEntity
-import java.util.UUID
+import org.jetbrains.exposed.v1.dao.UuidEntity
+import kotlin.uuid.Uuid
 
-internal class PasskeyCredentialEntity(id: EntityID<UUID>) : UUIDEntity(id) {
+internal class PasskeyCredentialEntity(id: EntityID<Uuid>) : UuidEntity(id) {
     var authorization by AuthenticationEntity referencedOn PasskeyCredentialTable.authId
     var credDescriptorId by PasskeyCredentialTable.credDescriptorId
     var credDescriptorType by PasskeyCredentialTable.credDescriptorType
@@ -23,5 +23,5 @@ internal class PasskeyCredentialEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var updatedAt by PasskeyCredentialTable.updatedAt
     var lastUsedAt by PasskeyCredentialTable.lastUsedAt
 
-    companion object : DecoratorUUIDEntityClass<PasskeyCredentialEntity>(PasskeyCredentialTable)
+    companion object : DecoratorUuidEntityClass<PasskeyCredentialEntity>(PasskeyCredentialTable)
 }

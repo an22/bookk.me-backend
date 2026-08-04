@@ -13,14 +13,13 @@ import com.yubico.webauthn.RegisteredCredential
 import com.yubico.webauthn.data.AuthenticatorTransport
 import com.yubico.webauthn.data.PublicKeyCredentialDescriptor
 import com.yubico.webauthn.data.PublicKeyCredentialType
-import kotlin.uuid.toKotlinUuid
 import com.yubico.webauthn.data.ByteArray as YubicoByteArray
 
 internal fun AuthenticationEntity.toDomain(): Authentication {
     return Authentication(
-        id = id.value.toKotlinUuid(),
-        userId = userId.toKotlinUuid(),
-        uuid = uuid.toKotlinUuid()
+        id = id.value,
+        userId = userId,
+        uuid = uuid
     )
 }
 
@@ -28,10 +27,10 @@ internal fun AuthDeviceEntity.toDomain(): Device {
     return Device(
         authRecord = userAuth.toDomain(),
         deviceInfo = DeviceInfo(
-            id = id.value.toKotlinUuid(),
-            deviceUUID = deviceUUID.toKotlinUuid(),
-            refreshToken = SafeRefreshToken.from(refreshTokenId?.toKotlinUuid(), refreshTokenHash),
-            previousRefreshToken = SafeRefreshToken.from(previousRefreshTokenId?.toKotlinUuid(), previousRefreshTokenHash),
+            id = id.value,
+            deviceUUID = deviceUUID,
+            refreshToken = SafeRefreshToken.from(refreshTokenId, refreshTokenHash),
+            previousRefreshToken = SafeRefreshToken.from(previousRefreshTokenId, previousRefreshTokenHash),
             deviceName = deviceName,
             isSignedIn = isSignedIn,
             lastLogInAt = lastLogInAt,
@@ -41,10 +40,10 @@ internal fun AuthDeviceEntity.toDomain(): Device {
 
 internal fun PasskeyCredentialEntity.toDomain(): PasskeyCredential {
     return PasskeyCredential(
-        id = id.value.toKotlinUuid(),
-        authId = authorization.id.value.toKotlinUuid(),
+        id = id.value,
+        authId = authorization.id.value,
         authInfo = authorization.toDomain(),
-        handle = authorization.uuid.toKotlinUuid(),
+        handle = authorization.uuid,
         name = name,
         credDescriptor = CredentialDescriptor(
             id = credDescriptorId,

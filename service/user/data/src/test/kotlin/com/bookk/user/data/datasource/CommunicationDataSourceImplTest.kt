@@ -16,7 +16,6 @@ import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import kotlin.uuid.Uuid
-import kotlin.uuid.toJavaUuid
 
 internal class CommunicationDataSourceImplTest {
 
@@ -27,7 +26,7 @@ internal class CommunicationDataSourceImplTest {
 
         suspend fun insertUser(): Uuid {
             return suspendTransaction {
-                userSut.insertNewUser(User(Uuid.random(), "Test", "User", "test${Uuid.random()}@example.com"))
+                userSut.insertNewUser(User(Uuid.random(), "Test", "User", "test${Uuid.random()}@example.com", null))
             }.id
         }
     }
@@ -50,7 +49,7 @@ internal class CommunicationDataSourceImplTest {
         then()
         val count = suspendTransaction {
             ContactFormTable.selectAll()
-                .where { ContactFormTable.userId eq userId.toJavaUuid() }
+                .where { ContactFormTable.userId eq userId }
                 .count()
         }
         assertEquals(1L, count)
@@ -74,7 +73,7 @@ internal class CommunicationDataSourceImplTest {
         then()
         val count = suspendTransaction {
             ContactFormTable.selectAll()
-                .where { ContactFormTable.userId eq userId.toJavaUuid() }
+                .where { ContactFormTable.userId eq userId }
                 .count()
         }
         assertEquals(1L, count)

@@ -3,7 +3,6 @@ plugins {
 }
 
 group = "com.bookk.server.microservice.appointments"
-version = "0.0.1"
 
 application {
     mainClass.set("com.bookk.appointments.microservice.AppointmentsMicroserviceKt")
@@ -18,6 +17,7 @@ ktor {
 }
 
 dependencies {
+    implementation(projects.service.business.client)
     implementation(projects.core)
     implementation(projects.core.service)
     implementation(projects.core.domain)

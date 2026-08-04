@@ -4,6 +4,7 @@ import com.bookk.core.containedIn
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.Serializable
+import library.schedule.Schedule
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
@@ -12,8 +13,7 @@ data class AppointmentSettings(
     val id: Uuid,
     val businessId: Uuid,
     val timeZone: TimeZone,
-    val schedule: WorkingSchedule,
-    val dayOffs: List<DayOffRange>,
+    val schedule: Schedule,
     val automaticApproval: Boolean,
     val inBetweenBreakInMinutes: Int,
     val appointmentNote: String
@@ -26,9 +26,8 @@ data class AppointmentSettings(
         id = Uuid.random(),
         businessId = businessId,
         timeZone = timeZone,
-        schedule = WorkingSchedule(),
+        schedule = Schedule(),
         automaticApproval = false,
-        dayOffs = listOf(),
         inBetweenBreakInMinutes = 10,
         appointmentNote = ""
     )
@@ -36,7 +35,7 @@ data class AppointmentSettings(
     fun isInWorkday(date: Instant): Boolean {
         val localDate = date.toLocalDateTime(timeZone)
         if (!schedule[localDate.dayOfWeek].isActive) return false
-        return dayOffs.none { localDate.date in it.start..it.end }
+        return schedule.dayOffs.none { localDate.date in it.start..it.end }
     }
 
     fun isInWorktime(date: Instant, dateEnd: Instant): Boolean {

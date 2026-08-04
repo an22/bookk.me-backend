@@ -5,7 +5,6 @@ plugins {
 }
 
 group = "com.bookk.core.service"
-version = "0.0.1"
 
 application {
     mainClass.set("com.bookk.core.MockMainClassKt")

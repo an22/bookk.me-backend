@@ -12,8 +12,6 @@ object AppointmentErrorCodes {
     const val REQUEST_ALREADY_DECLINED = BASE + 7
     const val REQUEST_ALREADY_APPROVED = BASE + 8
     const val PLUGIN_ALREADY_ENABLED = BASE + 9
-    const val ACTIVE_DAY_WITHOUT_WORK_HOURS = BASE + 10
-    const val INVALID_DAY_OFF_RANGE = BASE + 11
     const val DATE_IN_PAST = BASE + 12
     const val PRICE_CHANGED = BASE + 13
     const val SERVICES_VALIDATION_FAILED = BASE + 14

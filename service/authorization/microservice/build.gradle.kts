@@ -3,7 +3,6 @@ plugins {
 }
 
 group = "com.bookk.server.microservice.authorization"
-version = "0.0.1"
 
 application {
     mainClass.set("com.bookk.auth.AuthMicroserviceKt")

@@ -17,8 +17,8 @@ import io.mockk.coVerify
 import io.mockk.mockk
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.koin.dsl.module
-import java.util.UUID
 import kotlin.test.Test
+import kotlin.uuid.Uuid
 
 internal class StartAssertionTest {
 
@@ -31,7 +31,7 @@ internal class StartAssertionTest {
             routeUnderTest = { signIn() }
         )
         val client = createTestClient()
-        val answer = AssertionStartResponse(UUID.randomUUID().toString(), "mock", "mock")
+        val answer = AssertionStartResponse(Uuid.random().toString(), "mock", "mock")
         coEvery { useCase.invoke() } returns Result.success(answer)
 
         whenn()

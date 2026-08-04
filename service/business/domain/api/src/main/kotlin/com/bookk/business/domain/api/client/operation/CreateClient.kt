@@ -8,7 +8,7 @@ import io.ktor.http.HttpStatusCode
 import kotlin.uuid.Uuid
 
 interface CreateClient {
-    suspend operator fun invoke(businessId: Uuid, client: Client): Result<ClientRemote>
+    suspend operator fun invoke(requestUserId: Uuid, businessId: Uuid, client: Client): Result<ClientRemote>
 
     sealed interface Error {
         class ClientExist : BusinessError(

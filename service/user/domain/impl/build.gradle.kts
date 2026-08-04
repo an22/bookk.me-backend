@@ -14,6 +14,8 @@ dependencies {
     implementation(projects.service.user.client)
     implementation(projects.service.authorization.client)
     testImplementation(testFixtures(projects.core))
+    testImplementation(projects.core.data.eventstreaming.impl)
+    testImplementation(testFixtures(projects.core.data.eventstreaming.impl))
     testImplementation(testFixtures(projects.core.domain.datasource))
     testImplementation(libs.kotlin.coroutines.test)
 }

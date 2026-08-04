@@ -1,6 +1,7 @@
 package com.bookk.appointments.domain.impl.operation
 
 import com.bookk.appointments.domain.api.entity.AppointmentSettings
+import com.bookk.appointments.domain.api.entity.AppointmentSettingsUpdate
 import com.bookk.appointments.domain.api.operation.EditSettings
 import com.bookk.appointments.domain.datasource.AppointmentSettingsDataSource
 import com.bookk.appointments.domain.datasource.PermissionsDataSource
@@ -16,15 +17,9 @@ internal class EditSettingsImpl(
 ) : EditSettings {
     override suspend fun invoke(
         userId: Uuid,
-        settings: AppointmentSettings
+        update: AppointmentSettingsUpdate
     ): Result<AppointmentSettings> = transactionManager.transaction {
-        permissionsSource.getPermissions(userId, settings.businessId).assert(ObjectPermission.EDIT)
-        if (settings.schedule.list().any { it.isActive && it.workingTime.isEmpty() }) {
-            throw EditSettings.Error.ActiveDayWithoutWorkHours()
-        }
-        if (settings.dayOffs.any { it.start >= it.end }) {
-            throw EditSettings.Error.InvalidDayOffRange()
-        }
-        settingsSource.update(settings)
+        permissionsSource.getPermissions(userId, update.businessId).assert(ObjectPermission.EDIT)
+        settingsSource.update(update)
     }
 }

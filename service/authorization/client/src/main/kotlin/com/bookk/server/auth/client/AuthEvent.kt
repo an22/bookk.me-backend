@@ -40,6 +40,7 @@ interface AuthEvent : EventStreaming.Event<String> {
         override val idempotencyKey: String = Uuid.random().toString()
     ) : AuthEvent {
         override val topic: String = TOPIC
+        override val partitionKey: String get() = deviceUuid.toString()
 
         companion object {
             const val TOPIC = "auth.device_language_updated"

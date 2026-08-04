@@ -23,13 +23,14 @@ New gradle modules must be registered in `settings.gradle.kts` (one `include` pe
 
 ## Core conventions (apply everywhere)
 
+- **Never write comments.** No `//` comments, no KDoc, no explanatory blocks — in production code or tests. Express intent through names and structure instead: rename the function, extract the condition into a named value, split the method. If something seems to need a comment, that is a signal the code should be clearer. The only exceptions are the route KDoc the openApi plugin parses (`Summary:`, `Body:`, `Response:`, …) and comments that already exist in the file — never delete or reword someone else's comment.
 - Operations return `Result<T>`; impls **throw** errors inside `transactionManager.transaction { }`, which catches and converts to `Result.failure`.
 - Domain errors: nested `sealed interface Error` in the operation interface; each case is a `class` extending `BusinessError(statusCode, code, message)` (classes, NOT data objects). Assert with `is`, never equality.
 - Error codes live in `domain/api/.../<Svc>ErrorCodes` as `BASE + n`. Blocks: auth=0, user=100000, business=200000, appointments=300000. Next service takes the next 100000 block.
 - Generic infrastructure errors: `com.bookk.core.domain.entity.Error` (`NotFound`, `OperationNotAllowed`, …).
 - `call.respondWith(result)` (core/service) maps: success Unit→204, success T→200, `BusinessError`→its statusCode + `SimpleServerError(errorCode, message)`, `Error.NotFound`/`Error.OperationNotAllowed`→**404** (intentional: permission failures do NOT return 403), anything else→500 (logged).
 - Permissions: `permissionsDataSource.getPermissions(userId, businessId).assert(ObjectPermission.EDIT)` (library/permissions) — throws `Error.OperationNotAllowed`.
-- Wire format is ProtoBuf (`application/x-protobuf`) for all bodies/responses.
+- Wire format is ProtoBuf (`application/x-protobuf`) for all bodies/responses. **A nullable collection (`List<T>?`, `Map<K, V>?`) cannot be serialized when null** — kotlinx throws `'null' is not supported as the value of collection types in ProtoBuf`. For an optional group of fields in a partial-update DTO, wrap them in a nullable `@Serializable` holder class (a nullable message is fine) instead of making each list nullable — see `BusinessUpdateModel.schedule: Schedule?`. **A nullable property must not also have a default** — the serializer runs with `encodeDefaults = true`, and encoding a defaulted null throws `'null' is not supported for optional properties in ProtoBuf` as soon as a caller omits it. Give every nullable field on a partial-update DTO no default at all and pass them explicitly (`BusinessUpdateModel`, `UserEditModel`).
 - Entities: `@Serializable data class` in `domain/api/.../entity` with a `companion object { fun stub(...) }` factory (defaulted params, `Uuid.random()`, `Instant.fromEpochMilliseconds(0)`) — add `stub()` to every new entity; tests rely on it.
 
 ## Recipe: new business operation
@@ -68,7 +69,47 @@ internal class DoThingImpl(
 }
 ```
 4. Register in `domain/impl/.../di/DI.kt`: `factoryOf(::DoThingImpl) bind DoThing::class`.
-5. If a new datasource method is needed: add to the interface in `data/source/.../datasource/`, implement in `data/.../datasource/<X>DataSourceImpl.kt` (`internal class ... : DataSource(), XDataSource`, queries wrapped in `dbQuery { }`, Exposed v1 DSL, `Uuid.toJavaUuid()` for ids). New datasources are registered in `data/.../di/`: `singleOf(::XDataSourceImpl) bind XDataSource::class`. New tables go in `data/.../orm/{table,entity}` and must be added to the service's `<Svc>Migration.kt` `tables()` array.
+5. If a new datasource method is needed: add to the interface in `data/source/.../datasource/`, implement in `data/.../datasource/<X>DataSourceImpl.kt` (`internal class ... : DataSource(), XDataSource`, queries wrapped in `dbQuery { }`, Exposed v1 DSL, `Uuid` for ids). New datasources are registered in `data/.../di/`: `singleOf(::XDataSourceImpl) bind XDataSource::class`. New tables go in `data/.../orm/{table,entity}` and must be added to the service's `<Svc>Migration.kt` `tables()` array.
+
+### Writes live on the entity, not in the datasource
+
+Mapping a domain model onto rows belongs in the DAO entity's companion, so a datasource method stays a one-liner and the field list has exactly one home. Reference: `AppointmentBusinessEntity`, `BusinessEntity`, `AppointmentEntity`.
+
+```kotlin
+internal class ThingEntity(id: EntityID<Uuid>) : UuidEntity(id) {
+    var name by ThingTable.name
+
+    fun domain(): Thing = Thing(id = id.value, name = name)
+
+    private fun replaceChildren(children: List<Child>) {
+        val entityId = id.value // `id` inside a table lambda resolves to the table's column, not the entity
+        ChildTable.deleteWhere { ChildTable.thingId eq entityId }
+        ChildTable.batchInsert(children) { this[ChildTable.thingId] = entityId /* … */ }
+    }
+
+    companion object : DecoratorUUIDEntityClass<ThingEntity>(ThingTable) {
+        fun new(model: Thing): ThingEntity = new { name = model.name }.apply { replaceChildren(model.children) }
+
+        fun findByIdAndUpdate(model: ThingUpdate) = findByIdAndUpdate(model.id) {
+            model.name?.let { name -> it.name = name }
+            it.updatedAt = Clock.System.now()
+        }
+    }
+}
+```
+```kotlin
+override suspend fun create(model: Thing): Thing = dbQuery { ThingEntity.new(model).domain() }
+override suspend fun update(model: ThingUpdate): Thing = dbQuery {
+    (ThingEntity.findByIdAndUpdate(model) ?: throw Error.NotFound()).domain()
+}
+```
+
+Rules that fall out of this:
+- **Never call `flush()` or `refresh()`.** Exposed flushes its entity cache before executing any statement, so a staged insert/update is always written before the next query or DSL statement observes it. Every such call added during this codebase's history turned out to be dead — `refresh()` is worse than dead, it re-reads the row and discards pending writes, which then needs a `flush()` before it to compensate.
+- `findByIdAndUpdate` (Exposed's own) reads with `SELECT … FOR UPDATE`. When an update is conditional (an event-ordering guard, a state check), put the condition **inside** that block so the check and the write share the row lock. Do not hand-roll `findById` + check + mutate; that drops the lock and reopens the race.
+- Return `Unit` from datasource writes unless a caller branches on the result. A `Boolean` that only tests assert on is dead API; assert the guard through the stored state instead.
+- Read a row back with `findById(...)?.toDomain()`, not a hand-rolled `selectAll().where { }` + `wrapRow`. Do not re-read after a write either — `new(...)` and `findByIdAndUpdate(...)` return the entity, so `.toDomain()` on it is enough.
+- Entity referrers lazy-load one query per parent, so a read returning **many** rows needs `.with(Entity::children)` to batch them. Today's reads are all effectively single-row (`BusinessTable.userId` is a `uniqueIndex`, so a user owns at most one business), so plain referrers are correct — revisit if that changes.
 6. Write the impl unit test (see Testing) — every `Error` case + success + event publication if any.
 
 ## Recipe: new Ktor route
@@ -277,13 +318,26 @@ These throw `UnsupportedByDialectException` in H2 even with `MODE=MySQL`. Omit t
 
 | Operation | Used by | Workaround for reads |
 |---|---|---|
-| `updateReturning` | `BusinessDataSourceImpl.updateBusiness` | — |
+| `updateReturning` | — | rewrite as `update {}` + a follow-up `selectAll()` read, which H2 supports and makes the method testable (`BusinessDataSourceImpl.updateBusiness` was converted this way) |
 | `deleteReturning` | `BusinessDataSourceImpl.deleteUserBusinesses`, `DeviceDataSourceImpl.deleteInactiveDevices` | — |
 | `upsertReturning` | `NotificationSettingsDataSourceImpl.upsert(settings)` | insert via DAO entity directly |
+| `upsert(where = …)` | — | split into `insert`/`update` datasource methods and let the operation choose (`NotificationTargetDataSourceImpl` + `UpdateTargetInformation`) |
 
 For read methods whose writes use an unsupported upsert, insert test data directly via the DAO entity (e.g. `NotificationSettingsEntity.new(id) { ... }`).
 
-Plain `upsert {}` (no `where` parameter) **is** supported by H2 and resolves conflicts via `uniqueIndex` columns — use it freely in datasource tests.
+Plain `upsert {}` (no `where` parameter) **is** supported by H2 and resolves conflicts via `uniqueIndex` columns — use it freely in datasource tests. Passing `where` to it throws `UnsupportedByDialectException`. Split a conditional upsert into separate `insert`/`update` datasource methods — the guard lives in the `update {}` where clause and returns whether a row matched — and let the operation decide, inside its `transactionManager.transaction { }`, whether to insert.
+
+### Asserting unique-constraint violations
+
+`runUnitTest` cannot be nested inside `assertThrows` (its body is `suspend`, and the outer `TestHolder` context would be lost). Assert constraint failures with `runCatching` instead:
+```kotlin
+whenn()
+val result = runCatching { suspendTransaction { fixture.sut.createX(duplicate) } }
+
+then()
+assertTrue(result.exceptionOrNull() is Error.UniqueConstraintFailed)
+```
+`dbQuery { }` maps the driver exception to `com.bookk.core.domain.entity.Error.UniqueConstraintFailed`, which operations turn into a domain error via `.onConstraintFailure { }`.
 
 ### Batch-update / batch-cancel patterns
 

@@ -28,13 +28,12 @@ import io.mockk.mockk
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.koin.dsl.module
-import java.util.UUID
 import kotlin.uuid.Uuid
 
 internal class PostValidateSignInTest {
 
     private fun createSimpleRequest(deviceId: Uuid = Uuid.random()): VerifySignInRequest = VerifySignInRequest(
-        requestId = UUID.randomUUID().toString(),
+        requestId = Uuid.random().toString(),
         deviceInfo = VerifySignInRequest.DeviceInfo(
             deviceUUID = deviceId,
             deviceName = ""

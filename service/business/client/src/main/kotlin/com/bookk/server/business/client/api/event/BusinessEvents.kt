@@ -1,19 +1,12 @@
 package com.bookk.server.business.client.api.event
 
 import com.bookk.core.data.eventstreaming.EventStreaming
-import kotlinx.datetime.TimeZone
+import com.bookk.server.business.client.api.BusinessDTO
 import kotlinx.serialization.Serializable
+import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
 interface BusinessEvent : EventStreaming.Event<String> {
-
-    @Serializable
-    data class BusinessDTO(
-        val id: Uuid,
-        val name: String,
-        val address: String,
-        val timeZone: TimeZone
-    )
 
     @Serializable
     data class Deleted(
@@ -21,6 +14,7 @@ interface BusinessEvent : EventStreaming.Event<String> {
         override val idempotencyKey: String = Uuid.random().toString()
     ) : BusinessEvent {
         override val topic: String = TOPIC
+        override val partitionKey: String get() = businessId.toString()
 
         companion object {
             const val TOPIC = "business.deleted"
@@ -30,12 +24,45 @@ interface BusinessEvent : EventStreaming.Event<String> {
     @Serializable
     data class Updated(
         val business: BusinessDTO,
+        val updatedAt: Instant,
+        override val idempotencyKey: String = Uuid.random().toString()
+    ) : BusinessEvent {
+        override val topic: String = TOPIC
+        override val partitionKey: String get() = business.id.toString()
+
+        companion object {
+            const val TOPIC = "business.updated"
+        }
+    }
+
+    @Serializable
+    data class EmployeeInvitationCreated(
+        val invitedUserId: Uuid,
+        val invitedName: String,
+        val businessId: Uuid,
+        val businessName: String,
         override val idempotencyKey: String = Uuid.random().toString()
     ) : BusinessEvent {
         override val topic: String = TOPIC
 
         companion object {
-            const val TOPIC = "business.updated"
+            const val TOPIC = "business.employee_invitation_created"
+        }
+    }
+
+    @Serializable
+    data class EmployeeInvitationApproved(
+        val inviterUserId: Uuid,
+        val employeeUserId: Uuid,
+        val employeeName: String,
+        val businessId: Uuid,
+        val businessName: String,
+        override val idempotencyKey: String = Uuid.random().toString()
+    ) : BusinessEvent {
+        override val topic: String = TOPIC
+
+        companion object {
+            const val TOPIC = "business.employee_invitation_approved"
         }
     }
 }

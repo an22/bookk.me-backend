@@ -19,7 +19,7 @@ internal class AppointmentEventHandler(
                 deleteModule(event.businessId)
             }
             .registerResultReceiver(BusinessEvent.Updated.TOPIC) { event: BusinessEvent.Updated ->
-                updateBusinessInformation(event.business)
+                updateBusinessInformation(event.business, event.updatedAt)
             }
             .start(scope)
     }

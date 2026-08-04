@@ -1,8 +1,10 @@
 package com.bookk.business.data.datasource
 
 import com.bookk.business.data.orm.table.BusinessDashboardTable
+import com.bookk.business.data.orm.table.BusinessDayOffTable
 import com.bookk.business.data.orm.table.BusinessPermissionsTable
 import com.bookk.business.data.orm.table.BusinessTable
+import com.bookk.business.data.orm.table.BusinessWorkingHoursTable
 import com.bookk.business.data.orm.table.ClientTable
 import com.bookk.business.domain.api.client.entity.Client
 import com.bookk.core.data.test.createTestDatabase
@@ -17,12 +19,13 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
 internal class ClientDataSourceImplTest {
 
     private class SutFixture {
-        val db = createTestDatabase(BusinessTable, BusinessDashboardTable, BusinessPermissionsTable, ClientTable)
+        val db = createTestDatabase(BusinessTable, BusinessDashboardTable, BusinessPermissionsTable, BusinessWorkingHoursTable, BusinessDayOffTable, ClientTable)
         val sut = ClientDataSourceImpl()
         val businessSut = BusinessDataSourceImpl()
         lateinit var businessId: Uuid
@@ -149,5 +152,163 @@ internal class ClientDataSourceImplTest {
 
         then()
         assertTrue(!deleted)
+    }
+
+    @Test
+    fun `should update integrated client fields by user id`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val userId = Uuid.random()
+        val phone = "+5556667777"
+        val client = Client.Integrated(
+            id = Uuid.random(), name = "Old", lastName = "Name",
+            phone = phone, email = "old@test.com", userId = userId
+        )
+        suspendTransaction { fixture.sut.createIntegratedClient(fixture.businessId, client) }
+
+        whenn()
+        val updated = suspendTransaction {
+            fixture.sut.updateIntegratedClients(userId, "New", "Surname", "new@test.com", null, Instant.fromEpochMilliseconds(1000))
+        }
+        val found = suspendTransaction { fixture.sut.getClient(fixture.businessId, phone) }
+
+        then()
+        assertEquals(1, updated)
+        assertNotNull(found)
+        assertTrue(found is Client.Integrated)
+        assertEquals("New", found!!.name)
+        assertEquals("Surname", found.lastName)
+        assertEquals("new@test.com", found.email)
+        assertEquals(userId, (found as Client.Integrated).userId)
+    }
+
+    @Test
+    fun `should update the client phone when the profile supplies one`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val userId = Uuid.random()
+        val client = Client.Integrated(
+            id = Uuid.random(), name = "Old", lastName = "Name",
+            phone = "+1111111111", email = "old@test.com", userId = userId
+        )
+        suspendTransaction { fixture.sut.createIntegratedClient(fixture.businessId, client) }
+
+        whenn()
+        suspendTransaction {
+            fixture.sut.updateIntegratedClients(
+                userId, "New", "Surname", "new@test.com", "+2222222222", Instant.fromEpochMilliseconds(1000)
+            )
+        }
+
+        then()
+        val found = suspendTransaction { fixture.sut.getClient(fixture.businessId, "+2222222222") }
+        assertEquals("+2222222222", found!!.phone)
+    }
+
+    @Test
+    fun `should keep the client phone when the profile has none`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val userId = Uuid.random()
+        val phone = "+1111100000"
+        val client = Client.Integrated(
+            id = Uuid.random(), name = "Old", lastName = "Name",
+            phone = phone, email = "old@test.com", userId = userId
+        )
+        suspendTransaction { fixture.sut.createIntegratedClient(fixture.businessId, client) }
+
+        whenn()
+        suspendTransaction {
+            fixture.sut.updateIntegratedClients(
+                userId, "New", "Surname", "new@test.com", null, Instant.fromEpochMilliseconds(1000)
+            )
+        }
+
+        then()
+        val found = suspendTransaction { fixture.sut.getClient(fixture.businessId, phone) }
+        assertEquals(phone, found!!.phone)
+        assertEquals("New", found.name)
+    }
+
+    @Test
+    fun `should ignore a profile update older than the one already applied`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val userId = Uuid.random()
+        val phone = "+5556660001"
+        val client = Client.Integrated(
+            id = Uuid.random(), name = "Old", lastName = "Name",
+            phone = phone, email = "old@test.com", userId = userId
+        )
+        suspendTransaction { fixture.sut.createIntegratedClient(fixture.businessId, client) }
+        val newer = Instant.fromEpochMilliseconds(2000)
+        val older = Instant.fromEpochMilliseconds(1000)
+        suspendTransaction { fixture.sut.updateIntegratedClients(userId, "Newer", "Surname", "newer@test.com", null, newer) }
+
+        whenn()
+        val updated = suspendTransaction {
+            fixture.sut.updateIntegratedClients(userId, "Older", "Surname", "older@test.com", null, older)
+        }
+        val found = suspendTransaction { fixture.sut.getClient(fixture.businessId, phone) }
+
+        then()
+        assertEquals(0, updated)
+        assertEquals("Newer", found!!.name)
+        assertEquals("newer@test.com", found.email)
+    }
+
+    @Test
+    fun `should apply a profile update newer than the one already applied`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val userId = Uuid.random()
+        val phone = "+5556660002"
+        val client = Client.Integrated(
+            id = Uuid.random(), name = "Old", lastName = "Name",
+            phone = phone, email = "old@test.com", userId = userId
+        )
+        suspendTransaction { fixture.sut.createIntegratedClient(fixture.businessId, client) }
+        suspendTransaction {
+            fixture.sut.updateIntegratedClients(userId, "First", "Surname", "first@test.com", null, Instant.fromEpochMilliseconds(1000))
+        }
+
+        whenn()
+        val updated = suspendTransaction {
+            fixture.sut.updateIntegratedClients(userId, "Second", "Surname", "second@test.com", null, Instant.fromEpochMilliseconds(2000))
+        }
+        val found = suspendTransaction { fixture.sut.getClient(fixture.businessId, phone) }
+
+        then()
+        assertEquals(1, updated)
+        assertEquals("Second", found!!.name)
+    }
+
+    @Test
+    fun `should not update detached clients when updating by user id`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val detachedPhone = "+1010101010"
+        val detached = Client.Detached(
+            id = Uuid.random(), name = "Keep", lastName = "Me",
+            phone = detachedPhone, email = "keep@test.com"
+        )
+        suspendTransaction { fixture.sut.createDetachedClient(fixture.businessId, detached) }
+
+        whenn()
+        val updated = suspendTransaction {
+            fixture.sut.updateIntegratedClients(Uuid.random(), "New", "Surname", "new@test.com", null, Instant.fromEpochMilliseconds(1000))
+        }
+        val found = suspendTransaction { fixture.sut.getClient(fixture.businessId, detachedPhone) }
+
+        then()
+        assertEquals(0, updated)
+        assertNotNull(found)
+        assertEquals("Keep", found!!.name)
     }
 }

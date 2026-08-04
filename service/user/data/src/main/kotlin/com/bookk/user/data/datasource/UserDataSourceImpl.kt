@@ -5,7 +5,6 @@ import com.bookk.core.data.cache.CacheClient
 import com.bookk.user.data.cache.UserCacheStrategy.deleteUser
 import com.bookk.user.data.cache.UserCacheStrategy.getUser
 import com.bookk.user.data.cache.UserCacheStrategy.save
-import com.bookk.user.data.map.toDomain
 import com.bookk.user.data.orm.entity.UserEntity
 import com.bookk.user.data.orm.table.UserTable
 import com.bookk.user.domain.api.entity.User
@@ -15,11 +14,9 @@ import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import org.jetbrains.exposed.v1.jdbc.selectAll
-import org.jetbrains.exposed.v1.jdbc.update
 import kotlin.time.Clock
+import kotlin.time.Instant
 import kotlin.uuid.Uuid
-import kotlin.uuid.toJavaUuid
-import kotlin.uuid.toKotlinUuid
 
 internal class UserDataSourceImpl(
     private val cacheClient: CacheClient<String>
@@ -30,40 +27,27 @@ internal class UserDataSourceImpl(
             it[name] = user.name
             it[lastName] = user.lastName
             it[email] = user.email
+            it[phone] = user.phone
             it[updatedAt] = Clock.System.now()
         }.let {
-            user.copy(id = it.value.toKotlinUuid())
+            user.copy(id = it.value)
         }.also {
             runCatching { cacheClient.save(it) }
         }
     }
 
-    override suspend fun updateUser(id: Uuid, user: UserEditModel): Boolean = dbQuery {
-        val updatedRowCount = UserTable.update(where = { UserTable.id eq id.toJavaUuid() }) {
-            user.firstName?.let { firstName ->
-                it[name] = firstName
-            }
-            user.lastName?.let { lstName ->
-                it[lastName] = lstName
-            }
-            user.email?.let { mail ->
-                it[email] = mail
-            }
-            it[updatedAt] = Clock.System.now()
-        }
-        val isUpdated = updatedRowCount > 0
-        if (isUpdated) {
-            cacheClient.deleteUser(id)
-        }
-        isUpdated
+    override suspend fun updateUser(id: Uuid, user: UserEditModel, updatedAt: Instant): User? = dbQuery {
+        UserEntity.applyEdit(id, user, updatedAt)?.domain()
+    }?.also {
+        cacheClient.deleteUser(id)
     }
 
     override suspend fun getUserById(id: Uuid): User? = dbQuery {
         val cached: User? = cacheClient.getUser(id)
         if (cached != null) return@dbQuery cached
         UserTable.selectAll()
-            .where { UserTable.id eq id.toJavaUuid() }
-            .map { UserEntity.wrapRow(it).toDomain() }
+            .where { UserTable.id eq id }
+            .map { UserEntity.wrapRow(it).domain() }
             .singleOrNull()
             ?.also { user ->
                 runCatching { cacheClient.save(user) }
@@ -74,12 +58,12 @@ internal class UserDataSourceImpl(
     override suspend fun getUserByEmail(email: String): User? = dbQuery {
         UserTable.selectAll()
             .where { UserTable.email eq email }
-            .map { UserEntity.wrapRow(it).toDomain() }
+            .map { UserEntity.wrapRow(it).domain() }
             .singleOrNull()
     }
 
     override suspend fun deleteUser(id: Uuid) = dbQuery<Unit> {
-        UserTable.deleteWhere { UserTable.id eq id.toJavaUuid() }
+        UserTable.deleteWhere { UserTable.id eq id }
         runCatching { cacheClient.deleteUser(id) }
     }
 }

@@ -25,7 +25,6 @@ import org.jetbrains.exposed.v1.jdbc.update
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.minutes
 import kotlin.uuid.Uuid
-import kotlin.uuid.toJavaUuid
 
 internal class PassKeyDataSourceImpl(
     private val cacheClient: CacheClient<String>
@@ -45,7 +44,7 @@ internal class PassKeyDataSourceImpl(
 
     override suspend fun createPasskeyCredential(credential: PasskeyCredential) = dbQuery<Unit> {
         PasskeyCredentialTable.insert {
-            it[authId] = credential.authId.toJavaUuid()
+            it[authId] = credential.authId
             it[name] = credential.name
             it[credDescriptorId] = credential.credDescriptor.id
             it[credDescriptorType] = credential.credDescriptor.type
@@ -67,7 +66,7 @@ internal class PassKeyDataSourceImpl(
                 AuthenticationTable,
                 onColumn = { authId },
                 otherColumn = { id },
-                additionalConstraint = { AuthenticationTable.uuid eq userHandle.toJavaUuid() }
+                additionalConstraint = { AuthenticationTable.uuid eq userHandle }
             )
             .selectAll()
             .where { PasskeyCredentialTable.credDescriptorId eq credentialId }
@@ -83,7 +82,7 @@ internal class PassKeyDataSourceImpl(
                 otherColumn = { this.authId },
             )
             .select(PasskeyCredentialTable.columns)
-            .where { AuthenticationTable.id eq authId.toJavaUuid() }
+            .where { AuthenticationTable.id eq authId }
             .map { PasskeyCredentialEntity.wrapRow(it).toDomain() }
             .toList()
     }
@@ -91,7 +90,7 @@ internal class PassKeyDataSourceImpl(
     override suspend fun getUsernameByHandle(userHandle: Uuid): String? = dbQuery {
         val exists = AuthenticationTable
             .select(AuthenticationTable.id)
-            .where { AuthenticationTable.uuid eq userHandle.toJavaUuid() }
+            .where { AuthenticationTable.uuid eq userHandle }
             .empty()
             .not()
 
@@ -104,7 +103,7 @@ internal class PassKeyDataSourceImpl(
                 otherTable = AuthenticationTable,
                 onColumn = { authId },
                 otherColumn = { id },
-                additionalConstraint = { AuthenticationTable.uuid eq username.toJavaUuid() }
+                additionalConstraint = { AuthenticationTable.uuid eq username }
             )
             .selectAll()
             .map { PasskeyCredentialEntity.wrapRow(it).toDomain() }
@@ -127,7 +126,7 @@ internal class PassKeyDataSourceImpl(
     override suspend fun getHandleByUsername(username: Uuid): Uuid? = dbQuery {
         val exists = AuthenticationTable
             .select(AuthenticationTable.id)
-            .where { AuthenticationTable.uuid eq username.toJavaUuid() }
+            .where { AuthenticationTable.uuid eq username }
             .empty()
             .not()
 
@@ -135,7 +134,7 @@ internal class PassKeyDataSourceImpl(
     }
 
     override suspend fun markAsUsed(passkeyCredentialId: Uuid) = dbQuery<Unit> {
-        PasskeyCredentialTable.update(where = { PasskeyCredentialTable.id eq passkeyCredentialId.toJavaUuid() }) {
+        PasskeyCredentialTable.update(where = { PasskeyCredentialTable.id eq passkeyCredentialId }) {
             it[lastUsedAt] = Clock.System.now()
         }
     }
@@ -143,10 +142,10 @@ internal class PassKeyDataSourceImpl(
     override suspend fun deletePasskey(id: Uuid, authId: Uuid): Int = dbQuery {
         val existingPasskeys = PasskeyCredentialTable
             .select(PasskeyCredentialTable.id.count())
-            .where { PasskeyCredentialTable.authId eq authId.toJavaUuid() }
+            .where { PasskeyCredentialTable.authId eq authId }
             .let { wrapAsExpression<Long>(it) }
         PasskeyCredentialTable.deleteWhere {
-            (PasskeyCredentialTable.id eq id.toJavaUuid()) and (existingPasskeys greater longLiteral(1L))
+            (PasskeyCredentialTable.id eq id) and (existingPasskeys greater longLiteral(1L))
         }
     }
 }

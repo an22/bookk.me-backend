@@ -9,20 +9,18 @@ import com.bookk.appointments.domain.api.entity.AppointmentStatus
 import com.bookk.appointments.domain.api.entity.ClientSnapshot
 import com.bookk.appointments.domain.api.entity.EmployeeSnapshot
 import com.bookk.appointments.domain.api.entity.ServiceSnapshot
-import com.bookk.core.data.DecoratorUUIDEntityClass
+import com.bookk.core.data.DecoratorUuidEntityClass
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
-import org.jetbrains.exposed.v1.dao.UUIDEntity
+import org.jetbrains.exposed.v1.dao.UuidEntity
 import org.joda.money.CurrencyUnit
 import org.joda.money.Money
 import java.math.BigDecimal
 import java.math.BigInteger
-import java.util.UUID
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.minutes
-import kotlin.uuid.toJavaUuid
-import kotlin.uuid.toKotlinUuid
+import kotlin.uuid.Uuid
 
-internal class AppointmentEntity(id: EntityID<UUID>) : UUIDEntity(id) {
+internal class AppointmentEntity(id: EntityID<Uuid>) : UuidEntity(id) {
 
     var userId by AppointmentTable.userId
     var businessId by AppointmentTable.businessId
@@ -42,24 +40,24 @@ internal class AppointmentEntity(id: EntityID<UUID>) : UUIDEntity(id) {
 
     fun domain(): Appointment {
         return Appointment(
-            id = id.value.toKotlinUuid(),
-            userId = userId.toKotlinUuid(),
-            businessId = businessId.value.toKotlinUuid(),
+            id = id.value,
+            userId = userId,
+            businessId = businessId.value,
             employee = EmployeeSnapshot(
-                id = employeeId.toKotlinUuid(),
+                id = employeeId,
                 fullName = employeeName
             ),
             client = ClientSnapshot(
-                id = clientId.toKotlinUuid(),
+                id = clientId,
                 fullName = clientName,
                 phone = clientPhone.orEmpty(),
                 email = clientEmail.orEmpty()
             ),
             services = services.map {
                 ServiceSnapshot(
-                    id = it.serviceId.toKotlinUuid(),
+                    id = it.serviceId,
                     name = it.serviceName,
-                    groupId = it.serviceGroupId.toKotlinUuid(),
+                    groupId = it.serviceGroupId,
                     price = Money.of(
                         CurrencyUnit.of(it.priceCurrency),
                         BigDecimal(BigInteger.valueOf(it.priceUnscaled), it.priceScale)
@@ -74,14 +72,14 @@ internal class AppointmentEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         )
     }
 
-    companion object : DecoratorUUIDEntityClass<AppointmentEntity>(AppointmentTable) {
+    companion object : DecoratorUuidEntityClass<AppointmentEntity>(AppointmentTable) {
 
         fun new(request: AppointmentRequest) = new {
-            userId = request.userId.toJavaUuid()
-            businessId = EntityID(request.businessId.toJavaUuid(), table = AppointmentBusinessTable)
-            employeeId = request.employee.id.toJavaUuid()
+            userId = request.userId
+            businessId = EntityID(request.businessId, table = AppointmentBusinessTable)
+            employeeId = request.employee.id
             employeeName = request.employee.fullName
-            clientId = request.client.id.toJavaUuid()
+            clientId = request.client.id
             clientName = request.client.fullName
             clientPhone = request.client.phone
             clientEmail = request.client.email
@@ -93,11 +91,11 @@ internal class AppointmentEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         }
 
         fun new(appointment: Appointment) = new {
-            userId = appointment.userId.toJavaUuid()
-            businessId = EntityID(appointment.businessId.toJavaUuid(), table = AppointmentBusinessTable)
-            employeeId = appointment.employee.id.toJavaUuid()
+            userId = appointment.userId
+            businessId = EntityID(appointment.businessId, table = AppointmentBusinessTable)
+            employeeId = appointment.employee.id
             employeeName = appointment.employee.fullName
-            clientId = appointment.client.id.toJavaUuid()
+            clientId = appointment.client.id
             clientName = appointment.client.fullName
             clientPhone = appointment.client.phone
             clientEmail = appointment.client.email
@@ -108,12 +106,12 @@ internal class AppointmentEntity(id: EntityID<UUID>) : UUIDEntity(id) {
             cancellationReason = ""
         }
 
-        fun findByIdAndUpdate(appointment: Appointment) = findByIdAndUpdate(appointment.id.toJavaUuid()) {
-            it.userId = appointment.userId.toJavaUuid()
-            it.businessId = EntityID(appointment.businessId.toJavaUuid(), table = AppointmentBusinessTable)
-            it.employeeId = appointment.employee.id.toJavaUuid()
+        fun findByIdAndUpdate(appointment: Appointment) = findByIdAndUpdate(appointment.id) {
+            it.userId = appointment.userId
+            it.businessId = EntityID(appointment.businessId, table = AppointmentBusinessTable)
+            it.employeeId = appointment.employee.id
             it.employeeName = appointment.employee.fullName
-            it.clientId = appointment.client.id.toJavaUuid()
+            it.clientId = appointment.client.id
             it.clientName = appointment.client.fullName
             it.clientPhone = appointment.client.phone
             it.clientEmail = appointment.client.email

@@ -5,11 +5,11 @@ import org.jetbrains.exposed.v1.core.ReferenceOption
 import org.jetbrains.exposed.v1.datetime.date
 
 object DayOffsTable: BaseUUIDTable("appointment_day_offs") {
-    val settingsId = reference("settings_id", SettingsTable, onDelete = ReferenceOption.CASCADE).index()
+    val businessId = reference("business_id", AppointmentBusinessTable, onDelete = ReferenceOption.CASCADE).index()
     val startDate = date("start_date")
     val endDate = date("end_date")
 
     init {
-        index(false, settingsId, startDate)
+        index(false, businessId, startDate)
     }
 }

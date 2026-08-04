@@ -14,24 +14,21 @@ plugins {
 }
 
 group = "com.bookk.server"
-version = "0.0.1"
+version = "0.1.0"
 
 application {
     mainClass.set("com.bookk.server.MonolithServerKt")
 }
 
 subprojects {
-    configurations.all {
-        resolutionStrategy.eachDependency {
-            if (requested.group == "com.fasterxml.jackson.core") {
-                useVersion(libs.versions.jackson.get())
-            }
-            if (requested.group == "com.fasterxml.jackson.dataformat") {
-                useVersion(libs.versions.jackson.get())
-            }
-            if (requested.group == "com.fasterxml.jackson.datatype") {
-                useVersion(libs.versions.jackson.get())
-            }
+    plugins.withId("com.bookk.microservice") {
+        version = rootProject.version
+    }
+
+    val uniqueArchivesName = path.removePrefix(":").replace(":", "-")
+    plugins.withType<BasePlugin> {
+        configure<BasePluginExtension> {
+            archivesName = uniqueArchivesName
         }
     }
 }

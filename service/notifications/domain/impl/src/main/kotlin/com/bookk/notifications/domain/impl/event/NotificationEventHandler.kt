@@ -10,8 +10,10 @@ import com.bookk.notifications.domain.impl.UpdateTargetInformation
 import com.bookk.notifications.domain.impl.UpdateTargetInformation.Target
 import com.bookk.notifications.domain.impl.notification.SendNotification
 import com.bookk.notifications.domain.impl.notification.renderer.appointment.notification
+import com.bookk.notifications.domain.impl.notification.renderer.employee.notification
 import com.bookk.server.appointments.client.api.event.AppointmentEvent
 import com.bookk.server.auth.client.AuthEvent
+import com.bookk.server.business.client.api.event.BusinessEvent
 import com.bookk.server.user.client.api.event.UserEvent
 import kotlinx.coroutines.CoroutineScope
 
@@ -35,7 +37,7 @@ internal class NotificationEventHandler(
                 deleteDeviceByUUID(event.deviceUuid)
             }
             .registerResultReceiver(UserEvent.Updated.TOPIC) { event : UserEvent.Updated ->
-                updateTargetInformation(event.userId, Target.Email(event.email))
+                updateTargetInformation(event.userId, Target.Email(event.email), event.updatedAt)
             }
             .registerResultReceiver(AppointmentEvent.RequestCreated.TOPIC) { event : AppointmentEvent.RequestCreated ->
                 sendNotification(event.employeeUserId, event.notification)
@@ -48,6 +50,16 @@ internal class NotificationEventHandler(
             }
             .registerResultReceiver(AppointmentEvent.Cancelled.TOPIC) { event : AppointmentEvent.Cancelled ->
                 sendNotification(event.clientUserId, event.notification)
+            }
+            .registerResultReceiver(
+                BusinessEvent.EmployeeInvitationCreated.TOPIC
+            ) { event : BusinessEvent.EmployeeInvitationCreated ->
+                sendNotification(event.invitedUserId, event.notification)
+            }
+            .registerResultReceiver(
+                BusinessEvent.EmployeeInvitationApproved.TOPIC
+            ) { event : BusinessEvent.EmployeeInvitationApproved ->
+                sendNotification(event.inviterUserId, event.notification)
             }
             .start(scope)
     }

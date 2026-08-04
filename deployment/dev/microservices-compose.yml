@@ -46,6 +46,8 @@ services:
       - '8002:8000'
     env_file:
       - service/business.env
+    secrets:
+      - signing_key_encryption_key
     environment:
       JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,address=*:8000,server=y,suspend=n -ea"
       TZ: "UTC"

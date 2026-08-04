@@ -7,6 +7,18 @@ object BusinessRouting {
     @Resource("api")
     class Api {
 
+        @Resource("/internal")
+        class Internal(val parent: Api = Api()) {
+            @Resource("/business")
+            class Business(val parent: Internal = Internal()) {
+                @Resource("/{id}")
+                class Id(val parent: Business = Business(), val id: Uuid) {
+                    @Resource("/permissions/{userId}")
+                    class Permissions(val parent: Id, val userId: Uuid)
+                }
+            }
+        }
+
         @Resource("/business")
         class Business(val parent: Api = Api()) {
 
@@ -30,6 +42,12 @@ object BusinessRouting {
 
             @Resource("/quote")
             class Quote(val parent: Service)
+        }
+
+        @Resource("/business/{businessId}/employee_invitation")
+        class EmployeeInvitation(val parent: Api = Api(), val businessId: Uuid) {
+            @Resource("/{id}/approve")
+            class Approve(val parent: EmployeeInvitation, val id: Uuid)
         }
 
         @Resource("/business/{businessId}/service_group")

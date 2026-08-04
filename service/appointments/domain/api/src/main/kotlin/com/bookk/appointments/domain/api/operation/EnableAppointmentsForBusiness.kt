@@ -1,13 +1,12 @@
 package com.bookk.appointments.domain.api.operation
 
 import com.bookk.appointments.domain.api.entity.AppointmentErrorCodes
-import com.bookk.appointments.domain.api.entity.BusinessSnapshot
 import com.bookk.core.domain.entity.BusinessError
 import io.ktor.http.HttpStatusCode
 import kotlin.uuid.Uuid
 
 interface EnableAppointmentsForBusiness {
-    suspend operator fun invoke(userId: Uuid, snapshot: BusinessSnapshot): Result<Unit>
+    suspend operator fun invoke(userId: Uuid, businessId: Uuid): Result<Unit>
 
     sealed interface Error {
         class AlreadyEnabled : BusinessError(

@@ -159,6 +159,35 @@ internal class EnableAppointmentsTest {
     }
 
     @Test
+    fun `should return not found when caller does not own the business`() = routeTest {
+        given()
+        val useCase: EnableAppointmentsForBusiness = mockk()
+        val userId = Uuid.random()
+        coEvery { useCase.invoke(userId, testBusinessId) } returns Result.failure(Error.OperationNotAllowed())
+
+        setupApplication(
+            extension = {
+                install(Authentication) {
+                    provider {
+                        authenticate { context ->
+                            context.principal(AppPrincipal(Uuid.random(), userId, Uuid.random()))
+                        }
+                    }
+                }
+            },
+            diModule = module { single { useCase } },
+            routeUnderTest = { appointmentInit() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.post(Api.Appointment.Enabled(businessId = testBusinessId))
+
+        then()
+        assertEquals(HttpStatusCode.NotFound, response.status)
+    }
+
+    @Test
     fun `should return unauthorized when enabling appointments without authentication`() = routeTest {
         given()
         val useCase: EnableAppointmentsForBusiness = mockk()

@@ -13,5 +13,4 @@ interface AppointmentSubscriptionDataSource {
     suspend fun enableBusiness(businessId: Uuid)
     suspend fun isBusinessEnabled(businessId: Uuid): Boolean
     suspend fun disableBusiness(businessId: Uuid)
-    suspend fun deleteDayOffsInThePast()
 }

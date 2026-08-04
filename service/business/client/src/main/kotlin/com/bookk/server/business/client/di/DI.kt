@@ -1,11 +1,13 @@
 package com.bookk.server.business.client.di
 
 import com.bookk.business.domain.api.business.operation.GetBusinessById
+import com.bookk.business.domain.api.business.operation.GetBusinessPermission
 import com.bookk.core.AppLevelConstants
 import com.bookk.core.AppLevelConstants.SupportedSerializers
 import com.bookk.server.business.client.api.BusinessClient
 import com.bookk.server.business.client.impl.BusinessClientImpl
 import com.bookk.server.business.client.impl.operation.GetBusinessByIdClientImpl
+import com.bookk.server.business.client.impl.operation.GetBusinessPermissionClientImpl
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.HttpRequestRetry
@@ -77,5 +79,6 @@ fun businessClientModule(clientTag: String) = module {
         }
     }
     single<GetBusinessById> { GetBusinessByIdClientImpl(get(named(BUSINESS_HTTP_CLIENT))) }
-    single<BusinessClient> { BusinessClientImpl(get()) }
+    single<GetBusinessPermission> { GetBusinessPermissionClientImpl(get(named(BUSINESS_HTTP_CLIENT))) }
+    single<BusinessClient> { BusinessClientImpl(get(), get()) }
 }

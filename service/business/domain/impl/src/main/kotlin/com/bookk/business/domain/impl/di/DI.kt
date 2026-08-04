@@ -4,6 +4,7 @@ import com.bookk.business.domain.api.business.operation.CreateBusiness
 import com.bookk.business.domain.api.business.operation.DeleteBusiness
 import com.bookk.business.domain.api.business.operation.DeleteDayOffsInThePast
 import com.bookk.business.domain.api.business.operation.GetBusinessById
+import com.bookk.business.domain.api.business.operation.GetBusinessPermission
 import com.bookk.business.domain.api.business.operation.GetDashboardBusiness
 import com.bookk.business.domain.api.business.operation.GetUserBusinesses
 import com.bookk.business.domain.api.business.operation.UpdateBusiness
@@ -26,6 +27,7 @@ import com.bookk.business.domain.impl.operation.business.CreateBusinessImpl
 import com.bookk.business.domain.impl.operation.business.DeleteBusinessImpl
 import com.bookk.business.domain.impl.operation.business.DeleteDayOffsInThePastImpl
 import com.bookk.business.domain.impl.operation.business.GetBusinessByIdImpl
+import com.bookk.business.domain.impl.operation.business.GetBusinessPermissionImpl
 import com.bookk.business.domain.impl.operation.business.GetDashboardBusinessImpl
 import com.bookk.business.domain.impl.operation.business.GetUserBusinessesImpl
 import com.bookk.business.domain.impl.operation.business.UpdateBusinessImpl
@@ -53,6 +55,7 @@ fun businessDomainModule() = module {
     singleOf(::GetBusinessByIdImpl) bind GetBusinessById::class
     singleOf(::CreateBusinessImpl) bind CreateBusiness::class
     singleOf(::DeleteBusinessImpl) bind DeleteBusiness::class
+    singleOf(::GetBusinessPermissionImpl) bind GetBusinessPermission::class
     singleOf(::GetDashboardBusinessImpl) bind GetDashboardBusiness::class
     singleOf(::UpdateBusinessImpl) bind UpdateBusiness::class
     singleOf(::GetUserBusinessesImpl) bind GetUserBusinesses::class

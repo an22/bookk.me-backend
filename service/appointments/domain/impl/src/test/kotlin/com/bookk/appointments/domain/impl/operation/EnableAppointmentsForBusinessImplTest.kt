@@ -65,6 +65,8 @@ internal class EnableAppointmentsForBusinessImplTest {
         coEvery { subscriptionSource.attachBusiness(any()) } returns Unit
         coEvery { permissionsDataSource.initPermissions(testUserId, testBusinessId, ObjectPermission.OWNER.int) } returns Unit
         coEvery { settingsDataSource.create(any()) } returns AppointmentSettings.stub(testBusinessId)
+        coEvery { businessClient.getPermission(testUserId, testBusinessId) } returns
+            Result.success(ObjectPermission.OWNER.int)
     }
 
     @Test
@@ -123,6 +125,8 @@ internal class EnableAppointmentsForBusinessImplTest {
         val fixture = SutFixture()
         with(fixture) {
             transactionManager.mockTransaction()
+            coEvery { businessClient.getPermission(testUserId, testBusinessId) } returns
+                Result.success(ObjectPermission.OWNER.int)
             coEvery { businessClient.getBusinessById(testBusinessId) } returns Result.failure(Error.NotFound())
         }
 
@@ -136,11 +140,51 @@ internal class EnableAppointmentsForBusinessImplTest {
     }
 
     @Test
+    fun `should return failure when caller does not own the business`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { businessClient.getPermission(testUserId, testBusinessId) } returns
+                Result.success(ObjectPermission.EDIT.int)
+            coEvery { businessClient.getBusinessById(testBusinessId) } returns Result.success(businessDto())
+        }
+
+        whenn()
+        val result = fixture.sut.invoke(testUserId, testBusinessId)
+
+        then()
+        assertTrue(result.exceptionOrNull() is Error.OperationNotAllowed)
+        coVerify(exactly = 0) { fixture.subscriptionSource.attachBusiness(any()) }
+        coVerify(exactly = 0) { fixture.permissionsDataSource.initPermissions(any(), any(), any()) }
+    }
+
+    @Test
+    fun `should return failure when caller has no permission record for the business`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { businessClient.getPermission(testUserId, testBusinessId) } returns Result.success(0)
+            coEvery { businessClient.getBusinessById(testBusinessId) } returns Result.success(businessDto())
+        }
+
+        whenn()
+        val result = fixture.sut.invoke(testUserId, testBusinessId)
+
+        then()
+        assertTrue(result.exceptionOrNull() is Error.OperationNotAllowed)
+        coVerify(exactly = 0) { fixture.subscriptionSource.attachBusiness(any()) }
+    }
+
+    @Test
     fun `should return already enabled error when plugin is enabled`() = runUnitTest {
         given()
         val fixture = SutFixture()
         with(fixture) {
             transactionManager.mockTransaction()
+            coEvery { businessClient.getPermission(testUserId, testBusinessId) } returns
+                Result.success(ObjectPermission.OWNER.int)
             coEvery { businessClient.getBusinessById(testBusinessId) } returns Result.success(businessDto())
             coEvery { subscriptionSource.attachBusiness(any()) } throws
                 Error.UniqueConstraintFailed("business already attached", RuntimeException())

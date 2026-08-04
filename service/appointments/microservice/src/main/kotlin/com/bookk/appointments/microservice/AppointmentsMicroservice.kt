@@ -1,7 +1,6 @@
 package com.bookk.appointments.microservice
 
 import com.bookk.appointments.data.di.appointmentsDataModule
-import com.bookk.appointments.domain.api.operation.DeleteDayOffsInThePast
 import com.bookk.appointments.domain.api.operation.DeleteOutdatedRequests
 import com.bookk.appointments.domain.api.operation.MarkAppointmentsCompleted
 import com.bookk.appointments.domain.impl.di.appointmentsDomainModule
@@ -17,7 +16,6 @@ import io.ktor.server.application.install
 import library.scheduler.Scheduler
 import org.koin.dsl.module
 import org.koin.ktor.ext.get
-import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 
@@ -44,9 +42,6 @@ fun Application.installScheduler() {
     install(Scheduler) {
         job("markAppointmentsAsCompleted", interval = 5.minutes) {
             get<MarkAppointmentsCompleted>().invoke().getOrThrow()
-        }
-        job("deleteDayOffsInThePast", interval = 1.days) {
-            get<DeleteDayOffsInThePast>().invoke().getOrThrow()
         }
         job("deleteOutdatedRequests", interval = 1.hours) {
             get<DeleteOutdatedRequests>().invoke().getOrThrow()

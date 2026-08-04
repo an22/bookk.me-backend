@@ -153,22 +153,6 @@ internal class AppointmentSubscriptionDataSourceImplTest {
     }
 
     @Test
-    fun `should delete past day offs and keep future ones`() = runUnitTest {
-        given()
-        val fixture = SutFixture()
-        val pastDayOff = DayOffRange(LocalDate(2020, 1, 1), LocalDate(2020, 1, 2))
-        val snapshot = BusinessSnapshot.stub(schedule = Schedule().copy(dayOffs = listOf(pastDayOff, futureDayOff)))
-        suspendTransaction { fixture.sut.attachBusiness(snapshot) }
-
-        whenn()
-        suspendTransaction { fixture.sut.deleteDayOffsInThePast() }
-        val found = suspendTransaction { fixture.sut.getBusinessSnapshot(snapshot.id) }
-
-        then()
-        assertEquals(listOf(futureDayOff), found!!.schedule.dayOffs)
-    }
-
-    @Test
     fun `should enable and disable business`() = runUnitTest {
         given()
         val fixture = SutFixture()

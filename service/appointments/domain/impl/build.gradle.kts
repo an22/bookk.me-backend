@@ -15,6 +15,8 @@ dependencies {
     implementation(projects.library.money)
     implementation(projects.library.signing.api)
     testImplementation(testFixtures(projects.core))
+    testImplementation(projects.core.data.eventstreaming.impl)
+    testImplementation(testFixtures(projects.core.data.eventstreaming.impl))
     testImplementation(testFixtures(projects.core.domain.datasource))
     testImplementation(libs.joda.money)
     testImplementation(libs.kotlin.coroutines.test)

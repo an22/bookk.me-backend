@@ -1,5 +1,7 @@
 plugins {
     alias(libs.plugins.bookk.domain.impl)
+    alias(libs.plugins.kotlin.serialization)
+    id(libs.plugins.kotlin.fixtures.get().pluginId)
 }
 
 dependencies {
@@ -9,4 +11,13 @@ dependencies {
     implementation(projects.core.data.eventstreaming.api)
     implementation(projects.core)
     implementation(projects.core.domain)
+
+    testFixturesApi(projects.core.data.eventstreaming.api)
+    testFixturesApi(libs.kafka.client)
+    testFixturesApi(libs.ktor.protobuf)
+    testFixturesApi(libs.testcontainers.kafka)
+
+    testImplementation(testFixtures(projects.core))
+    testImplementation(libs.testcontainers.junit)
+    testImplementation(libs.kotlin.coroutines.test)
 }

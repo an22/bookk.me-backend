@@ -16,5 +16,7 @@ dependencies {
     implementation(projects.library.permissions)
     implementation(projects.library.signing.api)
     testImplementation(testFixtures(projects.core))
+    testImplementation(projects.core.data.eventstreaming.impl)
+    testImplementation(testFixtures(projects.core.data.eventstreaming.impl))
     testImplementation(testFixtures(projects.core.domain.datasource))
 }

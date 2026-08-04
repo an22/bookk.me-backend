@@ -13,7 +13,9 @@ class Business(
     val timeZone: TimeZone,
     val location: Location?,
     val currencyCode: String,
-    val socials: List<Social>
+    val socials: List<Social>,
+    val schedule: WorkingSchedule,
+    val dayOffs: List<DayOffRange>
 ) {
     @Serializable
     class Location(
@@ -50,7 +52,9 @@ class Business(
             timeZone: TimeZone = TimeZone.UTC,
             location: Location? = null,
             currencyCode: String = "USD",
-            socials: List<Social> = emptyList()
+            socials: List<Social> = emptyList(),
+            schedule: WorkingSchedule = WorkingSchedule(),
+            dayOffs: List<DayOffRange> = emptyList()
         ) = Business(
             id = id,
             name = name,
@@ -59,7 +63,9 @@ class Business(
             timeZone = timeZone,
             location = location,
             currencyCode = currencyCode,
-            socials = socials
+            socials = socials,
+            schedule = schedule,
+            dayOffs = dayOffs
         )
     }
 }

@@ -1,8 +1,10 @@
 package com.bookk.business.data.datasource
 
 import com.bookk.business.data.orm.table.BusinessDashboardTable
+import com.bookk.business.data.orm.table.BusinessDayOffTable
 import com.bookk.business.data.orm.table.BusinessPermissionsTable
 import com.bookk.business.data.orm.table.BusinessTable
+import com.bookk.business.data.orm.table.BusinessWorkingHoursTable
 import com.bookk.business.data.orm.table.EmployeeCanProvideServiceTable
 import com.bookk.business.data.orm.table.EmployeeTable
 import com.bookk.business.data.orm.table.ServiceGroupTable
@@ -29,7 +31,7 @@ internal class EmployeeDataSourceImplTest {
 
     private class SutFixture {
         val db = createTestDatabase(
-            BusinessTable, BusinessDashboardTable, BusinessPermissionsTable,
+            BusinessTable, BusinessDashboardTable, BusinessPermissionsTable, BusinessWorkingHoursTable, BusinessDayOffTable,
             ServiceGroupTable, ServiceTable, EmployeeTable, EmployeeCanProvideServiceTable
         )
         val sut = EmployeeDataSourceImpl()

@@ -7,6 +7,7 @@ import com.bookk.business.domain.api.client.operation.DeleteClient
 import com.bookk.business.domain.api.client.operation.GetClients
 import com.bookk.business.domain.api.error.BusinessErrorCodes
 import com.bookk.business.microservice.route.BusinessRouting
+import com.bookk.core.domain.entity.Error
 import com.bookk.core.domain.entity.SimpleServerError
 import com.bookk.core.service.test.createTestClient
 import com.bookk.core.service.test.routeTest
@@ -52,7 +53,7 @@ internal class ClientCrudTest {
         val clientRemote = createTestClientRemote()
         val client = clientRemote.toDomain()
         
-        coEvery { useCase.invoke(businessId, client) } returns Result.success(clientRemote)
+        coEvery { useCase.invoke(userId, businessId, client) } returns Result.success(clientRemote)
         
         setupApplication(
             extension = {
@@ -84,7 +85,7 @@ internal class ClientCrudTest {
         val useCase: GetClients = mockk()
         val clients = listOf(createTestClientRemote())
         
-        coEvery { useCase.invoke(businessId) } returns Result.success(clients)
+        coEvery { useCase.invoke(userId, businessId) } returns Result.success(clients)
         
         setupApplication(
             extension = {
@@ -114,7 +115,7 @@ internal class ClientCrudTest {
         val useCase: DeleteClient = mockk()
         val id = Uuid.random()
 
-        coEvery { useCase.invoke(businessId, id) } returns Result.success(Unit)
+        coEvery { useCase.invoke(userId, businessId, id) } returns Result.success(Unit)
 
         setupApplication(
             extension = {
@@ -143,7 +144,7 @@ internal class ClientCrudTest {
         given()
         val useCase: CreateClient = mockk()
         val clientRemote = createTestClientRemote()
-        coEvery { useCase.invoke(businessId, clientRemote.toDomain()) } returns Result.failure(CreateClient.Error.ClientExist())
+        coEvery { useCase.invoke(userId, businessId, clientRemote.toDomain()) } returns Result.failure(CreateClient.Error.ClientExist())
 
         setupApplication(
             extension = {
@@ -173,7 +174,7 @@ internal class ClientCrudTest {
         given()
         val useCase: CreateClient = mockk()
         val clientRemote = createTestClientRemote()
-        coEvery { useCase.invoke(businessId, clientRemote.toDomain()) } returns Result.failure(CreateClient.Error.ClientValidationError())
+        coEvery { useCase.invoke(userId, businessId, clientRemote.toDomain()) } returns Result.failure(CreateClient.Error.ClientValidationError())
 
         setupApplication(
             extension = {
@@ -203,7 +204,7 @@ internal class ClientCrudTest {
         given()
         val useCase: DeleteClient = mockk()
         val id = Uuid.random()
-        coEvery { useCase.invoke(businessId, id) } returns Result.failure(DeleteClient.Error.NotFound())
+        coEvery { useCase.invoke(userId, businessId, id) } returns Result.failure(DeleteClient.Error.NotFound())
 
         setupApplication(
             extension = {
@@ -224,6 +225,92 @@ internal class ClientCrudTest {
         then()
         assertEquals(HttpStatusCode.NotFound, response.status)
         assertEquals(BusinessErrorCodes.BUSINESS_CLIENT_NOT_EXISTS, response.body<SimpleServerError>().errorCode)
+    }
+
+    @Test
+    fun `should return not found when user is not allowed to get clients`() = routeTest {
+        given()
+        val useCase: GetClients = mockk()
+        coEvery { useCase.invoke(userId, businessId) } returns Result.failure(Error.OperationNotAllowed())
+
+        setupApplication(
+            extension = {
+                install(Authentication) {
+                    provider {
+                        authenticate { it.principal(AppPrincipal(Uuid.random(), userId, Uuid.random())) }
+                    }
+                }
+            },
+            diModule = module { single { useCase } },
+            routeUnderTest = { clientCrud() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.get(BusinessRouting.Api.Clients(businessId = businessId))
+
+        then()
+        assertEquals(HttpStatusCode.NotFound, response.status)
+    }
+
+    @Test
+    fun `should return not found when user is not allowed to create client`() = routeTest {
+        given()
+        val useCase: CreateClient = mockk()
+        val clientRemote = createTestClientRemote()
+        coEvery {
+            useCase.invoke(userId, businessId, clientRemote.toDomain())
+        } returns Result.failure(Error.OperationNotAllowed())
+
+        setupApplication(
+            extension = {
+                install(Authentication) {
+                    provider {
+                        authenticate { it.principal(AppPrincipal(Uuid.random(), userId, Uuid.random())) }
+                    }
+                }
+            },
+            diModule = module { single { useCase } },
+            routeUnderTest = { clientCrud() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.post(BusinessRouting.Api.Clients(businessId = businessId)) {
+            setBody(clientRemote)
+        }
+
+        then()
+        assertEquals(HttpStatusCode.NotFound, response.status)
+    }
+
+    @Test
+    fun `should return not found when user is not allowed to delete client`() = routeTest {
+        given()
+        val useCase: DeleteClient = mockk()
+        val id = Uuid.random()
+        coEvery { useCase.invoke(userId, businessId, id) } returns Result.failure(Error.OperationNotAllowed())
+
+        setupApplication(
+            extension = {
+                install(Authentication) {
+                    provider {
+                        authenticate { it.principal(AppPrincipal(Uuid.random(), userId, Uuid.random())) }
+                    }
+                }
+            },
+            diModule = module { single { useCase } },
+            routeUnderTest = { clientCrud() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.delete(
+            BusinessRouting.Api.Clients.Id(parent = BusinessRouting.Api.Clients(businessId = businessId), id = id)
+        )
+
+        then()
+        assertEquals(HttpStatusCode.NotFound, response.status)
     }
 
     @Test

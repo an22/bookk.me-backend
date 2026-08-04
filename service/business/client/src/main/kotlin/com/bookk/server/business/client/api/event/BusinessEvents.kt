@@ -1,8 +1,12 @@
 package com.bookk.server.business.client.api.event
 
 import com.bookk.core.data.eventstreaming.EventStreaming
+import kotlinx.datetime.DayOfWeek
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.serialization.Serializable
+import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
 interface BusinessEvent : EventStreaming.Event<String> {
@@ -12,7 +16,28 @@ interface BusinessEvent : EventStreaming.Event<String> {
         val id: Uuid,
         val name: String,
         val address: String,
-        val timeZone: TimeZone
+        val timeZone: TimeZone,
+        val schedule: ScheduleDTO
+    )
+
+    @Serializable
+    data class WorkHourDTO(
+        val dayOfWeek: DayOfWeek,
+        val from: LocalTime,
+        val to: LocalTime
+    )
+
+    @Serializable
+    data class DayOffDTO(
+        val start: LocalDate,
+        val end: LocalDate
+    )
+
+    @Serializable
+    data class ScheduleDTO(
+        val workingDays: List<DayOfWeek>,
+        val workingHours: List<WorkHourDTO>,
+        val dayOffs: List<DayOffDTO>
     )
 
     @Serializable
@@ -30,6 +55,7 @@ interface BusinessEvent : EventStreaming.Event<String> {
     @Serializable
     data class Updated(
         val business: BusinessDTO,
+        val updatedAt: Instant,
         override val idempotencyKey: String = Uuid.random().toString()
     ) : BusinessEvent {
         override val topic: String = TOPIC

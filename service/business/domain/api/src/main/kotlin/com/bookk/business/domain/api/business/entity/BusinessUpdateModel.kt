@@ -13,5 +13,6 @@ data class BusinessUpdateModel(
     val location: Business.Location?,
     val currencyCode: String?,
     val timeZone: TimeZone?,
-    val socials: List<Business.Social>?
+    val socials: List<Business.Social>?,
+    val schedule: ScheduleUpdate?
 )

@@ -2,6 +2,9 @@ package com.bookk.appointments.domain.impl.operation
 
 import com.bookk.appointments.domain.api.entity.AppointmentSettings
 import com.bookk.appointments.domain.api.entity.BusinessSnapshot
+import com.bookk.appointments.domain.api.entity.DayOffRange
+import com.bookk.appointments.domain.api.entity.WorkHour
+import com.bookk.appointments.domain.api.entity.WorkingSchedule
 import com.bookk.appointments.domain.api.operation.EnableAppointmentsForBusiness
 import com.bookk.appointments.domain.datasource.AppointmentSettingsDataSource
 import com.bookk.appointments.domain.datasource.AppointmentSubscriptionDataSource
@@ -14,7 +17,11 @@ import com.bookk.core.test.runUnitTest
 import com.bookk.core.test.then
 import com.bookk.core.test.whenn
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
+import kotlinx.datetime.DayOfWeek
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalTime
 import library.permissions.ObjectPermission
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -38,7 +45,7 @@ internal class EnableAppointmentsForBusinessImplTest {
 
     private val testUserId = Uuid.random()
     private val testBusinessId = Uuid.random()
-    private val testSnapshot = BusinessSnapshot.stub().copy(id = testBusinessId)
+    private val testSnapshot = BusinessSnapshot.stub(id = testBusinessId)
 
     @Test
     fun `should enable appointments successfully`() = runUnitTest {
@@ -72,5 +79,34 @@ internal class EnableAppointmentsForBusinessImplTest {
         then()
         assertTrue(result.isFailure)
         assertTrue(result.exceptionOrNull() is EnableAppointmentsForBusiness.Error.AlreadyEnabled)
+    }
+
+    @Test
+    fun `should seed the business replica with the schedule`() = runUnitTest {
+        val fixture = SutFixture()
+        given()
+        fixture.transactionManager.mockTransaction()
+        val schedule = WorkingSchedule(
+            workingDays = listOf(DayOfWeek.SATURDAY),
+            workingHours = mapOf(
+                DayOfWeek.SATURDAY to listOf(WorkHour(DayOfWeek.SATURDAY, LocalTime(10, 0), LocalTime(14, 0)))
+            )
+        )
+        val dayOffs = listOf(DayOffRange(LocalDate(2099, 12, 30), LocalDate(2099, 12, 31)))
+        val snapshot = BusinessSnapshot.stub(id = testBusinessId, schedule = schedule, dayOffs = dayOffs)
+        coEvery { fixture.subscriptionSource.attachBusiness(any()) } returns Unit
+        coEvery { fixture.permissionsDataSource.initPermissions(testUserId, testBusinessId, ObjectPermission.OWNER.int) } returns Unit
+        coEvery { fixture.settingsDataSource.create(any()) } returns AppointmentSettings.stub(testBusinessId)
+
+        whenn()
+        val result = fixture.sut.invoke(testUserId, snapshot)
+
+        then()
+        assertTrue(result.isSuccess)
+        coVerify(exactly = 1) {
+            fixture.subscriptionSource.attachBusiness(
+                match { it.id == testBusinessId && it.schedule == schedule && it.dayOffs == dayOffs }
+            )
+        }
     }
 }

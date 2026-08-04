@@ -1,10 +1,24 @@
 package com.bookk.business.data.orm.entity
 
+import com.bookk.business.data.map.toWorkingDays
+import com.bookk.business.data.map.toWorkingDaysMask
+import com.bookk.business.data.orm.table.BusinessDayOffTable
 import com.bookk.business.data.orm.table.BusinessTable
+import com.bookk.business.data.orm.table.BusinessWorkingHoursTable
+import com.bookk.business.domain.api.business.entity.Business
+import com.bookk.business.domain.api.business.entity.BusinessUpdateModel
+import com.bookk.business.domain.api.business.entity.DayOffRange
+import com.bookk.business.domain.api.business.entity.WorkHour
+import com.bookk.business.domain.api.business.entity.WorkingSchedule
 import com.bookk.core.data.DecoratorUUIDEntityClass
+import kotlinx.datetime.DayOfWeek
+import kotlinx.datetime.TimeZone
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.jetbrains.exposed.v1.dao.UUIDEntity
 import java.util.UUID
+import kotlin.time.Clock
+import kotlin.uuid.toJavaUuid
+import kotlin.uuid.toKotlinUuid
 
 internal class BusinessEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var userId by BusinessTable.userId
@@ -22,6 +36,83 @@ internal class BusinessEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var phone by BusinessTable.phone
     var createdAt by BusinessTable.createdAt
     var updatedAt by BusinessTable.updatedAt
+    var workingDays by BusinessTable.workingDays
+    val workingHours by BusinessWorkingHourEntity referrersOn BusinessWorkingHoursTable.businessId
+    val dayOffs by BusinessDayOffEntity referrersOn BusinessDayOffTable.businessId
 
-    companion object : DecoratorUUIDEntityClass<BusinessEntity>(BusinessTable)
+    fun toDomain(): Business = Business(
+        id = id.value.toKotlinUuid(),
+        name = name,
+        description = description,
+        location = if (latitude != null && longitude != null) {
+            Business.Location(latitude ?: 0.0, longitude ?: 0.0)
+        } else null,
+        currencyCode = currency,
+        address = address,
+        timeZone = TimeZone.of(timezone),
+        schedule = WorkingSchedule(
+            workingDays = workingDays.toWorkingDays(),
+            workingHours = workingHours
+                .map {
+                    WorkHour(
+                        dayOfWeek = DayOfWeek(it.dayOfWeek.toInt()),
+                        from = it.startTime,
+                        to = it.endTime
+                    )
+                }
+                .groupBy { it.dayOfWeek }
+        ),
+        dayOffs = dayOffs.map { DayOffRange(it.startDate, it.endDate) },
+        socials = listOf(
+            Business.Social(Business.SocialKind.PHONE, phone.orEmpty()),
+            Business.Social(Business.SocialKind.INSTAGRAM, instagram.orEmpty()),
+            Business.Social(Business.SocialKind.TELEGRAM, telegram.orEmpty()),
+            Business.Social(Business.SocialKind.WHATSAPP, whatsapp.orEmpty()),
+            Business.Social(Business.SocialKind.VIBER, viber.orEmpty())
+        )
+    )
+
+    private fun replaceSchedule(schedule: WorkingSchedule, dayOffs: List<DayOffRange>) {
+        workingDays = schedule.activeDays().toWorkingDaysMask()
+        BusinessWorkingHourEntity.batchReplace(id.value, schedule.list().flatMap { it.workingTime })
+        BusinessDayOffEntity.batchReplace(id.value, dayOffs)
+    }
+
+    private fun updateSocials(socials: List<Business.Social>) {
+        for (social in socials) {
+            when (social.kind) {
+                Business.SocialKind.INSTAGRAM -> instagram = social.value
+                Business.SocialKind.TELEGRAM -> telegram = social.value
+                Business.SocialKind.VIBER -> viber = social.value
+                Business.SocialKind.WHATSAPP -> whatsapp = social.value
+                Business.SocialKind.PHONE -> phone = social.value
+            }
+        }
+    }
+
+    companion object : DecoratorUUIDEntityClass<BusinessEntity>(BusinessTable) {
+
+        fun new(userId: UUID, name: String, currencyCode: String, timeZone: TimeZone): BusinessEntity = new {
+            this.userId = userId
+            this.name = name
+            currency = currencyCode
+            description = ""
+            address = ""
+            timezone = timeZone.id
+        }.apply { replaceSchedule(WorkingSchedule(), emptyList()) }
+
+        fun findByIdAndUpdate(model: BusinessUpdateModel) = findByIdAndUpdate(model.id.toJavaUuid()) {
+            model.name?.let { name -> it.name = name }
+            model.description?.let { description -> it.description = description }
+            model.address?.let { address -> it.address = address }
+            model.location?.let { location ->
+                it.latitude = location.lat
+                it.longitude = location.lng
+            }
+            model.currencyCode?.let { currencyCode -> it.currency = currencyCode }
+            model.socials?.let { socials -> it.updateSocials(socials) }
+            model.schedule?.let { schedule -> it.replaceSchedule(schedule.workingSchedule, schedule.dayOffs) }
+            it.updatedAt = Clock.System.now()
+        }
+    }
 }

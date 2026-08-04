@@ -1,8 +1,10 @@
 package com.bookk.business.data.orm
 
 import com.bookk.business.data.orm.table.BusinessDashboardTable
+import com.bookk.business.data.orm.table.BusinessDayOffTable
 import com.bookk.business.data.orm.table.BusinessPermissionsTable
 import com.bookk.business.data.orm.table.BusinessTable
+import com.bookk.business.data.orm.table.BusinessWorkingHoursTable
 import com.bookk.business.data.orm.table.ClientTable
 import com.bookk.business.data.orm.table.EmployeeCanProvideServiceTable
 import com.bookk.business.data.orm.table.EmployeeInvitationTable
@@ -17,8 +19,8 @@ import org.jetbrains.exposed.v1.core.Table
 fun main() {
     runBlocking {
         createMigrationScriptFor(
-            referenceVersion = 8,
-            targetVersion = 9,
+            referenceVersion = 9,
+            targetVersion = 10,
             schemaName = "business",
             tables = tables() + signingKeyTables()
         )
@@ -28,6 +30,8 @@ fun main() {
 private fun tables(): Array<Table> {
     return arrayOf(
         BusinessTable,
+        BusinessWorkingHoursTable,
+        BusinessDayOffTable,
         BusinessDashboardTable,
         ClientTable,
         BusinessPermissionsTable,

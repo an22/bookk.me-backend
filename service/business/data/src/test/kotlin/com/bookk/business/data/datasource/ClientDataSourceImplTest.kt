@@ -1,8 +1,10 @@
 package com.bookk.business.data.datasource
 
 import com.bookk.business.data.orm.table.BusinessDashboardTable
+import com.bookk.business.data.orm.table.BusinessDayOffTable
 import com.bookk.business.data.orm.table.BusinessPermissionsTable
 import com.bookk.business.data.orm.table.BusinessTable
+import com.bookk.business.data.orm.table.BusinessWorkingHoursTable
 import com.bookk.business.data.orm.table.ClientTable
 import com.bookk.business.domain.api.client.entity.Client
 import com.bookk.core.data.test.createTestDatabase
@@ -22,7 +24,7 @@ import kotlin.uuid.Uuid
 internal class ClientDataSourceImplTest {
 
     private class SutFixture {
-        val db = createTestDatabase(BusinessTable, BusinessDashboardTable, BusinessPermissionsTable, ClientTable)
+        val db = createTestDatabase(BusinessTable, BusinessDashboardTable, BusinessPermissionsTable, BusinessWorkingHoursTable, BusinessDayOffTable, ClientTable)
         val sut = ClientDataSourceImpl()
         val businessSut = BusinessDataSourceImpl()
         lateinit var businessId: Uuid

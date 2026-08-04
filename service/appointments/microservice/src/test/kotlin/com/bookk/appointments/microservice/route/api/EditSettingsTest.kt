@@ -1,10 +1,10 @@
 package com.bookk.appointments.microservice.route.api
 
-import com.bookk.appointments.domain.api.entity.AppointmentErrorCodes
 import com.bookk.appointments.domain.api.entity.AppointmentSettings
+import com.bookk.appointments.domain.api.entity.AppointmentSettingsUpdate
 import com.bookk.appointments.domain.api.operation.EditSettings
 import com.bookk.appointments.microservice.route.AppointmentsRouting.Api
-import com.bookk.core.domain.entity.SimpleServerError
+import com.bookk.core.domain.entity.Error
 import com.bookk.core.service.test.createTestClient
 import com.bookk.core.service.test.routeTest
 import com.bookk.core.service.test.setupApplication
@@ -35,8 +35,9 @@ internal class EditSettingsTest {
         given()
         val useCase: EditSettings = mockk()
         val userId = Uuid.random()
+        val update = AppointmentSettingsUpdate.stub(businessId = testBusinessId, inBetweenBreakInMinutes = 20)
         val appointmentSettings = AppointmentSettings.stub(businessId = testBusinessId)
-        coEvery { useCase.invoke(userId, appointmentSettings) } returns Result.success(appointmentSettings)
+        coEvery { useCase.invoke(userId, update) } returns Result.success(appointmentSettings)
 
         setupApplication(
             extension = {
@@ -55,7 +56,7 @@ internal class EditSettingsTest {
         whenn()
         val client = createTestClient()
         val response = client.put(Api.Appointment.Settings(businessId = testBusinessId)) {
-            setBody(appointmentSettings)
+            setBody(update)
         }
 
         then()
@@ -64,13 +65,10 @@ internal class EditSettingsTest {
     }
 
     @Test
-    fun `should return unprocessable entity when active day has no work hours`() = routeTest {
+    fun `should return bad request when path business id does not match body`() = routeTest {
         given()
         val useCase: EditSettings = mockk()
         val userId = Uuid.random()
-        val appointmentSettings = AppointmentSettings.stub(businessId = testBusinessId)
-        coEvery { useCase.invoke(userId, appointmentSettings) } returns
-            Result.failure(EditSettings.Error.ActiveDayWithoutWorkHours())
 
         setupApplication(
             extension = {
@@ -89,22 +87,20 @@ internal class EditSettingsTest {
         whenn()
         val client = createTestClient()
         val response = client.put(Api.Appointment.Settings(businessId = testBusinessId)) {
-            setBody(appointmentSettings)
+            setBody(AppointmentSettingsUpdate.stub(businessId = Uuid.random()))
         }
 
         then()
-        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
-        assertEquals(AppointmentErrorCodes.ACTIVE_DAY_WITHOUT_WORK_HOURS, response.body<SimpleServerError>().errorCode)
+        assertEquals(HttpStatusCode.BadRequest, response.status)
     }
 
     @Test
-    fun `should return unprocessable entity when day off range start date is not before end date`() = routeTest {
+    fun `should return not found when user has no permissions`() = routeTest {
         given()
         val useCase: EditSettings = mockk()
         val userId = Uuid.random()
-        val appointmentSettings = AppointmentSettings.stub(businessId = testBusinessId)
-        coEvery { useCase.invoke(userId, appointmentSettings) } returns
-            Result.failure(EditSettings.Error.InvalidDayOffRange())
+        val update = AppointmentSettingsUpdate.stub(businessId = testBusinessId)
+        coEvery { useCase.invoke(userId, update) } returns Result.failure(Error.OperationNotAllowed())
 
         setupApplication(
             extension = {
@@ -123,12 +119,11 @@ internal class EditSettingsTest {
         whenn()
         val client = createTestClient()
         val response = client.put(Api.Appointment.Settings(businessId = testBusinessId)) {
-            setBody(appointmentSettings)
+            setBody(update)
         }
 
         then()
-        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
-        assertEquals(AppointmentErrorCodes.INVALID_DAY_OFF_RANGE, response.body<SimpleServerError>().errorCode)
+        assertEquals(HttpStatusCode.NotFound, response.status)
     }
 
     @Test
@@ -145,7 +140,7 @@ internal class EditSettingsTest {
         whenn()
         val client = createTestClient()
         val response = client.put(Api.Appointment.Settings(businessId = testBusinessId)) {
-            setBody(AppointmentSettings.stub(businessId = testBusinessId))
+            setBody(AppointmentSettingsUpdate.stub(businessId = testBusinessId))
         }
 
         then()

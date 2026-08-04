@@ -1,6 +1,6 @@
 package com.bookk.appointments.domain.impl.operation
 
-import com.bookk.appointments.domain.datasource.AppointmentSettingsDataSource
+import com.bookk.appointments.domain.datasource.AppointmentSubscriptionDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.datasource.transaction.mockTransaction
 import com.bookk.core.test.given
@@ -16,11 +16,11 @@ import org.junit.jupiter.api.Test
 internal class DeleteDayOffsInThePastImplTest {
 
     private class SutFixture {
-        val appointmentSettingsDataSource = mockk<AppointmentSettingsDataSource>()
+        val subscriptionDataSource = mockk<AppointmentSubscriptionDataSource>()
         val transactionManager = mockk<TransactionManager>()
 
         val sut = DeleteDayOffsInThePastImpl(
-            appointmentSettingsDataSource,
+            subscriptionDataSource,
             transactionManager
         )
     }
@@ -31,7 +31,7 @@ internal class DeleteDayOffsInThePastImplTest {
         val fixture = SutFixture()
 
         with(fixture) {
-            coEvery { appointmentSettingsDataSource.deleteDayOffsInThePast() } returns Unit
+            coEvery { subscriptionDataSource.deleteDayOffsInThePast() } returns Unit
             transactionManager.mockTransaction()
         }
 
@@ -40,7 +40,7 @@ internal class DeleteDayOffsInThePastImplTest {
 
         then()
         assertTrue(result.isSuccess)
-        coVerify(exactly = 1) { fixture.appointmentSettingsDataSource.deleteDayOffsInThePast() }
+        coVerify(exactly = 1) { fixture.subscriptionDataSource.deleteDayOffsInThePast() }
     }
 
     @Test
@@ -49,7 +49,7 @@ internal class DeleteDayOffsInThePastImplTest {
         val fixture = SutFixture()
 
         with(fixture) {
-            coEvery { appointmentSettingsDataSource.deleteDayOffsInThePast() } throws RuntimeException("DB error")
+            coEvery { subscriptionDataSource.deleteDayOffsInThePast() } throws RuntimeException("DB error")
             transactionManager.mockTransaction()
         }
 

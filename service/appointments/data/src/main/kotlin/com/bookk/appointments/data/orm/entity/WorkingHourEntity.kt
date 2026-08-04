@@ -12,16 +12,16 @@ import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import java.util.UUID
 
 internal class WorkingHourEntity(id: EntityID<UUID>) : UUIDEntity(id) {
-    var settings by SettingsEntity referencedOn WorkingHoursTable.settingsId
+    var business by AppointmentBusinessEntity referencedOn WorkingHoursTable.businessId
     var dayOfWeek by WorkingHoursTable.dayOfWeek
     var startTime by WorkingHoursTable.startTime
     var endTime by WorkingHoursTable.endTime
 
     companion object : DecoratorUUIDEntityClass<WorkingHourEntity>(WorkingHoursTable) {
-        fun batchInsert(settingsId: UUID, hours: List<WorkHour>) {
-            WorkingHoursTable.deleteWhere { WorkingHoursTable.settingsId eq settingsId }
+        fun batchReplace(businessId: UUID, hours: List<WorkHour>) {
+            WorkingHoursTable.deleteWhere { WorkingHoursTable.businessId eq businessId }
             WorkingHoursTable.batchInsert(hours) {
-                this[WorkingHoursTable.settingsId] = settingsId
+                this[WorkingHoursTable.businessId] = businessId
                 this[WorkingHoursTable.dayOfWeek] = it.dayOfWeek.isoDayNumber.toByte()
                 this[WorkingHoursTable.startTime] = it.from
                 this[WorkingHoursTable.endTime] = it.to

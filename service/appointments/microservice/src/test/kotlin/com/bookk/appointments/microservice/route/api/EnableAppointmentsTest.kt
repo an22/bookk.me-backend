@@ -37,7 +37,7 @@ internal class EnableAppointmentsTest {
         given()
         val useCase: EnableAppointmentsForBusiness = mockk()
         val userId = Uuid.random()
-        val snapshot = BusinessSnapshot.stub().copy(id = testBusinessId)
+        val snapshot = BusinessSnapshot.stub(id = testBusinessId)
 
         coEvery { useCase.invoke(userId, snapshot) } returns Result.success(Unit)
 
@@ -109,7 +109,7 @@ internal class EnableAppointmentsTest {
         given()
         val useCase: EnableAppointmentsForBusiness = mockk()
         val userId = Uuid.random()
-        val snapshot = BusinessSnapshot.stub().copy(id = testBusinessId)
+        val snapshot = BusinessSnapshot.stub(id = testBusinessId)
         coEvery { useCase.invoke(userId, snapshot) } returns Result.failure(EnableAppointmentsForBusiness.Error.AlreadyEnabled())
 
         setupApplication(
@@ -151,7 +151,7 @@ internal class EnableAppointmentsTest {
         whenn()
         val client = createTestClient()
         val response = client.post(Api.Appointment.Enabled(businessId = testBusinessId)) {
-            setBody(BusinessSnapshot.stub().copy(id = testBusinessId))
+            setBody(BusinessSnapshot.stub(id = testBusinessId))
         }
 
         then()

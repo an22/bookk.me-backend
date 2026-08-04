@@ -1,8 +1,8 @@
 package com.bookk.business.data.datasource
 
-import com.bookk.business.data.map.toDomain
 import com.bookk.business.data.orm.entity.BusinessEntity
 import com.bookk.business.data.orm.table.BusinessDashboardTable
+import com.bookk.business.data.orm.table.BusinessDayOffTable
 import com.bookk.business.data.orm.table.BusinessPermissionsTable
 import com.bookk.business.data.orm.table.BusinessTable
 import com.bookk.business.domain.api.business.entity.Business
@@ -12,16 +12,17 @@ import com.bookk.business.domain.datasource.BusinessDataSource
 import com.bookk.core.data.DataSource
 import com.bookk.core.domain.entity.Error
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
-import org.jetbrains.exposed.v1.core.innerJoin
+import org.jetbrains.exposed.v1.core.inList
+import org.jetbrains.exposed.v1.core.less
 import org.jetbrains.exposed.v1.jdbc.deleteReturning
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insert
-import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import org.jetbrains.exposed.v1.jdbc.select
-import org.jetbrains.exposed.v1.jdbc.selectAll
-import org.jetbrains.exposed.v1.jdbc.updateReturning
 import org.jetbrains.exposed.v1.jdbc.upsert
+import kotlin.time.Clock
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 import kotlin.uuid.toKotlinUuid
@@ -29,58 +30,21 @@ import kotlin.uuid.toKotlinUuid
 internal class BusinessDataSourceImpl : DataSource(), BusinessDataSource {
     override suspend fun createBusiness(userId: Uuid, name: String, currencyCode: String, timeZone: TimeZone): Business = dbQuery {
         val javaUserId = userId.toJavaUuid()
-        val id = BusinessTable.insertAndGetId {
-            it[this.name] = name
-            it[this.userId] = javaUserId
-            it[this.currency] = currencyCode
-            it[this.description] = ""
-            it[this.address] = ""
-            it[this.timezone] = timeZone.id
-        }
+        val entity = BusinessEntity.new(javaUserId, name, currencyCode, timeZone)
         BusinessDashboardTable.insert {
             it[this.userId] = javaUserId
-            it[businessId] = id
+            it[businessId] = entity.id
         }
-        BusinessTable.selectAll()
-            .where { BusinessTable.id eq id.value }
-            .map { BusinessEntity.wrapRow(it).toDomain() }
-            .first()
+        entity.toDomain()
     }
 
     override suspend fun updateBusiness(model: BusinessUpdateModel) = dbQuery<Business> {
-        BusinessTable
-            .updateReturning(
-                where = { BusinessTable.id eq model.id.toJavaUuid() }
-            ) { statement ->
-                model.name?.let { statement[name] = it }
-                model.description?.let { statement[description] = it }
-                model.address?.let { statement[address] = it }
-                model.location?.let {
-                    statement[latitude] = it.lat
-                    statement[longitude] = it.lng
-                }
-                model.currencyCode?.let { statement[currency] = it }
-                model.socials?.let {
-                    for (social in it) {
-                        when (social.kind) {
-                            Business.SocialKind.INSTAGRAM -> statement[instagram] = social.value
-                            Business.SocialKind.TELEGRAM -> statement[telegram] = social.value
-                            Business.SocialKind.VIBER -> statement[viber] = social.value
-                            Business.SocialKind.WHATSAPP -> statement[whatsapp] = social.value
-                            Business.SocialKind.PHONE -> statement[phone] = social.value
-                        }
-                    }
-                }
-            }
-            .map { BusinessEntity.wrapRow(it).toDomain() }
-            .singleOrNull() ?: throw Error.NotFound()
+        val entity = BusinessEntity.findByIdAndUpdate(model) ?: throw Error.NotFound()
+        entity.toDomain()
     }
 
     override suspend fun getBusinessById(id: Uuid): Business? = dbQuery {
-        BusinessTable.selectAll()
-            .where { BusinessTable.id eq id.toJavaUuid() }
-            .map { BusinessEntity.wrapRow(it).toDomain() }
-            .singleOrNull()
+        BusinessEntity.findById(id.toJavaUuid())?.toDomain()
     }
 
     override suspend fun isBusinessExist(userId: Uuid): Boolean = dbQuery {
@@ -97,16 +61,13 @@ internal class BusinessDataSourceImpl : DataSource(), BusinessDataSource {
     }
 
     override suspend fun getDashboardBusiness(userId: Uuid): Business? = dbQuery {
-        BusinessDashboardTable
-            .innerJoin(
-                BusinessTable,
-                onColumn = { businessId },
-                otherColumn = { id }
-            )
-            .select(BusinessTable.columns)
+        val businessId = BusinessDashboardTable
+            .select(BusinessDashboardTable.businessId)
             .where { BusinessDashboardTable.userId eq userId.toJavaUuid() }
-            .map { BusinessEntity.wrapRow(it).toDomain() }
             .singleOrNull()
+            ?.get(BusinessDashboardTable.businessId)
+            ?.value
+        businessId?.let { BusinessEntity.findById(it)?.toDomain() }
     }
 
     override suspend fun getUserBusinesses(userId: Uuid): UserBusinesses = dbQuery {
@@ -116,15 +77,31 @@ internal class BusinessDataSourceImpl : DataSource(), BusinessDataSource {
             .singleOrNull()
             ?.getOrNull(BusinessDashboardTable.businessId)
             ?.value
-        val businesses = BusinessTable
-            .selectAll()
-            .where { BusinessTable.userId eq userId.toJavaUuid() }
-            .map { BusinessEntity.wrapRow(it).toDomain() }
-            .toList()
+        val businesses = BusinessEntity
+            .find { BusinessTable.userId eq userId.toJavaUuid() }
+            .map { it.toDomain() }
         UserBusinesses(
             dashboardId = dashboardId?.toKotlinUuid(),
             businesses = businesses
         )
+    }
+
+    override suspend fun deleteDayOffsInThePast() = dbQuery {
+        val now = Clock.System.now()
+        val businessIdsByTimeZone = BusinessTable
+            .select(BusinessTable.id, BusinessTable.timezone)
+            .groupBy(
+                keySelector = { it[BusinessTable.timezone] },
+                valueTransform = { it[BusinessTable.id].value }
+            )
+
+        businessIdsByTimeZone.forEach { (timeZone, businessIds) ->
+            val today = now.toLocalDateTime(TimeZone.of(timeZone)).date
+            BusinessDayOffTable.deleteWhere {
+                BusinessDayOffTable.businessId.inList(businessIds)
+                    .and(BusinessDayOffTable.endDate.less(today))
+            }
+        }
     }
 
     override suspend fun getPermission(userId: Uuid, businessId: Uuid): Int? = dbQuery {

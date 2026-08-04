@@ -44,15 +44,13 @@ internal class CreateEmployeeInvitationImplTest {
         )
     }
 
-    private fun business(id: Uuid, name: String = "Barbershop") = Business(
+    private fun business(id: Uuid, name: String = "Barbershop") = Business.stub(
         id = id,
         name = name,
         description = "",
         address = "1 Main St",
         timeZone = TimeZone.UTC,
-        location = null,
-        currencyCode = "USD",
-        socials = emptyList()
+        currencyCode = "USD"
     )
 
     @Test

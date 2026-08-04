@@ -10,15 +10,27 @@ data class BusinessSnapshot(
     val name: String,
     val address: String,
     val timeZone: TimeZone,
-    val isEnabled: Boolean
+    val isEnabled: Boolean,
+    val schedule: WorkingSchedule,
+    val dayOffs: List<DayOffRange>
 ) {
     companion object {
-        fun stub() = BusinessSnapshot(
-            id = Uuid.random(),
-            name = "Business name",
-            address = "Business address",
-            timeZone = TimeZone.UTC,
-            isEnabled = true
+        fun stub(
+            id: Uuid = Uuid.random(),
+            name: String = "Business name",
+            address: String = "Business address",
+            timeZone: TimeZone = TimeZone.UTC,
+            isEnabled: Boolean = true,
+            schedule: WorkingSchedule = WorkingSchedule(),
+            dayOffs: List<DayOffRange> = emptyList()
+        ) = BusinessSnapshot(
+            id = id,
+            name = name,
+            address = address,
+            timeZone = timeZone,
+            isEnabled = isEnabled,
+            schedule = schedule,
+            dayOffs = dayOffs
         )
     }
 }

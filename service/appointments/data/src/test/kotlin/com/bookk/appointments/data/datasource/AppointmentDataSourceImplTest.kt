@@ -3,6 +3,8 @@ package com.bookk.appointments.data.datasource
 import com.bookk.appointments.data.orm.table.AppointmentBusinessTable
 import com.bookk.appointments.data.orm.table.AppointmentServicesTable
 import com.bookk.appointments.data.orm.table.AppointmentTable
+import com.bookk.appointments.data.orm.table.DayOffsTable
+import com.bookk.appointments.data.orm.table.WorkingHoursTable
 import com.bookk.appointments.domain.api.entity.Appointment
 import com.bookk.appointments.domain.api.entity.AppointmentRequest
 import com.bookk.appointments.domain.api.entity.AppointmentStatus
@@ -27,7 +29,7 @@ import kotlin.uuid.Uuid
 internal class AppointmentDataSourceImplTest {
 
     private class SutFixture {
-        val db = createTestDatabase(AppointmentBusinessTable, AppointmentTable, AppointmentServicesTable)
+        val db = createTestDatabase(AppointmentBusinessTable, WorkingHoursTable, DayOffsTable, AppointmentTable, AppointmentServicesTable)
         val sut = AppointmentDataSourceImpl()
         val subscriptionSut = AppointmentSubscriptionDataSourceImpl()
         lateinit var businessId: Uuid

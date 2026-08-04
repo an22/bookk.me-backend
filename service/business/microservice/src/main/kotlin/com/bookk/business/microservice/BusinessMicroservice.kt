@@ -1,6 +1,7 @@
 package com.bookk.business.microservice
 
 import com.bookk.business.data.di.businessDataModule
+import com.bookk.business.domain.api.business.operation.DeleteDayOffsInThePast
 import com.bookk.business.domain.impl.di.businessDomainModule
 import com.bookk.business.microservice.route.businessRoute
 import com.bookk.core.data.cache.impl.di.cacheModule
@@ -38,6 +39,9 @@ fun Application.installScheduler() {
     install(Scheduler) {
         job("rotateSigningKeys", interval = 7.days) {
             get<RotateSigningKeys>().invoke(retireInterval = 7.days).getOrThrow()
+        }
+        job("deleteDayOffsInThePast", interval = 1.days) {
+            get<DeleteDayOffsInThePast>().invoke().getOrThrow()
         }
     }
 }

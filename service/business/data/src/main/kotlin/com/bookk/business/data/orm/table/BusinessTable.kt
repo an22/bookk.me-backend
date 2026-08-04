@@ -1,8 +1,15 @@
 package com.bookk.business.data.orm.table
 
+import kotlinx.datetime.DayOfWeek
+import kotlinx.datetime.isoDayNumber
 import org.jetbrains.exposed.v1.core.dao.id.UUIDTable
 import org.jetbrains.exposed.v1.datetime.timestamp
+import kotlin.experimental.or
 import kotlin.time.Clock
+
+private val MONDAY_TO_FRIDAY: Byte = DayOfWeek.entries
+    .filter { it < DayOfWeek.SATURDAY }
+    .fold(0) { acc, day -> acc or (1 shl day.isoDayNumber).toByte() }
 
 object BusinessTable: UUIDTable("business") {
     val userId = uuid("user_id").uniqueIndex()
@@ -13,6 +20,7 @@ object BusinessTable: UUIDTable("business") {
     val longitude = double("longitude").nullable()
     val currency = varchar("currency", 3)
     val timezone = varchar("timezone", 255)
+    val workingDays = byte("working_days").default(MONDAY_TO_FRIDAY)
     val instagram = varchar("instagram", 255).nullable()
     val telegram = varchar("telegram", 255).nullable()
     val viber = varchar("viber", 255).nullable()

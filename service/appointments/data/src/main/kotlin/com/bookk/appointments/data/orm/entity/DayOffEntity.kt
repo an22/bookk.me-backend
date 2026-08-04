@@ -11,15 +11,15 @@ import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import java.util.UUID
 
 internal class DayOffEntity(id: EntityID<UUID>) : UUIDEntity(id) {
-    var settings by SettingsEntity referencedOn DayOffsTable.settingsId
+    var business by AppointmentBusinessEntity referencedOn DayOffsTable.businessId
     var startDate by DayOffsTable.startDate
     var endDate by DayOffsTable.endDate
 
     companion object : DecoratorUUIDEntityClass<DayOffEntity>(DayOffsTable) {
-        fun batchInsert(settingsId: UUID, ranges: List<DayOffRange>) {
-            DayOffsTable.deleteWhere { DayOffsTable.settingsId eq settingsId }
+        fun batchReplace(businessId: UUID, ranges: List<DayOffRange>) {
+            DayOffsTable.deleteWhere { DayOffsTable.businessId eq businessId }
             DayOffsTable.batchInsert(ranges) {
-                this[DayOffsTable.settingsId] = settingsId
+                this[DayOffsTable.businessId] = businessId
                 this[DayOffsTable.startDate] = it.start
                 this[DayOffsTable.endDate] = it.end
             }

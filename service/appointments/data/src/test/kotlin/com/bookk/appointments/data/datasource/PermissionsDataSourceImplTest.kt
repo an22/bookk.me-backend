@@ -1,7 +1,9 @@
 package com.bookk.appointments.data.datasource
 
 import com.bookk.appointments.data.orm.table.AppointmentBusinessTable
+import com.bookk.appointments.data.orm.table.DayOffsTable
 import com.bookk.appointments.data.orm.table.UserHasAppointmentPermissions
+import com.bookk.appointments.data.orm.table.WorkingHoursTable
 import com.bookk.appointments.domain.api.entity.BusinessSnapshot
 import com.bookk.core.data.test.createTestDatabase
 import com.bookk.core.test.given
@@ -17,7 +19,7 @@ import kotlin.uuid.Uuid
 internal class PermissionsDataSourceImplTest {
 
     private class SutFixture {
-        val db = createTestDatabase(AppointmentBusinessTable, UserHasAppointmentPermissions)
+        val db = createTestDatabase(AppointmentBusinessTable, WorkingHoursTable, DayOffsTable, UserHasAppointmentPermissions)
         val sut = PermissionsDataSourceImpl()
         val subscriptionSut = AppointmentSubscriptionDataSourceImpl()
         lateinit var businessId: Uuid

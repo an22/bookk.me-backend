@@ -1,12 +1,20 @@
 package com.bookk.appointments.data.datasource
 
 import com.bookk.appointments.data.orm.table.AppointmentBusinessTable
+import com.bookk.appointments.data.orm.table.DayOffsTable
+import com.bookk.appointments.data.orm.table.WorkingHoursTable
 import com.bookk.appointments.domain.api.entity.BusinessSnapshot
+import com.bookk.appointments.domain.api.entity.DayOffRange
+import com.bookk.appointments.domain.api.entity.WorkHour
+import com.bookk.appointments.domain.api.entity.WorkingSchedule
 import com.bookk.core.data.test.createTestDatabase
 import com.bookk.core.test.given
 import com.bookk.core.test.runUnitTest
 import com.bookk.core.test.then
 import com.bookk.core.test.whenn
+import kotlinx.datetime.DayOfWeek
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -15,13 +23,23 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import kotlin.time.Instant
 
 internal class AppointmentSubscriptionDataSourceImplTest {
 
     private class SutFixture {
-        val db = createTestDatabase(AppointmentBusinessTable)
+        val db = createTestDatabase(AppointmentBusinessTable, WorkingHoursTable, DayOffsTable)
         val sut = AppointmentSubscriptionDataSourceImpl()
     }
+
+    private fun saturdaySchedule() = WorkingSchedule(
+        workingDays = listOf(DayOfWeek.SATURDAY),
+        workingHours = mapOf(
+            DayOfWeek.SATURDAY to listOf(WorkHour(DayOfWeek.SATURDAY, LocalTime(10, 0), LocalTime(14, 0)))
+        )
+    )
+
+    private val futureDayOff = DayOffRange(LocalDate(2099, 12, 30), LocalDate(2099, 12, 31))
 
     @Test
     fun `should attach business and retrieve snapshot`() = runUnitTest {
@@ -41,6 +59,25 @@ internal class AppointmentSubscriptionDataSourceImplTest {
     }
 
     @Test
+    fun `should attach business with its schedule`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val snapshot = BusinessSnapshot.stub(schedule = saturdaySchedule(), dayOffs = listOf(futureDayOff))
+
+        whenn()
+        suspendTransaction { fixture.sut.attachBusiness(snapshot) }
+        val found = suspendTransaction { fixture.sut.getBusinessSnapshot(snapshot.id) }
+
+        then()
+        assertEquals(listOf(DayOfWeek.SATURDAY), found!!.schedule.activeDays())
+        assertEquals(
+            listOf(WorkHour(DayOfWeek.SATURDAY, LocalTime(10, 0), LocalTime(14, 0))),
+            found.schedule[DayOfWeek.SATURDAY].workingTime
+        )
+        assertEquals(listOf(futureDayOff), found.dayOffs)
+    }
+
+    @Test
     fun `should return null snapshot for unknown business`() = runUnitTest {
         given()
         val fixture = SutFixture()
@@ -53,39 +90,82 @@ internal class AppointmentSubscriptionDataSourceImplTest {
     }
 
     @Test
-    fun `should update business info`() = runUnitTest {
+    fun `should update business information and schedule`() = runUnitTest {
         given()
         val fixture = SutFixture()
         val snapshot = BusinessSnapshot.stub()
         suspendTransaction { fixture.sut.attachBusiness(snapshot) }
+        val modified = snapshot.copy(
+            name = "New Name",
+            address = "New Address",
+            timeZone = TimeZone.of("Europe/Kyiv"),
+            schedule = saturdaySchedule(),
+            dayOffs = listOf(futureDayOff)
+        )
+
+        whenn()
+        suspendTransaction { fixture.sut.updateBusiness(modified, Instant.fromEpochMilliseconds(1000)) }
+        val updated = suspendTransaction { fixture.sut.getBusinessSnapshot(snapshot.id) }
+
+        then()
+        assertEquals("New Name", updated!!.name)
+        assertEquals("New Address", updated.address)
+        assertEquals(TimeZone.of("Europe/Kyiv"), updated.timeZone)
+        assertEquals(listOf(DayOfWeek.SATURDAY), updated.schedule.activeDays())
+        assertEquals(listOf(futureDayOff), updated.dayOffs)
+    }
+
+    @Test
+    fun `should ignore business update that is older than the applied one`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val snapshot = BusinessSnapshot.stub()
+        suspendTransaction { fixture.sut.attachBusiness(snapshot) }
+        suspendTransaction {
+            fixture.sut.updateBusiness(
+                snapshot.copy(name = "Newest", schedule = saturdaySchedule()),
+                Instant.fromEpochMilliseconds(2000)
+            )
+        }
 
         whenn()
         suspendTransaction {
-            fixture.sut.updateBusinessInfo(snapshot.id, "New Name", "New Address", TimeZone.of("Europe/Kyiv"))
+            fixture.sut.updateBusiness(snapshot.copy(name = "Outdated"), Instant.fromEpochMilliseconds(1000))
         }
         val updated = suspendTransaction { fixture.sut.getBusinessSnapshot(snapshot.id) }
 
         then()
-        assertNotNull(updated)
-        assertEquals("New Name", updated!!.name)
-        assertEquals("New Address", updated.address)
+        assertEquals("Newest", updated!!.name)
+        assertEquals(listOf(DayOfWeek.SATURDAY), updated.schedule.activeDays())
     }
 
     @Test
-    fun `should update full business snapshot`() = runUnitTest {
+    fun `should not update unknown business`() = runUnitTest {
         given()
         val fixture = SutFixture()
         val snapshot = BusinessSnapshot.stub()
-        suspendTransaction { fixture.sut.attachBusiness(snapshot) }
-        val modified = snapshot.copy(name = "Modified", isEnabled = false)
 
         whenn()
-        suspendTransaction { fixture.sut.updateBusiness(modified) }
-        val updated = suspendTransaction { fixture.sut.getBusinessSnapshot(snapshot.id) }
+        suspendTransaction { fixture.sut.updateBusiness(snapshot, Instant.fromEpochMilliseconds(1000)) }
 
         then()
-        assertEquals("Modified", updated!!.name)
-        assertFalse(updated.isEnabled)
+        assertNull(suspendTransaction { fixture.sut.getBusinessSnapshot(snapshot.id) })
+    }
+
+    @Test
+    fun `should delete past day offs and keep future ones`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val pastDayOff = DayOffRange(LocalDate(2020, 1, 1), LocalDate(2020, 1, 2))
+        val snapshot = BusinessSnapshot.stub(dayOffs = listOf(pastDayOff, futureDayOff))
+        suspendTransaction { fixture.sut.attachBusiness(snapshot) }
+
+        whenn()
+        suspendTransaction { fixture.sut.deleteDayOffsInThePast() }
+        val found = suspendTransaction { fixture.sut.getBusinessSnapshot(snapshot.id) }
+
+        then()
+        assertEquals(listOf(futureDayOff), found!!.dayOffs)
     }
 
     @Test

@@ -1,5 +1,7 @@
 package com.bookk.appointments.domain.impl.operation
 
+import com.bookk.appointments.domain.api.entity.DayOffRange
+import com.bookk.appointments.domain.api.entity.WorkHour
 import com.bookk.appointments.domain.datasource.AppointmentSubscriptionDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.datasource.transaction.mockTransaction
@@ -11,9 +13,13 @@ import com.bookk.server.business.client.api.event.BusinessEvent
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import kotlinx.datetime.DayOfWeek
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
 internal class UpdateBusinessInformationTest {
@@ -24,32 +30,52 @@ internal class UpdateBusinessInformationTest {
         val sut = UpdateBusinessInformation(subscriptionDataSource, transactionManager)
     }
 
+    private val updatedAt = Instant.fromEpochMilliseconds(1000)
+
     private fun makeBusinessDTO(id: Uuid = Uuid.random()): BusinessEvent.BusinessDTO = BusinessEvent.BusinessDTO(
         id = id,
         name = "Test Salon",
         address = "123 Main St",
-        timeZone = TimeZone.UTC
+        timeZone = TimeZone.UTC,
+        schedule = BusinessEvent.ScheduleDTO(
+            workingDays = listOf(DayOfWeek.SATURDAY),
+            workingHours = listOf(
+                BusinessEvent.WorkHourDTO(DayOfWeek.SATURDAY, LocalTime(10, 0), LocalTime(14, 0))
+            ),
+            dayOffs = listOf(BusinessEvent.DayOffDTO(LocalDate(2099, 12, 30), LocalDate(2099, 12, 31)))
+        )
     )
 
     @Test
-    fun `should update business information from event`() = runUnitTest {
+    fun `should update business information and schedule from event`() = runUnitTest {
         given()
         val fixture = SutFixture()
         val dto = makeBusinessDTO()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery {
-                subscriptionDataSource.updateBusinessInfo(dto.id, dto.name, dto.address, dto.timeZone)
-            } returns Unit
+            coEvery { subscriptionDataSource.updateBusiness(any(), any()) } returns Unit
         }
 
         whenn()
-        val result = fixture.sut.invoke(dto)
+        val result = fixture.sut.invoke(dto, updatedAt)
 
         then()
         assertTrue(result.isSuccess)
         coVerify(exactly = 1) {
-            fixture.subscriptionDataSource.updateBusinessInfo(dto.id, dto.name, dto.address, dto.timeZone)
+            fixture.subscriptionDataSource.updateBusiness(
+                match {
+                    it.id == dto.id &&
+                    it.name == dto.name &&
+                    it.address == dto.address &&
+                    it.timeZone == dto.timeZone &&
+                    it.schedule.activeDays() == listOf(DayOfWeek.SATURDAY) &&
+                    it.schedule[DayOfWeek.SATURDAY].workingTime == listOf(
+                        WorkHour(DayOfWeek.SATURDAY, LocalTime(10, 0), LocalTime(14, 0))
+                    ) &&
+                    it.dayOffs == listOf(DayOffRange(LocalDate(2099, 12, 30), LocalDate(2099, 12, 31)))
+                },
+                updatedAt
+            )
         }
     }
 
@@ -60,13 +86,11 @@ internal class UpdateBusinessInformationTest {
         val dto = makeBusinessDTO()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery {
-                subscriptionDataSource.updateBusinessInfo(any(), any(), any(), any())
-            } throws RuntimeException("db error")
+            coEvery { subscriptionDataSource.updateBusiness(any(), any()) } throws RuntimeException("db error")
         }
 
         whenn()
-        val result = fixture.sut.invoke(dto)
+        val result = fixture.sut.invoke(dto, updatedAt)
 
         then()
         assertTrue(result.isFailure)

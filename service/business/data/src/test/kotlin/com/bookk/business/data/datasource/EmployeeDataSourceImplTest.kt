@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
 internal class EmployeeDataSourceImplTest {
@@ -200,7 +201,7 @@ internal class EmployeeDataSourceImplTest {
 
         whenn()
         val updated = suspendTransaction {
-            fixture.sut.updateIntegratedEmployees(userId, "New", "Surname", "+2222222222", "new@test.com")
+            fixture.sut.updateIntegratedEmployees(userId, "New", "Surname", "new@test.com", Instant.fromEpochMilliseconds(1000))
         }
         val found = suspendTransaction { fixture.sut.getEmployee(fixture.businessId, created.id) }
 
@@ -209,7 +210,7 @@ internal class EmployeeDataSourceImplTest {
         assertNotNull(found)
         assertEquals("New", found!!.name)
         assertEquals("Surname", found.lastName)
-        assertEquals("+2222222222", found.phone)
+        assertEquals("+1111111111", found.phone)
         assertEquals("new@test.com", found.email)
         assertEquals(userId, found.userId)
     }
@@ -232,7 +233,7 @@ internal class EmployeeDataSourceImplTest {
 
         whenn()
         val updated = suspendTransaction {
-            fixture.sut.updateIntegratedEmployees(Uuid.random(), "New", "Surname", "+2222222222", "new@test.com")
+            fixture.sut.updateIntegratedEmployees(Uuid.random(), "New", "Surname", "new@test.com", Instant.fromEpochMilliseconds(1000))
         }
         val found = suspendTransaction { fixture.sut.getEmployee(fixture.businessId, created.id) }
 

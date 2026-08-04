@@ -1,6 +1,7 @@
 package com.bookk.business.domain.datasource
 
 import com.bookk.business.domain.api.employee.entity.Employee
+import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
 interface EmployeeDataSource {
@@ -13,8 +14,8 @@ interface EmployeeDataSource {
         userId: Uuid,
         name: String,
         lastName: String,
-        phone: String,
-        email: String
+        email: String,
+        updatedAt: Instant
     ): Int
 
     suspend fun assignService(businessId: Uuid, employeeId: Uuid, serviceId: Uuid)

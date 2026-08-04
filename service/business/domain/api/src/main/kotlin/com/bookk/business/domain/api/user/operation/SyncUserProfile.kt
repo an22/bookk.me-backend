@@ -1,5 +1,6 @@
 package com.bookk.business.domain.api.user.operation
 
+import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
 interface SyncUserProfile {
@@ -7,7 +8,7 @@ interface SyncUserProfile {
         userId: Uuid,
         name: String,
         lastName: String,
-        phone: String,
-        email: String
+        email: String,
+        updatedAt: Instant
     ): Result<Unit>
 }

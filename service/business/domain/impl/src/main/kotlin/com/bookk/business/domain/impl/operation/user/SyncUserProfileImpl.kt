@@ -4,6 +4,7 @@ import com.bookk.business.domain.api.user.operation.SyncUserProfile
 import com.bookk.business.domain.datasource.ClientDataSource
 import com.bookk.business.domain.datasource.EmployeeDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
+import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
 internal class SyncUserProfileImpl(
@@ -15,11 +16,11 @@ internal class SyncUserProfileImpl(
         userId: Uuid,
         name: String,
         lastName: String,
-        phone: String,
-        email: String
+        email: String,
+        updatedAt: Instant
     ): Result<Unit> = transactionManager.transaction {
-        clientDataSource.updateIntegratedClients(userId, name, lastName, phone, email)
-        employeeDataSource.updateIntegratedEmployees(userId, name, lastName, phone, email)
+        clientDataSource.updateIntegratedClients(userId, name, lastName, email, updatedAt)
+        employeeDataSource.updateIntegratedEmployees(userId, name, lastName, email, updatedAt)
         Unit
     }
 }

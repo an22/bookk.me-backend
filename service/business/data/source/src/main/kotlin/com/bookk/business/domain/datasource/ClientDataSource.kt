@@ -1,6 +1,7 @@
 package com.bookk.business.domain.datasource
 
 import com.bookk.business.domain.api.client.entity.Client
+import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
 interface ClientDataSource {
@@ -13,7 +14,7 @@ interface ClientDataSource {
         userId: Uuid,
         name: String,
         lastName: String,
-        phone: String,
-        email: String
+        email: String,
+        updatedAt: Instant
     ): Int
 }

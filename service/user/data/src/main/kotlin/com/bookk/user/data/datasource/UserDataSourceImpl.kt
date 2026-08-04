@@ -15,8 +15,8 @@ import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import org.jetbrains.exposed.v1.jdbc.selectAll
-import org.jetbrains.exposed.v1.jdbc.update
 import kotlin.time.Clock
+import kotlin.time.Instant
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 import kotlin.uuid.toKotlinUuid
@@ -38,24 +38,10 @@ internal class UserDataSourceImpl(
         }
     }
 
-    override suspend fun updateUser(id: Uuid, user: UserEditModel): Boolean = dbQuery {
-        val updatedRowCount = UserTable.update(where = { UserTable.id eq id.toJavaUuid() }) {
-            user.firstName?.let { firstName ->
-                it[name] = firstName
-            }
-            user.lastName?.let { lstName ->
-                it[lastName] = lstName
-            }
-            user.email?.let { mail ->
-                it[email] = mail
-            }
-            it[updatedAt] = Clock.System.now()
-        }
-        val isUpdated = updatedRowCount > 0
-        if (isUpdated) {
-            cacheClient.deleteUser(id)
-        }
-        isUpdated
+    override suspend fun updateUser(id: Uuid, user: UserEditModel, updatedAt: Instant): User? = dbQuery {
+        UserEntity.applyEdit(id.toJavaUuid(), user, updatedAt)?.domain()
+    }?.also {
+        cacheClient.deleteUser(id)
     }
 
     override suspend fun getUserById(id: Uuid): User? = dbQuery {

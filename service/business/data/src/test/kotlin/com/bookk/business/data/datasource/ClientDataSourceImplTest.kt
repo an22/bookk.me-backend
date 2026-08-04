@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
 internal class ClientDataSourceImplTest {
@@ -168,7 +169,7 @@ internal class ClientDataSourceImplTest {
 
         whenn()
         val updated = suspendTransaction {
-            fixture.sut.updateIntegratedClients(userId, "New", "Surname", phone, "new@test.com")
+            fixture.sut.updateIntegratedClients(userId, "New", "Surname", "new@test.com", Instant.fromEpochMilliseconds(1000))
         }
         val found = suspendTransaction { fixture.sut.getClient(fixture.businessId, phone) }
 
@@ -180,6 +181,61 @@ internal class ClientDataSourceImplTest {
         assertEquals("Surname", found.lastName)
         assertEquals("new@test.com", found.email)
         assertEquals(userId, (found as Client.Integrated).userId)
+    }
+
+    @Test
+    fun `should ignore a profile update older than the one already applied`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val userId = Uuid.random()
+        val phone = "+5556660001"
+        val client = Client.Integrated(
+            id = Uuid.random(), name = "Old", lastName = "Name",
+            phone = phone, email = "old@test.com", userId = userId
+        )
+        suspendTransaction { fixture.sut.createIntegratedClient(fixture.businessId, client) }
+        val newer = Instant.fromEpochMilliseconds(2000)
+        val older = Instant.fromEpochMilliseconds(1000)
+        suspendTransaction { fixture.sut.updateIntegratedClients(userId, "Newer", "Surname", "newer@test.com", newer) }
+
+        whenn()
+        val updated = suspendTransaction {
+            fixture.sut.updateIntegratedClients(userId, "Older", "Surname", "older@test.com", older)
+        }
+        val found = suspendTransaction { fixture.sut.getClient(fixture.businessId, phone) }
+
+        then()
+        assertEquals(0, updated)
+        assertEquals("Newer", found!!.name)
+        assertEquals("newer@test.com", found.email)
+    }
+
+    @Test
+    fun `should apply a profile update newer than the one already applied`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val userId = Uuid.random()
+        val phone = "+5556660002"
+        val client = Client.Integrated(
+            id = Uuid.random(), name = "Old", lastName = "Name",
+            phone = phone, email = "old@test.com", userId = userId
+        )
+        suspendTransaction { fixture.sut.createIntegratedClient(fixture.businessId, client) }
+        suspendTransaction {
+            fixture.sut.updateIntegratedClients(userId, "First", "Surname", "first@test.com", Instant.fromEpochMilliseconds(1000))
+        }
+
+        whenn()
+        val updated = suspendTransaction {
+            fixture.sut.updateIntegratedClients(userId, "Second", "Surname", "second@test.com", Instant.fromEpochMilliseconds(2000))
+        }
+        val found = suspendTransaction { fixture.sut.getClient(fixture.businessId, phone) }
+
+        then()
+        assertEquals(1, updated)
+        assertEquals("Second", found!!.name)
     }
 
     @Test
@@ -196,7 +252,7 @@ internal class ClientDataSourceImplTest {
 
         whenn()
         val updated = suspendTransaction {
-            fixture.sut.updateIntegratedClients(Uuid.random(), "New", "Surname", "+9999999999", "new@test.com")
+            fixture.sut.updateIntegratedClients(Uuid.random(), "New", "Surname", "new@test.com", Instant.fromEpochMilliseconds(1000))
         }
         val found = suspendTransaction { fixture.sut.getClient(fixture.businessId, detachedPhone) }
 

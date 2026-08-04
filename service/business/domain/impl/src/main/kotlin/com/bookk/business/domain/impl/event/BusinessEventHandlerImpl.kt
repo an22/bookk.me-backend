@@ -24,8 +24,8 @@ internal class BusinessEventHandlerImpl(
                     userId = event.userId,
                     name = event.name,
                     lastName = event.lastName,
-                    phone = event.phone,
-                    email = event.email
+                    email = event.email,
+                    updatedAt = event.updatedAt
                 )
             }
             .start(scope)

@@ -9,6 +9,9 @@ import com.bookk.core.data.DataSource
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.inSubQuery
+import org.jetbrains.exposed.v1.core.isNull
+import org.jetbrains.exposed.v1.core.less
+import org.jetbrains.exposed.v1.core.or
 import org.jetbrains.exposed.v1.dao.with
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insertAndGetId
@@ -16,6 +19,7 @@ import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.update
 import org.jetbrains.exposed.v1.jdbc.upsert
 import kotlin.time.Clock
+import kotlin.time.Instant
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 import kotlin.uuid.toKotlinUuid
@@ -76,17 +80,20 @@ internal class EmployeeDataSourceImpl : DataSource(), EmployeeDataSource {
         userId: Uuid,
         name: String,
         lastName: String,
-        phone: String,
-        email: String
+        email: String,
+        updatedAt: Instant
     ): Int = dbQuery {
         EmployeeTable.update(
-            where = { EmployeeTable.userId eq userId.toJavaUuid() }
+            where = {
+                (EmployeeTable.userId eq userId.toJavaUuid()) and
+                    (EmployeeTable.sourceUpdatedAt.isNull() or (EmployeeTable.sourceUpdatedAt less updatedAt))
+            }
         ) {
             it[this.name] = name.trim()
             it[this.lastName] = lastName.trim()
-            it[this.phone] = phone.trim()
             it[this.email] = email.trim()
-            it[updatedAt] = Clock.System.now()
+            it[EmployeeTable.sourceUpdatedAt] = updatedAt
+            it[EmployeeTable.updatedAt] = Clock.System.now()
         }
     }
 

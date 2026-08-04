@@ -13,8 +13,8 @@ import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import kotlin.time.Clock
 import kotlin.uuid.Uuid
 
 internal class UserDataSourceImplTest {
@@ -87,27 +87,27 @@ internal class UserDataSourceImplTest {
 
         whenn()
         val updated = suspendTransaction {
-            fixture.sut.updateUser(created.id, UserEditModel(firstName = "Bob"))
+            fixture.sut.updateUser(created.id, UserEditModel(firstName = "Bob"), Clock.System.now())
         }
         val found = suspendTransaction { fixture.sut.getUserById(created.id) }
 
         then()
-        assertTrue(updated)
+        assertNotNull(updated)
         assertEquals("Bob", found!!.name)
     }
 
     @Test
-    fun `should return false when updating non-existent user`() = runUnitTest {
+    fun `should return null when updating non-existent user`() = runUnitTest {
         given()
         val fixture = SutFixture()
 
         whenn()
         val updated = suspendTransaction {
-            fixture.sut.updateUser(Uuid.random(), UserEditModel(firstName = "Bob"))
+            fixture.sut.updateUser(Uuid.random(), UserEditModel(firstName = "Bob"), Clock.System.now())
         }
 
         then()
-        assertTrue(!updated)
+        assertNull(updated)
     }
 
     @Test

@@ -13,6 +13,7 @@ import io.mockk.coVerify
 import io.mockk.mockk
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
 internal class SyncUserProfileImplTest {
@@ -32,20 +33,20 @@ internal class SyncUserProfileImplTest {
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery {
-                clientDataSource.updateIntegratedClients(userId, "John", "Doe", "123456", "john@doe.com")
+                clientDataSource.updateIntegratedClients(userId, "John", "Doe", "john@doe.com", any())
             } returns 1
             coEvery {
-                employeeDataSource.updateIntegratedEmployees(userId, "John", "Doe", "123456", "john@doe.com")
+                employeeDataSource.updateIntegratedEmployees(userId, "John", "Doe", "john@doe.com", any())
             } returns 0
         }
 
         whenn()
-        val result = fixture.sut(userId, "John", "Doe", "123456", "john@doe.com")
+        val result = fixture.sut(userId, "John", "Doe", "john@doe.com", Instant.fromEpochMilliseconds(1000))
 
         then()
         assertTrue(result.isSuccess)
         coVerify(exactly = 1) {
-            fixture.clientDataSource.updateIntegratedClients(userId, "John", "Doe", "123456", "john@doe.com")
+            fixture.clientDataSource.updateIntegratedClients(userId, "John", "Doe", "john@doe.com", any())
         }
     }
 
@@ -57,20 +58,20 @@ internal class SyncUserProfileImplTest {
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery {
-                clientDataSource.updateIntegratedClients(userId, "John", "Doe", "123456", "john@doe.com")
+                clientDataSource.updateIntegratedClients(userId, "John", "Doe", "john@doe.com", any())
             } returns 0
             coEvery {
-                employeeDataSource.updateIntegratedEmployees(userId, "John", "Doe", "123456", "john@doe.com")
+                employeeDataSource.updateIntegratedEmployees(userId, "John", "Doe", "john@doe.com", any())
             } returns 1
         }
 
         whenn()
-        val result = fixture.sut(userId, "John", "Doe", "123456", "john@doe.com")
+        val result = fixture.sut(userId, "John", "Doe", "john@doe.com", Instant.fromEpochMilliseconds(1000))
 
         then()
         assertTrue(result.isSuccess)
         coVerify(exactly = 1) {
-            fixture.employeeDataSource.updateIntegratedEmployees(userId, "John", "Doe", "123456", "john@doe.com")
+            fixture.employeeDataSource.updateIntegratedEmployees(userId, "John", "Doe", "john@doe.com", any())
         }
     }
 
@@ -82,23 +83,23 @@ internal class SyncUserProfileImplTest {
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery {
-                clientDataSource.updateIntegratedClients(userId, "John", "Doe", "123456", "john@doe.com")
+                clientDataSource.updateIntegratedClients(userId, "John", "Doe", "john@doe.com", any())
             } returns 0
             coEvery {
-                employeeDataSource.updateIntegratedEmployees(userId, "John", "Doe", "123456", "john@doe.com")
+                employeeDataSource.updateIntegratedEmployees(userId, "John", "Doe", "john@doe.com", any())
             } returns 0
         }
 
         whenn()
-        val result = fixture.sut(userId, "John", "Doe", "123456", "john@doe.com")
+        val result = fixture.sut(userId, "John", "Doe", "john@doe.com", Instant.fromEpochMilliseconds(1000))
 
         then()
         assertTrue(result.isSuccess)
         coVerify(exactly = 1) {
-            fixture.clientDataSource.updateIntegratedClients(userId, "John", "Doe", "123456", "john@doe.com")
+            fixture.clientDataSource.updateIntegratedClients(userId, "John", "Doe", "john@doe.com", any())
         }
         coVerify(exactly = 1) {
-            fixture.employeeDataSource.updateIntegratedEmployees(userId, "John", "Doe", "123456", "john@doe.com")
+            fixture.employeeDataSource.updateIntegratedEmployees(userId, "John", "Doe", "john@doe.com", any())
         }
     }
 }

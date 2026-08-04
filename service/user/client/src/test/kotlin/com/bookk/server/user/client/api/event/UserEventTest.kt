@@ -8,6 +8,7 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Test
+import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
 internal class UserEventTest {
@@ -19,7 +20,7 @@ internal class UserEventTest {
         name = name,
         lastName = "Last name",
         email = "user@example.com",
-        phone = "+10000000000"
+        updatedAt = Instant.fromEpochMilliseconds(1000)
     )
 
     @Test

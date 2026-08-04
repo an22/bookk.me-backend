@@ -33,7 +33,8 @@ internal class UserClientImpl(
                 id = Uuid.random(),
                 name = request.name,
                 email = request.email,
-                lastName = request.lastName
+                lastName = request.lastName,
+                phone = null
             )
         ).map { it.id }
     }

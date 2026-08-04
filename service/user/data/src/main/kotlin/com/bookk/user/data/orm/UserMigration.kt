@@ -9,8 +9,8 @@ import org.jetbrains.exposed.v1.core.Table
 fun main() {
     runBlocking {
         createMigrationScriptFor(
-            referenceVersion = 0,
-            targetVersion = 1,
+            referenceVersion = 1,
+            targetVersion = 2,
             schemaName = "user",
             tables = userTables()
         )

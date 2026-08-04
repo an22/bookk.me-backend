@@ -1,0 +1,1 @@
+ALTER TABLE profile ADD phone VARCHAR(512) NULL;

@@ -30,11 +30,18 @@ internal class EditUserImplTest {
 
     private val userId = Uuid.random()
 
+    private fun editModel(
+        firstName: String? = null,
+        lastName: String? = null,
+        email: String? = null,
+        phone: String? = null
+    ) = UserEditModel(id = null, firstName = firstName, lastName = lastName, email = email, phone = phone)
+
     @Test
     fun `should edit user successfully when datasource confirms update`() = runUnitTest {
         given()
         val fixture = SutFixture()
-        val editModel = UserEditModel(firstName = "Jane", lastName = "Smith")
+        val editModel = editModel(firstName = "Jane", lastName = "Smith")
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { userDataSource.updateUser(userId, editModel, any()) } returns User.stub(id = userId)
@@ -51,7 +58,7 @@ internal class EditUserImplTest {
     fun `should return UserNotFound when the user does not exist`() = runUnitTest {
         given()
         val fixture = SutFixture()
-        val editModel = UserEditModel(firstName = "Jane")
+        val editModel = editModel(firstName = "Jane")
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { userDataSource.updateUser(userId, editModel, any()) } returns null
@@ -69,8 +76,8 @@ internal class EditUserImplTest {
     fun `should publish the updated profile so replicas can follow it`() = runUnitTest {
         given()
         val fixture = SutFixture()
-        val editModel = UserEditModel(firstName = "Jane", lastName = "Smith", email = "jane@example.com")
-        val updated = User(id = userId, name = "Jane", lastName = "Smith", email = "jane@example.com")
+        val editModel = editModel(firstName = "Jane", lastName = "Smith", email = "jane@example.com")
+        val updated = User(id = userId, name = "Jane", lastName = "Smith", email = "jane@example.com", phone = null)
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { userDataSource.updateUser(userId, editModel, any()) } returns updated
@@ -95,10 +102,52 @@ internal class EditUserImplTest {
     }
 
     @Test
+    fun `should publish the phone when the profile has one`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val edit = editModel(phone = "+10000000000")
+        val updated = User(
+            id = userId, name = "Jane", lastName = "Smith",
+            email = "jane@example.com", phone = "+10000000000"
+        )
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { userDataSource.updateUser(userId, edit, any()) } returns updated
+        }
+
+        whenn()
+        fixture.sut.invoke(userId, edit)
+
+        then()
+        coVerify(exactly = 1) {
+            fixture.eventProducer.send(match<UserEvent.Updated> { it.phone == "+10000000000" }, any())
+        }
+    }
+
+    @Test
+    fun `should publish a null phone when the profile has none`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val edit = editModel(firstName = "Jane")
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { userDataSource.updateUser(userId, edit, any()) } returns User.stub(id = userId)
+        }
+
+        whenn()
+        fixture.sut.invoke(userId, edit)
+
+        then()
+        coVerify(exactly = 1) {
+            fixture.eventProducer.send(match<UserEvent.Updated> { it.phone == null }, any())
+        }
+    }
+
+    @Test
     fun `should not publish anything when the user does not exist`() = runUnitTest {
         given()
         val fixture = SutFixture()
-        val editModel = UserEditModel(firstName = "Jane")
+        val editModel = editModel(firstName = "Jane")
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { userDataSource.updateUser(userId, editModel, any()) } returns null

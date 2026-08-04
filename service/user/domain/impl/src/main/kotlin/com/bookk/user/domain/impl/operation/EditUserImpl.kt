@@ -25,6 +25,7 @@ internal class EditUserImpl(
                 name = updated.name,
                 lastName = updated.lastName,
                 email = updated.email,
+                phone = updated.phone,
                 updatedAt = updatedAt
             )
         )

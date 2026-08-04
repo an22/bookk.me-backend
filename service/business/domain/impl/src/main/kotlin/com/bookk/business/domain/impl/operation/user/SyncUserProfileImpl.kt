@@ -17,10 +17,11 @@ internal class SyncUserProfileImpl(
         name: String,
         lastName: String,
         email: String,
+        phone: String?,
         updatedAt: Instant
     ): Result<Unit> = transactionManager.transaction {
-        clientDataSource.updateIntegratedClients(userId, name, lastName, email, updatedAt)
-        employeeDataSource.updateIntegratedEmployees(userId, name, lastName, email, updatedAt)
+        clientDataSource.updateIntegratedClients(userId, name, lastName, email, phone, updatedAt)
+        employeeDataSource.updateIntegratedEmployees(userId, name, lastName, email, phone, updatedAt)
         Unit
     }
 }

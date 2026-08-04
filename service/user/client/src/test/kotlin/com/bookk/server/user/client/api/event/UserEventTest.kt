@@ -20,6 +20,7 @@ internal class UserEventTest {
         name = name,
         lastName = "Last name",
         email = "user@example.com",
+        phone = null,
         updatedAt = Instant.fromEpochMilliseconds(1000)
     )
 

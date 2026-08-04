@@ -37,7 +37,7 @@ internal class NotificationEventHandler(
                 deleteDeviceByUUID(event.deviceUuid)
             }
             .registerResultReceiver(UserEvent.Updated.TOPIC) { event : UserEvent.Updated ->
-                updateTargetInformation(event.userId, Target.Email(event.email))
+                updateTargetInformation(event.userId, Target.Email(event.email), event.updatedAt)
             }
             .registerResultReceiver(AppointmentEvent.RequestCreated.TOPIC) { event : AppointmentEvent.RequestCreated ->
                 sendNotification(event.employeeUserId, event.notification)

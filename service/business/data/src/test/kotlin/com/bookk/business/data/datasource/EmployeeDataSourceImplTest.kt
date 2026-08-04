@@ -201,7 +201,7 @@ internal class EmployeeDataSourceImplTest {
 
         whenn()
         val updated = suspendTransaction {
-            fixture.sut.updateIntegratedEmployees(userId, "New", "Surname", "new@test.com", Instant.fromEpochMilliseconds(1000))
+            fixture.sut.updateIntegratedEmployees(userId, "New", "Surname", "new@test.com", null, Instant.fromEpochMilliseconds(1000))
         }
         val found = suspendTransaction { fixture.sut.getEmployee(fixture.businessId, created.id) }
 
@@ -233,7 +233,7 @@ internal class EmployeeDataSourceImplTest {
 
         whenn()
         val updated = suspendTransaction {
-            fixture.sut.updateIntegratedEmployees(Uuid.random(), "New", "Surname", "new@test.com", Instant.fromEpochMilliseconds(1000))
+            fixture.sut.updateIntegratedEmployees(Uuid.random(), "New", "Surname", "new@test.com", null, Instant.fromEpochMilliseconds(1000))
         }
         val found = suspendTransaction { fixture.sut.getEmployee(fixture.businessId, created.id) }
 

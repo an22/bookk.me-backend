@@ -72,6 +72,7 @@ internal class ClientDataSourceImpl : DataSource(), ClientDataSource {
         name: String,
         lastName: String,
         email: String,
+        phone: String?,
         updatedAt: Instant
     ): Int = dbQuery {
         ClientTable.update(
@@ -83,6 +84,7 @@ internal class ClientDataSourceImpl : DataSource(), ClientDataSource {
             it[this.name] = name.trim()
             it[this.lastName] = lastName.trim()
             it[this.email] = email.trim()
+            phone?.let { value -> it[this.phone] = value.trim() }
             it[sourceUpdatedAt] = updatedAt
         }
     }

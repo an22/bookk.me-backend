@@ -15,6 +15,7 @@ class UserEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var name by UserTable.name
     var lastName by UserTable.lastName
     var email by UserTable.email
+    var phone by UserTable.phone
     var createdAt by UserTable.createdAt
     var updatedAt by UserTable.updatedAt
 
@@ -22,7 +23,8 @@ class UserEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         id = id.value.toKotlinUuid(),
         name = name,
         lastName = lastName,
-        email = email
+        email = email,
+        phone = phone
     )
 
     companion object : DecoratorUUIDEntityClass<UserEntity>(UserTable) {
@@ -31,6 +33,7 @@ class UserEntity(id: EntityID<UUID>) : UUIDEntity(id) {
                 model.firstName?.let { firstName -> it.name = firstName }
                 model.lastName?.let { lastName -> it.lastName = lastName }
                 model.email?.let { email -> it.email = email }
+                model.phone?.let { phone -> it.phone = phone }
                 it.updatedAt = updatedAt
             }
     }

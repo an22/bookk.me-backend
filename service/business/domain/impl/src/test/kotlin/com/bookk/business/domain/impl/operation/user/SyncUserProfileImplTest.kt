@@ -33,20 +33,20 @@ internal class SyncUserProfileImplTest {
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery {
-                clientDataSource.updateIntegratedClients(userId, "John", "Doe", "john@doe.com", any())
+                clientDataSource.updateIntegratedClients(userId, "John", "Doe", "john@doe.com", any(), any())
             } returns 1
             coEvery {
-                employeeDataSource.updateIntegratedEmployees(userId, "John", "Doe", "john@doe.com", any())
+                employeeDataSource.updateIntegratedEmployees(userId, "John", "Doe", "john@doe.com", any(), any())
             } returns 0
         }
 
         whenn()
-        val result = fixture.sut(userId, "John", "Doe", "john@doe.com", Instant.fromEpochMilliseconds(1000))
+        val result = fixture.sut(userId, "John", "Doe", "john@doe.com", null, Instant.fromEpochMilliseconds(1000))
 
         then()
         assertTrue(result.isSuccess)
         coVerify(exactly = 1) {
-            fixture.clientDataSource.updateIntegratedClients(userId, "John", "Doe", "john@doe.com", any())
+            fixture.clientDataSource.updateIntegratedClients(userId, "John", "Doe", "john@doe.com", any(), any())
         }
     }
 
@@ -58,20 +58,20 @@ internal class SyncUserProfileImplTest {
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery {
-                clientDataSource.updateIntegratedClients(userId, "John", "Doe", "john@doe.com", any())
+                clientDataSource.updateIntegratedClients(userId, "John", "Doe", "john@doe.com", any(), any())
             } returns 0
             coEvery {
-                employeeDataSource.updateIntegratedEmployees(userId, "John", "Doe", "john@doe.com", any())
+                employeeDataSource.updateIntegratedEmployees(userId, "John", "Doe", "john@doe.com", any(), any())
             } returns 1
         }
 
         whenn()
-        val result = fixture.sut(userId, "John", "Doe", "john@doe.com", Instant.fromEpochMilliseconds(1000))
+        val result = fixture.sut(userId, "John", "Doe", "john@doe.com", null, Instant.fromEpochMilliseconds(1000))
 
         then()
         assertTrue(result.isSuccess)
         coVerify(exactly = 1) {
-            fixture.employeeDataSource.updateIntegratedEmployees(userId, "John", "Doe", "john@doe.com", any())
+            fixture.employeeDataSource.updateIntegratedEmployees(userId, "John", "Doe", "john@doe.com", any(), any())
         }
     }
 
@@ -83,23 +83,23 @@ internal class SyncUserProfileImplTest {
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery {
-                clientDataSource.updateIntegratedClients(userId, "John", "Doe", "john@doe.com", any())
+                clientDataSource.updateIntegratedClients(userId, "John", "Doe", "john@doe.com", any(), any())
             } returns 0
             coEvery {
-                employeeDataSource.updateIntegratedEmployees(userId, "John", "Doe", "john@doe.com", any())
+                employeeDataSource.updateIntegratedEmployees(userId, "John", "Doe", "john@doe.com", any(), any())
             } returns 0
         }
 
         whenn()
-        val result = fixture.sut(userId, "John", "Doe", "john@doe.com", Instant.fromEpochMilliseconds(1000))
+        val result = fixture.sut(userId, "John", "Doe", "john@doe.com", null, Instant.fromEpochMilliseconds(1000))
 
         then()
         assertTrue(result.isSuccess)
         coVerify(exactly = 1) {
-            fixture.clientDataSource.updateIntegratedClients(userId, "John", "Doe", "john@doe.com", any())
+            fixture.clientDataSource.updateIntegratedClients(userId, "John", "Doe", "john@doe.com", any(), any())
         }
         coVerify(exactly = 1) {
-            fixture.employeeDataSource.updateIntegratedEmployees(userId, "John", "Doe", "john@doe.com", any())
+            fixture.employeeDataSource.updateIntegratedEmployees(userId, "John", "Doe", "john@doe.com", any(), any())
         }
     }
 }

@@ -8,14 +8,16 @@ data class User(
     val id: Uuid,
     val name: String,
     val lastName: String,
-    val email: String
+    val email: String,
+    val phone: String?
 ) {
     companion object {
         fun stub(
             id: Uuid = Uuid.random(),
             name: String = "Alice",
             lastName: String = "Smith",
-            email: String = "user@example.com"
-        ) = User(id, name, lastName, email)
+            email: String = "user@example.com",
+            phone: String? = null
+        ) = User(id, name, lastName, email, phone)
     }
 }

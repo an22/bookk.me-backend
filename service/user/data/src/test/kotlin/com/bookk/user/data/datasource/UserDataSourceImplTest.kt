@@ -87,7 +87,7 @@ internal class UserDataSourceImplTest {
 
         whenn()
         val updated = suspendTransaction {
-            fixture.sut.updateUser(created.id, UserEditModel(firstName = "Bob"), Clock.System.now())
+            fixture.sut.updateUser(created.id, UserEditModel(id = null, firstName = "Bob", lastName = null, email = null, phone = null), Clock.System.now())
         }
         val found = suspendTransaction { fixture.sut.getUserById(created.id) }
 
@@ -97,13 +97,55 @@ internal class UserDataSourceImplTest {
     }
 
     @Test
+    fun `should round trip an optional phone`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+
+        whenn()
+        val created = suspendTransaction { fixture.sut.insertNewUser(User.stub(phone = "+10000000000")) }
+        val found = suspendTransaction { fixture.sut.getUserById(created.id) }
+
+        then()
+        assertEquals("+10000000000", found!!.phone)
+    }
+
+    @Test
+    fun `should leave phone null when it is not supplied`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+
+        whenn()
+        val created = suspendTransaction { fixture.sut.insertNewUser(User.stub()) }
+        val found = suspendTransaction { fixture.sut.getUserById(created.id) }
+
+        then()
+        assertNull(found!!.phone)
+    }
+
+    @Test
+    fun `should update phone without touching the other fields`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val created = suspendTransaction { fixture.sut.insertNewUser(User.stub(name = "Alice")) }
+
+        whenn()
+        val updated = suspendTransaction {
+            fixture.sut.updateUser(created.id, UserEditModel(id = null, firstName = null, lastName = null, email = null, phone = "+19999999999"), Clock.System.now())
+        }
+
+        then()
+        assertEquals("+19999999999", updated!!.phone)
+        assertEquals("Alice", updated.name)
+    }
+
+    @Test
     fun `should return null when updating non-existent user`() = runUnitTest {
         given()
         val fixture = SutFixture()
 
         whenn()
         val updated = suspendTransaction {
-            fixture.sut.updateUser(Uuid.random(), UserEditModel(firstName = "Bob"), Clock.System.now())
+            fixture.sut.updateUser(Uuid.random(), UserEditModel(id = null, firstName = "Bob", lastName = null, email = null, phone = null), Clock.System.now())
         }
 
         then()

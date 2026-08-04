@@ -27,7 +27,7 @@ internal class CommunicationDataSourceImplTest {
 
         suspend fun insertUser(): Uuid {
             return suspendTransaction {
-                userSut.insertNewUser(User(Uuid.random(), "Test", "User", "test${Uuid.random()}@example.com"))
+                userSut.insertNewUser(User(Uuid.random(), "Test", "User", "test${Uuid.random()}@example.com", null))
             }.id
         }
     }

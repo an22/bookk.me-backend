@@ -81,6 +81,7 @@ internal class EmployeeDataSourceImpl : DataSource(), EmployeeDataSource {
         name: String,
         lastName: String,
         email: String,
+        phone: String?,
         updatedAt: Instant
     ): Int = dbQuery {
         EmployeeTable.update(
@@ -92,6 +93,7 @@ internal class EmployeeDataSourceImpl : DataSource(), EmployeeDataSource {
             it[this.name] = name.trim()
             it[this.lastName] = lastName.trim()
             it[this.email] = email.trim()
+            phone?.let { value -> it[this.phone] = value.trim() }
             it[EmployeeTable.sourceUpdatedAt] = updatedAt
             it[EmployeeTable.updatedAt] = Clock.System.now()
         }

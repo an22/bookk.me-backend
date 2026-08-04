@@ -12,6 +12,7 @@ sealed interface UserEvent : EventStreaming.Event<String> {
         val name: String,
         val lastName: String,
         val email: String,
+        val phone: String?,
         val updatedAt: Instant,
         override val idempotencyKey: String = Uuid.random().toString()
     ) : UserEvent {

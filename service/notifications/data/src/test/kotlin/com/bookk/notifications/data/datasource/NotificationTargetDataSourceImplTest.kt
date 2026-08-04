@@ -11,8 +11,11 @@ import com.bookk.notifications.data.orm.table.NotificationEmailTargetTable
 import com.bookk.notifications.data.orm.table.NotificationTelegramTargetTable
 import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import kotlin.time.Instant
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 
@@ -94,13 +97,13 @@ internal class NotificationTargetDataSourceImplTest {
     }
 
     @Test
-    fun `should insert email via upsertEmail`() = runUnitTest {
+    fun `should insert email`() = runUnitTest {
         given()
         val fixture = SutFixture()
         val userId = Uuid.random()
 
         whenn()
-        suspendTransaction { fixture.sut.upsertEmail(userId, "inserted@example.com") }
+        suspendTransaction { fixture.sut.insertEmail(userId, "inserted@example.com", Instant.fromEpochMilliseconds(1000)) }
 
         then()
         val email = suspendTransaction { fixture.sut.getEmail(userId) }
@@ -108,28 +111,80 @@ internal class NotificationTargetDataSourceImplTest {
     }
 
     @Test
-    fun `should update existing email via upsertEmail`() = runUnitTest {
+    fun `should update existing email`() = runUnitTest {
         given()
         val fixture = SutFixture()
         val userId = Uuid.random()
         fixture.insertEmail(userId, "old@example.com")
 
         whenn()
-        suspendTransaction { fixture.sut.upsertEmail(userId, "new@example.com") }
+        val applied = suspendTransaction {
+            fixture.sut.updateEmail(userId, "new@example.com", Instant.fromEpochMilliseconds(1000))
+        }
 
         then()
-        val email = suspendTransaction { fixture.sut.getEmail(userId) }
-        assertEquals("new@example.com", email)
+        assertTrue(applied)
+        assertEquals("new@example.com", suspendTransaction { fixture.sut.getEmail(userId) })
     }
 
     @Test
-    fun `should insert telegram via upsertTelegram`() = runUnitTest {
+    fun `should report no email row updated when none exists`() = runUnitTest {
         given()
         val fixture = SutFixture()
         val userId = Uuid.random()
 
         whenn()
-        suspendTransaction { fixture.sut.upsertTelegram(userId, "@inserted") }
+        val applied = suspendTransaction {
+            fixture.sut.updateEmail(userId, "new@example.com", Instant.fromEpochMilliseconds(1000))
+        }
+
+        then()
+        assertFalse(applied)
+        assertNull(suspendTransaction { fixture.sut.getEmail(userId) })
+    }
+
+    @Test
+    fun `should ignore an email update older than the one already applied`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+        suspendTransaction { fixture.sut.insertEmail(userId, "newer@example.com", Instant.fromEpochMilliseconds(2000)) }
+
+        whenn()
+        val applied = suspendTransaction {
+            fixture.sut.updateEmail(userId, "older@example.com", Instant.fromEpochMilliseconds(1000))
+        }
+
+        then()
+        assertFalse(applied)
+        assertEquals("newer@example.com", suspendTransaction { fixture.sut.getEmail(userId) })
+    }
+
+    @Test
+    fun `should apply an email update newer than the one already applied`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+        suspendTransaction { fixture.sut.insertEmail(userId, "first@example.com", Instant.fromEpochMilliseconds(1000)) }
+
+        whenn()
+        val applied = suspendTransaction {
+            fixture.sut.updateEmail(userId, "second@example.com", Instant.fromEpochMilliseconds(2000))
+        }
+
+        then()
+        assertTrue(applied)
+        assertEquals("second@example.com", suspendTransaction { fixture.sut.getEmail(userId) })
+    }
+
+    @Test
+    fun `should insert telegram`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+
+        whenn()
+        suspendTransaction { fixture.sut.insertTelegram(userId, "@inserted") }
 
         then()
         val telegram = suspendTransaction { fixture.sut.getTelegram(userId) }
@@ -137,14 +192,14 @@ internal class NotificationTargetDataSourceImplTest {
     }
 
     @Test
-    fun `should update existing telegram via upsertTelegram`() = runUnitTest {
+    fun `should update existing telegram`() = runUnitTest {
         given()
         val fixture = SutFixture()
         val userId = Uuid.random()
         fixture.insertTelegram(userId, "@old")
 
         whenn()
-        suspendTransaction { fixture.sut.upsertTelegram(userId, "@new") }
+        suspendTransaction { fixture.sut.updateTelegram(userId, "@new") }
 
         then()
         val telegram = suspendTransaction { fixture.sut.getTelegram(userId) }

@@ -15,6 +15,7 @@ interface ClientDataSource {
         name: String,
         lastName: String,
         email: String,
+        phone: String?,
         updatedAt: Instant
     ): Int
 }

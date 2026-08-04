@@ -5,8 +5,9 @@ import kotlin.uuid.Uuid
 
 @Serializable
 data class UserEditModel(
-    val id: Uuid? = null,
-    val firstName: String? = null,
-    val lastName: String? = null,
-    val email: String? = null
+    val id: Uuid?,
+    val firstName: String?,
+    val lastName: String?,
+    val email: String?,
+    val phone: String?
 )

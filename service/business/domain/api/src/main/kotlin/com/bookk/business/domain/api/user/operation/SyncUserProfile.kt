@@ -9,6 +9,7 @@ interface SyncUserProfile {
         name: String,
         lastName: String,
         email: String,
+        phone: String?,
         updatedAt: Instant
     ): Result<Unit>
 }

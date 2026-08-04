@@ -25,6 +25,7 @@ internal class BusinessEventHandlerImpl(
                     name = event.name,
                     lastName = event.lastName,
                     email = event.email,
+                    phone = event.phone,
                     updatedAt = event.updatedAt
                 )
             }

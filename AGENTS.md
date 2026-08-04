@@ -30,7 +30,7 @@ New gradle modules must be registered in `settings.gradle.kts` (one `include` pe
 - Generic infrastructure errors: `com.bookk.core.domain.entity.Error` (`NotFound`, `OperationNotAllowed`, …).
 - `call.respondWith(result)` (core/service) maps: success Unit→204, success T→200, `BusinessError`→its statusCode + `SimpleServerError(errorCode, message)`, `Error.NotFound`/`Error.OperationNotAllowed`→**404** (intentional: permission failures do NOT return 403), anything else→500 (logged).
 - Permissions: `permissionsDataSource.getPermissions(userId, businessId).assert(ObjectPermission.EDIT)` (library/permissions) — throws `Error.OperationNotAllowed`.
-- Wire format is ProtoBuf (`application/x-protobuf`) for all bodies/responses. **A nullable collection (`List<T>?`, `Map<K, V>?`) cannot be serialized when null** — kotlinx throws `'null' is not supported as the value of collection types in ProtoBuf`. For an optional group of fields in a partial-update DTO, wrap them in a nullable `@Serializable` holder class (a nullable message is fine) instead of making each list nullable — see `BusinessUpdateModel.schedule: Schedule?`.
+- Wire format is ProtoBuf (`application/x-protobuf`) for all bodies/responses. **A nullable collection (`List<T>?`, `Map<K, V>?`) cannot be serialized when null** — kotlinx throws `'null' is not supported as the value of collection types in ProtoBuf`. For an optional group of fields in a partial-update DTO, wrap them in a nullable `@Serializable` holder class (a nullable message is fine) instead of making each list nullable — see `BusinessUpdateModel.schedule: Schedule?`. **A nullable property must not also have a default** — the serializer runs with `encodeDefaults = true`, and encoding a defaulted null throws `'null' is not supported for optional properties in ProtoBuf` as soon as a caller omits it. Give every nullable field on a partial-update DTO no default at all and pass them explicitly (`BusinessUpdateModel`, `UserEditModel`).
 - Entities: `@Serializable data class` in `domain/api/.../entity` with a `companion object { fun stub(...) }` factory (defaulted params, `Uuid.random()`, `Instant.fromEpochMilliseconds(0)`) — add `stub()` to every new entity; tests rely on it.
 
 ## Recipe: new business operation
@@ -321,10 +321,11 @@ These throw `UnsupportedByDialectException` in H2 even with `MODE=MySQL`. Omit t
 | `updateReturning` | — | rewrite as `update {}` + a follow-up `selectAll()` read, which H2 supports and makes the method testable (`BusinessDataSourceImpl.updateBusiness` was converted this way) |
 | `deleteReturning` | `BusinessDataSourceImpl.deleteUserBusinesses`, `DeviceDataSourceImpl.deleteInactiveDevices` | — |
 | `upsertReturning` | `NotificationSettingsDataSourceImpl.upsert(settings)` | insert via DAO entity directly |
+| `upsert(where = …)` | — | split into `insert`/`update` datasource methods and let the operation choose (`NotificationTargetDataSourceImpl` + `UpdateTargetInformation`) |
 
 For read methods whose writes use an unsupported upsert, insert test data directly via the DAO entity (e.g. `NotificationSettingsEntity.new(id) { ... }`).
 
-Plain `upsert {}` (no `where` parameter) **is** supported by H2 and resolves conflicts via `uniqueIndex` columns — use it freely in datasource tests.
+Plain `upsert {}` (no `where` parameter) **is** supported by H2 and resolves conflicts via `uniqueIndex` columns — use it freely in datasource tests. Passing `where` to it throws `UnsupportedByDialectException`. Split a conditional upsert into separate `insert`/`update` datasource methods — the guard lives in the `update {}` where clause and returns whether a row matched — and let the operation decide, inside its `transactionManager.transaction { }`, whether to insert.
 
 ### Asserting unique-constraint violations
 

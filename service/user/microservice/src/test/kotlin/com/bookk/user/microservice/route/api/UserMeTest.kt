@@ -67,7 +67,7 @@ internal class UserMeTest {
     fun `should patch user`() = routeTest {
         given()
         val useCase: EditUser = mockk()
-        val editModel = UserEditModel(id = userId, firstName = "NewName", lastName = "NewLastName", email = "test@example.com")
+        val editModel = UserEditModel(id = userId, firstName = "NewName", lastName = "NewLastName", email = "test@example.com", phone = null)
 
         coEvery { useCase.invoke(userId, editModel) } returns Result.success(Unit)
 
@@ -126,7 +126,7 @@ internal class UserMeTest {
     fun `should return not found when user does not exist on patch`() = routeTest {
         given()
         val useCase: EditUser = mockk()
-        val editModel = UserEditModel(id = userId, firstName = "NewName", lastName = "NewLastName", email = "test@example.com")
+        val editModel = UserEditModel(id = userId, firstName = "NewName", lastName = "NewLastName", email = "test@example.com", phone = null)
         coEvery { useCase.invoke(userId, editModel) } returns Result.failure(EditUser.Error.UserNotFound())
 
         setupApplication(
@@ -185,7 +185,7 @@ internal class UserMeTest {
         whenn()
         val client = createTestClient()
         val response = client.patch(UserRouting.Api.User.Me()) {
-            setBody(UserEditModel(id = userId, firstName = "N", lastName = "L", email = "e@e.com"))
+            setBody(UserEditModel(id = userId, firstName = "N", lastName = "L", email = "e@e.com", phone = null))
         }
 
         then()

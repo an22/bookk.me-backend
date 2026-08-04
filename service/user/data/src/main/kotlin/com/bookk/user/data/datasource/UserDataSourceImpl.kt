@@ -5,7 +5,6 @@ import com.bookk.core.data.cache.CacheClient
 import com.bookk.user.data.cache.UserCacheStrategy.deleteUser
 import com.bookk.user.data.cache.UserCacheStrategy.getUser
 import com.bookk.user.data.cache.UserCacheStrategy.save
-import com.bookk.user.data.map.toDomain
 import com.bookk.user.data.orm.entity.UserEntity
 import com.bookk.user.data.orm.table.UserTable
 import com.bookk.user.domain.api.entity.User
@@ -30,6 +29,7 @@ internal class UserDataSourceImpl(
             it[name] = user.name
             it[lastName] = user.lastName
             it[email] = user.email
+            it[phone] = user.phone
             it[updatedAt] = Clock.System.now()
         }.let {
             user.copy(id = it.value.toKotlinUuid())
@@ -49,7 +49,7 @@ internal class UserDataSourceImpl(
         if (cached != null) return@dbQuery cached
         UserTable.selectAll()
             .where { UserTable.id eq id.toJavaUuid() }
-            .map { UserEntity.wrapRow(it).toDomain() }
+            .map { UserEntity.wrapRow(it).domain() }
             .singleOrNull()
             ?.also { user ->
                 runCatching { cacheClient.save(user) }
@@ -60,7 +60,7 @@ internal class UserDataSourceImpl(
     override suspend fun getUserByEmail(email: String): User? = dbQuery {
         UserTable.selectAll()
             .where { UserTable.email eq email }
-            .map { UserEntity.wrapRow(it).toDomain() }
+            .map { UserEntity.wrapRow(it).domain() }
             .singleOrNull()
     }
 

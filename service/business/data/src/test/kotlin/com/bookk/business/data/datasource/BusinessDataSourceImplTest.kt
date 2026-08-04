@@ -30,7 +30,6 @@ import org.junit.jupiter.api.Test
 import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
-import kotlin.uuid.toJavaUuid
 
 internal class BusinessDataSourceImplTest {
 
@@ -196,7 +195,7 @@ internal class BusinessDataSourceImplTest {
         suspendTransaction { fixture.sut.updateBusiness(updateModel(created.id, name = "New name"), updatedAt) }
         val stored = suspendTransaction {
             BusinessTable.select(BusinessTable.updatedAt)
-                .where { BusinessTable.id eq created.id.toJavaUuid() }
+                .where { BusinessTable.id eq created.id }
                 .single()[BusinessTable.updatedAt]
         }
 

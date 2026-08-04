@@ -32,19 +32,17 @@ import org.jetbrains.exposed.v1.jdbc.update
 import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
-import kotlin.uuid.toJavaUuid
-import kotlin.uuid.toKotlinUuid
 
 internal class AppointmentDataSourceImpl : DataSource(), AppointmentDataSource {
 
     override suspend fun get(id: Uuid): Appointment = dbQuery {
-        AppointmentEntity.findById(id.toJavaUuid())
+        AppointmentEntity.findById(id)
             ?.domain() ?: throw Error.NotFound()
     }
 
     override suspend fun getAll(businessId: Uuid): List<Appointment> = dbQuery {
         AppointmentEntity
-            .find { AppointmentTable.businessId eq businessId.toJavaUuid() }
+            .find { AppointmentTable.businessId eq businessId }
             .map { it.domain() }
     }
 
@@ -52,7 +50,7 @@ internal class AppointmentDataSourceImpl : DataSource(), AppointmentDataSource {
         return dbQuery {
             AppointmentEntity
                 .find {
-                    AppointmentTable.businessId.eq(businessId.toJavaUuid())
+                    AppointmentTable.businessId.eq(businessId)
                         .and(AppointmentTable.dateStart.greaterEq(range.start))
                         .and(AppointmentTable.dateEnd.lessEq(range.endInclusive))
                 }
@@ -68,7 +66,7 @@ internal class AppointmentDataSourceImpl : DataSource(), AppointmentDataSource {
         query: String?
     ): AppointmentPagination {
         return dbQuery {
-            var condition = AppointmentTable.businessId.eq(businessId.toJavaUuid())
+            var condition = AppointmentTable.businessId.eq(businessId)
 
             if (!query.isNullOrBlank()) {
                 val pattern = "%${query.lowercase()}%"
@@ -108,11 +106,11 @@ internal class AppointmentDataSourceImpl : DataSource(), AppointmentDataSource {
         return dbQuery {
             AppointmentTable.select(AppointmentTable.id)
                 .where {
-                    (AppointmentTable.businessId eq appointment.businessId.toJavaUuid())
-                        .and(AppointmentTable.userId eq appointment.userId.toJavaUuid())
+                    (AppointmentTable.businessId eq appointment.businessId)
+                        .and(AppointmentTable.userId eq appointment.userId)
                         .and(AppointmentTable.dateStart.less(appointment.dateEnd))
                         .and(AppointmentTable.dateEnd.greater(appointment.date))
-                        .and(AppointmentTable.id neq appointment.id.toJavaUuid())
+                        .and(AppointmentTable.id neq appointment.id)
                         .and(AppointmentTable.status eq AppointmentStatus.SCHEDULED)
                 }
                 .limit(1)
@@ -134,13 +132,13 @@ internal class AppointmentDataSourceImpl : DataSource(), AppointmentDataSource {
         appointment.services.forEach {
             AppointmentServiceEntity.new(appointmentEntity.id, it)
         }
-        appointment.copy(id = appointmentEntity.id.value.toKotlinUuid())
+        appointment.copy(id = appointmentEntity.id.value)
     }
 
     override suspend fun update(appointment: Appointment): Appointment = dbQuery {
         val appointmentEntity = AppointmentEntity.findByIdAndUpdate(appointment) ?: throw Error.NotFound()
         AppointmentServicesTable.deleteWhere {
-            AppointmentServicesTable.appointmentId eq appointment.id.toJavaUuid()
+            AppointmentServicesTable.appointmentId eq appointment.id
         }
         appointment.services.forEach {
             AppointmentServiceEntity.new(appointmentEntity.id, it)
@@ -150,12 +148,12 @@ internal class AppointmentDataSourceImpl : DataSource(), AppointmentDataSource {
 
     override suspend fun delete(id: Uuid) = dbQuery<Unit> {
         AppointmentTable.deleteWhere {
-            AppointmentTable.id eq id.toJavaUuid()
+            AppointmentTable.id eq id
         }
     }
 
     override suspend fun cancel(id: Uuid, reason: String): Appointment = dbQuery {
-        AppointmentEntity.findByIdAndUpdate(id.toJavaUuid()) {
+        AppointmentEntity.findByIdAndUpdate(id) {
             it.status = AppointmentStatus.CANCELLED
             it.cancellationReason = reason
             it.updatedAt = Clock.System.now()

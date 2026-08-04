@@ -69,17 +69,17 @@ internal class DoThingImpl(
 }
 ```
 4. Register in `domain/impl/.../di/DI.kt`: `factoryOf(::DoThingImpl) bind DoThing::class`.
-5. If a new datasource method is needed: add to the interface in `data/source/.../datasource/`, implement in `data/.../datasource/<X>DataSourceImpl.kt` (`internal class ... : DataSource(), XDataSource`, queries wrapped in `dbQuery { }`, Exposed v1 DSL, `Uuid.toJavaUuid()` for ids). New datasources are registered in `data/.../di/`: `singleOf(::XDataSourceImpl) bind XDataSource::class`. New tables go in `data/.../orm/{table,entity}` and must be added to the service's `<Svc>Migration.kt` `tables()` array.
+5. If a new datasource method is needed: add to the interface in `data/source/.../datasource/`, implement in `data/.../datasource/<X>DataSourceImpl.kt` (`internal class ... : DataSource(), XDataSource`, queries wrapped in `dbQuery { }`, Exposed v1 DSL, `Uuid` for ids). New datasources are registered in `data/.../di/`: `singleOf(::XDataSourceImpl) bind XDataSource::class`. New tables go in `data/.../orm/{table,entity}` and must be added to the service's `<Svc>Migration.kt` `tables()` array.
 
 ### Writes live on the entity, not in the datasource
 
 Mapping a domain model onto rows belongs in the DAO entity's companion, so a datasource method stays a one-liner and the field list has exactly one home. Reference: `AppointmentBusinessEntity`, `BusinessEntity`, `AppointmentEntity`.
 
 ```kotlin
-internal class ThingEntity(id: EntityID<UUID>) : UUIDEntity(id) {
+internal class ThingEntity(id: EntityID<Uuid>) : UuidEntity(id) {
     var name by ThingTable.name
 
-    fun domain(): Thing = Thing(id = id.value.toKotlinUuid(), name = name)
+    fun domain(): Thing = Thing(id = id.value, name = name)
 
     private fun replaceChildren(children: List<Child>) {
         val entityId = id.value // `id` inside a table lambda resolves to the table's column, not the entity
@@ -90,7 +90,7 @@ internal class ThingEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     companion object : DecoratorUUIDEntityClass<ThingEntity>(ThingTable) {
         fun new(model: Thing): ThingEntity = new { name = model.name }.apply { replaceChildren(model.children) }
 
-        fun findByIdAndUpdate(model: ThingUpdate) = findByIdAndUpdate(model.id.toJavaUuid()) {
+        fun findByIdAndUpdate(model: ThingUpdate) = findByIdAndUpdate(model.id) {
             model.name?.let { name -> it.name = name }
             it.updatedAt = Clock.System.now()
         }

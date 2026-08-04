@@ -14,7 +14,7 @@ import org.apache.kafka.common.serialization.StringDeserializer
 import org.testcontainers.kafka.ConfluentKafkaContainer
 import org.testcontainers.utility.DockerImageName
 import java.time.Duration
-import java.util.UUID
+import kotlin.uuid.Uuid
 
 object KafkaTestBroker {
     private val container = ConfluentKafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.6.1"))
@@ -44,7 +44,7 @@ object KafkaTestBroker {
         val consumer = KafkaConsumer(
             mapOf<String, Any>(
                 ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to servers.single(),
-                ConsumerConfig.GROUP_ID_CONFIG to "drain-${UUID.randomUUID()}",
+                ConsumerConfig.GROUP_ID_CONFIG to "drain-${Uuid.random()}",
                 ConsumerConfig.AUTO_OFFSET_RESET_CONFIG to "earliest"
             ),
             StringDeserializer(),

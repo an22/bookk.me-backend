@@ -2,7 +2,7 @@ package com.bookk.business.data.orm.table
 
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.isoDayNumber
-import org.jetbrains.exposed.v1.core.dao.id.UUIDTable
+import org.jetbrains.exposed.v1.core.dao.id.UuidTable
 import org.jetbrains.exposed.v1.datetime.timestamp
 import kotlin.experimental.or
 import kotlin.time.Clock
@@ -11,7 +11,7 @@ private val MONDAY_TO_FRIDAY: Byte = DayOfWeek.entries
     .filter { it < DayOfWeek.SATURDAY }
     .fold(0) { acc, day -> acc or (1 shl day.isoDayNumber).toByte() }
 
-object BusinessTable: UUIDTable("business") {
+object BusinessTable: UuidTable("business") {
     val userId = uuid("user_id").uniqueIndex()
     val name = varchar("name", 512)
     val description = varchar("description", 1024)

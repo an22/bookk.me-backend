@@ -15,14 +15,12 @@ import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import org.jetbrains.exposed.v1.jdbc.update
 import kotlin.time.Clock
 import kotlin.uuid.Uuid
-import kotlin.uuid.toJavaUuid
-import kotlin.uuid.toKotlinUuid
 
 internal class ServiceDataSourceImpl : DataSource(), ServiceDataSource {
     override suspend fun createService(service: Service): Service = dbQuery {
         val id = ServiceTable.insertAndGetId {
-            it[businessId] = service.businessId.toJavaUuid()
-            it[groupId] = service.group.id.toJavaUuid()
+            it[businessId] = service.businessId
+            it[groupId] = service.group.id
             it[name] = service.name
             it[duration] = service.duration.inWholeSeconds.toInt()
             it[priceCurrency] = service.price.currencyUnit.code
@@ -30,15 +28,15 @@ internal class ServiceDataSourceImpl : DataSource(), ServiceDataSource {
             it[priceScale] = service.price.scale
             it[available] = service.isAvailable
         }
-        service.copy(id = id.value.toKotlinUuid())
+        service.copy(id = id.value)
     }
 
     override suspend fun editService(service: Service): Service = dbQuery {
         ServiceTable.update(
-            where = { ServiceTable.id eq service.id.toJavaUuid() }
+            where = { ServiceTable.id eq service.id }
         ) {
-            it[businessId] = service.businessId.toJavaUuid()
-            it[groupId] = service.group.id.toJavaUuid()
+            it[businessId] = service.businessId
+            it[groupId] = service.group.id
             it[duration] = service.duration.inWholeSeconds.toInt()
             it[priceCurrency] = service.price.currencyUnit.code
             it[priceUnscaled] = service.price.amount.unscaledValue().longValueExact()
@@ -51,35 +49,35 @@ internal class ServiceDataSourceImpl : DataSource(), ServiceDataSource {
 
     override suspend fun getServices(businessId: Uuid): List<Service> = dbQuery {
         ServiceEntity.find {
-            ServiceTable.businessId eq businessId.toJavaUuid()
+            ServiceTable.businessId eq businessId
         }.map { it.toDomain() }
     }
 
     override suspend fun getServicesByIds(ids: List<Uuid>): List<Service> = dbQuery {
         ServiceEntity.find {
-            ServiceTable.id inList ids.map { it.toJavaUuid() }
+            ServiceTable.id inList ids.map { it }
         }.map { it.toDomain() }
     }
 
     override suspend fun deleteService(id: Uuid) {
-        dbQuery { ServiceTable.deleteWhere { ServiceTable.id eq id.toJavaUuid() } }
+        dbQuery { ServiceTable.deleteWhere { ServiceTable.id eq id } }
     }
 
     override suspend fun createServiceGroup(group: ServiceGroup): ServiceGroup = dbQuery {
         val id = ServiceGroupTable.insertAndGetId {
-            it[businessId] = group.businessId.toJavaUuid()
+            it[businessId] = group.businessId
             it[name] = group.name
         }
-        group.copy(id = id.value.toKotlinUuid())
+        group.copy(id = id.value)
     }
 
     override suspend fun deleteServiceGroup(id: Uuid) {
-        dbQuery { ServiceGroupTable.deleteWhere { ServiceGroupTable.id eq id.toJavaUuid() } }
+        dbQuery { ServiceGroupTable.deleteWhere { ServiceGroupTable.id eq id } }
     }
 
     override suspend fun getServiceGroups(businessId: Uuid): List<ServiceGroup> = dbQuery {
         ServiceGroupEntity.find {
-            ServiceGroupTable.businessId eq businessId.toJavaUuid()
+            ServiceGroupTable.businessId eq businessId
         }.map { it.toDomain() }
     }
 }

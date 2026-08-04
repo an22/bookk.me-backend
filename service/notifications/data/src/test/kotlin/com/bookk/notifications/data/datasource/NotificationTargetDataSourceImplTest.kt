@@ -17,7 +17,6 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
-import kotlin.uuid.toJavaUuid
 
 internal class NotificationTargetDataSourceImplTest {
 
@@ -28,7 +27,7 @@ internal class NotificationTargetDataSourceImplTest {
         suspend fun insertEmail(userId: Uuid, email: String) {
             suspendTransaction {
                 NotificationEmailTargetEntity.new {
-                    this.userId = userId.toJavaUuid()
+                    this.userId = userId
                     this.email = email
                 }
             }
@@ -37,7 +36,7 @@ internal class NotificationTargetDataSourceImplTest {
         suspend fun insertTelegram(userId: Uuid, tag: String) {
             suspendTransaction {
                 NotificationTelegramTargetEntity.new {
-                    this.userId = userId.toJavaUuid()
+                    this.userId = userId
                     this.telegramTag = tag
                 }
             }

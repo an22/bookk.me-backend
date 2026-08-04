@@ -5,19 +5,17 @@ import com.bookk.business.data.orm.table.BusinessTable
 import com.bookk.business.data.orm.table.BusinessWorkingHoursTable
 import com.bookk.business.domain.api.business.entity.Business
 import com.bookk.business.domain.api.business.entity.BusinessUpdateModel
-import com.bookk.core.data.DecoratorUUIDEntityClass
+import com.bookk.core.data.DecoratorUuidEntityClass
 import kotlinx.datetime.TimeZone
 import library.schedule.Schedule
 import library.schedule.toWorkingDays
 import library.schedule.toWorkingDaysMask
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
-import org.jetbrains.exposed.v1.dao.UUIDEntity
-import java.util.UUID
+import org.jetbrains.exposed.v1.dao.UuidEntity
 import kotlin.time.Instant
-import kotlin.uuid.toJavaUuid
-import kotlin.uuid.toKotlinUuid
+import kotlin.uuid.Uuid
 
-internal class BusinessEntity(id: EntityID<UUID>) : UUIDEntity(id) {
+internal class BusinessEntity(id: EntityID<Uuid>) : UuidEntity(id) {
     var userId by BusinessTable.userId
     var name by BusinessTable.name
     var description by BusinessTable.description
@@ -38,7 +36,7 @@ internal class BusinessEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     val dayOffs by BusinessDayOffEntity referrersOn BusinessDayOffTable.businessId
 
     fun toDomain(): Business = Business(
-        id = id.value.toKotlinUuid(),
+        id = id.value,
         name = name,
         description = description,
         location = if (latitude != null && longitude != null) {
@@ -79,9 +77,9 @@ internal class BusinessEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         }
     }
 
-    companion object : DecoratorUUIDEntityClass<BusinessEntity>(BusinessTable) {
+    companion object : DecoratorUuidEntityClass<BusinessEntity>(BusinessTable) {
 
-        fun new(userId: UUID, name: String, currencyCode: String, timeZone: TimeZone): BusinessEntity = new {
+        fun new(userId: Uuid, name: String, currencyCode: String, timeZone: TimeZone): BusinessEntity = new {
             this.userId = userId
             this.name = name
             currency = currencyCode
@@ -90,7 +88,7 @@ internal class BusinessEntity(id: EntityID<UUID>) : UUIDEntity(id) {
             timezone = timeZone.id
         }.apply { replaceSchedule(Schedule()) }
 
-        fun findByIdAndUpdate(model: BusinessUpdateModel, updatedAt: Instant) = findByIdAndUpdate(model.id.toJavaUuid()) {
+        fun findByIdAndUpdate(model: BusinessUpdateModel, updatedAt: Instant) = findByIdAndUpdate(model.id) {
             model.name?.let { name -> it.name = name }
             model.description?.let { description -> it.description = description }
             model.address?.let { address -> it.address = address }

@@ -1,18 +1,18 @@
 package com.bookk.appointments.data.orm.entity
 
 import com.bookk.appointments.data.orm.table.WorkingHoursTable
-import com.bookk.core.data.DecoratorUUIDEntityClass
+import com.bookk.core.data.DecoratorUuidEntityClass
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.isoDayNumber
 import library.schedule.WorkHour
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.jetbrains.exposed.v1.core.eq
-import org.jetbrains.exposed.v1.dao.UUIDEntity
+import org.jetbrains.exposed.v1.dao.UuidEntity
 import org.jetbrains.exposed.v1.jdbc.batchInsert
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
-import java.util.UUID
+import kotlin.uuid.Uuid
 
-internal class WorkingHourEntity(id: EntityID<UUID>) : UUIDEntity(id) {
+internal class WorkingHourEntity(id: EntityID<Uuid>) : UuidEntity(id) {
     var business by AppointmentBusinessEntity referencedOn WorkingHoursTable.businessId
     var dayOfWeek by WorkingHoursTable.dayOfWeek
     var startTime by WorkingHoursTable.startTime
@@ -20,8 +20,8 @@ internal class WorkingHourEntity(id: EntityID<UUID>) : UUIDEntity(id) {
 
     fun domain(): WorkHour = WorkHour(from = startTime, to = endTime)
 
-    companion object : DecoratorUUIDEntityClass<WorkingHourEntity>(WorkingHoursTable) {
-        fun batchReplace(businessId: UUID, hours: Map<DayOfWeek, List<WorkHour>>) {
+    companion object : DecoratorUuidEntityClass<WorkingHourEntity>(WorkingHoursTable) {
+        fun batchReplace(businessId: Uuid, hours: Map<DayOfWeek, List<WorkHour>>) {
             WorkingHoursTable.deleteWhere { WorkingHoursTable.businessId eq businessId }
             val rows = hours.flatMap { (dayOfWeek, workingTime) -> workingTime.map { dayOfWeek to it } }
             WorkingHoursTable.batchInsert(rows) { (dayOfWeek, workHour) ->

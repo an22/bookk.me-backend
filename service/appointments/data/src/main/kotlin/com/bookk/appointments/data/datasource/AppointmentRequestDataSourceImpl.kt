@@ -24,27 +24,25 @@ import kotlin.time.Clock
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
-import kotlin.uuid.toJavaUuid
-import kotlin.uuid.toKotlinUuid
 
 internal class AppointmentRequestDataSourceImpl(
     private val cacheClient: CacheClient<String>
 ) : DataSource(), AppointmentRequestDataSource {
     override suspend fun get(id: Uuid): AppointmentRequest? = dbQuery {
-        AppointmentRequestEntity.findById(id.toJavaUuid())
+        AppointmentRequestEntity.findById(id)
             ?.domain()
     }
 
     override suspend fun getAll(businessId: Uuid): List<AppointmentRequest> = dbQuery {
         AppointmentRequestEntity
-            .find { AppointmentRequestTable.businessId eq businessId.toJavaUuid() }
+            .find { AppointmentRequestTable.businessId eq businessId }
             .map { it.domain() }
     }
 
     override suspend fun getPending(businessId: Uuid): List<AppointmentRequest> = dbQuery {
         AppointmentRequestEntity
             .find {
-                AppointmentRequestTable.businessId.eq(businessId.toJavaUuid())
+                AppointmentRequestTable.businessId.eq(businessId)
                     .and(AppointmentRequestTable.status.eq(AppointmentRequestStatus.PENDING))
             }
             .map { it.domain() }
@@ -55,13 +53,13 @@ internal class AppointmentRequestDataSourceImpl(
         request.services.forEach {
             AppointmentRequestServiceEntity.new(requestEntity.id, it)
         }
-        request.copy(id = requestEntity.id.value.toKotlinUuid())
+        request.copy(id = requestEntity.id.value)
     }
 
     override suspend fun update(request: AppointmentRequest): AppointmentRequest = dbQuery {
         val requestEntity = AppointmentRequestEntity.findByIdAndUpdate(request) ?: throw Error.NotFound()
         AppointmentRequestServicesTable.deleteWhere {
-            AppointmentRequestServicesTable.requestId eq request.id.toJavaUuid()
+            AppointmentRequestServicesTable.requestId eq request.id
         }
         request.services.forEach {
             AppointmentRequestServiceEntity.new(requestEntity.id, it)
@@ -71,13 +69,13 @@ internal class AppointmentRequestDataSourceImpl(
 
     override suspend fun delete(request: AppointmentRequest) = dbQuery<Unit> {
         AppointmentRequestTable.deleteWhere {
-            AppointmentRequestTable.id eq request.id.toJavaUuid()
+            AppointmentRequestTable.id eq request.id
         }
     }
 
     override suspend fun approve(request: AppointmentRequest) = dbQuery<Unit> {
         AppointmentRequestTable.update(
-            where = { AppointmentRequestTable.id eq request.id.toJavaUuid() },
+            where = { AppointmentRequestTable.id eq request.id },
         ) {
             it[AppointmentRequestTable.status] = AppointmentRequestStatus.APPROVED
             it[AppointmentRequestTable.updatedAt] = Clock.System.now()
@@ -85,7 +83,7 @@ internal class AppointmentRequestDataSourceImpl(
     }
 
     override suspend fun decline(id: Uuid, reason: String) = dbQuery<AppointmentRequest> {
-        AppointmentRequestEntity.findByIdAndUpdate(id.toJavaUuid()) {
+        AppointmentRequestEntity.findByIdAndUpdate(id) {
             it.status = AppointmentRequestStatus.DECLINED
             it.declineReason = reason
             it.updatedAt = Clock.System.now()
@@ -96,8 +94,8 @@ internal class AppointmentRequestDataSourceImpl(
         return dbQuery {
             AppointmentRequestTable.select(AppointmentRequestTable.id)
                 .where {
-                    (AppointmentRequestTable.businessId eq request.businessId.toJavaUuid())
-                        .and(AppointmentRequestTable.userId eq request.userId.toJavaUuid())
+                    (AppointmentRequestTable.businessId eq request.businessId)
+                        .and(AppointmentRequestTable.userId eq request.userId)
                         .and(AppointmentRequestTable.dateStart.less(request.dateEnd))
                         .and(AppointmentRequestTable.dateEnd.greater(request.date))
                         .and(AppointmentRequestTable.status neq AppointmentRequestStatus.DECLINED)

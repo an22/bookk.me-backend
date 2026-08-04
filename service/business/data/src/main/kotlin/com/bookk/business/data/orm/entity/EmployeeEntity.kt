@@ -3,13 +3,12 @@ package com.bookk.business.data.orm.entity
 import com.bookk.business.data.orm.table.EmployeeCanProvideServiceTable
 import com.bookk.business.data.orm.table.EmployeeTable
 import com.bookk.business.domain.api.employee.entity.Employee
-import com.bookk.core.data.DecoratorUUIDEntityClass
+import com.bookk.core.data.DecoratorUuidEntityClass
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
-import org.jetbrains.exposed.v1.dao.UUIDEntity
-import java.util.UUID
-import kotlin.uuid.toKotlinUuid
+import org.jetbrains.exposed.v1.dao.UuidEntity
+import kotlin.uuid.Uuid
 
-internal class EmployeeEntity(id: EntityID<UUID>) : UUIDEntity(id) {
+internal class EmployeeEntity(id: EntityID<Uuid>) : UuidEntity(id) {
 
     var businessId by EmployeeTable.businessId
     var name by EmployeeTable.name
@@ -22,17 +21,17 @@ internal class EmployeeEntity(id: EntityID<UUID>) : UUIDEntity(id) {
 
     val services by ServiceEntity via EmployeeCanProvideServiceTable
 
-    companion object : DecoratorUUIDEntityClass<EmployeeEntity>(EmployeeTable)
+    companion object : DecoratorUuidEntityClass<EmployeeEntity>(EmployeeTable)
 
     fun toDomain(): Employee {
         return Employee(
-            id = id.value.toKotlinUuid(),
-            businessId = businessId.value.toKotlinUuid(),
+            id = id.value,
+            businessId = businessId.value,
             name = name,
             lastName = lastName,
             phone = phone,
             email = email,
-            userId = userId.toKotlinUuid(),
+            userId = userId,
             services = services.map(ServiceEntity::toDomain),
             createdAt = createdAt
         )

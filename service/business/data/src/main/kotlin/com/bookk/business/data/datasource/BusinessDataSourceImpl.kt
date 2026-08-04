@@ -25,12 +25,10 @@ import org.jetbrains.exposed.v1.jdbc.upsert
 import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
-import kotlin.uuid.toJavaUuid
-import kotlin.uuid.toKotlinUuid
 
 internal class BusinessDataSourceImpl : DataSource(), BusinessDataSource {
     override suspend fun createBusiness(userId: Uuid, name: String, currencyCode: String, timeZone: TimeZone): Business = dbQuery {
-        val javaUserId = userId.toJavaUuid()
+        val javaUserId = userId
         val entity = BusinessEntity.new(javaUserId, name, currencyCode, timeZone)
         BusinessDashboardTable.insert {
             it[this.userId] = javaUserId
@@ -45,26 +43,26 @@ internal class BusinessDataSourceImpl : DataSource(), BusinessDataSource {
     }
 
     override suspend fun getBusinessById(id: Uuid): Business? = dbQuery {
-        BusinessEntity.findById(id.toJavaUuid())?.toDomain()
+        BusinessEntity.findById(id)?.toDomain()
     }
 
     override suspend fun isBusinessExist(userId: Uuid): Boolean = dbQuery {
         BusinessTable.select(BusinessTable.id)
-            .where { BusinessTable.userId eq userId.toJavaUuid() }
+            .where { BusinessTable.userId eq userId }
             .empty()
             .not()
     }
 
     override suspend fun deleteUserBusinesses(userId: Uuid) = dbQuery {
         BusinessTable.deleteReturning(listOf(BusinessTable.id)) {
-            BusinessTable.userId eq userId.toJavaUuid()
-        }.map { it[BusinessTable.id].value.toKotlinUuid() }
+            BusinessTable.userId eq userId
+        }.map { it[BusinessTable.id].value }
     }
 
     override suspend fun getDashboardBusiness(userId: Uuid): Business? = dbQuery {
         val businessId = BusinessDashboardTable
             .select(BusinessDashboardTable.businessId)
-            .where { BusinessDashboardTable.userId eq userId.toJavaUuid() }
+            .where { BusinessDashboardTable.userId eq userId }
             .singleOrNull()
             ?.get(BusinessDashboardTable.businessId)
             ?.value
@@ -74,15 +72,15 @@ internal class BusinessDataSourceImpl : DataSource(), BusinessDataSource {
     override suspend fun getUserBusinesses(userId: Uuid): UserBusinesses = dbQuery {
         val dashboardId = BusinessDashboardTable
             .select(BusinessDashboardTable.businessId)
-            .where { BusinessDashboardTable.userId eq userId.toJavaUuid() }
+            .where { BusinessDashboardTable.userId eq userId }
             .singleOrNull()
             ?.getOrNull(BusinessDashboardTable.businessId)
             ?.value
         val businesses = BusinessEntity
-            .find { BusinessTable.userId eq userId.toJavaUuid() }
+            .find { BusinessTable.userId eq userId }
             .map { it.toDomain() }
         UserBusinesses(
-            dashboardId = dashboardId?.toKotlinUuid(),
+            dashboardId = dashboardId,
             businesses = businesses
         )
     }
@@ -109,15 +107,15 @@ internal class BusinessDataSourceImpl : DataSource(), BusinessDataSource {
         BusinessPermissionsTable.select(
             BusinessPermissionsTable.permission
         )
-            .where { (BusinessPermissionsTable.userId eq userId.toJavaUuid()) and (BusinessPermissionsTable.businessId eq businessId.toJavaUuid()) }
+            .where { (BusinessPermissionsTable.userId eq userId) and (BusinessPermissionsTable.businessId eq businessId) }
             .singleOrNull()
             ?.get(BusinessPermissionsTable.permission)
     }
 
     override suspend fun setUserPermissions(userId: Uuid, businessId: Uuid, permission: Int) {
         BusinessPermissionsTable.upsert {
-            it[this.userId] = userId.toJavaUuid()
-            it[this.businessId] = businessId.toJavaUuid()
+            it[this.userId] = userId
+            it[this.businessId] = businessId
             it[this.permission] = permission
         }
     }

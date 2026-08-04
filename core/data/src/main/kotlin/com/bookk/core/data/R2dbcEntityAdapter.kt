@@ -2,14 +2,14 @@ package com.bookk.core.data
 
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.jetbrains.exposed.v1.core.dao.id.IdTable
-import org.jetbrains.exposed.v1.dao.UUIDEntity
-import org.jetbrains.exposed.v1.dao.UUIDEntityClass
-import java.util.UUID
+import org.jetbrains.exposed.v1.dao.UuidEntity
+import org.jetbrains.exposed.v1.dao.UuidEntityClass
+import kotlin.uuid.Uuid
 
 //Will be handy after R2dbc drivers and exposed libs will be stable, for now it is extremely unstable
-abstract class DecoratorUUIDEntityClass<out E : UUIDEntity>(
-    table: IdTable<UUID>,
+abstract class DecoratorUuidEntityClass<out E : UuidEntity>(
+    table: IdTable<Uuid>,
     entityType: Class<E>? = null,
-    entityCtor: ((EntityID<UUID>) -> E)? = null
-) : UUIDEntityClass<E>(table, entityType, entityCtor)
+    entityCtor: ((EntityID<Uuid>) -> E)? = null
+) : UuidEntityClass<E>(table, entityType, entityCtor)
 

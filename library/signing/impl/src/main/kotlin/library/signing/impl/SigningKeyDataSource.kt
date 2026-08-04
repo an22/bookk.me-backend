@@ -17,8 +17,6 @@ import org.jetbrains.exposed.v1.jdbc.selectAll
 import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
-import kotlin.uuid.toJavaUuid
-import kotlin.uuid.toKotlinUuid
 
 internal class SigningKeyDataSource : DataSource() {
 
@@ -50,7 +48,7 @@ internal class SigningKeyDataSource : DataSource() {
     }
 
     suspend fun updateStatus(id: Uuid, status: SigningKeyStatus, retiredAt: Instant?) = dbQuery<Unit> {
-        SigningKeyEntity.findById(id.toJavaUuid())?.apply {
+        SigningKeyEntity.findById(id)?.apply {
             this.status = status
             this.retiredAt = retiredAt
         }
@@ -63,7 +61,7 @@ internal class SigningKeyDataSource : DataSource() {
     }
 
     private fun SigningKeyEntity.toDomain(): SigningKey = SigningKey(
-        id = id.value.toKotlinUuid(),
+        id = id.value,
         publicKeyPem = publicKey,
         privateKeyPem = SigningKeyCipher.decrypt(privateKey, AppLevelConstants.signingKeyEncryptionKey),
         status = status,

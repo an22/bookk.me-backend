@@ -12,45 +12,43 @@ import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import kotlin.time.Clock
 import kotlin.uuid.Uuid
-import kotlin.uuid.toJavaUuid
-import kotlin.uuid.toKotlinUuid
 
 internal class AccountDataSourceImpl : DataSource(), AccountDataSource {
 
     override suspend fun createAuthorization(info: Authentication): Authentication = dbQuery {
         AuthenticationTable.insertAndGetId {
-            it[userId] = info.userId.toJavaUuid()
-            it[uuid] = info.uuid.toJavaUuid()
+            it[userId] = info.userId
+            it[uuid] = info.uuid
             it[updatedAt] = Clock.System.now()
         }.let {
-            info.copy(id = it.value.toKotlinUuid())
+            info.copy(id = it.value)
         }
     }
 
     override suspend fun getAuthRecordById(id: Uuid): Authentication? = dbQuery {
         AuthenticationTable.selectAll()
-            .where { AuthenticationTable.id eq id.toJavaUuid() }
+            .where { AuthenticationTable.id eq id }
             .map { AuthenticationEntity.wrapRow(it).toDomain() }
             .singleOrNull()
     }
 
     override suspend fun getAuthRecordByUUID(uuid: Uuid): Authentication? = dbQuery {
         AuthenticationTable.selectAll()
-            .where { AuthenticationTable.uuid eq uuid.toJavaUuid() }
+            .where { AuthenticationTable.uuid eq uuid }
             .map { AuthenticationEntity.wrapRow(it).toDomain() }
             .singleOrNull()
     }
 
     override suspend fun getAuthRecordByUserId(userId: Uuid): Authentication? = dbQuery {
         AuthenticationTable.selectAll()
-            .where { AuthenticationTable.userId eq userId.toJavaUuid() }
+            .where { AuthenticationTable.userId eq userId }
             .map { AuthenticationEntity.wrapRow(it).toDomain() }
             .singleOrNull()
     }
 
     override suspend fun deleteAuthorization(authId: Uuid) = dbQuery<Unit> {
         AuthenticationTable.deleteWhere {
-            AuthenticationTable.id eq authId.toJavaUuid()
+            AuthenticationTable.id eq authId
         }
     }
 }

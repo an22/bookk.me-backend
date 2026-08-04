@@ -12,12 +12,11 @@ import org.jetbrains.exposed.v1.jdbc.update
 import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
-import kotlin.uuid.toJavaUuid
 
 internal class AppointmentSubscriptionDataSourceImpl : DataSource(), AppointmentSubscriptionDataSource {
 
     override suspend fun getBusinessSnapshot(id: Uuid): BusinessSnapshot? = dbQuery {
-        AppointmentBusinessEntity.findById(id.toJavaUuid())?.domain()
+        AppointmentBusinessEntity.findById(id)?.domain()
     }
 
     override suspend fun attachBusiness(snapshot: BusinessSnapshot) {
@@ -31,7 +30,7 @@ internal class AppointmentSubscriptionDataSourceImpl : DataSource(), Appointment
     override suspend fun detachBusiness(businessId: Uuid) {
         dbQuery {
             AppointmentBusinessTable.deleteWhere {
-                AppointmentBusinessTable.id eq businessId.toJavaUuid()
+                AppointmentBusinessTable.id eq businessId
             }
         }
     }
@@ -39,7 +38,7 @@ internal class AppointmentSubscriptionDataSourceImpl : DataSource(), Appointment
     override suspend fun enableBusiness(businessId: Uuid) {
         dbQuery {
             AppointmentBusinessTable.update(
-                where = { AppointmentBusinessTable.id eq businessId.toJavaUuid() }
+                where = { AppointmentBusinessTable.id eq businessId }
             ) {
                 it[enabled] = true
                 it[updatedAt] = Clock.System.now()
@@ -49,7 +48,7 @@ internal class AppointmentSubscriptionDataSourceImpl : DataSource(), Appointment
 
     override suspend fun isBusinessEnabled(businessId: Uuid): Boolean = dbQuery {
         AppointmentBusinessTable.select(AppointmentBusinessTable.enabled)
-            .where { AppointmentBusinessTable.id eq businessId.toJavaUuid() }
+            .where { AppointmentBusinessTable.id eq businessId }
             .map { it[AppointmentBusinessTable.enabled] }
             .singleOrNull() ?: false
     }
@@ -57,7 +56,7 @@ internal class AppointmentSubscriptionDataSourceImpl : DataSource(), Appointment
     override suspend fun disableBusiness(businessId: Uuid) {
         dbQuery {
             AppointmentBusinessTable.update(
-                where = { AppointmentBusinessTable.id eq businessId.toJavaUuid() }
+                where = { AppointmentBusinessTable.id eq businessId }
             ) {
                 it[enabled] = false
                 it[updatedAt] = Clock.System.now()

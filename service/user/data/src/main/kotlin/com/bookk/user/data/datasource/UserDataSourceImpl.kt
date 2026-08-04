@@ -17,8 +17,6 @@ import org.jetbrains.exposed.v1.jdbc.selectAll
 import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
-import kotlin.uuid.toJavaUuid
-import kotlin.uuid.toKotlinUuid
 
 internal class UserDataSourceImpl(
     private val cacheClient: CacheClient<String>
@@ -32,14 +30,14 @@ internal class UserDataSourceImpl(
             it[phone] = user.phone
             it[updatedAt] = Clock.System.now()
         }.let {
-            user.copy(id = it.value.toKotlinUuid())
+            user.copy(id = it.value)
         }.also {
             runCatching { cacheClient.save(it) }
         }
     }
 
     override suspend fun updateUser(id: Uuid, user: UserEditModel, updatedAt: Instant): User? = dbQuery {
-        UserEntity.applyEdit(id.toJavaUuid(), user, updatedAt)?.domain()
+        UserEntity.applyEdit(id, user, updatedAt)?.domain()
     }?.also {
         cacheClient.deleteUser(id)
     }
@@ -48,7 +46,7 @@ internal class UserDataSourceImpl(
         val cached: User? = cacheClient.getUser(id)
         if (cached != null) return@dbQuery cached
         UserTable.selectAll()
-            .where { UserTable.id eq id.toJavaUuid() }
+            .where { UserTable.id eq id }
             .map { UserEntity.wrapRow(it).domain() }
             .singleOrNull()
             ?.also { user ->
@@ -65,7 +63,7 @@ internal class UserDataSourceImpl(
     }
 
     override suspend fun deleteUser(id: Uuid) = dbQuery<Unit> {
-        UserTable.deleteWhere { UserTable.id eq id.toJavaUuid() }
+        UserTable.deleteWhere { UserTable.id eq id }
         runCatching { cacheClient.deleteUser(id) }
     }
 }

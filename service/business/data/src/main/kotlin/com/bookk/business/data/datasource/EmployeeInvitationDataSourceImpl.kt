@@ -12,29 +12,27 @@ import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import org.jetbrains.exposed.v1.jdbc.update
 import kotlin.time.Clock
 import kotlin.uuid.Uuid
-import kotlin.uuid.toJavaUuid
-import kotlin.uuid.toKotlinUuid
 
 internal class EmployeeInvitationDataSourceImpl : DataSource(), EmployeeInvitationDataSource {
 
     override suspend fun createInvitation(invitation: EmployeeInvitation): EmployeeInvitation = dbQuery {
         val id = EmployeeInvitationTable.insertAndGetId {
-            it[businessId] = invitation.businessId.toJavaUuid()
-            it[userId] = invitation.userId.toJavaUuid()
-            it[invitedBy] = invitation.invitedBy.toJavaUuid()
+            it[businessId] = invitation.businessId
+            it[userId] = invitation.userId
+            it[invitedBy] = invitation.invitedBy
             it[name] = invitation.name.trim()
             it[lastName] = invitation.lastName.trim()
             it[phone] = invitation.phone?.trim()
             it[email] = invitation.email?.trim()
             it[status] = EmployeeInvitationStatus.PENDING
         }
-        invitation.copy(id = id.value.toKotlinUuid(), status = EmployeeInvitationStatus.PENDING)
+        invitation.copy(id = id.value, status = EmployeeInvitationStatus.PENDING)
     }
 
     override suspend fun getInvitation(businessId: Uuid, id: Uuid): EmployeeInvitation? = dbQuery {
         EmployeeInvitationEntity.find {
-            (EmployeeInvitationTable.businessId eq businessId.toJavaUuid()) and
-                (EmployeeInvitationTable.id eq id.toJavaUuid())
+            (EmployeeInvitationTable.businessId eq businessId) and
+                (EmployeeInvitationTable.id eq id)
         }
             .firstOrNull()
             ?.toDomain()
@@ -43,7 +41,7 @@ internal class EmployeeInvitationDataSourceImpl : DataSource(), EmployeeInvitati
     override suspend fun approveInvitation(id: Uuid): Boolean = dbQuery {
         EmployeeInvitationTable.update(
             where = {
-                (EmployeeInvitationTable.id eq id.toJavaUuid()) and
+                (EmployeeInvitationTable.id eq id) and
                     (EmployeeInvitationTable.status eq EmployeeInvitationStatus.PENDING)
             }
         ) {

@@ -15,13 +15,11 @@ import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import org.jetbrains.exposed.v1.jdbc.update
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
-import kotlin.uuid.toJavaUuid
-import kotlin.uuid.toKotlinUuid
 
 internal class ClientDataSourceImpl : DataSource(), ClientDataSource {
     override suspend fun createDetachedClient(businessId: Uuid, client: Client.Detached): Client = dbQuery {
         val id = ClientTable.insertAndGetId {
-            it[this.businessId] = businessId.toJavaUuid()
+            it[this.businessId] = businessId
             it[name] = client.name.trim()
             it[lastName] = client.lastName.trim()
             it[phone] = client.phone.trim()
@@ -29,33 +27,33 @@ internal class ClientDataSourceImpl : DataSource(), ClientDataSource {
             it[userId] = null
         }
         client.copy(
-            id = id.value.toKotlinUuid()
+            id = id.value
         )
     }
 
     override suspend fun createIntegratedClient(businessId: Uuid, client: Client.Integrated): Client = dbQuery {
         val id = ClientTable.insertAndGetId {
-            it[this.businessId] = businessId.toJavaUuid()
+            it[this.businessId] = businessId
             it[name] = client.name.trim()
             it[lastName] = client.lastName.trim()
             it[phone] = client.phone.trim()
             it[email] = client.email.trim()
-            it[userId] = client.userId.toJavaUuid()
+            it[userId] = client.userId
         }
         client.copy(
-            id = id.value.toKotlinUuid()
+            id = id.value
         )
     }
 
     override suspend fun getClients(businessId: Uuid): List<Client> = dbQuery {
         ClientEntity.find {
-            ClientTable.businessId eq businessId.toJavaUuid()
+            ClientTable.businessId eq businessId
         }.map(ClientEntity::toDomain)
     }
 
     override suspend fun getClient(businessId: Uuid, phone: String): Client? = dbQuery {
         ClientEntity.find {
-            (ClientTable.businessId eq businessId.toJavaUuid()) and (ClientTable.phone eq phone)
+            (ClientTable.businessId eq businessId) and (ClientTable.phone eq phone)
         }
             .map(ClientEntity::toDomain)
             .firstOrNull()
@@ -63,7 +61,7 @@ internal class ClientDataSourceImpl : DataSource(), ClientDataSource {
 
     override suspend fun deleteClient(businessId: Uuid, id: Uuid) = dbQuery {
         ClientTable.deleteWhere {
-            (ClientTable.businessId eq businessId.toJavaUuid()) and (ClientTable.id eq id.toJavaUuid())
+            (ClientTable.businessId eq businessId) and (ClientTable.id eq id)
         } != 0
     }
 
@@ -77,7 +75,7 @@ internal class ClientDataSourceImpl : DataSource(), ClientDataSource {
     ): Int = dbQuery {
         ClientTable.update(
             where = {
-                (ClientTable.userId eq userId.toJavaUuid()) and
+                (ClientTable.userId eq userId) and
                     (ClientTable.sourceUpdatedAt.isNull() or (ClientTable.sourceUpdatedAt less updatedAt))
             }
         ) {

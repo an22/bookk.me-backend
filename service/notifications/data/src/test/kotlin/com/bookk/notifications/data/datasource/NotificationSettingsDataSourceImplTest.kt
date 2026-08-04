@@ -19,7 +19,6 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import kotlin.uuid.Uuid
-import kotlin.uuid.toJavaUuid
 
 internal class NotificationSettingsDataSourceImplTest {
 
@@ -30,8 +29,8 @@ internal class NotificationSettingsDataSourceImplTest {
         suspend fun insertSettings(userId: Uuid, appointmentEnabled: Boolean = true): Uuid {
             val settingsId = Uuid.random()
             suspendTransaction {
-                NotificationSettingsEntity.new(settingsId.toJavaUuid()) {
-                    this.userId = userId.toJavaUuid()
+                NotificationSettingsEntity.new(settingsId) {
+                    this.userId = userId
                     this.appointmentEnabled = appointmentEnabled
                 }
             }
@@ -46,8 +45,8 @@ internal class NotificationSettingsDataSourceImplTest {
         ): Uuid {
             val channelId = Uuid.random()
             suspendTransaction {
-                NotificationChannelsEntity.new(channelId.toJavaUuid()) {
-                    this.settingsId = EntityID(settingsId.toJavaUuid(), NotificationSettingsTable)
+                NotificationChannelsEntity.new(channelId) {
+                    this.settingsId = EntityID(settingsId, NotificationSettingsTable)
                     this.channel = channel
                     this.enabled = enabled
                     this.availableToClients = availableToClients

@@ -2,11 +2,11 @@ package com.bookk.auth.data.orm.table
 
 import com.bookk.core.domain.entity.Language
 import org.jetbrains.exposed.v1.core.ReferenceOption
-import org.jetbrains.exposed.v1.core.dao.id.UUIDTable
+import org.jetbrains.exposed.v1.core.dao.id.UuidTable
 import org.jetbrains.exposed.v1.datetime.timestamp
 import kotlin.time.Clock
 
-internal object AuthDeviceTable : UUIDTable("auth_device") {
+internal object AuthDeviceTable : UuidTable("auth_device") {
     val userAuthId = reference("user_auth_id", AuthenticationTable, onDelete = ReferenceOption.CASCADE).index()
     val deviceUUID = uuid("device_uuid")
     val deviceName = varchar("device_name", 255)

@@ -9,7 +9,6 @@ import com.bookk.core.data.DataSource
 import com.bookk.core.domain.entity.Error
 import org.jetbrains.exposed.v1.core.eq
 import kotlin.uuid.Uuid
-import kotlin.uuid.toJavaUuid
 
 internal class AppointmentSettingsDataSourceImpl : DataSource(), AppointmentSettingsDataSource {
     override suspend fun create(settings: AppointmentSettings): AppointmentSettings = dbQuery {
@@ -22,7 +21,7 @@ internal class AppointmentSettingsDataSourceImpl : DataSource(), AppointmentSett
 
     override suspend fun get(businessId: Uuid): AppointmentSettings? = dbQuery {
         SettingsEntity.find {
-            SettingsTable.businessId eq businessId.toJavaUuid()
+            SettingsTable.businessId eq businessId
         }
             .singleOrNull()
             ?.domain()
@@ -30,7 +29,7 @@ internal class AppointmentSettingsDataSourceImpl : DataSource(), AppointmentSett
 
     override suspend fun getForUpdate(businessId: Uuid): AppointmentSettings? = dbQuery {
         SettingsEntity.find {
-            SettingsTable.businessId eq businessId.toJavaUuid()
+            SettingsTable.businessId eq businessId
         }
             .forUpdate()
             .singleOrNull()

@@ -14,27 +14,26 @@ import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.update
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
-import kotlin.uuid.toJavaUuid
 
 internal class NotificationTargetDataSourceImpl : DataSource(), NotificationTargetDataSource {
 
     override suspend fun getEmail(userId: Uuid): String? {
         return NotificationEmailTargetTable.select(NotificationEmailTargetTable.email)
-            .where { NotificationEmailTargetTable.userId eq userId.toJavaUuid() }
+            .where { NotificationEmailTargetTable.userId eq userId }
             .singleOrNull()
             ?.get(NotificationEmailTargetTable.email)
     }
 
     override suspend fun getTelegram(userId: Uuid): String? {
         return NotificationTelegramTargetTable.select(NotificationTelegramTargetTable.telegramTag)
-            .where { NotificationTelegramTargetTable.userId eq userId.toJavaUuid() }
+            .where { NotificationTelegramTargetTable.userId eq userId }
             .singleOrNull()
             ?.get(NotificationTelegramTargetTable.telegramTag)
     }
 
     override suspend fun insertEmail(userId: Uuid, email: String, updatedAt: Instant) = dbQuery<Unit> {
         NotificationEmailTargetTable.insert {
-            it[NotificationEmailTargetTable.userId] = userId.toJavaUuid()
+            it[NotificationEmailTargetTable.userId] = userId
             it[NotificationEmailTargetTable.email] = email
             it[NotificationEmailTargetTable.sourceUpdatedAt] = updatedAt
         }
@@ -43,7 +42,7 @@ internal class NotificationTargetDataSourceImpl : DataSource(), NotificationTarg
     override suspend fun updateEmail(userId: Uuid, email: String, updatedAt: Instant): Boolean = dbQuery {
         NotificationEmailTargetTable.update(
             where = {
-                (NotificationEmailTargetTable.userId eq userId.toJavaUuid()) and
+                (NotificationEmailTargetTable.userId eq userId) and
                     (
                         NotificationEmailTargetTable.sourceUpdatedAt.isNull() or
                             (NotificationEmailTargetTable.sourceUpdatedAt less updatedAt)
@@ -57,14 +56,14 @@ internal class NotificationTargetDataSourceImpl : DataSource(), NotificationTarg
 
     override suspend fun insertTelegram(userId: Uuid, telegramTag: String) = dbQuery<Unit> {
         NotificationTelegramTargetTable.insert {
-            it[NotificationTelegramTargetTable.userId] = userId.toJavaUuid()
+            it[NotificationTelegramTargetTable.userId] = userId
             it[NotificationTelegramTargetTable.telegramTag] = telegramTag
         }
     }
 
     override suspend fun updateTelegram(userId: Uuid, telegramTag: String): Boolean = dbQuery {
         NotificationTelegramTargetTable.update(
-            where = { NotificationTelegramTargetTable.userId eq userId.toJavaUuid() }
+            where = { NotificationTelegramTargetTable.userId eq userId }
         ) {
             it[NotificationTelegramTargetTable.telegramTag] = telegramTag
         } > 0

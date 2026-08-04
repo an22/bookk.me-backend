@@ -23,15 +23,13 @@ import kotlin.time.Clock
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
-import kotlin.uuid.toJavaUuid
-import kotlin.uuid.toKotlinUuid
 
 internal class DeviceDataSourceImpl : DataSource(), DeviceDataSource {
     override suspend fun attachRefreshTokenToDevice(deviceId: Uuid, tokenId: Uuid, tokenHash: String) = dbQuery<Unit> {
         val now = Clock.System.now()
-        AuthDeviceTable.update(where = { AuthDeviceTable.id eq deviceId.toJavaUuid() }) {
+        AuthDeviceTable.update(where = { AuthDeviceTable.id eq deviceId }) {
             it[isSignedIn] = true
-            it[refreshTokenId] = tokenId.toJavaUuid()
+            it[refreshTokenId] = tokenId
             it[refreshTokenHash] = tokenHash
             it[refreshTokenExpiresAt] = now.plus(REFRESH_TOKEN_TTL)
             it[previousRefreshTokenId] = null
@@ -44,15 +42,15 @@ internal class DeviceDataSourceImpl : DataSource(), DeviceDataSource {
     override suspend fun rotateRefreshToken(deviceId: Uuid, tokenId: Uuid, tokenHash: String) = dbQuery<Unit> {
         val (id, hash) = AuthDeviceTable
             .selectAll()
-            .where { AuthDeviceTable.id eq deviceId.toJavaUuid() }
+            .where { AuthDeviceTable.id eq deviceId }
             .map { it[AuthDeviceTable.refreshTokenId] to it[AuthDeviceTable.refreshTokenHash] }
             .singleOrNull() ?: throw Error.NotFound()
 
-        AuthDeviceTable.update(where = { AuthDeviceTable.id eq deviceId.toJavaUuid() }) {
+        AuthDeviceTable.update(where = { AuthDeviceTable.id eq deviceId }) {
             it[isSignedIn] = true
             it[previousRefreshTokenId] = id
             it[previousRefreshTokenHash] = hash
-            it[refreshTokenId] = tokenId.toJavaUuid()
+            it[refreshTokenId] = tokenId
             it[refreshTokenHash] = tokenHash
             it[refreshTokenExpiresAt] = Clock.System.now().plus(REFRESH_TOKEN_TTL)
             it[updatedAt] = Clock.System.now()
@@ -63,7 +61,7 @@ internal class DeviceDataSourceImpl : DataSource(), DeviceDataSource {
         AuthDeviceTable
             .innerJoin(AuthenticationTable, onColumn = { userAuthId }, otherColumn = { id })
             .selectAll()
-            .where { AuthDeviceTable.id eq deviceId.toJavaUuid() }
+            .where { AuthDeviceTable.id eq deviceId }
             .map { AuthDeviceEntity.wrapRow(it).toDomain() }
             .singleOrNull()
     }
@@ -73,9 +71,9 @@ internal class DeviceDataSourceImpl : DataSource(), DeviceDataSource {
             .innerJoin(AuthenticationTable, onColumn = { userAuthId }, otherColumn = { id })
             .selectAll()
             .where {
-                AuthDeviceTable.refreshTokenId.eq(tokenId.toJavaUuid())
+                AuthDeviceTable.refreshTokenId.eq(tokenId)
                     .and(AuthDeviceTable.refreshTokenExpiresAt.greater(Clock.System.now()))
-                    .or(AuthDeviceTable.previousRefreshTokenId.eq(tokenId.toJavaUuid()))
+                    .or(AuthDeviceTable.previousRefreshTokenId.eq(tokenId))
             }
             .map { AuthDeviceEntity.wrapRow(it).toDomain() }
             .singleOrNull()
@@ -87,10 +85,10 @@ internal class DeviceDataSourceImpl : DataSource(), DeviceDataSource {
                 otherTable = AuthenticationTable,
                 onColumn = { userAuthId },
                 otherColumn = { id },
-                additionalConstraint = { AuthenticationTable.id eq authId.toJavaUuid() }
+                additionalConstraint = { AuthenticationTable.id eq authId }
             )
             .selectAll()
-            .where { AuthDeviceTable.deviceUUID eq deviceUUID.toJavaUuid() }
+            .where { AuthDeviceTable.deviceUUID eq deviceUUID }
             .map { AuthDeviceEntity.wrapRow(it).toDomain() }
             .singleOrNull()
     }
@@ -101,7 +99,7 @@ internal class DeviceDataSourceImpl : DataSource(), DeviceDataSource {
                 otherTable = AuthenticationTable,
                 onColumn = { userAuthId },
                 otherColumn = { id },
-                additionalConstraint = { AuthDeviceTable.userAuthId eq authId.toJavaUuid() }
+                additionalConstraint = { AuthDeviceTable.userAuthId eq authId }
             )
             .selectAll()
             .map { AuthDeviceEntity.wrapRow(it).toDomain() }
@@ -110,7 +108,7 @@ internal class DeviceDataSourceImpl : DataSource(), DeviceDataSource {
 
     override suspend fun deleteTokenFromDevice(deviceId: Uuid) = dbQuery<Unit> {
         AuthDeviceTable.update(
-            where = { AuthDeviceTable.id eq deviceId.toJavaUuid() }
+            where = { AuthDeviceTable.id eq deviceId }
         ) {
             it[isSignedIn] = false
             it[refreshTokenId] = null
@@ -121,20 +119,20 @@ internal class DeviceDataSourceImpl : DataSource(), DeviceDataSource {
         }
     }
 
-    override suspend fun insertDevice(authId: Uuid, uuid: Uuid, name: String, language: Language) = dbQuery<Uuid?> {
+    override suspend fun insertDevice(authId: Uuid, uuid: Uuid, name: String, language: Language) = dbQuery {
         AuthDeviceTable.insertIgnoreAndGetId {
-            it[userAuthId] = authId.toJavaUuid()
-            it[deviceUUID] = uuid.toJavaUuid()
+            it[userAuthId] = authId
+            it[deviceUUID] = uuid
             it[deviceName] = name
             it[AuthDeviceTable.language] = language
             it[isSignedIn] = false
             it[updatedAt] = Clock.System.now()
-        }?.value?.toKotlinUuid()
+        }?.value
     }
 
     override suspend fun updateLanguage(authId: Uuid, deviceUuid: Uuid, language: Language) = dbQuery<Unit> {
         AuthDeviceTable.update(
-            where = { AuthDeviceTable.userAuthId.eq(authId.toJavaUuid()).and(AuthDeviceTable.deviceUUID.eq(deviceUuid.toJavaUuid())) }
+            where = { AuthDeviceTable.userAuthId.eq(authId).and(AuthDeviceTable.deviceUUID.eq(deviceUuid)) }
         ) {
             it[AuthDeviceTable.language] = language
             it[updatedAt] = Clock.System.now()
@@ -144,7 +142,7 @@ internal class DeviceDataSourceImpl : DataSource(), DeviceDataSource {
     override suspend fun deleteInactiveDevices(olderThan: Instant): List<Uuid> = dbQuery {
         AuthDeviceTable
             .deleteReturning(listOf(AuthDeviceTable.deviceUUID)) { AuthDeviceTable.lastLogInAt less olderThan }
-            .map { it[AuthDeviceTable.deviceUUID].toKotlinUuid() }
+            .map { it[AuthDeviceTable.deviceUUID] }
     }
 
     companion object {

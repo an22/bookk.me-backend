@@ -4,20 +4,18 @@ import com.bookk.appointments.data.orm.table.AppointmentBusinessTable
 import com.bookk.appointments.data.orm.table.DayOffsTable
 import com.bookk.appointments.data.orm.table.WorkingHoursTable
 import com.bookk.appointments.domain.api.entity.BusinessSnapshot
-import com.bookk.core.data.DecoratorUUIDEntityClass
+import com.bookk.core.data.DecoratorUuidEntityClass
 import kotlinx.datetime.TimeZone
 import library.schedule.Schedule
 import library.schedule.toWorkingDays
 import library.schedule.toWorkingDaysMask
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
-import org.jetbrains.exposed.v1.dao.UUIDEntity
-import java.util.UUID
+import org.jetbrains.exposed.v1.dao.UuidEntity
 import kotlin.time.Clock
 import kotlin.time.Instant
-import kotlin.uuid.toJavaUuid
-import kotlin.uuid.toKotlinUuid
+import kotlin.uuid.Uuid
 
-internal class AppointmentBusinessEntity(id: EntityID<UUID>) : UUIDEntity(id) {
+internal class AppointmentBusinessEntity(id: EntityID<Uuid>) : UuidEntity(id) {
     var enabled by AppointmentBusinessTable.enabled
     var name by AppointmentBusinessTable.name
     var address by AppointmentBusinessTable.address
@@ -35,7 +33,7 @@ internal class AppointmentBusinessEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     )
 
     fun domain(): BusinessSnapshot = BusinessSnapshot(
-        id = id.value.toKotlinUuid(),
+        id = id.value,
         name = name,
         address = address,
         timeZone = TimeZone.of(timezone),
@@ -48,9 +46,9 @@ internal class AppointmentBusinessEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         DayOffEntity.batchReplace(id.value, snapshot.schedule.dayOffs)
     }
 
-    companion object : DecoratorUUIDEntityClass<AppointmentBusinessEntity>(AppointmentBusinessTable) {
+    companion object : DecoratorUuidEntityClass<AppointmentBusinessEntity>(AppointmentBusinessTable) {
 
-        fun new(snapshot: BusinessSnapshot): AppointmentBusinessEntity = new(snapshot.id.toJavaUuid()) {
+        fun new(snapshot: BusinessSnapshot): AppointmentBusinessEntity = new(snapshot.id) {
             name = snapshot.name
             address = snapshot.address
             timezone = snapshot.timeZone.id
@@ -59,7 +57,7 @@ internal class AppointmentBusinessEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         }.apply { replaceSchedule(snapshot) }
 
         fun findByIdAndUpdate(snapshot: BusinessSnapshot, updatedAt: Instant) =
-            findByIdAndUpdate(snapshot.id.toJavaUuid()) {
+            findByIdAndUpdate(snapshot.id) {
                 val sourceUpdatedAt = it.sourceUpdatedAt
                 if (sourceUpdatedAt == null || sourceUpdatedAt < updatedAt) {
                     it.name = snapshot.name

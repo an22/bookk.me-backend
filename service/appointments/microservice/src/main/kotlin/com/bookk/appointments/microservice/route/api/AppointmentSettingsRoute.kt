@@ -25,6 +25,7 @@ fun Routing.settings() {
          * Tag: appointment
          * Security: jwt
          * Response: 200 application/x-protobuf [com.bookk.appointments.domain.api.entity.AppointmentSettings] Settings entity
+         * Response: 404 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Settings not found or user is not allowed to read them
          */
         get<Api.Appointment.Settings> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
@@ -45,6 +46,8 @@ fun Routing.settings() {
          * Security: jwt
          * Body: application/x-protobuf [com.bookk.appointments.domain.api.entity.AppointmentSettingsUpdate]
          * Response: 200 application/x-protobuf [com.bookk.appointments.domain.api.entity.AppointmentSettings] Updated settings entity
+         * Response: 400 application/x-protobuf Path business id does not match body business id
+         * Response: 404 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Settings not found or user is not allowed to update them
          */
         put<Api.Appointment.Settings> {
             val principal = requireNotNull(call.principal<AppPrincipal>())

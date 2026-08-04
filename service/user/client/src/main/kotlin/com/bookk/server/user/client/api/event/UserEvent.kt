@@ -15,6 +15,7 @@ sealed interface UserEvent : EventStreaming.Event<String> {
         override val idempotencyKey: String = Uuid.random().toString()
     ) : UserEvent {
         override val topic: String = TOPIC
+        override val partitionKey: String get() = userId.toString()
 
         companion object {
             const val TOPIC = "user.updated"

@@ -1,12 +1,12 @@
 package com.bookk.business.microservice.route.api
 
-import com.bookk.business.domain.api.client.entity.Client
 import com.bookk.business.domain.api.client.entity.ClientRemote
 import com.bookk.business.domain.api.client.entity.toDomain
 import com.bookk.business.domain.api.client.operation.CreateClient
 import com.bookk.business.domain.api.client.operation.DeleteClient
 import com.bookk.business.domain.api.client.operation.GetClients
 import com.bookk.business.microservice.route.BusinessRouting.Api
+import com.bookk.core.domain.entity.SimpleServerError
 import com.bookk.core.service.enity.respondWith
 import com.bookk.server.auth.client.AppPrincipal
 import io.ktor.http.ContentType
@@ -31,7 +31,8 @@ fun Route.clientCrud() {
          * Tag: business
          * Security: jwt
          * Body: application/x-protobuf [com.bookk.business.domain.api.client.entity.ClientRemote]
-         * Response: 200 application/x-protobuf [com.bookk.business.domain.api.client.entity.Client] Created client entity
+         * Response: 200 application/x-protobuf [com.bookk.business.domain.api.client.entity.ClientRemote] Created client entity
+         * Response: 404 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] User is not allowed to create clients for this business
          * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Create client errors<br>BUSINESS_CLIENT_EXISTS (200004) Client with this phone already exists<br>BUSINESS_CLIENT_NAME_VALIDATION_ERROR (200005) Client name or last name is too long
          */
         post<Api.Clients> {
@@ -62,8 +63,13 @@ fun Route.clientCrud() {
         }.describe {
             responses {
                 response(HttpStatusCode.OK.value) {
-                    schema = jsonSchema<List<Client>>()
+                    schema = jsonSchema<List<ClientRemote>>()
                     description = "List of clients"
+                    ContentType.Application.ProtoBuf()
+                }
+                response(HttpStatusCode.NotFound.value) {
+                    schema = jsonSchema<SimpleServerError>()
+                    description = "User is not allowed to read clients of this business"
                     ContentType.Application.ProtoBuf()
                 }
             }

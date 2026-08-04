@@ -18,12 +18,24 @@ import kotlinx.datetime.LocalTime
 import library.schedule.DayOffRange
 import library.schedule.Schedule
 import library.schedule.WorkHour
+import org.jetbrains.exposed.v1.core.SqlLogger
+import org.jetbrains.exposed.v1.core.Transaction
+import org.jetbrains.exposed.v1.core.statements.StatementContext
 import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import kotlin.uuid.Uuid
+
+private class CapturingSqlLogger : SqlLogger {
+    val statements = mutableListOf<String>()
+
+    override fun log(context: StatementContext, transaction: Transaction) {
+        statements += context.sql(transaction)
+    }
+}
 
 internal class AppointmentSettingsDataSourceImplTest {
 
@@ -93,6 +105,25 @@ internal class AppointmentSettingsDataSourceImplTest {
         then()
         assertEquals(20, updated.inBetweenBreakInMinutes)
         assertEquals("Updated note", updated.appointmentNote)
+    }
+
+    @Test
+    fun `should lock the settings row while updating it`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        suspendTransaction { fixture.sut.create(AppointmentSettings.stub(fixture.businessId)) }
+        val capturedSql = CapturingSqlLogger()
+
+        whenn()
+        suspendTransaction {
+            addLogger(capturedSql)
+            fixture.sut.update(AppointmentSettingsUpdate.stub(businessId = fixture.businessId))
+        }
+
+        then()
+        val selects = capturedSql.statements.filter { it.startsWith("SELECT", ignoreCase = true) }
+        assertTrue(selects.any { it.contains("FOR UPDATE", ignoreCase = true) })
     }
 
     @Test

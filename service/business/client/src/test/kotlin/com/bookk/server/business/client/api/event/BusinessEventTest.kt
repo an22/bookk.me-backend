@@ -18,8 +18,8 @@ internal class BusinessEventTest {
 
     private val businessId = Uuid.random()
 
-    private fun businessDto() = BusinessDTO(
-        id = businessId,
+    private fun businessDto(id: Uuid = businessId) = BusinessDTO(
+        id = id,
         name = "Business name",
         address = "Business address",
         timeZone = TimeZone.UTC,
@@ -51,16 +51,29 @@ internal class BusinessEventTest {
     }
 
     @Test
-    fun `should route both business events for one business to the same partition key`() = runUnitTest {
+    fun `should route consecutive updates of one business to the same partition key`() = runUnitTest {
         given()
-        val updated = BusinessEvent.Updated(businessDto(), Instant.fromEpochMilliseconds(1000))
-        val deleted = BusinessEvent.Deleted(businessId)
+        val first = BusinessEvent.Updated(businessDto(), Instant.fromEpochMilliseconds(1000))
+        val second = BusinessEvent.Updated(businessDto(), Instant.fromEpochMilliseconds(2000))
 
         whenn()
-        val keys = setOf(updated.partitionKey, deleted.partitionKey)
+        val keys = setOf(first.partitionKey, second.partitionKey)
 
         then()
         assertEquals(1, keys.size)
+    }
+
+    @Test
+    fun `should route updates of different businesses to different partition keys`() = runUnitTest {
+        given()
+        val mine = BusinessEvent.Updated(businessDto(), Instant.fromEpochMilliseconds(1000))
+        val other = BusinessEvent.Updated(businessDto(id = Uuid.random()), Instant.fromEpochMilliseconds(1000))
+
+        whenn()
+        val keys = setOf(mine.partitionKey, other.partitionKey)
+
+        then()
+        assertEquals(2, keys.size)
     }
 
     @OptIn(ExperimentalSerializationApi::class)

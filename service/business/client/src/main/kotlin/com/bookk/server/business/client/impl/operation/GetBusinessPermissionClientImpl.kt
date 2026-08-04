@@ -1,9 +1,9 @@
 package com.bookk.server.business.client.impl.operation
 
 import com.bookk.business.domain.api.business.operation.GetBusinessPermission
+import com.bookk.core.client.bodyOrThrow
 import com.bookk.server.business.client.impl.BusinessRouting
 import io.ktor.client.HttpClient
-import io.ktor.client.call.body
 import io.ktor.client.plugins.resources.get
 import kotlin.uuid.Uuid
 
@@ -17,6 +17,6 @@ internal class GetBusinessPermissionClientImpl(
                 parent = BusinessRouting.Api.Internal.Business.Id(id = businessId),
                 userId = userId
             )
-        ).body()
+        ).bodyOrThrow()
     }
 }

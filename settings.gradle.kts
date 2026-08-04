@@ -36,6 +36,7 @@ include(":core:data:cache:impl")
 include(":core:data:eventstreaming:api")
 include(":core:data:eventstreaming:impl")
 include(":core:service")
+include(":core:client")
 
 //Library
 include(":library:money")

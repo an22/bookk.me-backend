@@ -11,6 +11,7 @@ import com.bookk.core.data.eventstreaming.di.eventStreamingModule
 import com.bookk.core.data.eventstreaming.startEventHandling
 import com.bookk.core.service.installNegotiation
 import com.bookk.core.service.startServer
+import com.bookk.server.business.client.di.businessClientModule
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import library.scheduler.Scheduler
@@ -25,7 +26,8 @@ fun appointmentsModule() = module {
         appointmentsDomainModule(),
         appointmentsDataModule(),
         eventStreamingModule(),
-        cacheModule()
+        cacheModule(),
+        businessClientModule("appointments")
     )
 }
 

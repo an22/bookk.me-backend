@@ -1,6 +1,5 @@
-package com.bookk.business.domain.api.business.entity
+package library.schedule
 
-import com.bookk.business.domain.api.business.entity.WorkHour.Companion.nineToFive
 import kotlinx.datetime.DayOfWeek
 import kotlinx.serialization.Serializable
 
@@ -12,7 +11,7 @@ data class DayOfWeekSchedule(
     companion object {
         fun default(dayOfWeek: DayOfWeek): DayOfWeekSchedule {
             return DayOfWeekSchedule(
-                workingTime = listOf(dayOfWeek.nineToFive()),
+                workingTime = listOf(WorkHour.NINE_TO_FIVE),
                 isActive = dayOfWeek < DayOfWeek.SATURDAY
             )
         }

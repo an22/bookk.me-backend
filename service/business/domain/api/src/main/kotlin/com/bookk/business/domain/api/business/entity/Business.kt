@@ -2,6 +2,7 @@ package com.bookk.business.domain.api.business.entity
 
 import kotlinx.datetime.TimeZone
 import kotlinx.serialization.Serializable
+import library.schedule.Schedule
 import kotlin.uuid.Uuid
 
 @Serializable
@@ -14,8 +15,7 @@ class Business(
     val location: Location?,
     val currencyCode: String,
     val socials: List<Social>,
-    val schedule: WorkingSchedule,
-    val dayOffs: List<DayOffRange>
+    val schedule: Schedule
 ) {
     @Serializable
     class Location(
@@ -53,8 +53,7 @@ class Business(
             location: Location? = null,
             currencyCode: String = "USD",
             socials: List<Social> = emptyList(),
-            schedule: WorkingSchedule = WorkingSchedule(),
-            dayOffs: List<DayOffRange> = emptyList()
+            schedule: Schedule = Schedule()
         ) = Business(
             id = id,
             name = name,
@@ -64,8 +63,7 @@ class Business(
             location = location,
             currencyCode = currencyCode,
             socials = socials,
-            schedule = schedule,
-            dayOffs = dayOffs
+            schedule = schedule
         )
     }
 }

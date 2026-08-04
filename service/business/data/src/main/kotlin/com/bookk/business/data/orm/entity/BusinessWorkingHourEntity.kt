@@ -1,9 +1,10 @@
 package com.bookk.business.data.orm.entity
 
 import com.bookk.business.data.orm.table.BusinessWorkingHoursTable
-import com.bookk.business.domain.api.business.entity.WorkHour
 import com.bookk.core.data.DecoratorUUIDEntityClass
+import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.isoDayNumber
+import library.schedule.WorkHour
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.dao.UUIDEntity
@@ -17,15 +18,24 @@ internal class BusinessWorkingHourEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var startTime by BusinessWorkingHoursTable.startTime
     var endTime by BusinessWorkingHoursTable.endTime
 
+    fun domain(): WorkHour = WorkHour(from = startTime, to = endTime)
+
     companion object : DecoratorUUIDEntityClass<BusinessWorkingHourEntity>(BusinessWorkingHoursTable) {
-        fun batchReplace(businessId: UUID, hours: List<WorkHour>) {
+        fun batchReplace(businessId: UUID, hours: Map<DayOfWeek, List<WorkHour>>) {
             BusinessWorkingHoursTable.deleteWhere { BusinessWorkingHoursTable.businessId eq businessId }
-            BusinessWorkingHoursTable.batchInsert(hours) {
+            val rows = hours.flatMap { (dayOfWeek, workingTime) -> workingTime.map { dayOfWeek to it } }
+            BusinessWorkingHoursTable.batchInsert(rows) { (dayOfWeek, workHour) ->
                 this[BusinessWorkingHoursTable.businessId] = businessId
-                this[BusinessWorkingHoursTable.dayOfWeek] = it.dayOfWeek.isoDayNumber.toByte()
-                this[BusinessWorkingHoursTable.startTime] = it.from
-                this[BusinessWorkingHoursTable.endTime] = it.to
+                this[BusinessWorkingHoursTable.dayOfWeek] = dayOfWeek.isoDayNumber.toByte()
+                this[BusinessWorkingHoursTable.startTime] = workHour.from
+                this[BusinessWorkingHoursTable.endTime] = workHour.to
             }
         }
     }
+}
+
+internal fun Iterable<BusinessWorkingHourEntity>.toWorkingHours(): Map<DayOfWeek, List<WorkHour>> {
+    return this
+        .groupBy { DayOfWeek(it.dayOfWeek.toInt()) }
+        .mapValues { (_, rows) -> rows.map { it.domain() } }
 }

@@ -7,4 +7,5 @@ dependencies {
     implementation(projects.core.domain)
     implementation(projects.core.data.eventstreaming.api)
     api(projects.library.money)
+    api(projects.library.schedule)
 }

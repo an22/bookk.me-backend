@@ -18,6 +18,7 @@ ktor {
 }
 
 dependencies {
+    implementation(projects.service.business.client)
     implementation(projects.core)
     implementation(projects.core.service)
     implementation(projects.core.domain)

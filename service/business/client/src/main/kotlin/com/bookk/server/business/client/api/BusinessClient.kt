@@ -1,3 +1,7 @@
 package com.bookk.server.business.client.api
 
-interface BusinessClient
+import kotlin.uuid.Uuid
+
+interface BusinessClient {
+    suspend fun getBusinessById(id: Uuid): Result<BusinessDTO>
+}

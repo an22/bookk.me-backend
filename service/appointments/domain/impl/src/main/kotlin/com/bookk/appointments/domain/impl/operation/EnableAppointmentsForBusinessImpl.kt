@@ -8,6 +8,7 @@ import com.bookk.appointments.domain.datasource.AppointmentSubscriptionDataSourc
 import com.bookk.appointments.domain.datasource.PermissionsDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.entity.onConstraintFailure
+import com.bookk.server.business.client.api.BusinessClient
 import library.permissions.ObjectPermission
 import kotlin.uuid.Uuid
 
@@ -15,13 +16,26 @@ internal class EnableAppointmentsForBusinessImpl(
     private val subscriptionSource: AppointmentSubscriptionDataSource,
     private val settingsDataSource: AppointmentSettingsDataSource,
     private val permissionsDataSource: PermissionsDataSource,
+    private val businessClient: BusinessClient,
     private val transactionManager: TransactionManager
 ) : EnableAppointmentsForBusiness {
-    override suspend fun invoke(userId: Uuid, snapshot: BusinessSnapshot): Result<Unit> = transactionManager.transaction<Unit> {
-        subscriptionSource.attachBusiness(snapshot)
-        permissionsDataSource.initPermissions(userId, snapshot.id, ObjectPermission.OWNER.int)
-        settingsDataSource.create(AppointmentSettings(snapshot.id, snapshot.timeZone))
-    }.onConstraintFailure {
-        throw EnableAppointmentsForBusiness.Error.AlreadyEnabled()
+    override suspend fun invoke(userId: Uuid, businessId: Uuid): Result<Unit> {
+        val business = businessClient.getBusinessById(businessId).getOrElse { return Result.failure(it) }
+        return transactionManager.transaction<Unit> {
+            subscriptionSource.attachBusiness(
+                BusinessSnapshot(
+                    id = business.id,
+                    name = business.name,
+                    address = business.address,
+                    timeZone = business.timeZone,
+                    isEnabled = true,
+                    schedule = business.schedule
+                )
+            )
+            permissionsDataSource.initPermissions(userId, businessId, ObjectPermission.OWNER.int)
+            settingsDataSource.create(AppointmentSettings(businessId, business.timeZone))
+        }.onConstraintFailure {
+            throw EnableAppointmentsForBusiness.Error.AlreadyEnabled()
+        }
     }
 }

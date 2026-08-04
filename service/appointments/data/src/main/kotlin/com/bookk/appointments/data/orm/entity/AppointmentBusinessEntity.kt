@@ -1,17 +1,14 @@
 package com.bookk.appointments.data.orm.entity
 
-import com.bookk.appointments.data.map.toWorkingDays
-import com.bookk.appointments.data.map.toWorkingDaysMask
 import com.bookk.appointments.data.orm.table.AppointmentBusinessTable
 import com.bookk.appointments.data.orm.table.DayOffsTable
 import com.bookk.appointments.data.orm.table.WorkingHoursTable
 import com.bookk.appointments.domain.api.entity.BusinessSnapshot
-import com.bookk.appointments.domain.api.entity.DayOffRange
-import com.bookk.appointments.domain.api.entity.WorkHour
-import com.bookk.appointments.domain.api.entity.WorkingSchedule
 import com.bookk.core.data.DecoratorUUIDEntityClass
-import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.TimeZone
+import library.schedule.Schedule
+import library.schedule.toWorkingDays
+import library.schedule.toWorkingDaysMask
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.jetbrains.exposed.v1.dao.UUIDEntity
 import java.util.UUID
@@ -31,30 +28,24 @@ internal class AppointmentBusinessEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     val workingHours by WorkingHourEntity referrersOn WorkingHoursTable.businessId
     val dayOffs by DayOffEntity referrersOn DayOffsTable.businessId
 
+    fun schedule(): Schedule = Schedule(
+        workingDays = workingDays.toWorkingDays(),
+        workingHours = workingHours.toWorkingHours(),
+        dayOffs = dayOffs.map { it.domain() }
+    )
+
     fun domain(): BusinessSnapshot = BusinessSnapshot(
         id = id.value.toKotlinUuid(),
         name = name,
         address = address,
         timeZone = TimeZone.of(timezone),
         isEnabled = enabled,
-        schedule = WorkingSchedule(
-            workingDays = workingDays.toWorkingDays(),
-            workingHours = workingHours
-                .map {
-                    WorkHour(
-                        dayOfWeek = DayOfWeek(it.dayOfWeek.toInt()),
-                        from = it.startTime,
-                        to = it.endTime
-                    )
-                }
-                .groupBy { it.dayOfWeek }
-        ),
-        dayOffs = dayOffs.map { DayOffRange(it.startDate, it.endDate) }
+        schedule = schedule()
     )
 
     private fun replaceSchedule(snapshot: BusinessSnapshot) {
-        WorkingHourEntity.batchReplace(id.value, snapshot.schedule.list().flatMap { it.workingTime })
-        DayOffEntity.batchReplace(id.value, snapshot.dayOffs)
+        WorkingHourEntity.batchReplace(id.value, snapshot.schedule.workingHours())
+        DayOffEntity.batchReplace(id.value, snapshot.schedule.dayOffs)
     }
 
     companion object : DecoratorUUIDEntityClass<AppointmentBusinessEntity>(AppointmentBusinessTable) {
@@ -64,7 +55,7 @@ internal class AppointmentBusinessEntity(id: EntityID<UUID>) : UUIDEntity(id) {
             address = snapshot.address
             timezone = snapshot.timeZone.id
             enabled = true
-            workingDays = snapshot.schedule.toWorkingDaysMask()
+            workingDays = snapshot.schedule.activeDays().toWorkingDaysMask()
         }.apply { replaceSchedule(snapshot) }
 
         fun findByIdAndUpdate(snapshot: BusinessSnapshot, updatedAt: Instant) =
@@ -74,7 +65,7 @@ internal class AppointmentBusinessEntity(id: EntityID<UUID>) : UUIDEntity(id) {
                     it.name = snapshot.name
                     it.address = snapshot.address
                     it.timezone = snapshot.timeZone.id
-                    it.workingDays = snapshot.schedule.toWorkingDaysMask()
+                    it.workingDays = snapshot.schedule.activeDays().toWorkingDaysMask()
                     it.sourceUpdatedAt = updatedAt
                     it.updatedAt = Clock.System.now()
                     it.replaceSchedule(snapshot)

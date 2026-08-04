@@ -4,9 +4,6 @@ import com.bookk.appointments.data.orm.table.AppointmentBusinessTable
 import com.bookk.appointments.data.orm.table.DayOffsTable
 import com.bookk.appointments.data.orm.table.WorkingHoursTable
 import com.bookk.appointments.domain.api.entity.BusinessSnapshot
-import com.bookk.appointments.domain.api.entity.DayOffRange
-import com.bookk.appointments.domain.api.entity.WorkHour
-import com.bookk.appointments.domain.api.entity.WorkingSchedule
 import com.bookk.core.data.test.createTestDatabase
 import com.bookk.core.test.given
 import com.bookk.core.test.runUnitTest
@@ -16,6 +13,9 @@ import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
+import library.schedule.DayOffRange
+import library.schedule.Schedule
+import library.schedule.WorkHour
 import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -32,11 +32,12 @@ internal class AppointmentSubscriptionDataSourceImplTest {
         val sut = AppointmentSubscriptionDataSourceImpl()
     }
 
-    private fun saturdaySchedule() = WorkingSchedule(
+    private fun saturdaySchedule(dayOffs: List<DayOffRange> = emptyList()) = Schedule(
         workingDays = listOf(DayOfWeek.SATURDAY),
         workingHours = mapOf(
-            DayOfWeek.SATURDAY to listOf(WorkHour(DayOfWeek.SATURDAY, LocalTime(10, 0), LocalTime(14, 0)))
-        )
+            DayOfWeek.SATURDAY to listOf(WorkHour(LocalTime(10, 0), LocalTime(14, 0)))
+        ),
+        dayOffs = dayOffs
     )
 
     private val futureDayOff = DayOffRange(LocalDate(2099, 12, 30), LocalDate(2099, 12, 31))
@@ -62,7 +63,7 @@ internal class AppointmentSubscriptionDataSourceImplTest {
     fun `should attach business with its schedule`() = runUnitTest {
         given()
         val fixture = SutFixture()
-        val snapshot = BusinessSnapshot.stub(schedule = saturdaySchedule(), dayOffs = listOf(futureDayOff))
+        val snapshot = BusinessSnapshot.stub(schedule = saturdaySchedule(dayOffs = listOf(futureDayOff)))
 
         whenn()
         suspendTransaction { fixture.sut.attachBusiness(snapshot) }
@@ -71,10 +72,10 @@ internal class AppointmentSubscriptionDataSourceImplTest {
         then()
         assertEquals(listOf(DayOfWeek.SATURDAY), found!!.schedule.activeDays())
         assertEquals(
-            listOf(WorkHour(DayOfWeek.SATURDAY, LocalTime(10, 0), LocalTime(14, 0))),
+            listOf(WorkHour(LocalTime(10, 0), LocalTime(14, 0))),
             found.schedule[DayOfWeek.SATURDAY].workingTime
         )
-        assertEquals(listOf(futureDayOff), found.dayOffs)
+        assertEquals(listOf(futureDayOff), found.schedule.dayOffs)
     }
 
     @Test
@@ -99,8 +100,7 @@ internal class AppointmentSubscriptionDataSourceImplTest {
             name = "New Name",
             address = "New Address",
             timeZone = TimeZone.of("Europe/Kyiv"),
-            schedule = saturdaySchedule(),
-            dayOffs = listOf(futureDayOff)
+            schedule = saturdaySchedule(dayOffs = listOf(futureDayOff))
         )
 
         whenn()
@@ -112,7 +112,7 @@ internal class AppointmentSubscriptionDataSourceImplTest {
         assertEquals("New Address", updated.address)
         assertEquals(TimeZone.of("Europe/Kyiv"), updated.timeZone)
         assertEquals(listOf(DayOfWeek.SATURDAY), updated.schedule.activeDays())
-        assertEquals(listOf(futureDayOff), updated.dayOffs)
+        assertEquals(listOf(futureDayOff), updated.schedule.dayOffs)
     }
 
     @Test
@@ -157,7 +157,7 @@ internal class AppointmentSubscriptionDataSourceImplTest {
         given()
         val fixture = SutFixture()
         val pastDayOff = DayOffRange(LocalDate(2020, 1, 1), LocalDate(2020, 1, 2))
-        val snapshot = BusinessSnapshot.stub(dayOffs = listOf(pastDayOff, futureDayOff))
+        val snapshot = BusinessSnapshot.stub(schedule = Schedule().copy(dayOffs = listOf(pastDayOff, futureDayOff)))
         suspendTransaction { fixture.sut.attachBusiness(snapshot) }
 
         whenn()
@@ -165,7 +165,7 @@ internal class AppointmentSubscriptionDataSourceImplTest {
         val found = suspendTransaction { fixture.sut.getBusinessSnapshot(snapshot.id) }
 
         then()
-        assertEquals(listOf(futureDayOff), found!!.dayOffs)
+        assertEquals(listOf(futureDayOff), found!!.schedule.dayOffs)
     }
 
     @Test

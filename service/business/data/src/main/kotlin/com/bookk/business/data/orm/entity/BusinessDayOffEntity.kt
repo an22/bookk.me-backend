@@ -1,8 +1,8 @@
 package com.bookk.business.data.orm.entity
 
 import com.bookk.business.data.orm.table.BusinessDayOffTable
-import com.bookk.business.domain.api.business.entity.DayOffRange
 import com.bookk.core.data.DecoratorUUIDEntityClass
+import library.schedule.DayOffRange
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.dao.UUIDEntity
@@ -14,6 +14,8 @@ internal class BusinessDayOffEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     var business by BusinessEntity referencedOn BusinessDayOffTable.businessId
     var startDate by BusinessDayOffTable.startDate
     var endDate by BusinessDayOffTable.endDate
+
+    fun domain(): DayOffRange = DayOffRange(start = startDate, end = endDate)
 
     companion object : DecoratorUUIDEntityClass<BusinessDayOffEntity>(BusinessDayOffTable) {
         fun batchReplace(businessId: UUID, ranges: List<DayOffRange>) {

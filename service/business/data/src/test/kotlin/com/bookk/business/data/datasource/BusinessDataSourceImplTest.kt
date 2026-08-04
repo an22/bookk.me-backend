@@ -6,10 +6,6 @@ import com.bookk.business.data.orm.table.BusinessPermissionsTable
 import com.bookk.business.data.orm.table.BusinessTable
 import com.bookk.business.data.orm.table.BusinessWorkingHoursTable
 import com.bookk.business.domain.api.business.entity.BusinessUpdateModel
-import com.bookk.business.domain.api.business.entity.DayOffRange
-import com.bookk.business.domain.api.business.entity.ScheduleUpdate
-import com.bookk.business.domain.api.business.entity.WorkHour
-import com.bookk.business.domain.api.business.entity.WorkingSchedule
 import com.bookk.core.data.test.createTestDatabase
 import com.bookk.core.test.given
 import com.bookk.core.test.runUnitTest
@@ -19,6 +15,9 @@ import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
+import library.schedule.DayOffRange
+import library.schedule.Schedule
+import library.schedule.WorkHour
 import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -44,7 +43,7 @@ internal class BusinessDataSourceImplTest {
     private fun updateModel(
         id: Uuid,
         name: String? = null,
-        schedule: WorkingSchedule? = null,
+        schedule: Schedule? = null,
         dayOffs: List<DayOffRange> = emptyList()
     ) = BusinessUpdateModel(
         id = id,
@@ -55,7 +54,7 @@ internal class BusinessDataSourceImplTest {
         currencyCode = null,
         timeZone = null,
         socials = null,
-        schedule = schedule?.let { ScheduleUpdate(workingSchedule = it, dayOffs = dayOffs) }
+        schedule = schedule?.copy(dayOffs = dayOffs)
     )
 
     @Test
@@ -129,10 +128,10 @@ internal class BusinessDataSourceImplTest {
             created.schedule.activeDays().sorted()
         )
         assertEquals(
-            listOf(WorkHour(DayOfWeek.MONDAY, LocalTime(9, 0), LocalTime(17, 0))),
+            listOf(WorkHour(LocalTime(9, 0), LocalTime(17, 0))),
             created.schedule[DayOfWeek.MONDAY].workingTime
         )
-        assertTrue(created.dayOffs.isEmpty())
+        assertTrue(created.schedule.dayOffs.isEmpty())
     }
 
     @Test
@@ -140,10 +139,10 @@ internal class BusinessDataSourceImplTest {
         given()
         val fixture = SutFixture()
         val created = suspendTransaction { fixture.sut.createBusiness(Uuid.random(), "Salon", "USD", TimeZone.UTC) }
-        val schedule = WorkingSchedule(
+        val schedule = Schedule(
             workingDays = listOf(DayOfWeek.SATURDAY),
             workingHours = mapOf(
-                DayOfWeek.SATURDAY to listOf(WorkHour(DayOfWeek.SATURDAY, LocalTime(10, 0), LocalTime(14, 0)))
+                DayOfWeek.SATURDAY to listOf(WorkHour(LocalTime(10, 0), LocalTime(14, 0)))
             )
         )
         val dayOffs = listOf(DayOffRange(LocalDate(2099, 12, 30), LocalDate(2099, 12, 31)))
@@ -158,7 +157,27 @@ internal class BusinessDataSourceImplTest {
         assertEquals(listOf(DayOfWeek.SATURDAY), found!!.schedule.activeDays())
         assertEquals(LocalTime(10, 0), found.schedule[DayOfWeek.SATURDAY].workingTime.single().from)
         assertEquals(LocalTime(14, 0), found.schedule[DayOfWeek.SATURDAY].workingTime.single().to)
-        assertEquals(dayOffs, found.dayOffs)
+        assertEquals(dayOffs, found.schedule.dayOffs)
+    }
+
+    @Test
+    fun `should persist working hours under the day they are keyed under`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val created = suspendTransaction { fixture.sut.createBusiness(Uuid.random(), "Salon", "USD", TimeZone.UTC) }
+        val schedule = Schedule(
+            workingDays = listOf(DayOfWeek.MONDAY),
+            workingHours = mapOf(DayOfWeek.MONDAY to listOf(WorkHour(LocalTime(10, 0), LocalTime(14, 0))))
+        )
+
+        whenn()
+        suspendTransaction { fixture.sut.updateBusiness(updateModel(created.id, schedule = schedule)) }
+        val found = suspendTransaction { fixture.sut.getBusinessById(created.id) }
+
+        then()
+        assertEquals(listOf(DayOfWeek.MONDAY), found!!.schedule.activeDays())
+        assertEquals(LocalTime(10, 0), found.schedule[DayOfWeek.MONDAY].workingTime.single().from)
+        assertTrue(found.schedule[DayOfWeek.FRIDAY].workingTime.isEmpty())
     }
 
     @Test
@@ -201,7 +220,7 @@ internal class BusinessDataSourceImplTest {
         val found = suspendTransaction { fixture.sut.getBusinessById(created.id) }
 
         then()
-        assertEquals(listOf(future), found!!.dayOffs)
+        assertEquals(listOf(future), found!!.schedule.dayOffs)
     }
 
     @Test

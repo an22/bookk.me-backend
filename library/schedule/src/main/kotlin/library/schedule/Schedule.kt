@@ -1,12 +1,17 @@
-package com.bookk.business.domain.api.business.entity
+package library.schedule
 
 import kotlinx.datetime.DayOfWeek
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class WorkingSchedule(
-    val days: Map<DayOfWeek, DayOfWeekSchedule>
+data class Schedule(
+    val days: Map<DayOfWeek, DayOfWeekSchedule>,
+    val dayOffs: List<DayOffRange> = emptyList()
 ) {
+
+    init {
+        require(days.keys.containsAll(DayOfWeek.entries)) { "Schedule must cover all 7 days" }
+    }
 
     constructor() : this(
         days = DayOfWeek.entries.associateWith { DayOfWeekSchedule.default(it) }
@@ -14,19 +19,21 @@ data class WorkingSchedule(
 
     constructor(
         workingDays: List<DayOfWeek>,
-        workingHours: Map<DayOfWeek, List<WorkHour>>
+        workingHours: Map<DayOfWeek, List<WorkHour>>,
+        dayOffs: List<DayOffRange> = emptyList()
     ) : this(
         days = DayOfWeek.entries.associateWith { day ->
             DayOfWeekSchedule(
                 workingTime = workingHours[day].orEmpty(),
                 isActive = workingDays.contains(day)
             )
-        }
+        },
+        dayOffs = dayOffs
     )
 
-    operator fun get(dayOfWeek: DayOfWeek): DayOfWeekSchedule = days[dayOfWeek] ?: DayOfWeekSchedule.default(dayOfWeek)
-
-    fun list(): List<DayOfWeekSchedule> = days.values.toList()
+    operator fun get(dayOfWeek: DayOfWeek): DayOfWeekSchedule = days.getValue(dayOfWeek)
 
     fun activeDays(): List<DayOfWeek> = days.filterValues { it.isActive }.keys.toList()
+
+    fun workingHours(): Map<DayOfWeek, List<WorkHour>> = days.mapValues { it.value.workingTime }
 }

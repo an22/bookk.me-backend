@@ -1,4 +1,4 @@
-package com.bookk.business.domain.api.business.entity
+package library.schedule
 
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.Serializable

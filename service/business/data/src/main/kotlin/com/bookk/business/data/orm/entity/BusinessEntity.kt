@@ -1,18 +1,15 @@
 package com.bookk.business.data.orm.entity
 
-import com.bookk.business.data.map.toWorkingDays
-import com.bookk.business.data.map.toWorkingDaysMask
 import com.bookk.business.data.orm.table.BusinessDayOffTable
 import com.bookk.business.data.orm.table.BusinessTable
 import com.bookk.business.data.orm.table.BusinessWorkingHoursTable
 import com.bookk.business.domain.api.business.entity.Business
 import com.bookk.business.domain.api.business.entity.BusinessUpdateModel
-import com.bookk.business.domain.api.business.entity.DayOffRange
-import com.bookk.business.domain.api.business.entity.WorkHour
-import com.bookk.business.domain.api.business.entity.WorkingSchedule
 import com.bookk.core.data.DecoratorUUIDEntityClass
-import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.TimeZone
+import library.schedule.Schedule
+import library.schedule.toWorkingDays
+import library.schedule.toWorkingDaysMask
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.jetbrains.exposed.v1.dao.UUIDEntity
 import java.util.UUID
@@ -50,19 +47,11 @@ internal class BusinessEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         currencyCode = currency,
         address = address,
         timeZone = TimeZone.of(timezone),
-        schedule = WorkingSchedule(
+        schedule = Schedule(
             workingDays = workingDays.toWorkingDays(),
-            workingHours = workingHours
-                .map {
-                    WorkHour(
-                        dayOfWeek = DayOfWeek(it.dayOfWeek.toInt()),
-                        from = it.startTime,
-                        to = it.endTime
-                    )
-                }
-                .groupBy { it.dayOfWeek }
+            workingHours = workingHours.toWorkingHours(),
+            dayOffs = dayOffs.map { it.domain() }
         ),
-        dayOffs = dayOffs.map { DayOffRange(it.startDate, it.endDate) },
         socials = listOf(
             Business.Social(Business.SocialKind.PHONE, phone.orEmpty()),
             Business.Social(Business.SocialKind.INSTAGRAM, instagram.orEmpty()),
@@ -72,10 +61,10 @@ internal class BusinessEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         )
     )
 
-    private fun replaceSchedule(schedule: WorkingSchedule, dayOffs: List<DayOffRange>) {
+    private fun replaceSchedule(schedule: Schedule) {
         workingDays = schedule.activeDays().toWorkingDaysMask()
-        BusinessWorkingHourEntity.batchReplace(id.value, schedule.list().flatMap { it.workingTime })
-        BusinessDayOffEntity.batchReplace(id.value, dayOffs)
+        BusinessWorkingHourEntity.batchReplace(id.value, schedule.workingHours())
+        BusinessDayOffEntity.batchReplace(id.value, schedule.dayOffs)
     }
 
     private fun updateSocials(socials: List<Business.Social>) {
@@ -99,7 +88,7 @@ internal class BusinessEntity(id: EntityID<UUID>) : UUIDEntity(id) {
             description = ""
             address = ""
             timezone = timeZone.id
-        }.apply { replaceSchedule(WorkingSchedule(), emptyList()) }
+        }.apply { replaceSchedule(Schedule()) }
 
         fun findByIdAndUpdate(model: BusinessUpdateModel) = findByIdAndUpdate(model.id.toJavaUuid()) {
             model.name?.let { name -> it.name = name }
@@ -109,9 +98,10 @@ internal class BusinessEntity(id: EntityID<UUID>) : UUIDEntity(id) {
                 it.latitude = location.lat
                 it.longitude = location.lng
             }
+            model.timeZone?.let { timezone -> it.timezone = timezone.id }
             model.currencyCode?.let { currencyCode -> it.currency = currencyCode }
             model.socials?.let { socials -> it.updateSocials(socials) }
-            model.schedule?.let { schedule -> it.replaceSchedule(schedule.workingSchedule, schedule.dayOffs) }
+            model.schedule?.let { schedule -> it.replaceSchedule(schedule) }
             it.updatedAt = Clock.System.now()
         }
     }

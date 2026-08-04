@@ -2,10 +2,6 @@ package com.bookk.business.domain.impl.operation.business
 
 import com.bookk.business.domain.api.business.entity.Business
 import com.bookk.business.domain.api.business.entity.BusinessUpdateModel
-import com.bookk.business.domain.api.business.entity.DayOffRange
-import com.bookk.business.domain.api.business.entity.ScheduleUpdate
-import com.bookk.business.domain.api.business.entity.WorkHour
-import com.bookk.business.domain.api.business.entity.WorkingSchedule
 import com.bookk.business.domain.api.business.operation.UpdateBusiness
 import com.bookk.business.domain.datasource.BusinessDataSource
 import com.bookk.core.data.eventstreaming.StandardEventProducer
@@ -25,6 +21,10 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import library.permissions.ObjectPermission
+import library.schedule.DayOfWeekSchedule
+import library.schedule.DayOffRange
+import library.schedule.Schedule
+import library.schedule.WorkHour
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -58,7 +58,7 @@ internal class UpdateBusinessImplTest {
         currencyCode: String? = null,
         timeZone: TimeZone? = null,
         socials: List<Business.Social>? = null,
-        schedule: WorkingSchedule? = null,
+        schedule: Schedule? = null,
         dayOffs: List<DayOffRange> = emptyList()
     ) = BusinessUpdateModel(
         id = id,
@@ -69,12 +69,12 @@ internal class UpdateBusinessImplTest {
         currencyCode = currencyCode,
         timeZone = timeZone,
         socials = socials,
-        schedule = schedule?.let { ScheduleUpdate(workingSchedule = it, dayOffs = dayOffs) }
+        schedule = schedule?.copy(dayOffs = dayOffs)
     )
 
-    private fun scheduleOf(vararg days: DayOfWeek) = WorkingSchedule(
+    private fun scheduleOf(vararg days: DayOfWeek) = Schedule(
         workingDays = days.toList(),
-        workingHours = days.associateWith { listOf(WorkHour(it, LocalTime(9, 0), LocalTime(17, 0))) }
+        workingHours = days.associateWith { listOf(WorkHour(LocalTime(9, 0), LocalTime(17, 0))) }
     )
 
     @Test
@@ -170,7 +170,7 @@ internal class UpdateBusinessImplTest {
         given()
         val fixture = SutFixture()
         fixture.transactionManager.mockTransaction()
-        val schedule = WorkingSchedule(
+        val schedule = Schedule(
             workingDays = listOf(DayOfWeek.MONDAY),
             workingHours = emptyMap()
         )
@@ -204,7 +204,7 @@ internal class UpdateBusinessImplTest {
         val businessId = Uuid.random()
         val schedule = scheduleOf(DayOfWeek.SATURDAY)
         val dayOffs = listOf(DayOffRange(LocalDate(2099, 12, 30), LocalDate(2099, 12, 31)))
-        val updatedBusiness = Business.stub(id = businessId, schedule = schedule, dayOffs = dayOffs)
+        val updatedBusiness = Business.stub(id = businessId, schedule = schedule.copy(dayOffs = dayOffs))
         coEvery { fixture.businessDataSource.updateBusiness(any()) } returns updatedBusiness
 
         whenn()
@@ -215,13 +215,12 @@ internal class UpdateBusinessImplTest {
         coVerify(exactly = 1) {
             fixture.eventProducer.send(match<BusinessEvent.Updated> {
                 it.business.id == businessId &&
-                it.business.schedule.workingDays == listOf(DayOfWeek.SATURDAY) &&
-                it.business.schedule.workingHours == listOf(
-                    BusinessEvent.WorkHourDTO(DayOfWeek.SATURDAY, LocalTime(9, 0), LocalTime(17, 0))
+                it.business.schedule[DayOfWeek.SATURDAY] == DayOfWeekSchedule(
+                    workingTime = listOf(WorkHour(LocalTime(9, 0), LocalTime(17, 0))),
+                    isActive = true
                 ) &&
-                it.business.schedule.dayOffs == listOf(
-                    BusinessEvent.DayOffDTO(LocalDate(2099, 12, 30), LocalDate(2099, 12, 31))
-                )
+                !it.business.schedule[DayOfWeek.MONDAY].isActive &&
+                it.business.schedule.dayOffs == listOf(DayOffRange(LocalDate(2099, 12, 30), LocalDate(2099, 12, 31)))
             }, any())
         }
     }
@@ -243,7 +242,7 @@ internal class UpdateBusinessImplTest {
         assertTrue(result.isSuccess)
         coVerify(exactly = 1) {
             fixture.eventProducer.send(match<BusinessEvent.Updated> {
-                it.business.schedule.workingDays == listOf(DayOfWeek.MONDAY)
+                it.business.schedule[DayOfWeek.MONDAY].isActive
             }, any())
         }
     }
@@ -330,7 +329,7 @@ internal class UpdateBusinessImplTest {
         given()
         val fixture = SutFixture()
         fixture.transactionManager.mockTransaction()
-        val schedule = WorkingSchedule(workingDays = listOf(DayOfWeek.MONDAY), workingHours = emptyMap())
+        val schedule = Schedule(workingDays = listOf(DayOfWeek.MONDAY), workingHours = emptyMap())
 
         whenn()
         val result = fixture.sut(requestUserId, updateModel(schedule = schedule))

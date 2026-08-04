@@ -2,6 +2,7 @@ package com.bookk.appointments.domain.api.entity
 
 import kotlinx.datetime.TimeZone
 import kotlinx.serialization.Serializable
+import library.schedule.Schedule
 import kotlin.uuid.Uuid
 
 @Serializable
@@ -11,8 +12,7 @@ data class BusinessSnapshot(
     val address: String,
     val timeZone: TimeZone,
     val isEnabled: Boolean,
-    val schedule: WorkingSchedule,
-    val dayOffs: List<DayOffRange>
+    val schedule: Schedule
 ) {
     companion object {
         fun stub(
@@ -21,16 +21,14 @@ data class BusinessSnapshot(
             address: String = "Business address",
             timeZone: TimeZone = TimeZone.UTC,
             isEnabled: Boolean = true,
-            schedule: WorkingSchedule = WorkingSchedule(),
-            dayOffs: List<DayOffRange> = emptyList()
+            schedule: Schedule = Schedule()
         ) = BusinessSnapshot(
             id = id,
             name = name,
             address = address,
             timeZone = timeZone,
             isEnabled = isEnabled,
-            schedule = schedule,
-            dayOffs = dayOffs
+            schedule = schedule
         )
     }
 }

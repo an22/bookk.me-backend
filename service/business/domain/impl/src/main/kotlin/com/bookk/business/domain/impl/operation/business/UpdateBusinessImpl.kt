@@ -7,6 +7,7 @@ import com.bookk.business.domain.datasource.BusinessDataSource
 import com.bookk.core.data.eventstreaming.StandardEventProducer
 import com.bookk.core.data.eventstreaming.send
 import com.bookk.core.domain.datasource.transaction.TransactionManager
+import com.bookk.server.business.client.api.BusinessDTO
 import com.bookk.server.business.client.api.event.BusinessEvent
 import library.permissions.ObjectPermission
 import library.permissions.assert
@@ -21,11 +22,11 @@ internal class UpdateBusinessImpl(
     override suspend fun invoke(requestUserId: Uuid, businessUpdateModel: BusinessUpdateModel): Result<Unit> =
         transactionManager.transaction {
             businessDataSource.getPermission(requestUserId, businessUpdateModel.id).assert(ObjectPermission.EDIT)
-            businessUpdateModel.schedule?.let { update ->
-                if (update.workingSchedule.list().any { it.isActive && it.workingTime.isEmpty() }) {
+            businessUpdateModel.schedule?.let { schedule ->
+                if (schedule.days.values.any { it.isActive && it.workingTime.isEmpty() }) {
                     throw UpdateBusiness.Error.ActiveDayWithoutWorkHours()
                 }
-                if (update.dayOffs.any { it.start >= it.end }) {
+                if (schedule.dayOffs.any { it.start >= it.end }) {
                     throw UpdateBusiness.Error.InvalidDayOffRange()
                 }
             }
@@ -46,24 +47,10 @@ internal class UpdateBusinessImpl(
             businessDataSource.updateBusiness(updatedModel).also { business ->
                 eventProducer.send(
                     BusinessEvent.Updated(
-                        business = business.toDto(),
+                        business = BusinessDTO.from(business),
                         updatedAt = Clock.System.now()
                     )
                 )
             }
         }
-
-    private fun Business.toDto() = BusinessEvent.BusinessDTO(
-        id = id,
-        name = name,
-        address = address,
-        timeZone = timeZone,
-        schedule = BusinessEvent.ScheduleDTO(
-            workingDays = schedule.activeDays(),
-            workingHours = schedule.list()
-                .flatMap { it.workingTime }
-                .map { BusinessEvent.WorkHourDTO(it.dayOfWeek, it.from, it.to) },
-            dayOffs = dayOffs.map { BusinessEvent.DayOffDTO(it.start, it.end) }
-        )
-    )
 }

@@ -1,14 +1,9 @@
 package com.bookk.appointments.data.orm.entity
 
-import com.bookk.appointments.data.map.toWorkingDays
 import com.bookk.appointments.data.orm.table.SettingsTable
 import com.bookk.appointments.domain.api.entity.AppointmentSettings
 import com.bookk.appointments.domain.api.entity.AppointmentSettingsUpdate
-import com.bookk.appointments.domain.api.entity.DayOffRange
-import com.bookk.appointments.domain.api.entity.WorkHour
-import com.bookk.appointments.domain.api.entity.WorkingSchedule
 import com.bookk.core.data.DecoratorUUIDEntityClass
-import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.TimeZone
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.jetbrains.exposed.v1.core.eq
@@ -30,20 +25,8 @@ internal class SettingsEntity(id: EntityID<UUID>) : UUIDEntity(id) {
         id = id.value.toKotlinUuid(),
         businessId = business.id.value.toKotlinUuid(),
         timeZone = TimeZone.of(business.timezone),
-        schedule = WorkingSchedule(
-            workingDays = business.workingDays.toWorkingDays(),
-            workingHours = business.workingHours
-                .map {
-                    WorkHour(
-                        dayOfWeek = DayOfWeek(it.dayOfWeek.toInt()),
-                        from = it.startTime,
-                        to = it.endTime
-                    )
-                }
-                .groupBy { it.dayOfWeek }
-        ),
+        schedule = business.schedule(),
         automaticApproval = automaticApproval,
-        dayOffs = business.dayOffs.map { DayOffRange(it.startDate, it.endDate) },
         inBetweenBreakInMinutes = inBetweenBreakInMinutes,
         appointmentNote = appointmentNote,
     )
@@ -56,15 +39,12 @@ internal class SettingsEntity(id: EntityID<UUID>) : UUIDEntity(id) {
             automaticApproval = settings.automaticApproval
         }
 
-        fun findByBusinessId(businessId: UUID): SettingsEntity? =
-            find { SettingsTable.businessId eq businessId }.singleOrNull()
-
         fun findByBusinessIdAndUpdate(update: AppointmentSettingsUpdate): SettingsEntity? =
-            findByBusinessId(update.businessId.toJavaUuid())?.apply {
-                inBetweenBreakInMinutes = update.inBetweenBreakInMinutes
-                appointmentNote = update.appointmentNote
-                automaticApproval = update.automaticApproval
-                updatedAt = Clock.System.now()
+            findSingleByAndUpdate(op = SettingsTable.businessId eq update.businessId.toJavaUuid()) {
+                it.inBetweenBreakInMinutes = update.inBetweenBreakInMinutes
+                it.appointmentNote = update.appointmentNote
+                it.automaticApproval = update.automaticApproval
+                it.updatedAt = Clock.System.now()
             }
     }
 }

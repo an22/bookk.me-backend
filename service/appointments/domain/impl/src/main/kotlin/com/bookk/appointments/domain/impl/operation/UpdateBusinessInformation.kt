@@ -1,12 +1,9 @@
 package com.bookk.appointments.domain.impl.operation
 
 import com.bookk.appointments.domain.api.entity.BusinessSnapshot
-import com.bookk.appointments.domain.api.entity.DayOffRange
-import com.bookk.appointments.domain.api.entity.WorkHour
-import com.bookk.appointments.domain.api.entity.WorkingSchedule
 import com.bookk.appointments.domain.datasource.AppointmentSubscriptionDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
-import com.bookk.server.business.client.api.event.BusinessEvent
+import com.bookk.server.business.client.api.BusinessDTO
 import kotlin.time.Instant
 
 internal class UpdateBusinessInformation(
@@ -15,7 +12,7 @@ internal class UpdateBusinessInformation(
 ) {
 
     suspend operator fun invoke(
-        business: BusinessEvent.BusinessDTO,
+        business: BusinessDTO,
         updatedAt: Instant
     ) = transactionManager.transaction {
         subscriptionDataSource.updateBusiness(
@@ -25,13 +22,7 @@ internal class UpdateBusinessInformation(
                 address = business.address,
                 timeZone = business.timeZone,
                 isEnabled = true,
-                schedule = WorkingSchedule(
-                    workingDays = business.schedule.workingDays,
-                    workingHours = business.schedule.workingHours
-                        .map { WorkHour(dayOfWeek = it.dayOfWeek, from = it.from, to = it.to) }
-                        .groupBy { it.dayOfWeek }
-                ),
-                dayOffs = business.schedule.dayOffs.map { DayOffRange(start = it.start, end = it.end) }
+                schedule = business.schedule
             ),
             updatedAt = updatedAt
         )

@@ -19,7 +19,7 @@ interface UpdateBusiness {
         class InvalidDayOffRange : BusinessError(
             statusCode = HttpStatusCode.UnprocessableEntity.value,
             code = BusinessErrorCodes.BUSINESS_INVALID_DAY_OFF_RANGE,
-            message = "Day off range start date must be before end date"
+            message = "Day off range start date must not be after end date"
         ), Error
     }
 }

@@ -185,7 +185,7 @@ internal class UpdateBusinessImplTest {
     }
 
     @Test
-    fun `should return failure when day off range start date is not before end date`() = runUnitTest {
+    fun `should return failure when day off range start date is after end date`() = runUnitTest {
         given()
         val fixture = SutFixture()
         fixture.transactionManager.mockTransaction()
@@ -196,6 +196,26 @@ internal class UpdateBusinessImplTest {
 
         then()
         assertTrue(result.exceptionOrNull() is UpdateBusiness.Error.InvalidDayOffRange)
+    }
+
+    @Test
+    fun `should return success when day off range covers a single day`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.transactionManager.mockTransaction()
+        val singleDay = LocalDate(2099, 12, 30)
+        val dayOffs = listOf(DayOffRange(singleDay, singleDay))
+
+        whenn()
+        val result = fixture.sut(requestUserId, updateModel(schedule = scheduleOf(DayOfWeek.MONDAY), dayOffs = dayOffs))
+
+        then()
+        assertTrue(result.isSuccess)
+        coVerify(exactly = 1) {
+            fixture.businessDataSource.updateBusiness(match {
+                it.schedule?.dayOffs == dayOffs
+            }, any())
+        }
     }
 
     @Test

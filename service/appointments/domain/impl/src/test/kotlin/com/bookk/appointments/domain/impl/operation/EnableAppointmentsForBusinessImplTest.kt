@@ -66,7 +66,7 @@ internal class EnableAppointmentsForBusinessImplTest {
         coEvery { permissionsDataSource.initPermissions(testUserId, testBusinessId, ObjectPermission.OWNER.int) } returns Unit
         coEvery { settingsDataSource.create(any()) } returns AppointmentSettings.stub(testBusinessId)
         coEvery { businessClient.getPermission(testUserId, testBusinessId) } returns
-            Result.success(ObjectPermission.OWNER.int)
+            Result.success(ObjectPermission.OWNER)
     }
 
     @Test
@@ -126,7 +126,7 @@ internal class EnableAppointmentsForBusinessImplTest {
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { businessClient.getPermission(testUserId, testBusinessId) } returns
-                Result.success(ObjectPermission.OWNER.int)
+                Result.success(ObjectPermission.OWNER)
             coEvery { businessClient.getBusinessById(testBusinessId) } returns Result.failure(Error.NotFound())
         }
 
@@ -146,7 +146,7 @@ internal class EnableAppointmentsForBusinessImplTest {
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { businessClient.getPermission(testUserId, testBusinessId) } returns
-                Result.success(ObjectPermission.EDIT.int)
+                Result.success(ObjectPermission.EDIT)
             coEvery { businessClient.getBusinessById(testBusinessId) } returns Result.success(businessDto())
         }
 
@@ -165,7 +165,7 @@ internal class EnableAppointmentsForBusinessImplTest {
         val fixture = SutFixture()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { businessClient.getPermission(testUserId, testBusinessId) } returns Result.success(0)
+            coEvery { businessClient.getPermission(testUserId, testBusinessId) } returns Result.success(ObjectPermission.NONE)
             coEvery { businessClient.getBusinessById(testBusinessId) } returns Result.success(businessDto())
         }
 
@@ -184,7 +184,7 @@ internal class EnableAppointmentsForBusinessImplTest {
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { businessClient.getPermission(testUserId, testBusinessId) } returns
-                Result.success(ObjectPermission.OWNER.int)
+                Result.success(ObjectPermission.OWNER)
             coEvery { businessClient.getBusinessById(testBusinessId) } returns Result.success(businessDto())
             coEvery { subscriptionSource.attachBusiness(any()) } throws
                 Error.UniqueConstraintFailed("business already attached", RuntimeException())

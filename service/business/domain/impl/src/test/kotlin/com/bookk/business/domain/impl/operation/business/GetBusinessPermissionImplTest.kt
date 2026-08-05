@@ -1,6 +1,5 @@
 package com.bookk.business.domain.impl.operation.business
 
-import com.bookk.business.domain.api.business.operation.GetBusinessPermission
 import com.bookk.business.domain.datasource.BusinessDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.datasource.transaction.mockTransaction
@@ -41,7 +40,7 @@ internal class GetBusinessPermissionImplTest {
 
         then()
         assertTrue(result.isSuccess)
-        assertEquals(ObjectPermission.OWNER.int, result.getOrNull())
+        assertEquals(ObjectPermission.OWNER, result.getOrNull())
     }
 
     @Test
@@ -58,7 +57,24 @@ internal class GetBusinessPermissionImplTest {
 
         then()
         assertTrue(result.isSuccess)
-        assertEquals(GetBusinessPermission.NO_PERMISSION, result.getOrNull())
+        assertEquals(ObjectPermission.NONE, result.getOrNull())
+    }
+
+    @Test
+    fun `should return no permission when the stored value matches no permission level`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { businessDataSource.getPermission(userId, businessId) } returns 42
+        }
+
+        whenn()
+        val result = fixture.sut.invoke(userId, businessId)
+
+        then()
+        assertTrue(result.isSuccess)
+        assertEquals(ObjectPermission.NONE, result.getOrNull())
     }
 
     @Test

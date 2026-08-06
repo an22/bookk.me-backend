@@ -55,7 +55,7 @@ internal class GetAttachPasskeyToAccountChallengeImplTest {
         )
     )
 
-    private fun makeUser(userId: Uuid = Uuid.random()): UserSnapshot = UserSnapshot(
+    private fun makeUser(userId: Uuid = Uuid.random()): UserSnapshot = UserSnapshot.stub(
         id = userId,
         name = "John",
         lastName = "Doe",

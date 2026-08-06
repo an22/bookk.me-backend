@@ -38,7 +38,6 @@ interface BusinessEvent : EventStreaming.Event<String> {
     @Serializable
     data class EmployeeInvitationCreated(
         val invitedUserId: Uuid,
-        val invitedName: String,
         val businessId: Uuid,
         val businessName: String,
         override val idempotencyKey: String = Uuid.random().toString()

@@ -202,4 +202,36 @@ internal class CreateClientImplTest {
         assertTrue(result.isFailure)
         assertTrue(result.exceptionOrNull() is CreateClient.Error.ClientValidationError)
     }
+
+    @Test
+    fun `should return validation error when phone contains letters`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val businessId = Uuid.random()
+        val client = Client.Detached(Uuid.random(), "John", "Doe", "call-me-maybe", "john@doe.com")
+        fixture.transactionManager.mockTransaction()
+
+        whenn()
+        val result = fixture.sut(requestUserId, businessId, client)
+
+        then()
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is CreateClient.Error.ClientValidationError)
+    }
+
+    @Test
+    fun `should return validation error when phone is too short`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val businessId = Uuid.random()
+        val client = Client.Detached(Uuid.random(), "John", "Doe", "12", "john@doe.com")
+        fixture.transactionManager.mockTransaction()
+
+        whenn()
+        val result = fixture.sut(requestUserId, businessId, client)
+
+        then()
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is CreateClient.Error.ClientValidationError)
+    }
 }

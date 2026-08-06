@@ -82,7 +82,6 @@ internal class NotificationEventHandlerTest {
         val fixture = SutFixture()
         val event = BusinessEvent.EmployeeInvitationCreated(
             invitedUserId = Uuid.random(),
-            invitedName = "Alice",
             businessId = Uuid.random(),
             businessName = "Barbershop"
         )

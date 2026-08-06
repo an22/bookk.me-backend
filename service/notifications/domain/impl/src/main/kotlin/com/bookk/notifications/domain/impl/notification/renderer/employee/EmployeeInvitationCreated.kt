@@ -22,7 +22,7 @@ internal val BusinessEvent.EmployeeInvitationCreated.notification: NotificationP
         email = { language ->
             EmailNotification(
                 subject = message(language, "$KEY_PREFIX.email.subject", businessName),
-                body = message(language, "$KEY_PREFIX.email.body", invitedName, businessName)
+                body = message(language, "$KEY_PREFIX.email.body", businessName)
             )
         },
         text = { language ->

@@ -13,6 +13,7 @@ import com.bookk.business.domain.api.client.operation.DeleteClient
 import com.bookk.business.domain.api.client.operation.GetClients
 import com.bookk.business.domain.api.employee.operation.ApproveEmployeeInvitation
 import com.bookk.business.domain.api.employee.operation.CreateEmployeeInvitation
+import com.bookk.business.domain.api.employee.operation.GetPendingEmployeeInvitations
 import com.bookk.business.domain.api.service.operation.CreateService
 import com.bookk.business.domain.api.service.operation.CreateServiceGroup
 import com.bookk.business.domain.api.service.operation.DeleteService
@@ -36,6 +37,7 @@ import com.bookk.business.domain.impl.operation.client.DeleteClientImpl
 import com.bookk.business.domain.impl.operation.client.GetClientsImpl
 import com.bookk.business.domain.impl.operation.employee.ApproveEmployeeInvitationImpl
 import com.bookk.business.domain.impl.operation.employee.CreateEmployeeInvitationImpl
+import com.bookk.business.domain.impl.operation.employee.GetPendingEmployeeInvitationsImpl
 import com.bookk.business.domain.impl.operation.service.CreateServiceGroupImpl
 import com.bookk.business.domain.impl.operation.service.CreateServiceImpl
 import com.bookk.business.domain.impl.operation.service.DeleteServiceGroupImpl
@@ -45,13 +47,16 @@ import com.bookk.business.domain.impl.operation.service.GetServicesImpl
 import com.bookk.business.domain.impl.operation.service.IssueQuoteImpl
 import com.bookk.business.domain.impl.operation.service.UpdateServiceImpl
 import com.bookk.business.domain.impl.operation.user.SyncUserProfileImpl
+import com.bookk.core.AppLevelConstants
 import com.bookk.core.data.eventstreaming.EventHandler
+import com.bookk.server.user.client.di.userClientModule
 import org.koin.core.module.dsl.factoryOf
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.bind
 import org.koin.dsl.module
 
 fun businessDomainModule() = module {
+    includes(userClientModule(AppLevelConstants.serviceName))
     singleOf(::GetBusinessByIdImpl) bind GetBusinessById::class
     singleOf(::CreateBusinessImpl) bind CreateBusiness::class
     singleOf(::DeleteBusinessImpl) bind DeleteBusiness::class
@@ -75,4 +80,5 @@ fun businessDomainModule() = module {
     singleOf(::IssueQuoteImpl) bind IssueQuote::class
     singleOf(::CreateEmployeeInvitationImpl) bind CreateEmployeeInvitation::class
     singleOf(::ApproveEmployeeInvitationImpl) bind ApproveEmployeeInvitation::class
+    singleOf(::GetPendingEmployeeInvitationsImpl) bind GetPendingEmployeeInvitations::class
 }

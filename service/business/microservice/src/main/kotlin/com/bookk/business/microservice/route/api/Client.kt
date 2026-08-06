@@ -33,7 +33,7 @@ fun Route.clientCrud() {
          * Body: application/x-protobuf [com.bookk.business.domain.api.client.entity.ClientRemote]
          * Response: 200 application/x-protobuf [com.bookk.business.domain.api.client.entity.ClientRemote] Created client entity
          * Response: 404 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] User is not allowed to create clients for this business
-         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Create client errors<br>BUSINESS_CLIENT_EXISTS (200004) Client with this phone already exists<br>BUSINESS_CLIENT_NAME_VALIDATION_ERROR (200005) Client name or last name is too long
+         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Create client errors<br>BUSINESS_CLIENT_EXISTS (200004) Client with this phone already exists<br>BUSINESS_CLIENT_NAME_VALIDATION_ERROR (200005) Client name, last name or phone is invalid
          */
         post<Api.Clients> {
             val principal = requireNotNull(call.principal<AppPrincipal>())

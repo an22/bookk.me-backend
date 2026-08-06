@@ -1,5 +1,6 @@
 package com.bookk.business.domain.impl.operation.employee
 
+import com.bookk.business.domain.api.business.entity.Business
 import com.bookk.business.domain.api.employee.entity.EmployeeInvitation
 import com.bookk.business.domain.api.employee.operation.CreateEmployeeInvitation
 import com.bookk.business.domain.api.employee.operation.CreateEmployeeInvitation.Error
@@ -11,8 +12,10 @@ import com.bookk.core.data.eventstreaming.send
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.entity.onConstraintFailure
 import com.bookk.server.business.client.api.event.BusinessEvent
+import com.bookk.server.user.client.UserClient
 import library.permissions.ObjectPermission
 import library.permissions.assert
+import library.validation.EmailValidator
 import kotlin.uuid.Uuid
 import com.bookk.core.domain.entity.Error as InfrastructureError
 
@@ -20,6 +23,7 @@ internal class CreateEmployeeInvitationImpl(
     private val invitationDataSource: EmployeeInvitationDataSource,
     private val employeeDataSource: EmployeeDataSource,
     private val businessDataSource: BusinessDataSource,
+    private val userClient: UserClient,
     private val transactionManager: TransactionManager,
     private val eventProducer: StandardEventProducer
 ) : CreateEmployeeInvitation {
@@ -27,37 +31,33 @@ internal class CreateEmployeeInvitationImpl(
         requestUserId: Uuid,
         invitation: EmployeeInvitation
     ): Result<EmployeeInvitation> {
-        if (invitation.name.isBlank() || invitation.name.length > MAX_NAME_LENGTH) {
-            return Result.failure(Error.ValidationError())
-        }
-        if (invitation.lastName.isBlank() || invitation.lastName.length > MAX_NAME_LENGTH) {
+        if (!EmailValidator.isValid(invitation.email)) {
             return Result.failure(Error.ValidationError())
         }
         return transactionManager.transaction {
-            businessDataSource.getPermission(requestUserId, invitation.businessId).assert(ObjectPermission.EDIT)
-            if (employeeDataSource.getEmployeeByUserId(invitation.businessId, invitation.userId) != null) {
+            businessDataSource.getPermission(requestUserId, invitation.businessId).assert(ObjectPermission.OWNER)
+            if (employeeDataSource.getEmployeeByEmail(invitation.businessId, invitation.email) != null) {
                 throw Error.EmployeeExist()
             }
-            val business = businessDataSource.getBusinessById(invitation.businessId)
-                ?: throw InfrastructureError.NotFound()
+            val business = businessDataSource.getBusinessById(invitation.businessId) ?: throw InfrastructureError.NotFound()
 
-            // The inviter is always the authenticated caller, never whatever the request body claimed.
             invitationDataSource.createInvitation(invitation.copy(invitedBy = requestUserId)).also { created ->
-                eventProducer.send(
-                    BusinessEvent.EmployeeInvitationCreated(
-                        invitedUserId = created.userId,
-                        invitedName = created.name,
-                        businessId = business.id,
-                        businessName = business.name
-                    )
-                )
+                sendInviteEvent(created, business)
             }
         }.onConstraintFailure {
             throw Error.InvitationExist()
         }
     }
 
-    companion object {
-        const val MAX_NAME_LENGTH = 512
+    private suspend fun sendInviteEvent(created: EmployeeInvitation, business: Business) {
+        userClient.getUserByEmail(created.email).onSuccess { invitedUser ->
+            eventProducer.send(
+                BusinessEvent.EmployeeInvitationCreated(
+                    invitedUserId = invitedUser.id,
+                    businessId = business.id,
+                    businessName = business.name
+                )
+            )
+        }
     }
 }

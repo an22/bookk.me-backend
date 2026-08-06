@@ -4,15 +4,21 @@ import com.bookk.business.domain.api.employee.entity.EmployeeInvitation
 import com.bookk.business.domain.api.employee.entity.EmployeeInvitationStatus
 import com.bookk.business.domain.api.employee.operation.ApproveEmployeeInvitation
 import com.bookk.business.domain.api.employee.operation.CreateEmployeeInvitation
+import com.bookk.business.domain.api.employee.operation.GetPendingEmployeeInvitations
 import com.bookk.business.microservice.route.BusinessRouting.Api
 import com.bookk.core.service.enity.respondWith
 import com.bookk.server.auth.client.AppPrincipal
+import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
+import io.ktor.openapi.jsonSchema
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.principal
 import io.ktor.server.request.receive
+import io.ktor.server.resources.get
 import io.ktor.server.resources.post
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.application
+import io.ktor.server.routing.openapi.describe
 import kotlinx.serialization.Serializable
 import org.koin.ktor.ext.inject
 import kotlin.time.Instant
@@ -20,21 +26,13 @@ import kotlin.uuid.Uuid
 
 @Serializable
 internal class EmployeeInvitationRequest(
-    val userId: Uuid,
-    val name: String,
-    val lastName: String,
-    val phone: String? = null,
-    val email: String? = null
+    val email: String
 )
 
 internal fun EmployeeInvitationRequest.toDomain(businessId: Uuid, invitedBy: Uuid) = EmployeeInvitation(
     id = Uuid.random(),
     businessId = businessId,
-    userId = userId,
     invitedBy = invitedBy,
-    name = name,
-    lastName = lastName,
-    phone = phone,
     email = email,
     status = EmployeeInvitationStatus.PENDING,
     createdAt = Instant.fromEpochMilliseconds(0)
@@ -50,7 +48,7 @@ fun Route.employeeInvitationCrud() {
          * Body: application/x-protobuf [com.bookk.business.microservice.route.api.EmployeeInvitationRequest]
          * Response: 200 application/x-protobuf [com.bookk.business.domain.api.employee.entity.EmployeeInvitation] Created invitation
          * Response: 404 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Business is not found or the caller has no rights to edit it
-         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Create invitation errors<br>BUSINESS_EMPLOYEE_INVITATION_EXISTS (200015) Invitation for this user already exists<br>BUSINESS_EMPLOYEE_INVITATION_VALIDATION_ERROR (200016) Invitation name or last name is blank or too long<br>BUSINESS_EMPLOYEE_EXISTS (200018) User is already an employee of this business
+         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Create invitation errors<br>BUSINESS_EMPLOYEE_INVITATION_EXISTS (200015) Invitation for this user already exists<br>BUSINESS_EMPLOYEE_INVITATION_VALIDATION_ERROR (200016) Invitation email is blank or invalid<br>BUSINESS_EMPLOYEE_EXISTS (200018) User is already an employee of this business
          */
         post<Api.EmployeeInvitation> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
@@ -63,6 +61,27 @@ fun Route.employeeInvitationCrud() {
                     invitation = body.toDomain(businessId = it.businessId, invitedBy = principal.userId)
                 )
             )
+        }
+
+        /**
+         * Summary: Get pending employee invitations
+         * Description: Returns pending invitations in this business addressed to the calling user
+         * Tag: employee
+         * Security: jwt
+         */
+        get<Api.EmployeeInvitation> {
+            val principal = requireNotNull(call.principal<AppPrincipal>())
+            val getPendingEmployeeInvitations by application.inject<GetPendingEmployeeInvitations>()
+
+            call.respondWith(getPendingEmployeeInvitations(userId = principal.userId, businessId = it.businessId))
+        }.describe {
+            responses {
+                response(HttpStatusCode.OK.value) {
+                    schema = jsonSchema<List<EmployeeInvitation>>()
+                    description = "Pending invitations addressed to the calling user"
+                    ContentType.Application.ProtoBuf()
+                }
+            }
         }
 
         /**

@@ -8,6 +8,7 @@ import com.bookk.auth.domain.api.registration.operation.StartRegistration.Error.
 import com.bookk.core.domain.entity.rethrowBusinessIf
 import com.bookk.server.user.client.UserClient
 import io.ktor.http.HttpStatusCode
+import library.validation.EmailValidator
 import kotlin.uuid.Uuid
 
 internal class StartRegistrationImpl(
@@ -15,10 +16,8 @@ internal class StartRegistrationImpl(
     private val startPasskeyRegistration: StartPasskeyRegistration,
 ) : StartRegistration {
 
-    private val emailRegex = Regex(RegistrationConstants.EMAIL_REGEX)
-
     override suspend fun invoke(request: CreateAccountRequest) = runCatching {
-        if (!emailRegex.matches(request.email)) throw InvalidEmailFormat()
+        if (!EmailValidator.isValid(request.email)) throw InvalidEmailFormat()
         userClient.getUserByEmail(request.email)
             .onSuccess { throw EmailAlreadyExist() }
             .rethrowBusinessIf { it.statusCode != HttpStatusCode.NotFound.value }

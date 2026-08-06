@@ -18,12 +18,8 @@ internal class EmployeeInvitationDataSourceImpl : DataSource(), EmployeeInvitati
     override suspend fun createInvitation(invitation: EmployeeInvitation): EmployeeInvitation = dbQuery {
         val id = EmployeeInvitationTable.insertAndGetId {
             it[businessId] = invitation.businessId
-            it[userId] = invitation.userId
             it[invitedBy] = invitation.invitedBy
-            it[name] = invitation.name.trim()
-            it[lastName] = invitation.lastName.trim()
-            it[phone] = invitation.phone?.trim()
-            it[email] = invitation.email?.trim()
+            it[email] = invitation.email.trim()
             it[status] = EmployeeInvitationStatus.PENDING
         }
         invitation.copy(id = id.value, status = EmployeeInvitationStatus.PENDING)
@@ -36,6 +32,16 @@ internal class EmployeeInvitationDataSourceImpl : DataSource(), EmployeeInvitati
         }
             .firstOrNull()
             ?.toDomain()
+    }
+
+    override suspend fun getPendingInvitations(businessId: Uuid, email: String): List<EmployeeInvitation> = dbQuery {
+        EmployeeInvitationEntity.find {
+            (EmployeeInvitationTable.businessId eq businessId) and
+                (EmployeeInvitationTable.email eq email) and
+                (EmployeeInvitationTable.status eq EmployeeInvitationStatus.PENDING)
+        }
+            .toList()
+            .map(EmployeeInvitationEntity::toDomain)
     }
 
     override suspend fun approveInvitation(id: Uuid): Boolean = dbQuery {

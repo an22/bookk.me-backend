@@ -323,7 +323,7 @@ internal class NotificationEventHandlerEventTest {
         publishAndAwait(
             fixture, arrived,
             BusinessEvent.EmployeeInvitationCreated(
-                invitedUserId = invitedUserId, invitedName = "Invitee",
+                invitedUserId = invitedUserId,
                 businessId = businessId, businessName = "Salon"
             ),
             typeOf<BusinessEvent.EmployeeInvitationCreated>()

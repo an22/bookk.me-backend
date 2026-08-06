@@ -17,7 +17,6 @@ import io.mockk.mockk
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import kotlin.uuid.Uuid
 
 internal class StartRegistrationImplTest {
 
@@ -83,7 +82,7 @@ internal class StartRegistrationImplTest {
     fun `should return EmailAlreadyExist when user with email already exists`() = runUnitTest {
         given()
         val fixture = SutFixture()
-        val existingUser = UserSnapshot(id = Uuid.random(), name = "John", lastName = "Doe", email = validRequest.email)
+        val existingUser = UserSnapshot.stub(email = validRequest.email)
         with(fixture) {
             coEvery { userClient.getUserByEmail(validRequest.email) } returns Result.success(existingUser)
         }

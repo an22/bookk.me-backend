@@ -8,7 +8,6 @@ import com.bookk.core.test.whenn
 import com.bookk.notifications.domain.impl.notification.NotificationType
 import com.bookk.server.business.client.api.event.BusinessEvent
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import kotlin.uuid.Uuid
 
@@ -16,7 +15,6 @@ internal class EmployeeInvitationCreatedNotificationTest {
 
     private fun event() = BusinessEvent.EmployeeInvitationCreated(
         invitedUserId = Uuid.random(),
-        invitedName = "Alice",
         businessId = Uuid.random(),
         businessName = "Barbershop"
     )
@@ -60,7 +58,7 @@ internal class EmployeeInvitationCreatedNotificationTest {
     }
 
     @Test
-    fun `should render English email content addressed to the invited person`() = runUnitTest {
+    fun `should render English email content`() = runUnitTest {
         given()
         val event = event()
 
@@ -69,12 +67,14 @@ internal class EmployeeInvitationCreatedNotificationTest {
 
         then()
         assertEquals("You were invited to join Barbershop", email.subject)
-        assertTrue(email.body.contains("Alice"))
-        assertTrue(email.body.contains("Barbershop"))
+        assertEquals(
+            "You were invited to join Barbershop as an employee. Open the app to accept the invitation.",
+            email.body
+        )
     }
 
     @Test
-    fun `should render Ukrainian email content addressed to the invited person`() = runUnitTest {
+    fun `should render Ukrainian email content`() = runUnitTest {
         given()
         val event = event()
 
@@ -83,8 +83,10 @@ internal class EmployeeInvitationCreatedNotificationTest {
 
         then()
         assertEquals("Вас запросили приєднатися до Barbershop", email.subject)
-        assertTrue(email.body.contains("Alice"))
-        assertTrue(email.body.contains("Barbershop"))
+        assertEquals(
+            "Вас запросили приєднатися до Barbershop як працівника. Відкрийте застосунок, щоб прийняти запрошення.",
+            email.body
+        )
     }
 
     @Test

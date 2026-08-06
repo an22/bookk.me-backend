@@ -46,15 +46,10 @@ internal class EmployeeInvitationDataSourceImplTest {
         given()
         val fixture = SutFixture()
         fixture.setup()
-        val userId = Uuid.random()
         val invitedBy = Uuid.random()
         val invitation = EmployeeInvitation.stub(
             businessId = fixture.businessId,
-            userId = userId,
             invitedBy = invitedBy,
-            name = "Alice",
-            lastName = "Smith",
-            phone = "+1234567890",
             email = "alice@test.com"
         )
 
@@ -64,10 +59,10 @@ internal class EmployeeInvitationDataSourceImplTest {
 
         then()
         assertEquals(fixture.businessId, created.businessId)
-        assertEquals(userId, created.userId)
+        assertEquals("alice@test.com", created.email)
         assertEquals(EmployeeInvitationStatus.PENDING, created.status)
         assertEquals(invitedBy, found?.invitedBy)
-        assertEquals(userId, found?.userId)
+        assertEquals("alice@test.com", found?.email)
     }
 
     @Test
@@ -77,7 +72,7 @@ internal class EmployeeInvitationDataSourceImplTest {
         fixture.setup()
         val created = suspendTransaction {
             fixture.sut.createInvitation(
-                EmployeeInvitation.stub(businessId = fixture.businessId, name = "Bob", lastName = "Brown")
+                EmployeeInvitation.stub(businessId = fixture.businessId, email = "bob@test.com")
             )
         }
 
@@ -87,8 +82,7 @@ internal class EmployeeInvitationDataSourceImplTest {
         then()
         assertNotNull(found)
         assertEquals(created.id, found?.id)
-        assertEquals("Bob", found?.name)
-        assertEquals("Brown", found?.lastName)
+        assertEquals("bob@test.com", found?.email)
         assertEquals(EmployeeInvitationStatus.PENDING, found?.status)
     }
 
@@ -106,6 +100,49 @@ internal class EmployeeInvitationDataSourceImplTest {
 
         then()
         assertNull(found)
+    }
+
+    @Test
+    fun `should return pending invitations matching business and email`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        suspendTransaction {
+            fixture.sut.createInvitation(
+                EmployeeInvitation.stub(businessId = fixture.businessId, email = "alice@test.com")
+            )
+        }
+        suspendTransaction {
+            fixture.sut.createInvitation(
+                EmployeeInvitation.stub(businessId = fixture.businessId, email = "bob@test.com")
+            )
+        }
+
+        whenn()
+        val found = suspendTransaction { fixture.sut.getPendingInvitations(fixture.businessId, "alice@test.com") }
+
+        then()
+        assertEquals(1, found.size)
+        assertEquals("alice@test.com", found.first().email)
+    }
+
+    @Test
+    fun `should not return approved invitations as pending`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val created = suspendTransaction {
+            fixture.sut.createInvitation(
+                EmployeeInvitation.stub(businessId = fixture.businessId, email = "alice@test.com")
+            )
+        }
+        suspendTransaction { fixture.sut.approveInvitation(created.id) }
+
+        whenn()
+        val found = suspendTransaction { fixture.sut.getPendingInvitations(fixture.businessId, "alice@test.com") }
+
+        then()
+        assertTrue(found.isEmpty())
     }
 
     @Test
@@ -157,20 +194,19 @@ internal class EmployeeInvitationDataSourceImplTest {
     }
 
     @Test
-    fun `should fail when inviting the same user to the same business twice`() = runUnitTest {
+    fun `should fail when inviting the same email to the same business twice`() = runUnitTest {
         given()
         val fixture = SutFixture()
         fixture.setup()
-        val userId = Uuid.random()
         suspendTransaction {
-            fixture.sut.createInvitation(EmployeeInvitation.stub(businessId = fixture.businessId, userId = userId))
+            fixture.sut.createInvitation(EmployeeInvitation.stub(businessId = fixture.businessId, email = "alice@test.com"))
         }
 
         whenn()
         val result = runCatching {
             suspendTransaction {
                 fixture.sut.createInvitation(
-                    EmployeeInvitation.stub(businessId = fixture.businessId, userId = userId)
+                    EmployeeInvitation.stub(businessId = fixture.businessId, email = "alice@test.com")
                 )
             }
         }

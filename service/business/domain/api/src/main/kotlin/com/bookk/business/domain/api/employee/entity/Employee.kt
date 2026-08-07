@@ -2,6 +2,7 @@ package com.bookk.business.domain.api.employee.entity
 
 import com.bookk.business.domain.api.service.entity.Service
 import kotlinx.serialization.Serializable
+import library.schedule.Schedule
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
@@ -15,6 +16,7 @@ data class Employee(
     val email: String?,
     val userId: Uuid,
     val services: List<Service>,
+    val schedule: Schedule,
     val createdAt: Instant
 ) {
     companion object {
@@ -27,6 +29,7 @@ data class Employee(
             email: String? = "stub@employee.com",
             userId: Uuid = Uuid.random(),
             services: List<Service> = emptyList(),
+            schedule: Schedule = Schedule.empty(),
             createdAt: Instant = Instant.fromEpochMilliseconds(0)
         ) = Employee(
             id = id,
@@ -37,6 +40,7 @@ data class Employee(
             email = email,
             userId = userId,
             services = services,
+            schedule = schedule,
             createdAt = createdAt
         )
     }

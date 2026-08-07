@@ -6,18 +6,27 @@ import com.bookk.business.data.orm.table.BusinessPermissionsTable
 import com.bookk.business.data.orm.table.BusinessTable
 import com.bookk.business.data.orm.table.BusinessWorkingHoursTable
 import com.bookk.business.data.orm.table.EmployeeCanProvideServiceTable
+import com.bookk.business.data.orm.table.EmployeeDayOffTable
 import com.bookk.business.data.orm.table.EmployeeTable
+import com.bookk.business.data.orm.table.EmployeeWorkingHoursTable
 import com.bookk.business.data.orm.table.ServiceGroupTable
 import com.bookk.business.data.orm.table.ServiceTable
 import com.bookk.business.domain.api.employee.entity.Employee
 import com.bookk.business.domain.api.service.entity.Service
 import com.bookk.business.domain.api.service.entity.ServiceGroup
 import com.bookk.core.data.test.createTestDatabase
+import com.bookk.core.domain.entity.Error
 import com.bookk.core.test.given
 import com.bookk.core.test.runUnitTest
 import com.bookk.core.test.then
 import com.bookk.core.test.whenn
+import kotlinx.datetime.DayOfWeek
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
+import library.schedule.DayOffRange
+import library.schedule.Schedule
+import library.schedule.WorkHour
 import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -33,7 +42,8 @@ internal class EmployeeDataSourceImplTest {
     private class SutFixture {
         val db = createTestDatabase(
             BusinessTable, BusinessDashboardTable, BusinessPermissionsTable, BusinessWorkingHoursTable, BusinessDayOffTable,
-            ServiceGroupTable, ServiceTable, EmployeeTable, EmployeeCanProvideServiceTable
+            ServiceGroupTable, ServiceTable, EmployeeTable, EmployeeCanProvideServiceTable,
+            EmployeeWorkingHoursTable, EmployeeDayOffTable
         )
         val sut = EmployeeDataSourceImpl()
         val businessSut = BusinessDataSourceImpl()
@@ -267,7 +277,7 @@ internal class EmployeeDataSourceImplTest {
             fixture.sut.createEmployee(Employee.stub(businessId = fixture.businessId))
         }
         val service = fixture.createService(name = "haircut")
-        suspendTransaction { fixture.sut.assignService(fixture.businessId, employee.id, service.id) }
+        suspendTransaction { fixture.sut.updateEmployee(employee.copy(services = listOf(service))) }
 
         whenn()
         val found = suspendTransaction { fixture.sut.getEmployee(fixture.businessId, employee.id) }
@@ -288,8 +298,7 @@ internal class EmployeeDataSourceImplTest {
         }
         val first = fixture.createService(name = "haircut")
         val second = fixture.createService(name = "shave")
-        suspendTransaction { fixture.sut.assignService(fixture.businessId, employee.id, first.id) }
-        suspendTransaction { fixture.sut.assignService(fixture.businessId, employee.id, second.id) }
+        suspendTransaction { fixture.sut.updateEmployee(employee.copy(services = listOf(first, second))) }
 
         whenn()
         val employees = suspendTransaction { fixture.sut.getEmployees(fixture.businessId) }
@@ -300,25 +309,6 @@ internal class EmployeeDataSourceImplTest {
             setOf(first.id, second.id),
             employees.first().services.map { it.id }.toSet()
         )
-    }
-
-    @Test
-    fun `should drop service from employee services after unassigning`() = runUnitTest {
-        given()
-        val fixture = SutFixture()
-        fixture.setup()
-        val employee = suspendTransaction {
-            fixture.sut.createEmployee(Employee.stub(businessId = fixture.businessId))
-        }
-        val service = fixture.createService()
-        suspendTransaction { fixture.sut.assignService(fixture.businessId, employee.id, service.id) }
-
-        whenn()
-        suspendTransaction { fixture.sut.unassignService(employee.id, service.id) }
-        val found = suspendTransaction { fixture.sut.getEmployee(fixture.businessId, employee.id) }
-
-        then()
-        assertTrue(found!!.services.isEmpty())
     }
 
     @Test
@@ -342,7 +332,7 @@ internal class EmployeeDataSourceImplTest {
     }
 
     @Test
-    fun `should assign service to employee`() = runUnitTest {
+    fun `should list service ids assigned through update`() = runUnitTest {
         given()
         val fixture = SutFixture()
         fixture.setup()
@@ -352,7 +342,7 @@ internal class EmployeeDataSourceImplTest {
         val service = fixture.createService()
 
         whenn()
-        suspendTransaction { fixture.sut.assignService(fixture.businessId, employee.id, service.id) }
+        suspendTransaction { fixture.sut.updateEmployee(employee.copy(services = listOf(service))) }
         val serviceIds = suspendTransaction { fixture.sut.getServiceIds(employee.id) }
 
         then()
@@ -360,7 +350,7 @@ internal class EmployeeDataSourceImplTest {
     }
 
     @Test
-    fun `should not duplicate assignment when assigning same service twice`() = runUnitTest {
+    fun `should not duplicate service row when employee is updated with the same services twice`() = runUnitTest {
         given()
         val fixture = SutFixture()
         fixture.setup()
@@ -370,49 +360,12 @@ internal class EmployeeDataSourceImplTest {
         val service = fixture.createService()
 
         whenn()
-        suspendTransaction { fixture.sut.assignService(fixture.businessId, employee.id, service.id) }
-        suspendTransaction { fixture.sut.assignService(fixture.businessId, employee.id, service.id) }
+        suspendTransaction { fixture.sut.updateEmployee(employee.copy(services = listOf(service))) }
+        suspendTransaction { fixture.sut.updateEmployee(employee.copy(services = listOf(service))) }
         val serviceIds = suspendTransaction { fixture.sut.getServiceIds(employee.id) }
 
         then()
         assertEquals(1, serviceIds.size)
-    }
-
-    @Test
-    fun `should unassign service from employee and return true`() = runUnitTest {
-        given()
-        val fixture = SutFixture()
-        fixture.setup()
-        val employee = suspendTransaction {
-            fixture.sut.createEmployee(Employee.stub(businessId = fixture.businessId))
-        }
-        val service = fixture.createService()
-        suspendTransaction { fixture.sut.assignService(fixture.businessId, employee.id, service.id) }
-
-        whenn()
-        val unassigned = suspendTransaction { fixture.sut.unassignService(employee.id, service.id) }
-        val serviceIds = suspendTransaction { fixture.sut.getServiceIds(employee.id) }
-
-        then()
-        assertTrue(unassigned)
-        assertTrue(serviceIds.isEmpty())
-    }
-
-    @Test
-    fun `should return false when unassigning service that was never assigned`() = runUnitTest {
-        given()
-        val fixture = SutFixture()
-        fixture.setup()
-        val employee = suspendTransaction {
-            fixture.sut.createEmployee(Employee.stub(businessId = fixture.businessId))
-        }
-        val service = fixture.createService()
-
-        whenn()
-        val unassigned = suspendTransaction { fixture.sut.unassignService(employee.id, service.id) }
-
-        then()
-        assertFalse(unassigned)
     }
 
     @Test
@@ -427,7 +380,7 @@ internal class EmployeeDataSourceImplTest {
             fixture.sut.createEmployee(Employee.stub(businessId = fixture.businessId, name = "Other"))
         }
         val service = fixture.createService()
-        suspendTransaction { fixture.sut.assignService(fixture.businessId, provider.id, service.id) }
+        suspendTransaction { fixture.sut.updateEmployee(provider.copy(services = listOf(service))) }
 
         whenn()
         val employees = suspendTransaction { fixture.sut.getEmployeesByService(service.id) }
@@ -446,7 +399,7 @@ internal class EmployeeDataSourceImplTest {
             fixture.sut.createEmployee(Employee.stub(businessId = fixture.businessId))
         }
         val service = fixture.createService()
-        suspendTransaction { fixture.sut.assignService(fixture.businessId, employee.id, service.id) }
+        suspendTransaction { fixture.sut.updateEmployee(employee.copy(services = listOf(service))) }
 
         whenn()
         suspendTransaction { fixture.sut.deleteEmployee(fixture.businessId, employee.id) }
@@ -465,7 +418,7 @@ internal class EmployeeDataSourceImplTest {
             fixture.sut.createEmployee(Employee.stub(businessId = fixture.businessId))
         }
         val service = fixture.createService()
-        suspendTransaction { fixture.sut.assignService(fixture.businessId, employee.id, service.id) }
+        suspendTransaction { fixture.sut.updateEmployee(employee.copy(services = listOf(service))) }
 
         whenn()
         suspendTransaction { fixture.serviceSut.deleteService(service.id) }
@@ -546,5 +499,157 @@ internal class EmployeeDataSourceImplTest {
         then()
         assertNull(otherEmail)
         assertNull(otherBusiness)
+    }
+
+    @Test
+    fun `should have no working days and no day offs by default`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+
+        whenn()
+        val created = suspendTransaction {
+            fixture.sut.createEmployee(Employee.stub(businessId = fixture.businessId))
+        }
+        val found = suspendTransaction { fixture.sut.getEmployee(fixture.businessId, created.id) }
+
+        then()
+        assertTrue(created.schedule.activeDays().isEmpty())
+        assertTrue(created.schedule.dayOffs.isEmpty())
+        assertTrue(found!!.schedule.activeDays().isEmpty())
+        assertTrue(found.schedule.dayOffs.isEmpty())
+    }
+
+    @Test
+    fun `should persist explicitly assigned working days and hours`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val schedule = Schedule(
+            workingDays = listOf(DayOfWeek.MONDAY, DayOfWeek.TUESDAY),
+            workingHours = mapOf(DayOfWeek.MONDAY to listOf(WorkHour(LocalTime(9, 0), LocalTime(13, 0))))
+        )
+        val employee = Employee.stub(businessId = fixture.businessId, schedule = schedule)
+
+        whenn()
+        val created = suspendTransaction { fixture.sut.createEmployee(employee) }
+        val found = suspendTransaction { fixture.sut.getEmployee(fixture.businessId, created.id) }
+
+        then()
+        assertEquals(listOf(DayOfWeek.MONDAY, DayOfWeek.TUESDAY), created.schedule.activeDays())
+        assertEquals(listOf(WorkHour(LocalTime(9, 0), LocalTime(13, 0))), created.schedule.workingHours()[DayOfWeek.MONDAY])
+        assertEquals(listOf(DayOfWeek.MONDAY, DayOfWeek.TUESDAY), found!!.schedule.activeDays())
+        assertEquals(listOf(WorkHour(LocalTime(9, 0), LocalTime(13, 0))), found.schedule.workingHours()[DayOfWeek.MONDAY])
+    }
+
+    @Test
+    fun `should persist explicitly assigned day offs`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val dayOff = DayOffRange(LocalDate(2026, 1, 1), LocalDate(2026, 1, 2))
+        val schedule = Schedule(workingDays = emptyList(), workingHours = emptyMap(), dayOffs = listOf(dayOff))
+        val employee = Employee.stub(businessId = fixture.businessId, schedule = schedule)
+
+        whenn()
+        val created = suspendTransaction { fixture.sut.createEmployee(employee) }
+        val found = suspendTransaction { fixture.sut.getEmployee(fixture.businessId, created.id) }
+
+        then()
+        assertEquals(listOf(dayOff), created.schedule.dayOffs)
+        assertEquals(listOf(dayOff), found!!.schedule.dayOffs)
+    }
+
+    @Test
+    fun `should update employee name lastname phone and email`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val created = suspendTransaction {
+            fixture.sut.createEmployee(
+                Employee.stub(businessId = fixture.businessId, name = "Old", lastName = "Name", phone = "+1000", email = "old@test.com")
+            )
+        }
+
+        whenn()
+        val updated = suspendTransaction {
+            fixture.sut.updateEmployee(
+                created.copy(name = "New", lastName = "Surname", phone = "+2000", email = "new@test.com")
+            )
+        }
+        val found = suspendTransaction { fixture.sut.getEmployee(fixture.businessId, created.id) }
+
+        then()
+        assertEquals("New", updated.name)
+        assertEquals("Surname", updated.lastName)
+        assertEquals("+2000", updated.phone)
+        assertEquals("new@test.com", updated.email)
+        assertEquals("New", found!!.name)
+        assertEquals("Surname", found.lastName)
+        assertEquals("+2000", found.phone)
+        assertEquals("new@test.com", found.email)
+    }
+
+    @Test
+    fun `should replace employee schedule on update`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val created = suspendTransaction {
+            fixture.sut.createEmployee(Employee.stub(businessId = fixture.businessId))
+        }
+        val schedule = Schedule(
+            workingDays = listOf(DayOfWeek.WEDNESDAY),
+            workingHours = mapOf(DayOfWeek.WEDNESDAY to listOf(WorkHour(LocalTime(8, 0), LocalTime(12, 0)))),
+            dayOffs = listOf(DayOffRange(LocalDate(2026, 2, 1), LocalDate(2026, 2, 2)))
+        )
+
+        whenn()
+        val updated = suspendTransaction { fixture.sut.updateEmployee(created.copy(schedule = schedule)) }
+        val found = suspendTransaction { fixture.sut.getEmployee(fixture.businessId, created.id) }
+
+        then()
+        assertEquals(listOf(DayOfWeek.WEDNESDAY), updated.schedule.activeDays())
+        assertEquals(schedule.dayOffs, updated.schedule.dayOffs)
+        assertEquals(listOf(DayOfWeek.WEDNESDAY), found!!.schedule.activeDays())
+        assertEquals(schedule.dayOffs, found.schedule.dayOffs)
+    }
+
+    @Test
+    fun `should replace employee services on update`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val kept = fixture.createService(name = "kept")
+        val dropped = fixture.createService(name = "dropped")
+        val added = fixture.createService(name = "added")
+        val created = suspendTransaction {
+            fixture.sut.createEmployee(Employee.stub(businessId = fixture.businessId, services = listOf(kept, dropped)))
+        }
+
+        whenn()
+        val updated = suspendTransaction {
+            fixture.sut.updateEmployee(created.copy(services = listOf(kept, added)))
+        }
+        val found = suspendTransaction { fixture.sut.getEmployee(fixture.businessId, created.id) }
+
+        then()
+        assertEquals(setOf(kept.id, added.id), updated.services.map { it.id }.toSet())
+        assertEquals(setOf(kept.id, added.id), found!!.services.map { it.id }.toSet())
+    }
+
+    @Test
+    fun `should throw not found when updating employee that does not exist`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+
+        whenn()
+        val result = runCatching {
+            suspendTransaction { fixture.sut.updateEmployee(Employee.stub(id = Uuid.random(), businessId = fixture.businessId)) }
+        }
+
+        then()
+        assertTrue(result.exceptionOrNull() is Error.NotFound)
     }
 }

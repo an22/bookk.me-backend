@@ -13,6 +13,7 @@ import com.bookk.core.domain.entity.Error
 import com.bookk.server.business.client.api.event.BusinessEvent
 import com.bookk.server.user.client.UserClient
 import library.permissions.ObjectPermission
+import library.schedule.Schedule
 import kotlin.time.Clock
 import kotlin.uuid.Uuid
 
@@ -50,6 +51,7 @@ internal class ApproveEmployeeInvitationImpl(
                     email = requestUser.email,
                     userId = requestUserId,
                     services = emptyList(),
+                    schedule = Schedule.empty(),
                     createdAt = Clock.System.now()
                 )
             )

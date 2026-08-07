@@ -1,11 +1,22 @@
 package com.bookk.business.data.orm.entity
 
+import com.bookk.business.data.orm.table.BusinessTable
 import com.bookk.business.data.orm.table.EmployeeCanProvideServiceTable
+import com.bookk.business.data.orm.table.EmployeeDayOffTable
 import com.bookk.business.data.orm.table.EmployeeTable
+import com.bookk.business.data.orm.table.EmployeeWorkingHoursTable
 import com.bookk.business.domain.api.employee.entity.Employee
+import com.bookk.business.domain.api.service.entity.Service
 import com.bookk.core.data.DecoratorUuidEntityClass
+import library.schedule.Schedule
+import library.schedule.toWorkingDays
+import library.schedule.toWorkingDaysMask
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
+import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.dao.UuidEntity
+import org.jetbrains.exposed.v1.jdbc.batchInsert
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
+import kotlin.time.Clock
 import kotlin.uuid.Uuid
 
 internal class EmployeeEntity(id: EntityID<Uuid>) : UuidEntity(id) {
@@ -18,10 +29,11 @@ internal class EmployeeEntity(id: EntityID<Uuid>) : UuidEntity(id) {
     var userId by EmployeeTable.userId
     var createdAt by EmployeeTable.createdAt
     var updatedAt by EmployeeTable.updatedAt
+    var workingDays by EmployeeTable.workingDays
 
     val services by ServiceEntity via EmployeeCanProvideServiceTable
-
-    companion object : DecoratorUuidEntityClass<EmployeeEntity>(EmployeeTable)
+    val workingHours by EmployeeWorkingHourEntity referrersOn EmployeeWorkingHoursTable.employeeId
+    val dayOffs by EmployeeDayOffEntity referrersOn EmployeeDayOffTable.employeeId
 
     fun toDomain(): Employee {
         return Employee(
@@ -33,7 +45,53 @@ internal class EmployeeEntity(id: EntityID<Uuid>) : UuidEntity(id) {
             email = email,
             userId = userId,
             services = services.map(ServiceEntity::toDomain),
+            schedule = Schedule(
+                workingDays = workingDays.toWorkingDays(),
+                workingHours = workingHours.toWorkingHours(),
+                dayOffs = dayOffs.map { it.domain() }
+            ),
             createdAt = createdAt
         )
+    }
+
+    private fun replaceSchedule(schedule: Schedule) {
+        workingDays = schedule.activeDays().toWorkingDaysMask()
+        EmployeeWorkingHourEntity.batchReplace(id.value, schedule.workingHours())
+        EmployeeDayOffEntity.batchReplace(id.value, schedule.dayOffs)
+    }
+
+    private fun replaceServices(services: List<Service>) {
+        val entityId = id.value
+        val ownerBusinessId = businessId.value
+        EmployeeCanProvideServiceTable.deleteWhere { EmployeeCanProvideServiceTable.employeeId eq entityId }
+        EmployeeCanProvideServiceTable.batchInsert(services) { service ->
+            this[EmployeeCanProvideServiceTable.employeeId] = entityId
+            this[EmployeeCanProvideServiceTable.serviceId] = service.id
+            this[EmployeeCanProvideServiceTable.businessId] = ownerBusinessId
+        }
+    }
+
+    companion object : DecoratorUuidEntityClass<EmployeeEntity>(EmployeeTable) {
+        fun new(model: Employee): EmployeeEntity = new {
+            businessId = EntityID(model.businessId, BusinessTable)
+            name = model.name.trim()
+            lastName = model.lastName.trim()
+            phone = model.phone?.trim()
+            email = model.email?.trim()
+            userId = model.userId
+        }.apply {
+            replaceSchedule(model.schedule)
+            replaceServices(model.services)
+        }
+
+        fun findByIdAndUpdate(model: Employee): EmployeeEntity? = findByIdAndUpdate(model.id) {
+            it.name = model.name.trim()
+            it.lastName = model.lastName.trim()
+            it.phone = model.phone?.trim()
+            it.email = model.email?.trim()
+            it.replaceSchedule(model.schedule)
+            it.replaceServices(model.services)
+            it.updatedAt = Clock.System.now()
+        }
     }
 }

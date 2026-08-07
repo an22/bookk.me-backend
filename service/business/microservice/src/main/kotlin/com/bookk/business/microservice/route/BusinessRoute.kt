@@ -2,6 +2,7 @@ package com.bookk.business.microservice.route
 
 import com.bookk.business.microservice.route.api.businessCrud
 import com.bookk.business.microservice.route.api.clientCrud
+import com.bookk.business.microservice.route.api.employeeCrud
 import com.bookk.business.microservice.route.api.employeeInvitationCrud
 import com.bookk.business.microservice.route.api.healthCheck
 import com.bookk.business.microservice.route.api.internal.getBusinessById
@@ -24,4 +25,5 @@ fun Routing.businessRoute() {
     serviceGroupCrud()
     quote()
     employeeInvitationCrud()
+    employeeCrud()
 }

@@ -54,6 +54,9 @@ object BusinessRouting {
         class Employee(val parent: Api = Api(), val businessId: Uuid) {
             @Resource("/{id}")
             class Id(val parent: Employee, val id: Uuid)
+
+            @Resource("/{id}/promote")
+            class Promote(val parent: Employee, val id: Uuid)
         }
 
         @Resource("/business/{businessId}/service_group")

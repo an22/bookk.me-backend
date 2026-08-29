@@ -12,7 +12,7 @@ following either direction from any file traces the whole cascade.
 
 Read-only (`GET`) routes and routes with no persisted side effect (e.g.
 issuing a signed quote token) are out of scope — see [Database ER
-diagrams](../database-er-diagrams.md) for the schema those mutations write
+diagrams](../database/README.md) for the schema those mutations write
 to.
 
 - [Appointments service](#appointments-service)
@@ -65,6 +65,7 @@ Reactions to cross-service events:
 | `POST /api/business/{businessId}/clients` | [Create client](business/create-client.md) |
 | `DELETE /api/business/{businessId}/clients/{id}` | [Delete client](business/delete-client.md) |
 | `PUT /api/business/{businessId}/employee/{id}` | [Update employee](business/update-employee.md) |
+| `POST /api/business/{businessId}/employee/{id}/promote` | [Promote employee](business/promote-employee.md) |
 | `POST /api/business/{businessId}/employee_invitation` | [Invite employee](business/create-employee-invitation.md) |
 | `POST /api/business/{businessId}/employee_invitation/{id}/approve` | [Approve employee invitation](business/approve-employee-invitation.md) |
 | `POST /api/business/{businessId}/service` | [Create service](business/create-service.md) |

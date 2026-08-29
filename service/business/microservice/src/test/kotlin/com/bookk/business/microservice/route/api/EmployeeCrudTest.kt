@@ -1,6 +1,8 @@
 package com.bookk.business.microservice.route.api
 
 import com.bookk.business.domain.api.employee.entity.Employee
+import com.bookk.business.domain.api.employee.entity.EmployeeRole
+import com.bookk.business.domain.api.employee.operation.PromoteEmployee
 import com.bookk.business.domain.api.employee.operation.UpdateEmployee
 import com.bookk.business.domain.api.error.BusinessErrorCodes
 import com.bookk.business.microservice.route.BusinessRouting
@@ -14,9 +16,11 @@ import com.bookk.core.test.then
 import com.bookk.core.test.whenn
 import com.bookk.server.auth.client.AppPrincipal
 import io.ktor.client.call.body
+import io.ktor.client.plugins.resources.post
 import io.ktor.client.plugins.resources.put
 import io.ktor.client.request.setBody
 import io.ktor.http.HttpStatusCode
+import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.auth.Authentication
 import io.ktor.server.auth.bearer
@@ -35,16 +39,29 @@ internal class EmployeeCrudTest {
 
     private fun createTestEmployee() = Employee.stub(businessId = businessId)
 
-    private fun ApplicationTestBuilder.authenticatedApplication(useCase: UpdateEmployee) = setupApplication(
-        extension = {
-            install(Authentication) {
-                provider {
-                    authenticate { it.principal(AppPrincipal(Uuid.random(), userId, Uuid.random())) }
-                }
+    private fun jwtAuthentication(): Application.() -> Unit = {
+        install(Authentication) {
+            provider {
+                authenticate { it.principal(AppPrincipal(Uuid.random(), userId, Uuid.random())) }
             }
-        },
+        }
+    }
+
+    private fun ApplicationTestBuilder.authenticatedApplication(useCase: UpdateEmployee) = setupApplication(
+        extension = jwtAuthentication(),
         diModule = module { single { useCase } },
         routeUnderTest = { employeeCrud() }
+    )
+
+    private fun ApplicationTestBuilder.authenticatedApplication(useCase: PromoteEmployee) = setupApplication(
+        extension = jwtAuthentication(),
+        diModule = module { single { useCase } },
+        routeUnderTest = { employeeCrud() }
+    )
+
+    private fun promoteResource(id: Uuid) = BusinessRouting.Api.Employee.Promote(
+        BusinessRouting.Api.Employee(businessId = businessId),
+        id
     )
 
     @Test
@@ -190,6 +207,83 @@ internal class EmployeeCrudTest {
         val client = createTestClient()
         val response = client.put(BusinessRouting.Api.Employee.Id(BusinessRouting.Api.Employee(businessId = businessId), employee.id)) {
             setBody(employee)
+        }
+
+        then()
+        assertEquals(HttpStatusCode.Unauthorized, response.status)
+    }
+
+    @Test
+    fun `should promote employee`() = routeTest {
+        given()
+        val useCase: PromoteEmployee = mockk()
+        val id = Uuid.random()
+        coEvery { useCase.invoke(userId, businessId, id, EmployeeRole.MANAGER) } returns Result.success(Unit)
+        authenticatedApplication(useCase)
+
+        whenn()
+        val client = createTestClient()
+        val response = client.post(promoteResource(id)) {
+            setBody(PromoteEmployeeRequest(role = EmployeeRole.MANAGER))
+        }
+
+        then()
+        assertEquals(HttpStatusCode.NoContent, response.status)
+    }
+
+    @Test
+    fun `should return not found when promoting unknown employee`() = routeTest {
+        given()
+        val useCase: PromoteEmployee = mockk()
+        val id = Uuid.random()
+        coEvery { useCase.invoke(userId, businessId, id, EmployeeRole.EMPLOYEE) } returns
+            Result.failure(Error.NotFound())
+        authenticatedApplication(useCase)
+
+        whenn()
+        val client = createTestClient()
+        val response = client.post(promoteResource(id)) {
+            setBody(PromoteEmployeeRequest(role = EmployeeRole.EMPLOYEE))
+        }
+
+        then()
+        assertEquals(HttpStatusCode.NotFound, response.status)
+    }
+
+    @Test
+    fun `should return not found when caller has no rights to promote employees`() = routeTest {
+        given()
+        val useCase: PromoteEmployee = mockk()
+        val id = Uuid.random()
+        coEvery { useCase.invoke(userId, businessId, id, EmployeeRole.MANAGER) } returns
+            Result.failure(Error.OperationNotAllowed())
+        authenticatedApplication(useCase)
+
+        whenn()
+        val client = createTestClient()
+        val response = client.post(promoteResource(id)) {
+            setBody(PromoteEmployeeRequest(role = EmployeeRole.MANAGER))
+        }
+
+        then()
+        assertEquals(HttpStatusCode.NotFound, response.status)
+    }
+
+    @Test
+    fun `should return unauthorized when promoting employee without authentication`() = routeTest {
+        given()
+        val useCase: PromoteEmployee = mockk()
+
+        setupApplication(
+            extension = { install(Authentication) { bearer { authenticate { null } } } },
+            diModule = module { single { useCase } },
+            routeUnderTest = { employeeCrud() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.post(promoteResource(Uuid.random())) {
+            setBody(PromoteEmployeeRequest(role = EmployeeRole.MANAGER))
         }
 
         then()

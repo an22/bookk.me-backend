@@ -21,8 +21,8 @@ flowchart TD
     Tx --> AssertOwner{permission == OWNER?}
     AssertOwner -- No --> R404([404 Error.OperationNotAllowed])
     AssertOwner -- Yes --> Attach[AppointmentSubscriptionDataSource.attachBusiness BusinessSnapshot]
-    Attach --> InitPerm[PermissionsDataSource.initPermissions userId businessId OWNER]
-    InitPerm --> CreateSettings[AppointmentSettingsDataSource.create default AppointmentSettings]
+    Attach --> SetPerm[PermissionsDataSource.setPermissions userId businessId OWNER]
+    SetPerm --> CreateSettings[AppointmentSettingsDataSource.create default AppointmentSettings]
     CreateSettings --> Constraint{Unique constraint violated?}
     Constraint -- Yes --> R422([422 PLUGIN_ALREADY_ENABLED 300009])
     Constraint -- No --> R204([204 No Content])

@@ -178,7 +178,7 @@ internal class AppointmentDataSourceImpl : DataSource(), AppointmentDataSource {
             it[clientPhone] = null
             it[clientEmail] = null
         }
-        AppointmentTable.update(where = { AppointmentTable.employeeId eq userId }) {
+        AppointmentTable.update(where = { AppointmentTable.employeeUserId eq userId }) {
             it[employeeName] = "Deleted User"
         }
     }

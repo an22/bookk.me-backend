@@ -11,7 +11,10 @@ persisted, so a stale or tampered quote is rejected up front. If the
 business has `automaticApproval` on, the request is approved immediately by
 delegating into [Create appointment from a pending
 request](create-appointment-from-request.md)'s shared verify/persist logic
-instead of being stored as pending.
+instead of being stored as pending. A `READ`-level employee can create a
+request assigned to themselves; see [Managing your own resource on a
+`READ`
+grant](../../object-permissions.md#managing-your-own-resource-on-a-read-grant).
 
 ```mermaid
 flowchart TD
@@ -28,7 +31,7 @@ flowchart TD
     ServicesCheck -- Yes --> Tx[[Begin transaction]]
     Tx --> Settings[AppointmentSettingsDataSource.getForUpdate businessId]
     Settings -- not found --> R404a([404 Error.NotFound])
-    Settings -- found --> Perm{permission >= EDIT?}
+    Settings -- found --> Perm{permission >= EDIT, or permission >= READ and request.employee.userId == userId?}
     Perm -- No --> R404b([404 Error.OperationNotAllowed])
     Perm -- Yes --> AutoApproval{settings.automaticApproval?}
     AutoApproval -- Yes --> Delegate[Delegate to CreateAppointment userId request]

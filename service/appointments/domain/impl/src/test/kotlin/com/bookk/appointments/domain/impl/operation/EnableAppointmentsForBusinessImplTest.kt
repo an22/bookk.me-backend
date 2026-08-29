@@ -63,7 +63,7 @@ internal class EnableAppointmentsForBusinessImplTest {
 
     private fun SutFixture.acceptAttach() {
         coEvery { subscriptionSource.attachBusiness(any()) } returns Unit
-        coEvery { permissionsDataSource.initPermissions(testUserId, testBusinessId, ObjectPermission.OWNER.int) } returns Unit
+        coEvery { permissionsDataSource.setPermissions(testUserId, testBusinessId, ObjectPermission.OWNER.int) } returns Unit
         coEvery { settingsDataSource.create(any()) } returns AppointmentSettings.stub(testBusinessId)
         coEvery { businessClient.getPermission(testUserId, testBusinessId) } returns
             Result.success(ObjectPermission.OWNER)
@@ -85,7 +85,7 @@ internal class EnableAppointmentsForBusinessImplTest {
         then()
         assertTrue(result.isSuccess)
         coVerify(exactly = 1) {
-            fixture.permissionsDataSource.initPermissions(testUserId, testBusinessId, ObjectPermission.OWNER.int)
+            fixture.permissionsDataSource.setPermissions(testUserId, testBusinessId, ObjectPermission.OWNER.int)
         }
     }
 
@@ -156,7 +156,7 @@ internal class EnableAppointmentsForBusinessImplTest {
         then()
         assertTrue(result.exceptionOrNull() is Error.OperationNotAllowed)
         coVerify(exactly = 0) { fixture.subscriptionSource.attachBusiness(any()) }
-        coVerify(exactly = 0) { fixture.permissionsDataSource.initPermissions(any(), any(), any()) }
+        coVerify(exactly = 0) { fixture.permissionsDataSource.setPermissions(any(), any(), any()) }
     }
 
     @Test

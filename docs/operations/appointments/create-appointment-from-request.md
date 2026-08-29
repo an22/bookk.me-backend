@@ -6,7 +6,9 @@ Converts an already-existing `AppointmentRequest` into a confirmed
 `Appointment`. Shares its verification logic (workday/worktime/overlap
 checks) with [Create instant appointment](create-appointment-instant.md) and
 with the auto-approval branch of [Create appointment
-request](create-appointment-request.md).
+request](create-appointment-request.md). A `READ`-level employee can
+convert their own request; see [Managing your own resource on a `READ`
+grant](../../object-permissions.md#managing-your-own-resource-on-a-read-grant).
 
 ```mermaid
 flowchart TD
@@ -17,7 +19,7 @@ flowchart TD
     GetRequest -- not found --> R404a([404 Error.NotFound])
     GetRequest -- found --> Settings[AppointmentSettingsDataSource.getForUpdate businessId]
     Settings -- not found --> R404b([404 Error.NotFound])
-    Settings -- found --> Perm{permission >= EDIT?}
+    Settings -- found --> Perm{permission >= EDIT, or permission >= READ and request.employee.userId == userId?}
     Perm -- No --> R404c([404 Error.OperationNotAllowed])
     Perm -- Yes --> PastCheck{request.date < now?}
     PastCheck -- Yes --> R422a([422 DATE_IN_PAST 300012])

@@ -14,7 +14,7 @@ import com.bookk.core.domain.entity.Error
 import com.bookk.library.serializer.moneyFormatter
 import com.bookk.server.appointments.client.api.event.AppointmentEvent
 import library.permissions.ObjectPermission
-import library.permissions.assert
+import library.permissions.assertOrOwner
 import org.slf4j.LoggerFactory
 import kotlin.uuid.Uuid
 
@@ -29,8 +29,9 @@ internal class DeclineAppointmentRequestImpl(
 ) : DeclineAppointmentRequest {
 
     override suspend fun invoke(userId: Uuid, cancellation: AppointmentCancellation): Result<Unit> = transactionManager.transaction {
-        permissionsDataSource.getPermissions(userId, cancellation.businessId).assert(ObjectPermission.EDIT)
         val appointment = requestDataSource.get(cancellation.id) ?: throw Error.NotFound()
+        permissionsDataSource.getPermissions(userId, cancellation.businessId)
+            .assertOrOwner(ObjectPermission.EDIT, actorId = userId, assigneeId = appointment.employee.userId)
         val declined = when (appointment.status) {
             AppointmentRequestStatus.APPROVED -> throw DeclineAppointmentRequest.Error.AlreadyApproved()
             AppointmentRequestStatus.DECLINED,
@@ -49,7 +50,7 @@ internal class DeclineAppointmentRequestImpl(
             AppointmentEvent.RequestRejected(
                 clientUserId = appointment.client.id,
                 clientName = appointment.client.fullName,
-                employeeUserId = appointment.employee.id,
+                employeeUserId = appointment.employee.userId,
                 employeeName = appointment.employee.fullName,
                 from = appointment.date,
                 to = appointment.dateEnd,

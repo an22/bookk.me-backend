@@ -19,6 +19,7 @@ erDiagram
     AUTHENTICATION ||--o{ DEVICE : "auth_id"
     BUSINESS ||--|| BUSINESS_HAS_APPOINTMENTS : "id (replicated via events)"
     EMPLOYEE ||--o{ APPOINTMENT : "employee_id"
+    PROFILE ||--o{ APPOINTMENT : "employee_user_id"
     CLIENT ||--o{ APPOINTMENT : "client_id"
     SERVICE ||--o{ APPOINTMENT_SERVICES : "service_id"
     SERVICE_GROUP ||--o{ APPOINTMENT_SERVICES : "service_group_id"

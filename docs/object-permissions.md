@@ -36,6 +36,21 @@ equality, a higher level automatically satisfies any check for a lower one:
 `READ` check, and so on. There is no independent "read-only" vs
 "write-only" axis — permissions form a single ladder.
 
+### Managing your own resource on a `READ` grant
+
+A second overload, `Int?.assert(permission, actorId, assigneeId)`, lets a
+`READ`-level caller pass an `EDIT`-level check when the resource being
+mutated is assigned to them: it passes when the grant already meets
+`permission`, **or** when the grant is at least `READ` and `actorId ==
+assigneeId`. Appointments uses this for an employee acting on their own
+appointment/request — `CreateAppointmentImpl`, `UpdateAppointmentImpl`,
+`CancelAppointmentImpl`, `CreateAppointmentRequestImpl`, and
+`DeclineAppointmentRequestImpl` all pass the caller's `userId` as `actorId`
+and the appointment/request's `employee.userId` as `assigneeId`. An `EDIT`/
+`OWNER` holder (a manager or the business owner) is unaffected — they can
+still act on anyone's appointment. A `READ` holder acting on an appointment
+assigned to a different employee still gets `OperationNotAllowed`.
+
 `OperationNotAllowed` is a generic infrastructure error, not a
 `BusinessError`, so `call.respondWith(result)` maps it to **HTTP 404**, not
 403 — a permission failure looks identical to the object simply not
@@ -66,6 +81,12 @@ Can view the business's data but not change it.
   - List pending appointment requests (`GetPendingAppointmentRequestsImpl`)
   - Check whether appointments are enabled for the business
     (`IsAppointmentsEnabledImpl`)
+  - Create/update/cancel/decline an appointment or appointment request
+    **assigned to themselves** (`CreateAppointmentImpl`,
+    `UpdateAppointmentImpl`, `CancelAppointmentImpl`,
+    `CreateAppointmentRequestImpl`, `DeclineAppointmentRequestImpl`) — see
+    [Managing your own resource on a `READ`
+    grant](#managing-your-own-resource-on-a-read-grant)
 - **Business**
   - List clients (`GetClientsImpl`)
 
@@ -80,11 +101,12 @@ Can create, update, or cancel/delete the business's data, in addition to
 everything `READ` allows.
 
 - **Appointments**
-  - Create an appointment (`CreateAppointmentImpl`)
-  - Update/reschedule an appointment (`UpdateAppointmentImpl`)
-  - Cancel an appointment (`CancelAppointmentImpl`)
-  - Create an appointment request (`CreateAppointmentRequestImpl`)
-  - Decline an appointment request (`DeclineAppointmentRequestImpl`)
+  - Create, update/reschedule, cancel, or decline **any** employee's
+    appointment or appointment request (`CreateAppointmentImpl`,
+    `UpdateAppointmentImpl`, `CancelAppointmentImpl`,
+    `CreateAppointmentRequestImpl`, `DeclineAppointmentRequestImpl`) — a
+    `READ` holder can already do this for their own, see
+    [above](#read-1)
   - Edit appointment settings (`EditSettingsImpl`)
 - **Business**
   - Update the business profile (`UpdateBusinessImpl`)
@@ -153,6 +175,11 @@ The first two rows only ever create a grant once, for a specific user; the
 promote route is the only operation that changes an **existing** grant, and
 only ever between `READ` and `EDIT` — it cannot grant or revoke `OWNER`.
 
+Both of the latter two rows also publish `BusinessEvent.EmployeePermissionChanged`
+(`employeeUserId`, `businessId`, `permission`), which the appointments
+service consumes to keep its own copy of the grant in sync — see
+[Storage](#storage).
+
 ## Storage
 
 This is a modular monolith: each microservice persists its own copy of the
@@ -161,21 +188,26 @@ grant rather than sharing one table across services.
 - **Business service** owns the source-of-truth grant, in
   `BusinessPermissionsTable` (`BusinessDataSource.getPermission` /
   `.setUserPermissions`), keyed by `(userId, businessId)`.
-- **Appointments service** keeps its own local copy, written once when a
-  business enables appointments
-  (`PermissionsDataSource.initPermissions`, called from
+- **Appointments service** keeps its own local copy in
+  `UserHasAppointmentPermissions` (`PermissionsDataSource`), both written via
+  the same `PermissionsDataSource.setPermissions` (an upsert, keyed by
+  `(userId, businessId)`). The business owner's row is written once, when
+  the business enables appointments (called from
   `EnableAppointmentsForBusinessImpl` with the caller's permission level
-  fetched cross-service via `BusinessClient.getPermission`). It is not kept
-  in sync with later changes to the business-service grant.
+  fetched cross-service via `BusinessClient.getPermission`). An employee's
+  row is written/overwritten by `SyncEmployeePermission`, called from
+  `AppointmentEventHandler` in reaction to
+  `BusinessEvent.EmployeePermissionChanged` (fired by
+  `ApproveEmployeeInvitationImpl` and `PromoteEmployeeImpl` — see [How
+  grants are created](#how-grants-are-created)), and is a no-op if
+  the business hasn't enabled appointments yet
+  (`AppointmentSubscriptionDataSource.isBusinessEnabled`) — an employee
+  granted or promoted before their business turns appointments on gets no
+  row until their permission changes again after that point. See
+  [React to an employee permission
+  change](operations/appointments/on-employee-permission-changed.md) for
+  the full flow.
 
 Both stores use the same `Int` encoding (`ObjectPermission.int`), so
 `ObjectPermission.of(value)` and `.assert(...)` behave identically
 regardless of which service's table backs the check.
-
-This means promoting an employee to `Manager` only grants `EDIT` in the
-**business** service. An employee never gets a row in the appointments
-service's own permission table in the first place (only the business owner
-does, once, when enabling appointments) — so a promoted employee still
-fails `EDIT`/`READ` checks on appointments operations regardless of their
-business-service role, until the appointments service is given an
-equivalent promote/sync path.

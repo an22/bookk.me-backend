@@ -63,6 +63,7 @@ internal class UpdateAppointmentImplTest {
         val settings = mockk<AppointmentSettings>()
 
         coEvery { settingsDataSource.getForUpdate(testBusinessId) } returns settings
+        coEvery { appointmentDataSource.get(testAppointment.id) } returns testAppointment
         coEvery { settings.isInWorkday(any()) } returns true
         coEvery { settings.isInWorktime(any(), any()) } returns true
         coEvery { permissionsDataSource.getPermissions(testUserId, testBusinessId) } returns ObjectPermission.EDIT.int
@@ -103,7 +104,7 @@ internal class UpdateAppointmentImplTest {
     }
 
     @Test
-    fun `should return failure when user has no permissions`() = runUnitTest {
+    fun `should return failure when user has read permission but appointment belongs to another employee`() = runUnitTest {
         val appointmentDataSource = mockk<AppointmentDataSource>()
         val settingsDataSource = mockk<AppointmentSettingsDataSource>()
         val permissionsDataSource = mockk<PermissionsDataSource>()
@@ -119,7 +120,8 @@ internal class UpdateAppointmentImplTest {
         transactionManager.mockTransaction()
         val settings = mockk<AppointmentSettings>()
         coEvery { settingsDataSource.getForUpdate(testBusinessId) } returns settings
-        coEvery { permissionsDataSource.getPermissions(testUserId, testBusinessId) } returns ObjectPermission.READ.int 
+        coEvery { appointmentDataSource.get(testAppointment.id) } returns testAppointment
+        coEvery { permissionsDataSource.getPermissions(testUserId, testBusinessId) } returns ObjectPermission.READ.int
 
         whenn()
         val result = sut(testUserId, testAppointment)
@@ -127,6 +129,38 @@ internal class UpdateAppointmentImplTest {
         then()
         assertTrue(result.isFailure)
         assertTrue(result.exceptionOrNull() is com.bookk.core.domain.entity.Error.OperationNotAllowed)
+    }
+
+    @Test
+    fun `should update own appointment successfully with read permission`() = runUnitTest {
+        val appointmentDataSource = mockk<AppointmentDataSource>()
+        val settingsDataSource = mockk<AppointmentSettingsDataSource>()
+        val permissionsDataSource = mockk<PermissionsDataSource>()
+        val transactionManager = mockk<TransactionManager>()
+        val sut = UpdateAppointmentImpl(
+            appointmentDataSource,
+            settingsDataSource,
+            permissionsDataSource,
+            transactionManager
+        )
+
+        given()
+        transactionManager.mockTransaction()
+        val settings = mockk<AppointmentSettings>()
+        val ownAppointment = testAppointment.copy(employee = EmployeeSnapshot.stub(userId = testUserId))
+        coEvery { settingsDataSource.getForUpdate(testBusinessId) } returns settings
+        coEvery { appointmentDataSource.get(ownAppointment.id) } returns ownAppointment
+        coEvery { settings.isInWorkday(any()) } returns true
+        coEvery { settings.isInWorktime(any(), any()) } returns true
+        coEvery { permissionsDataSource.getPermissions(testUserId, testBusinessId) } returns ObjectPermission.READ.int
+        coEvery { appointmentDataSource.update(any<Appointment>()) } returns ownAppointment
+        coEvery { appointmentDataSource.hasOverlapsWith(any<Appointment>()) } returns false
+
+        whenn()
+        val result = sut(testUserId, ownAppointment)
+
+        then()
+        assertTrue(result.isSuccess)
     }
 
     @Test
@@ -146,6 +180,7 @@ internal class UpdateAppointmentImplTest {
         transactionManager.mockTransaction()
         val settings = mockk<AppointmentSettings>()
         coEvery { settingsDataSource.getForUpdate(testBusinessId) } returns settings
+        coEvery { appointmentDataSource.get(testAppointment.id) } returns testAppointment
         coEvery { settings.isInWorkday(any()) } returns true
         coEvery { settings.isInWorktime(any(), any()) } returns true
         coEvery { permissionsDataSource.getPermissions(testUserId, testBusinessId) } returns ObjectPermission.EDIT.int
@@ -178,6 +213,7 @@ internal class UpdateAppointmentImplTest {
         val settings = mockk<AppointmentSettings>()
         val pastAppointment = testAppointment.copy(date = Instant.parse("2000-01-01T00:00:00Z"))
         coEvery { settingsDataSource.getForUpdate(testBusinessId) } returns settings
+        coEvery { appointmentDataSource.get(pastAppointment.id) } returns pastAppointment
         coEvery { permissionsDataSource.getPermissions(testUserId, testBusinessId) } returns ObjectPermission.EDIT.int
 
         whenn()
@@ -205,6 +241,7 @@ internal class UpdateAppointmentImplTest {
         transactionManager.mockTransaction()
         val settings = mockk<AppointmentSettings>()
         coEvery { settingsDataSource.getForUpdate(testBusinessId) } returns settings
+        coEvery { appointmentDataSource.get(testAppointment.id) } returns testAppointment
         coEvery { settings.isInWorkday(any()) } returns false
         coEvery { permissionsDataSource.getPermissions(testUserId, testBusinessId) } returns ObjectPermission.EDIT.int
         coEvery { appointmentDataSource.update(any()) } returns testAppointment // Update is called BEFORE workday check
@@ -234,6 +271,7 @@ internal class UpdateAppointmentImplTest {
         transactionManager.mockTransaction()
         val settings = mockk<AppointmentSettings>()
         coEvery { settingsDataSource.getForUpdate(testBusinessId) } returns settings
+        coEvery { appointmentDataSource.get(testAppointment.id) } returns testAppointment
         coEvery { settings.isInWorkday(any()) } returns true
         coEvery { settings.isInWorktime(any(), any()) } returns false
         coEvery { permissionsDataSource.getPermissions(testUserId, testBusinessId) } returns ObjectPermission.EDIT.int

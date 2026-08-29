@@ -24,7 +24,7 @@ import com.bookk.library.serializer.moneyFormatter
 import com.bookk.server.appointments.client.api.event.AppointmentEvent
 import com.bookk.server.business.client.api.QuoteClaims
 import library.permissions.ObjectPermission
-import library.permissions.assert
+import library.permissions.assertOrOwner
 import library.signing.TokenValidatorFactory
 import library.signing.ValidationType
 import org.joda.money.Money
@@ -67,7 +67,8 @@ internal class CreateAppointmentRequestImpl(
 
         return transactionManager.transaction<Unit> {
             val settings = settingsDataSource.getForUpdate(request.businessId) ?: throw Error.NotFound()
-            permissionsDataSource.getPermissions(userId, request.businessId).assert(ObjectPermission.EDIT)
+            permissionsDataSource.getPermissions(userId, request.businessId)
+                .assertOrOwner(ObjectPermission.EDIT, actorId = userId, assigneeId = request.employee.userId)
 
             if (settings.automaticApproval) {
                 return@transaction createAppointment(userId, request)
@@ -97,7 +98,7 @@ internal class CreateAppointmentRequestImpl(
             AppointmentEvent.RequestCreated(
                 clientUserId = request.client.id,
                 clientName = request.client.fullName,
-                employeeUserId = request.employee.id,
+                employeeUserId = request.employee.userId,
                 employeeName = request.employee.fullName,
                 from = request.date,
                 to = request.dateEnd,

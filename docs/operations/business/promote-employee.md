@@ -21,5 +21,9 @@ flowchart TD
     Found -- No --> R404b([404 Error.NotFound])
     Found -- Yes --> Map[role.toPermission -> READ or EDIT]
     Map --> Set[BusinessDataSource.setUserPermissions employee.userId, businessId, permission]
-    Set --> R204([204 Employee promoted])
+    Set --> Event[eventProducer.send BusinessEvent.EmployeePermissionChanged]
+    Event --> R204([204 Employee promoted])
 ```
+
+**Consumed by:** `BusinessEvent.EmployeePermissionChanged` → [appointments:
+sync employee permission](../appointments/on-employee-permission-changed.md).

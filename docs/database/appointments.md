@@ -34,6 +34,7 @@ erDiagram
         uuid user_id "logical FK -> user.profile.id; UK with business_id, date_start"
         uuid business_id FK
         uuid employee_id "logical FK -> business.employee.id"
+        uuid employee_user_id "logical FK -> user.profile.id (employee's own userId)"
         string employee_name
         uuid client_id "logical FK -> business.client.id"
         string client_name
@@ -67,6 +68,7 @@ erDiagram
         uuid user_id "logical FK -> user.profile.id; UK with business_id, date_start"
         uuid business_id FK
         uuid employee_id "logical FK -> business.employee.id"
+        uuid employee_user_id "logical FK -> user.profile.id (employee's own userId)"
         string employee_name
         uuid client_id "logical FK -> business.client.id"
         string client_name

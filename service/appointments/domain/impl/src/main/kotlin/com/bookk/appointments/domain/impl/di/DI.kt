@@ -34,6 +34,7 @@ import com.bookk.appointments.domain.impl.operation.GetPendingAppointmentRequest
 import com.bookk.appointments.domain.impl.operation.GetSettingsImpl
 import com.bookk.appointments.domain.impl.operation.IsAppointmentsEnabledImpl
 import com.bookk.appointments.domain.impl.operation.MarkAppointmentsCompletedImpl
+import com.bookk.appointments.domain.impl.operation.SyncEmployeePermission
 import com.bookk.appointments.domain.impl.operation.UpdateAppointmentImpl
 import com.bookk.appointments.domain.impl.operation.UpdateBusinessInformation
 import com.bookk.core.data.eventstreaming.EventHandler
@@ -56,6 +57,7 @@ fun appointmentsDomainModule() = module {
     factoryOf(::UpdateAppointmentImpl) bind UpdateAppointment::class
     factoryOf(::CancelAppointmentImpl) bind CancelAppointment::class
     factoryOf(::UpdateBusinessInformation)
+    factoryOf(::SyncEmployeePermission)
     factoryOf(::DeclineAppointmentRequestImpl) bind DeclineAppointmentRequest::class
     factoryOf(::IsAppointmentsEnabledImpl) bind IsAppointmentsEnabled::class
     factoryOf(::MarkAppointmentsCompletedImpl) bind MarkAppointmentsCompleted::class

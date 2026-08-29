@@ -341,7 +341,7 @@ internal class AppointmentDataSourceImplTest {
         fixture.setup()
         val userId = Uuid.random()
         val request = fixture.buildRequest().let {
-            it.copy(employee = it.employee.copy(id = userId, fullName = "Bob"))
+            it.copy(employee = it.employee.copy(userId = userId, fullName = "Bob"))
         }
         val created = suspendTransaction { fixture.sut.create(request) }
 

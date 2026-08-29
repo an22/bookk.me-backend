@@ -11,7 +11,7 @@ data class AppointmentRequest(
     override val id: Uuid,
     override val userId: Uuid,
     override val businessId: Uuid,
-    val employee: EmployeeSnapshot,
+    override val employee: EmployeeSnapshot,
     val client: ClientSnapshot,
     val services: List<ServiceSnapshot>,
     val status: AppointmentRequestStatus,

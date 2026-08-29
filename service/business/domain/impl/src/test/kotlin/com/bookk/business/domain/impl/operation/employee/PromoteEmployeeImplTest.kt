@@ -4,6 +4,7 @@ import com.bookk.business.domain.api.employee.entity.Employee
 import com.bookk.business.domain.api.employee.entity.EmployeeRole
 import com.bookk.business.domain.datasource.BusinessDataSource
 import com.bookk.business.domain.datasource.EmployeeDataSource
+import com.bookk.core.data.eventstreaming.StandardEventProducer
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.datasource.transaction.mockTransaction
 import com.bookk.core.domain.entity.Error
@@ -11,6 +12,7 @@ import com.bookk.core.test.given
 import com.bookk.core.test.runUnitTest
 import com.bookk.core.test.then
 import com.bookk.core.test.whenn
+import com.bookk.server.business.client.api.event.BusinessEvent
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -28,7 +30,8 @@ internal class PromoteEmployeeImplTest {
         val employeeDataSource = mockk<EmployeeDataSource>()
         val businessDataSource = mockk<BusinessDataSource>()
         val transactionManager = mockk<TransactionManager>()
-        val sut = PromoteEmployeeImpl(employeeDataSource, businessDataSource, transactionManager)
+        val eventProducer = mockk<StandardEventProducer>(relaxed = true)
+        val sut = PromoteEmployeeImpl(employeeDataSource, businessDataSource, transactionManager, eventProducer)
 
         init {
             coEvery { businessDataSource.getPermission(any(), any()) } returns ObjectPermission.OWNER.int
@@ -56,6 +59,14 @@ internal class PromoteEmployeeImplTest {
         coVerify(exactly = 1) {
             fixture.businessDataSource.setUserPermissions(employee.userId, businessId, ObjectPermission.EDIT.int)
         }
+        coVerify(exactly = 1) {
+            fixture.eventProducer.send(
+                match<BusinessEvent.EmployeePermissionChanged> {
+                    it.employeeUserId == employee.userId && it.businessId == businessId && it.permission == ObjectPermission.EDIT.int
+                },
+                any()
+            )
+        }
     }
 
     @Test
@@ -73,6 +84,14 @@ internal class PromoteEmployeeImplTest {
         assertTrue(result.isSuccess)
         coVerify(exactly = 1) {
             fixture.businessDataSource.setUserPermissions(employee.userId, businessId, ObjectPermission.READ.int)
+        }
+        coVerify(exactly = 1) {
+            fixture.eventProducer.send(
+                match<BusinessEvent.EmployeePermissionChanged> {
+                    it.employeeUserId == employee.userId && it.businessId == businessId && it.permission == ObjectPermission.READ.int
+                },
+                any()
+            )
         }
     }
 

@@ -42,6 +42,7 @@ Reactions to cross-service events:
 | `BusinessEvent.Deleted` | [React to business deletion](appointments/on-business-deleted.md) |
 | `BusinessEvent.Updated` | [React to business update](appointments/on-business-updated.md) |
 | `AuthEvent.UserDeleted` | [React to user deletion](appointments/on-user-deleted.md) |
+| `BusinessEvent.EmployeePermissionChanged` | [React to an employee permission change](appointments/on-employee-permission-changed.md) |
 
 ## Authorization service
 
@@ -136,6 +137,7 @@ order.
 | `BusinessEvent.Deleted` | [React to user deletion (business)](business/on-user-deleted.md) | [appointments](appointments/on-business-deleted.md) |
 | `BusinessEvent.EmployeeInvitationCreated` | [Invite employee](business/create-employee-invitation.md) | [notifications](notifications/on-employee-invitation-created.md) |
 | `BusinessEvent.EmployeeInvitationApproved` | [Approve employee invitation](business/approve-employee-invitation.md) | [notifications](notifications/on-employee-invitation-approved.md) |
+| `BusinessEvent.EmployeePermissionChanged` | [Approve employee invitation](business/approve-employee-invitation.md), [Promote employee](business/promote-employee.md) | [appointments](appointments/on-employee-permission-changed.md) |
 | `UserEvent.Updated` | [Update user](user/update-user.md) | [business](business/on-user-updated.md), [notifications](notifications/on-user-updated.md) |
 | `AppointmentEvent.RequestCreated` | [Create appointment request](appointments/create-appointment-request.md) | [notifications](notifications/on-appointment-request-created.md) |
 | `AppointmentEvent.RequestApproved` | [Create appointment from a pending request](appointments/create-appointment-from-request.md), [Create appointment request](appointments/create-appointment-request.md) (auto-approval) | [notifications](notifications/on-appointment-request-approved.md) |

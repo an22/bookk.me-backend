@@ -65,6 +65,13 @@ internal class ApproveEmployeeInvitationImpl(
                     businessName = business.name
                 )
             )
+            eventProducer.send(
+                BusinessEvent.EmployeePermissionChanged(
+                    employeeUserId = employee.userId,
+                    businessId = business.id,
+                    permission = ObjectPermission.READ.int
+                )
+            )
             employee
         }
 }

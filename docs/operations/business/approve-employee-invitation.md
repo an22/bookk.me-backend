@@ -31,8 +31,11 @@ flowchart TD
     GetBiz -- found --> CreateEmployee[EmployeeDataSource.createEmployee from requestUser]
     CreateEmployee --> SetPerm[BusinessDataSource.setUserPermissions requestUserId businessId READ]
     SetPerm --> Event[eventProducer.send BusinessEvent.EmployeeInvitationApproved]
-    Event --> R200([200 Created Employee])
+    Event --> PermEvent[eventProducer.send BusinessEvent.EmployeePermissionChanged READ]
+    PermEvent --> R200([200 Created Employee])
 ```
 
 **Consumed by:** `BusinessEvent.EmployeeInvitationApproved` → [notifications:
 notify the inviter](../notifications/on-employee-invitation-approved.md).
+`BusinessEvent.EmployeePermissionChanged` → [appointments: sync employee
+permission](../appointments/on-employee-permission-changed.md).

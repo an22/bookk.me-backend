@@ -149,7 +149,9 @@ internal class ApproveEmployeeInvitationImplTest {
             stubHappyPath(requestUserId, invitation, employee)
             coEvery { businessDataSource.getBusinessById(invitation.businessId) } returns
                 business(invitation.businessId, name = "Barbershop")
-            coEvery { eventProducer.send(capture(event), any()) } returns Unit
+            coEvery {
+                eventProducer.send(any(BusinessEvent.EmployeeInvitationApproved::class), any())
+            } answers { event.captured = firstArg() }
         }
 
         whenn()
@@ -165,6 +167,34 @@ internal class ApproveEmployeeInvitationImplTest {
         assertEquals("Alice", event.captured.employeeName)
         assertEquals(invitation.businessId, event.captured.businessId)
         assertEquals("Barbershop", event.captured.businessName)
+    }
+
+    @Test
+    fun `should publish permission changed event granting read to the appointments service`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val requestUserId = Uuid.random()
+        val invitation = EmployeeInvitation.stub()
+        val employee = Employee.stub(businessId = invitation.businessId, userId = requestUserId)
+        val event = slot<BusinessEvent.EmployeePermissionChanged>()
+        with(fixture) {
+            stubHappyPath(requestUserId, invitation, employee)
+            coEvery {
+                eventProducer.send(any(BusinessEvent.EmployeePermissionChanged::class), any())
+            } answers { event.captured = firstArg() }
+        }
+
+        whenn()
+        val result = fixture.sut(requestUserId, invitation.businessId, invitation.id)
+
+        then()
+        assertTrue(result.isSuccess)
+        coVerify(exactly = 1) {
+            fixture.eventProducer.send(any(BusinessEvent.EmployeePermissionChanged::class), any())
+        }
+        assertEquals(requestUserId, event.captured.employeeUserId)
+        assertEquals(invitation.businessId, event.captured.businessId)
+        assertEquals(ObjectPermission.READ.int, event.captured.permission)
     }
 
     @Test

@@ -4,6 +4,7 @@ import com.bookk.appointments.domain.api.entity.AppointmentCancellation
 import com.bookk.appointments.domain.api.entity.AppointmentRequest
 import com.bookk.appointments.domain.api.entity.AppointmentRequestStatus
 import com.bookk.appointments.domain.api.entity.BusinessSnapshot
+import com.bookk.appointments.domain.api.entity.EmployeeSnapshot
 import com.bookk.appointments.domain.api.operation.DeclineAppointmentRequest
 import com.bookk.appointments.domain.datasource.AppointmentRequestDataSource
 import com.bookk.appointments.domain.datasource.AppointmentSubscriptionDataSource
@@ -62,6 +63,45 @@ internal class DeclineAppointmentRequestImplTest {
             .copy(status = AppointmentRequestStatus.PENDING)
 
         coEvery { fixture.permissionsDataSource.getPermissions(testUserId, testBusinessId) } returns ObjectPermission.EDIT.int
+        coEvery { fixture.requestDataSource.get(testCancellation.id) } returns request
+        coEvery { fixture.requestDataSource.decline(testCancellation.id, testCancellation.reason) } returns request.copy(status = AppointmentRequestStatus.DECLINED)
+        coEvery { fixture.subscriptionDataSource.getBusinessSnapshot(testBusinessId) } returns mockk(relaxed = true)
+
+        whenn()
+        val result = fixture.sut.invoke(testUserId, testCancellation)
+
+        then()
+        assertTrue(result.isSuccess)
+    }
+
+    @Test
+    fun `should return failure when user has read permission but request belongs to another employee`() = runUnitTest {
+        val fixture = SutFixture()
+        given()
+        fixture.transactionManager.mockTransaction()
+        val request = AppointmentRequest.stub(id = testCancellation.id, businessId = testBusinessId)
+            .copy(status = AppointmentRequestStatus.PENDING)
+
+        coEvery { fixture.permissionsDataSource.getPermissions(testUserId, testBusinessId) } returns ObjectPermission.READ.int
+        coEvery { fixture.requestDataSource.get(testCancellation.id) } returns request
+
+        whenn()
+        val result = fixture.sut.invoke(testUserId, testCancellation)
+
+        then()
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is com.bookk.core.domain.entity.Error.OperationNotAllowed)
+    }
+
+    @Test
+    fun `should decline own request successfully with read permission`() = runUnitTest {
+        val fixture = SutFixture()
+        given()
+        fixture.transactionManager.mockTransaction()
+        val request = AppointmentRequest.stub(id = testCancellation.id, businessId = testBusinessId)
+            .copy(status = AppointmentRequestStatus.PENDING, employee = EmployeeSnapshot.stub(userId = testUserId))
+
+        coEvery { fixture.permissionsDataSource.getPermissions(testUserId, testBusinessId) } returns ObjectPermission.READ.int
         coEvery { fixture.requestDataSource.get(testCancellation.id) } returns request
         coEvery { fixture.requestDataSource.decline(testCancellation.id, testCancellation.reason) } returns request.copy(status = AppointmentRequestStatus.DECLINED)
         coEvery { fixture.subscriptionDataSource.getBusinessSnapshot(testBusinessId) } returns mockk(relaxed = true)

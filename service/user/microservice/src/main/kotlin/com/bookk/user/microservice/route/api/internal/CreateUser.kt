@@ -18,6 +18,7 @@ internal fun Route.postCreateUser() {
      * Body: application/x-protobuf [com.bookk.user.domain.api.entity.User] User to create, id is ignored
      * Response: 201 application/x-protobuf [com.bookk.user.domain.api.entity.UserId] User created successfully, id of the new user returned.
      * Response: 400 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Error while creating new user
+     * See: docs/operations/user/create-user-internal.md
      */
     post<Api.Internal.User> {
         val user = call.receive<User>()

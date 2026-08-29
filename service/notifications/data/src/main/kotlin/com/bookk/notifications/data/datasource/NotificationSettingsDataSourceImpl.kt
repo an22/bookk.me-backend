@@ -10,6 +10,7 @@ import com.bookk.notifications.domain.api.entity.NotificationChannelSettings
 import com.bookk.notifications.domain.api.entity.NotificationSettings
 import com.bookk.notifications.domain.datasource.NotificationSettingsDataSource
 import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.upsert
 import org.jetbrains.exposed.v1.jdbc.upsertReturning
 import kotlin.time.Clock
@@ -53,5 +54,9 @@ internal class NotificationSettingsDataSourceImpl : DataSource(), NotificationSe
             it.enabled = channel.enabled
             it.availableToClients = channel.availableToClients
         }
+    }
+
+    override suspend fun deleteByUserId(userId: Uuid) = dbQuery<Unit> {
+        NotificationSettingsTable.deleteWhere { NotificationSettingsTable.userId eq userId }
     }
 }

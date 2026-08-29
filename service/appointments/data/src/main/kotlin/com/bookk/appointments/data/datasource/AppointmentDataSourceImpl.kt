@@ -171,4 +171,15 @@ internal class AppointmentDataSourceImpl : DataSource(), AppointmentDataSource {
             it[AppointmentTable.updatedAt] = Clock.System.now()
         }
     }
+
+    override suspend fun anonymizeForUser(userId: Uuid) = dbQuery<Unit> {
+        AppointmentTable.update(where = { AppointmentTable.clientId eq userId }) {
+            it[clientName] = "Deleted User"
+            it[clientPhone] = null
+            it[clientEmail] = null
+        }
+        AppointmentTable.update(where = { AppointmentTable.employeeId eq userId }) {
+            it[employeeName] = "Deleted User"
+        }
+    }
 }

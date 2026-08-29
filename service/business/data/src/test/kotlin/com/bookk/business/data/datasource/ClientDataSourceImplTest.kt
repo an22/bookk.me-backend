@@ -311,4 +311,42 @@ internal class ClientDataSourceImplTest {
         assertNotNull(found)
         assertEquals("Keep", found!!.name)
     }
+
+    @Test
+    fun `should anonymize integrated client PII and detach the user id`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val userId = Uuid.random()
+        val client = Client.Integrated(
+            id = Uuid.random(), name = "Alice", lastName = "Smith",
+            phone = "+5551234567", email = "alice@test.com", userId = userId
+        )
+        val created = suspendTransaction { fixture.sut.createIntegratedClient(fixture.businessId, client) }
+
+        whenn()
+        val affected = suspendTransaction { fixture.sut.anonymizeClientsByUserId(userId) }
+        val found = suspendTransaction { fixture.sut.getClients(fixture.businessId) }.single { it.id == created.id }
+
+        then()
+        assertEquals(1, affected)
+        assertEquals("Deleted User", found.name)
+        assertEquals("", found.lastName)
+        assertEquals("", found.phone)
+        assertEquals("", found.email)
+        assertTrue(found is Client.Detached)
+    }
+
+    @Test
+    fun `should return zero when anonymizing clients for a user with none`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+
+        whenn()
+        val affected = suspendTransaction { fixture.sut.anonymizeClientsByUserId(Uuid.random()) }
+
+        then()
+        assertEquals(0, affected)
+    }
 }

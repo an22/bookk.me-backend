@@ -37,6 +37,7 @@ internal fun Route.notificationSettings() {
          * Security: jwt
          * Body: application/x-protobuf [com.bookk.notifications.domain.api.entity.NotificationSettings.Update]
          * Response: 200 application/x-protobuf [com.bookk.notifications.domain.api.entity.NotificationSettings] Updated notification settings
+         * See: docs/operations/notifications/update-notification-settings.md
          */
         put<Api.Notification.Settings> {
             val principal = requireNotNull(call.principal<AppPrincipal>())

@@ -6,6 +6,7 @@ import com.bookk.appointments.domain.api.operation.CreateAppointmentRequest
 import com.bookk.appointments.domain.api.operation.DeclineAppointmentRequest
 import com.bookk.appointments.domain.api.operation.DeleteModule
 import com.bookk.appointments.domain.api.operation.DeleteOutdatedRequests
+import com.bookk.appointments.domain.api.operation.DeleteUserAppointmentData
 import com.bookk.appointments.domain.api.operation.EditSettings
 import com.bookk.appointments.domain.api.operation.EnableAppointmentsForBusiness
 import com.bookk.appointments.domain.api.operation.GetAppointmentHistory
@@ -23,6 +24,7 @@ import com.bookk.appointments.domain.impl.operation.CreateAppointmentRequestImpl
 import com.bookk.appointments.domain.impl.operation.DeclineAppointmentRequestImpl
 import com.bookk.appointments.domain.impl.operation.DeleteModuleImpl
 import com.bookk.appointments.domain.impl.operation.DeleteOutdatedRequestsImpl
+import com.bookk.appointments.domain.impl.operation.DeleteUserAppointmentDataImpl
 import com.bookk.appointments.domain.impl.operation.EditSettingsImpl
 import com.bookk.appointments.domain.impl.operation.EnableAppointmentsForBusinessImpl
 import com.bookk.appointments.domain.impl.operation.GetAppointmentHistoryImpl
@@ -58,4 +60,5 @@ fun appointmentsDomainModule() = module {
     factoryOf(::IsAppointmentsEnabledImpl) bind IsAppointmentsEnabled::class
     factoryOf(::MarkAppointmentsCompletedImpl) bind MarkAppointmentsCompleted::class
     factoryOf(::DeleteOutdatedRequestsImpl) bind DeleteOutdatedRequests::class
+    factoryOf(::DeleteUserAppointmentDataImpl) bind DeleteUserAppointmentData::class
 }

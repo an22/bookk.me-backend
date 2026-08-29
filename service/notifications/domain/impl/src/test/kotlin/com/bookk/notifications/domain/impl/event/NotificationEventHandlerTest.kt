@@ -8,6 +8,7 @@ import com.bookk.core.test.then
 import com.bookk.core.test.whenn
 import com.bookk.notifications.domain.api.CreateDeviceEntry
 import com.bookk.notifications.domain.api.DeleteDeviceByUUID
+import com.bookk.notifications.domain.api.DeleteUserNotificationData
 import com.bookk.notifications.domain.impl.UpdateDeviceLanguage
 import com.bookk.notifications.domain.impl.UpdateTargetInformation
 import com.bookk.notifications.domain.impl.notification.NotificationParameters
@@ -35,6 +36,7 @@ internal class NotificationEventHandlerTest {
         val updateTargetInformation = mockk<UpdateTargetInformation>()
         val updateDeviceLanguage = mockk<UpdateDeviceLanguage>()
         val sendNotification = mockk<SendNotification>()
+        val deleteUserNotificationData = mockk<DeleteUserNotificationData>()
         val receivers = mutableMapOf<String, suspend (Any) -> Unit>()
         val sut = NotificationEventHandler(
             consumer,
@@ -42,7 +44,8 @@ internal class NotificationEventHandlerTest {
             deleteDeviceByUUID,
             updateTargetInformation,
             updateDeviceLanguage,
-            sendNotification
+            sendNotification,
+            deleteUserNotificationData
         )
 
         @Suppress("UNCHECKED_CAST")

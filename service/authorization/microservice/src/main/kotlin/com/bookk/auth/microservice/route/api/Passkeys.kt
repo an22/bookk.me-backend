@@ -55,6 +55,7 @@ internal fun Route.passkeyOperations() {
          * Body: application/x-protobuf [com.bookk.auth.domain.api.identification.entity.AddPasskeyRequest] Passkey verification payload
          * Response: 201 application/x-protobuf Passkey created
          * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Passkey errors<br>LAST_PASSKEY (200006) Can't delete passkey if it's the only one registered
+         * See: docs/operations/authorization/add-passkey.md
          */
         post<Api.Auth.PassKey.AddFinish> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
@@ -71,6 +72,7 @@ internal fun Route.passkeyOperations() {
          * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Passkey errors<br>LAST_PASSKEY (200006) Can't delete passkey if it's the only one registered
          * Response: 404 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Passkey not found
          * Response: 204 application/x-protobuf Passkey deleted
+         * See: docs/operations/authorization/delete-passkey.md
          */
         delete<Api.Auth.PassKey.Id> { path ->
             val principal = requireNotNull(call.principal<AppPrincipal>())

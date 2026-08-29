@@ -23,6 +23,7 @@ fun Routing.appointmentInit() {
          * Response: 204 application/x-protobuf Created appointment entity
          * Response: 404 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Business is unknown to the business service
          * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Appointment errors<br>PLUGIN_ALREADY_ENABLED (300009) Appointment plugin already enabled
+         * See: docs/operations/appointments/enable-appointments-for-business.md
          */
         post<Api.Appointment.Enabled> {
             val principal = requireNotNull(call.principal<AppPrincipal>())

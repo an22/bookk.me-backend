@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import kotlin.uuid.Uuid
 
@@ -123,6 +124,33 @@ internal class NotificationSettingsDataSourceImplTest {
         val channel = found!!.channels.first { it.channel == CommunicationChannel.EMAIL }
         assertFalse(channel.enabled)
         assertFalse(channel.availableToClients)
+    }
+
+    @Test
+    fun `should delete settings and cascade channels for the user`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+        val settingsId = fixture.insertSettings(userId)
+        fixture.insertChannel(settingsId, CommunicationChannel.EMAIL, enabled = true)
+
+        whenn()
+        suspendTransaction { fixture.sut.deleteByUserId(userId) }
+
+        then()
+        assertNull(suspendTransaction { fixture.sut.getByUserId(userId) })
+    }
+
+    @Test
+    fun `should not fail deleting settings for a user with none`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+
+        whenn()
+        val result = runCatching { suspendTransaction { fixture.sut.deleteByUserId(Uuid.random()) } }
+
+        then()
+        assertTrue(result.isSuccess)
     }
 
     // upsert(NotificationSettings) uses upsertReturning which is PostgreSQL-only and not

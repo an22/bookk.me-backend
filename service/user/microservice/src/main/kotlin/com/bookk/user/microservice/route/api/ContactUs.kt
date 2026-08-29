@@ -39,6 +39,7 @@ internal fun Route.postContactForm() {
          * Security: jwt
          * Body: application/x-protobuf [com.bookk.user.microservice.route.api.ContactFormBody] Contact form created by client
          * Response: 201 application/x-protobuf Contact form submitted
+         * See: docs/operations/user/create-contact-form.md
          */
         post<Api.User.ContactUs> {
             val principal = requireNotNull(call.principal<AppPrincipal>())

@@ -13,6 +13,7 @@ import com.bookk.core.test.then
 import com.bookk.core.test.whenn
 import com.bookk.notifications.domain.api.CreateDeviceEntry
 import com.bookk.notifications.domain.api.DeleteDeviceByUUID
+import com.bookk.notifications.domain.api.DeleteUserNotificationData
 import com.bookk.notifications.domain.api.entity.Device
 import com.bookk.notifications.domain.impl.UpdateDeviceLanguage
 import com.bookk.notifications.domain.impl.UpdateTargetInformation
@@ -49,6 +50,7 @@ internal class NotificationEventHandlerEventTest {
             KafkaTestBroker.createTopic(AuthEvent.DeviceLanguageUpdated.TOPIC, partitions = 3)
             KafkaTestBroker.createTopic(AuthEvent.DeviceCreated.TOPIC, partitions = 3)
             KafkaTestBroker.createTopic(AuthEvent.DeviceDeleted.TOPIC, partitions = 3)
+            KafkaTestBroker.createTopic(AuthEvent.UserDeleted.TOPIC, partitions = 3)
             KafkaTestBroker.createTopic(AppointmentEvent.RequestCreated.TOPIC, partitions = 3)
             KafkaTestBroker.createTopic(AppointmentEvent.RequestApproved.TOPIC, partitions = 3)
             KafkaTestBroker.createTopic(AppointmentEvent.RequestRejected.TOPIC, partitions = 3)
@@ -64,6 +66,7 @@ internal class NotificationEventHandlerEventTest {
         val updateTargetInformation = mockk<UpdateTargetInformation>()
         val updateDeviceLanguage = mockk<UpdateDeviceLanguage>()
         val sendNotification = mockk<SendNotification>()
+        val deleteUserNotificationData = mockk<DeleteUserNotificationData>()
         val consumer = KafkaEventConsumer(
             servers = KafkaTestBroker.servers,
             consumerGroup = "notification-handler-${Uuid.random()}",
@@ -73,7 +76,7 @@ internal class NotificationEventHandlerEventTest {
         )
         val sut = NotificationEventHandler(
             consumer, createDeviceEntry, deleteDeviceByUUID,
-            updateTargetInformation, updateDeviceLanguage, sendNotification
+            updateTargetInformation, updateDeviceLanguage, sendNotification, deleteUserNotificationData
         )
         private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -354,5 +357,27 @@ internal class NotificationEventHandlerEventTest {
         then()
         coVerify(exactly = 1) { fixture.sendNotification(inviterUserId, any()) }
         coVerify(exactly = 0) { fixture.sendNotification(employeeUserId, any()) }
+    }
+
+    @Test
+    fun `should delete user notification data when the auth service deletes the user`() = runIntegrationTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+        val arrived = CountDownLatch(1)
+        coEvery {
+            fixture.deleteUserNotificationData(userId)
+        } answers { arrived.countDown(); Result.success(Unit) }
+
+        whenn()
+        withContext(Dispatchers.IO) {
+            fixture.start()
+            producer().send(AuthEvent.UserDeleted(userId = userId))
+            arrived.await(20, TimeUnit.SECONDS)
+        }
+        fixture.stop()
+
+        then()
+        coVerify(exactly = 1) { fixture.deleteUserNotificationData(userId) }
     }
 }

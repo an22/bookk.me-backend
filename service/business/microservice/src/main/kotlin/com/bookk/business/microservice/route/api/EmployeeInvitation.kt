@@ -49,6 +49,7 @@ fun Route.employeeInvitationCrud() {
          * Response: 200 application/x-protobuf [com.bookk.business.domain.api.employee.entity.EmployeeInvitation] Created invitation
          * Response: 404 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Business is not found or the caller has no rights to edit it
          * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Create invitation errors<br>BUSINESS_EMPLOYEE_INVITATION_EXISTS (200015) Invitation for this user already exists<br>BUSINESS_EMPLOYEE_INVITATION_VALIDATION_ERROR (200016) Invitation email is blank or invalid<br>BUSINESS_EMPLOYEE_EXISTS (200018) User is already an employee of this business
+         * See: docs/operations/business/create-employee-invitation.md
          */
         post<Api.EmployeeInvitation> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
@@ -92,6 +93,7 @@ fun Route.employeeInvitationCrud() {
          * Response: 200 application/x-protobuf [com.bookk.business.domain.api.employee.entity.Employee] Created employee
          * Response: 404 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Invitation is not found or is addressed to another user
          * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Approve invitation errors<br>BUSINESS_EMPLOYEE_INVITATION_ALREADY_PROCESSED (200017) Invitation is already processed<br>BUSINESS_EMPLOYEE_EXISTS (200018) User is already an employee of this business
+         * See: docs/operations/business/approve-employee-invitation.md
          */
         post<Api.EmployeeInvitation.Approve> {
             val principal = requireNotNull(call.principal<AppPrincipal>())

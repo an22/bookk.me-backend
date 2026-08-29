@@ -24,4 +24,5 @@ interface AppointmentDataSource {
     suspend fun hasOverlapsWith(appointment: AppointmentRepresentation): Boolean
     suspend fun cancel(id: Uuid, reason: String): Appointment
     suspend fun markCompleted(before: Instant)
+    suspend fun anonymizeForUser(userId: Uuid)
 }

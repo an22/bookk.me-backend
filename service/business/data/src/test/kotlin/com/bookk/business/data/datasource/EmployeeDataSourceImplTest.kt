@@ -652,4 +652,60 @@ internal class EmployeeDataSourceImplTest {
         then()
         assertTrue(result.exceptionOrNull() is Error.NotFound)
     }
+
+    @Test
+    fun `should anonymize employee PII and clear schedule and services for the deleted user`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val userId = Uuid.random()
+        val service = fixture.createService()
+        val schedule = Schedule(
+            workingDays = listOf(DayOfWeek.WEDNESDAY),
+            workingHours = mapOf(DayOfWeek.WEDNESDAY to listOf(WorkHour(LocalTime(9, 0), LocalTime(17, 0)))),
+            dayOffs = listOf(DayOffRange(LocalDate(2099, 1, 1), LocalDate(2099, 1, 2)))
+        )
+        val created = suspendTransaction {
+            fixture.sut.createEmployee(
+                Employee.stub(
+                    businessId = fixture.businessId,
+                    userId = userId,
+                    name = "Alice",
+                    lastName = "Smith",
+                    phone = "+1234567890",
+                    email = "alice@test.com",
+                    services = listOf(service),
+                    schedule = schedule
+                )
+            )
+        }
+
+        whenn()
+        val affected = suspendTransaction { fixture.sut.anonymizeEmployeesByUserId(userId) }
+        val found = suspendTransaction { fixture.sut.getEmployee(fixture.businessId, created.id) }
+
+        then()
+        assertEquals(1, affected)
+        assertNotNull(found)
+        assertEquals("Deleted User", found!!.name)
+        assertEquals("", found.lastName)
+        assertNull(found.phone)
+        assertNull(found.email)
+        assertTrue(found.services.isEmpty())
+        assertTrue(found.schedule.activeDays().isEmpty())
+        assertTrue(found.schedule.dayOffs.isEmpty())
+    }
+
+    @Test
+    fun `should return zero when anonymizing employees for a user with none`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+
+        whenn()
+        val affected = suspendTransaction { fixture.sut.anonymizeEmployeesByUserId(Uuid.random()) }
+
+        then()
+        assertEquals(0, affected)
+    }
 }

@@ -1,6 +1,7 @@
 package com.bookk.appointments.domain.impl.event
 
 import com.bookk.appointments.domain.api.operation.DeleteModule
+import com.bookk.appointments.domain.api.operation.DeleteUserAppointmentData
 import com.bookk.appointments.domain.impl.operation.UpdateBusinessInformation
 import com.bookk.core.data.eventstreaming.impl.kafka.KafkaEventConsumer
 import com.bookk.core.data.eventstreaming.impl.kafka.KafkaEventProducer
@@ -12,6 +13,7 @@ import com.bookk.core.test.given
 import com.bookk.core.test.runIntegrationTest
 import com.bookk.core.test.then
 import com.bookk.core.test.whenn
+import com.bookk.server.auth.client.AuthEvent
 import com.bookk.server.business.client.api.BusinessDTO
 import com.bookk.server.business.client.api.event.BusinessEvent
 import io.mockk.coEvery
@@ -45,12 +47,14 @@ internal class AppointmentEventHandlerEventTest {
             KafkaTestBroker.servers
             KafkaTestBroker.createTopic(BusinessEvent.Updated.TOPIC, partitions = 3)
             KafkaTestBroker.createTopic(BusinessEvent.Deleted.TOPIC, partitions = 3)
+            KafkaTestBroker.createTopic(AuthEvent.UserDeleted.TOPIC, partitions = 3)
         }
     }
 
     private class SutFixture {
         val deleteModule = mockk<DeleteModule>()
         val updateBusinessInformation = mockk<UpdateBusinessInformation>()
+        val deleteUserAppointmentData = mockk<DeleteUserAppointmentData>()
         val consumer = KafkaEventConsumer(
             servers = KafkaTestBroker.servers,
             consumerGroup = "appointment-handler-${Uuid.random()}",
@@ -58,7 +62,7 @@ internal class AppointmentEventHandlerEventTest {
             protoBuf = KafkaTestBroker.protoBuf,
             dltProducer = NoopProducer()
         )
-        val sut = AppointmentEventHandler(consumer, deleteModule, updateBusinessInformation)
+        val sut = AppointmentEventHandler(consumer, deleteModule, updateBusinessInformation, deleteUserAppointmentData)
         private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
         fun start() = sut.start(scope)
@@ -154,5 +158,25 @@ internal class AppointmentEventHandlerEventTest {
 
         then()
         coVerify(exactly = 1) { fixture.deleteModule(businessId) }
+    }
+
+    @Test
+    fun `should delete user appointment data when the auth service deletes the user`() = runIntegrationTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+        val arrived = CountDownLatch(1)
+        coEvery { fixture.deleteUserAppointmentData(userId) } answers { arrived.countDown(); Result.success(Unit) }
+
+        whenn()
+        withContext(Dispatchers.IO) {
+            fixture.start()
+            producer().send(AuthEvent.UserDeleted(userId = userId))
+            arrived.await(20, TimeUnit.SECONDS)
+        }
+        fixture.stop()
+
+        then()
+        coVerify(exactly = 1) { fixture.deleteUserAppointmentData(userId) }
     }
 }

@@ -23,6 +23,7 @@ internal fun Route.patchUser() {
          * Body: application/x-protobuf [com.bookk.user.domain.api.entity.UserEditModel] Fields that needs to be updated
          * Response: 200 application/x-protobuf User successfully updated
          * Response: 404 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] User errors<br>USER_NOT_EXIST (100001) User not found
+         * See: docs/operations/user/update-user.md
          */
         patch<Api.User.Me> {
             val principal = requireNotNull(call.principal<AppPrincipal>())

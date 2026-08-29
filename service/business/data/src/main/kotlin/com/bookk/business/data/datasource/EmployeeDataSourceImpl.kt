@@ -2,13 +2,16 @@ package com.bookk.business.data.datasource
 
 import com.bookk.business.data.orm.entity.EmployeeEntity
 import com.bookk.business.data.orm.table.EmployeeCanProvideServiceTable
+import com.bookk.business.data.orm.table.EmployeeDayOffTable
 import com.bookk.business.data.orm.table.EmployeeTable
+import com.bookk.business.data.orm.table.EmployeeWorkingHoursTable
 import com.bookk.business.domain.api.employee.entity.Employee
 import com.bookk.business.domain.datasource.EmployeeDataSource
 import com.bookk.core.data.DataSource
 import com.bookk.core.domain.entity.Error
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.inList
 import org.jetbrains.exposed.v1.core.inSubQuery
 import org.jetbrains.exposed.v1.core.isNull
 import org.jetbrains.exposed.v1.core.less
@@ -98,6 +101,27 @@ internal class EmployeeDataSourceImpl : DataSource(), EmployeeDataSource {
             .select(EmployeeCanProvideServiceTable.serviceId)
             .where { EmployeeCanProvideServiceTable.employeeId eq employeeId }
             .map { it[EmployeeCanProvideServiceTable.serviceId].value }
+    }
+
+    override suspend fun anonymizeEmployeesByUserId(userId: Uuid): Int = dbQuery {
+        val employeeIds = EmployeeTable.select(EmployeeTable.id)
+            .where { EmployeeTable.userId eq userId }
+            .map { it[EmployeeTable.id].value }
+
+        if (employeeIds.isEmpty()) return@dbQuery 0
+
+        EmployeeCanProvideServiceTable.deleteWhere { EmployeeCanProvideServiceTable.employeeId inList employeeIds }
+        EmployeeWorkingHoursTable.deleteWhere { EmployeeWorkingHoursTable.employeeId inList employeeIds }
+        EmployeeDayOffTable.deleteWhere { EmployeeDayOffTable.employeeId inList employeeIds }
+
+        EmployeeTable.update(where = { EmployeeTable.userId eq userId }) {
+            it[name] = "Deleted User"
+            it[lastName] = ""
+            it[phone] = null
+            it[email] = null
+            it[workingDays] = 0
+            it[EmployeeTable.updatedAt] = Clock.System.now()
+        }
     }
 
     override suspend fun getEmployeesByService(serviceId: Uuid): List<Employee> = dbQuery {

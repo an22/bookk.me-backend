@@ -1,6 +1,7 @@
 package com.bookk.business.domain.impl.event
 
 import com.bookk.business.domain.api.business.operation.DeleteBusiness
+import com.bookk.business.domain.api.user.operation.AnonymizeUserProfile
 import com.bookk.business.domain.api.user.operation.SyncUserProfile
 import com.bookk.core.data.eventstreaming.impl.kafka.KafkaEventConsumer
 import com.bookk.core.data.eventstreaming.impl.kafka.KafkaEventProducer
@@ -45,6 +46,7 @@ internal class BusinessEventHandlerImplEventTest {
     private class SutFixture {
         val deleteBusiness = mockk<DeleteBusiness>()
         val syncUserProfile = mockk<SyncUserProfile>()
+        val anonymizeUserProfile = mockk<AnonymizeUserProfile>()
         val consumer = KafkaEventConsumer(
             servers = KafkaTestBroker.servers,
             consumerGroup = "business-handler-${Uuid.random()}",
@@ -52,7 +54,7 @@ internal class BusinessEventHandlerImplEventTest {
             protoBuf = KafkaTestBroker.protoBuf,
             dltProducer = NoopProducer()
         )
-        val sut = BusinessEventHandlerImpl(consumer, deleteBusiness, syncUserProfile)
+        val sut = BusinessEventHandlerImpl(consumer, deleteBusiness, syncUserProfile, anonymizeUserProfile)
 
         private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -132,12 +134,15 @@ internal class BusinessEventHandlerImplEventTest {
     }
 
     @Test
-    fun `should delete the business when the auth service deletes the user`() = runIntegrationTest {
+    fun `should delete the business and anonymize user data when the auth service deletes the user`() = runIntegrationTest {
         given()
         val fixture = SutFixture()
         val userId = Uuid.random()
         val arrived = CountDownLatch(1)
-        coEvery { fixture.deleteBusiness(userId) } answers { arrived.countDown(); Result.success(Unit) }
+        coEvery { fixture.deleteBusiness(userId) } returns Result.success(Unit)
+        coEvery {
+            fixture.anonymizeUserProfile(userId)
+        } answers { arrived.countDown(); Result.success(Unit) }
 
         whenn()
         withContext(Dispatchers.IO) {
@@ -150,5 +155,6 @@ internal class BusinessEventHandlerImplEventTest {
         then()
         assertTrue(arrived.count == 0L)
         coVerify(exactly = 1) { fixture.deleteBusiness(userId) }
+        coVerify(exactly = 1) { fixture.anonymizeUserProfile(userId) }
     }
 }

@@ -86,4 +86,14 @@ internal class ClientDataSourceImpl : DataSource(), ClientDataSource {
             it[sourceUpdatedAt] = updatedAt
         }
     }
+
+    override suspend fun anonymizeClientsByUserId(userId: Uuid): Int = dbQuery {
+        ClientTable.update(where = { ClientTable.userId eq userId }) {
+            it[name] = "Deleted User"
+            it[lastName] = ""
+            it[phone] = ""
+            it[email] = ""
+            it[this.userId] = null
+        }
+    }
 }

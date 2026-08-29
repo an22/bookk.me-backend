@@ -5,6 +5,7 @@ import com.bookk.core.data.eventstreaming.StandardEventConsumer
 import com.bookk.core.data.eventstreaming.registerResultReceiver
 import com.bookk.notifications.domain.api.CreateDeviceEntry
 import com.bookk.notifications.domain.api.DeleteDeviceByUUID
+import com.bookk.notifications.domain.api.DeleteUserNotificationData
 import com.bookk.notifications.domain.impl.UpdateDeviceLanguage
 import com.bookk.notifications.domain.impl.UpdateTargetInformation
 import com.bookk.notifications.domain.impl.UpdateTargetInformation.Target
@@ -23,12 +24,16 @@ internal class NotificationEventHandler(
     private val deleteDeviceByUUID: DeleteDeviceByUUID,
     private val updateTargetInformation: UpdateTargetInformation,
     private val updateDeviceLanguage: UpdateDeviceLanguage,
-    private val sendNotification: SendNotification
+    private val sendNotification: SendNotification,
+    private val deleteUserNotificationData: DeleteUserNotificationData
 ) : EventHandler {
     override fun start(scope: CoroutineScope) {
         consumer
             .registerResultReceiver(AuthEvent.DeviceCreated.TOPIC) { event: AuthEvent.DeviceCreated ->
                 createDeviceEntry(event.deviceUuid, event.authId, event.userId, event.language)
+            }
+            .registerResultReceiver(AuthEvent.UserDeleted.TOPIC) { event: AuthEvent.UserDeleted ->
+                deleteUserNotificationData(event.userId)
             }
             .registerResultReceiver(AuthEvent.DeviceLanguageUpdated.TOPIC) { event: AuthEvent.DeviceLanguageUpdated ->
                 updateDeviceLanguage(event.deviceUuid, event.language)

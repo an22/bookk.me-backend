@@ -8,4 +8,5 @@ interface NotificationSettingsDataSource {
     suspend fun getByUserId(userId: Uuid): NotificationSettings?
     suspend fun upsert(settings: NotificationSettings): NotificationSettings
     suspend fun upsert(channel: NotificationChannelSettings)
+    suspend fun deleteByUserId(userId: Uuid)
 }

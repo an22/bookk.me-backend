@@ -2,6 +2,7 @@ package com.bookk.business.microservice.route.api
 
 import com.bookk.business.domain.api.employee.entity.Employee
 import com.bookk.business.domain.api.employee.entity.EmployeeRole
+import com.bookk.business.domain.api.employee.operation.GetEmployees
 import com.bookk.business.domain.api.employee.operation.PromoteEmployee
 import com.bookk.business.domain.api.employee.operation.UpdateEmployee
 import com.bookk.business.domain.api.error.BusinessErrorCodes
@@ -16,6 +17,7 @@ import com.bookk.core.test.then
 import com.bookk.core.test.whenn
 import com.bookk.server.auth.client.AppPrincipal
 import io.ktor.client.call.body
+import io.ktor.client.plugins.resources.get
 import io.ktor.client.plugins.resources.post
 import io.ktor.client.plugins.resources.put
 import io.ktor.client.request.setBody
@@ -54,6 +56,12 @@ internal class EmployeeCrudTest {
     )
 
     private fun ApplicationTestBuilder.authenticatedApplication(useCase: PromoteEmployee) = setupApplication(
+        extension = jwtAuthentication(),
+        diModule = module { single { useCase } },
+        routeUnderTest = { employeeCrud() }
+    )
+
+    private fun ApplicationTestBuilder.authenticatedApplication(useCase: GetEmployees) = setupApplication(
         extension = jwtAuthentication(),
         diModule = module { single { useCase } },
         routeUnderTest = { employeeCrud() }
@@ -285,6 +293,57 @@ internal class EmployeeCrudTest {
         val response = client.post(promoteResource(Uuid.random())) {
             setBody(PromoteEmployeeRequest(role = EmployeeRole.MANAGER))
         }
+
+        then()
+        assertEquals(HttpStatusCode.Unauthorized, response.status)
+    }
+
+    @Test
+    fun `should return employees of the business`() = routeTest {
+        given()
+        val useCase: GetEmployees = mockk()
+        val employees = listOf(createTestEmployee(), createTestEmployee())
+        coEvery { useCase.invoke(userId, businessId) } returns Result.success(employees)
+        authenticatedApplication(useCase)
+
+        whenn()
+        val client = createTestClient()
+        val response = client.get(BusinessRouting.Api.Employee(businessId = businessId))
+
+        then()
+        assertEquals(HttpStatusCode.OK, response.status)
+        assertEquals(employees.map { it.id }, response.body<List<Employee>>().map { it.id })
+    }
+
+    @Test
+    fun `should return not found when caller has no rights to list employees`() = routeTest {
+        given()
+        val useCase: GetEmployees = mockk()
+        coEvery { useCase.invoke(userId, businessId) } returns Result.failure(Error.OperationNotAllowed())
+        authenticatedApplication(useCase)
+
+        whenn()
+        val client = createTestClient()
+        val response = client.get(BusinessRouting.Api.Employee(businessId = businessId))
+
+        then()
+        assertEquals(HttpStatusCode.NotFound, response.status)
+    }
+
+    @Test
+    fun `should return unauthorized when listing employees without authentication`() = routeTest {
+        given()
+        val useCase: GetEmployees = mockk()
+
+        setupApplication(
+            extension = { install(Authentication) { bearer { authenticate { null } } } },
+            diModule = module { single { useCase } },
+            routeUnderTest = { employeeCrud() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.get(BusinessRouting.Api.Employee(businessId = businessId))
 
         then()
         assertEquals(HttpStatusCode.Unauthorized, response.status)

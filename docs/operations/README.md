@@ -13,7 +13,9 @@ following either direction from any file traces the whole cascade.
 Read-only (`GET`) routes and routes with no persisted side effect (e.g.
 issuing a signed quote token) are out of scope — see [Database ER
 diagrams](../database/README.md) for the schema those mutations write
-to.
+to. Background operations that run on a timer instead of a route or event
+are documented separately in [Scheduled (recurring)
+jobs](scheduled-jobs.md).
 
 - [Appointments service](#appointments-service)
 - [Authorization service](#authorization-service)
@@ -21,6 +23,7 @@ to.
 - [Notifications service](#notifications-service)
 - [User service](#user-service)
 - [Cross-service event map](#cross-service-event-map)
+- [Scheduled (recurring) jobs](scheduled-jobs.md)
 
 ## Appointments service
 

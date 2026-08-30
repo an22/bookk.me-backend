@@ -1,5 +1,3 @@
-version: "3.9"
-
 secrets:
   signing_key_encryption_key:
     file: security/signing_key_encryption_key
@@ -8,7 +6,7 @@ secrets:
 
 services:
   service-auth:
-    image: com.bookk.server.microservice.authorization
+    image: com.bookk.server.microservice.authorization:latest
     hostname: auth.service
     ports:
       - '8000:8000'
@@ -25,7 +23,7 @@ services:
           memory: 512M
 
   service-user:
-    image: com.bookk.server.microservice.user
+    image: com.bookk.server.microservice.user:latest
     hostname: user.service
     ports:
       - '8001:8000'
@@ -40,7 +38,7 @@ services:
           memory: 512M
 
   service-business:
-    image: com.bookk.server.microservice.business
+    image: com.bookk.server.microservice.business:latest
     hostname: business.service
     ports:
       - '8002:8000'
@@ -57,7 +55,7 @@ services:
           memory: 512M
 
   service-appointments:
-    image: com.bookk.server.microservice.appointments
+    image: com.bookk.server.microservice.appointments:latest
     hostname: appointments.service
     ports:
       - '8003:8000'
@@ -72,7 +70,7 @@ services:
           memory: 512M
 
   service-notifications:
-    image: com.bookk.server.microservice.notifications
+    image: com.bookk.server.microservice.notifications:latest
     hostname: notifications.service
     ports:
       - '8004:8000'

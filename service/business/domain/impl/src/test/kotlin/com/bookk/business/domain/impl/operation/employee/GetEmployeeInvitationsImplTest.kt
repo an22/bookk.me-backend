@@ -1,6 +1,7 @@
 package com.bookk.business.domain.impl.operation.employee
 
 import com.bookk.business.domain.api.employee.entity.EmployeeInvitation
+import com.bookk.business.domain.api.employee.entity.EmployeeInvitationStatus
 import com.bookk.business.domain.datasource.EmployeeInvitationDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.datasource.transaction.mockTransaction
@@ -15,24 +16,27 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import kotlin.uuid.Uuid
 
-internal class GetPendingEmployeeInvitationsImplTest {
+internal class GetEmployeeInvitationsImplTest {
 
     private class SutFixture {
         val invitationDataSource = mockk<EmployeeInvitationDataSource>()
         val transactionManager = mockk<TransactionManager>()
-        val sut = GetPendingEmployeeInvitationsImpl(invitationDataSource, transactionManager)
+        val sut = GetEmployeeInvitationsImpl(invitationDataSource, transactionManager)
     }
 
     @Test
-    fun `should return pending invitations sent by the caller`() = runUnitTest {
+    fun `should return all invitations sent by the caller regardless of status`() = runUnitTest {
         given()
         val fixture = SutFixture()
         val userId = Uuid.random()
         val businessId = Uuid.random()
-        val invitations = listOf(EmployeeInvitation.stub(businessId = businessId, invitedBy = userId))
+        val invitations = listOf(
+            EmployeeInvitation.stub(businessId = businessId, invitedBy = userId, status = EmployeeInvitationStatus.PENDING),
+            EmployeeInvitation.stub(businessId = businessId, invitedBy = userId, status = EmployeeInvitationStatus.APPROVED)
+        )
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { invitationDataSource.getPendingInvitationsByInviter(businessId, userId) } returns invitations
+            coEvery { invitationDataSource.getInvitationsByInviter(businessId, userId) } returns invitations
         }
 
         whenn()
@@ -44,14 +48,14 @@ internal class GetPendingEmployeeInvitationsImplTest {
     }
 
     @Test
-    fun `should return empty list when caller has not sent any pending invitations`() = runUnitTest {
+    fun `should return empty list when caller has not sent any invitations`() = runUnitTest {
         given()
         val fixture = SutFixture()
         val userId = Uuid.random()
         val businessId = Uuid.random()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { invitationDataSource.getPendingInvitationsByInviter(businessId, userId) } returns emptyList()
+            coEvery { invitationDataSource.getInvitationsByInviter(businessId, userId) } returns emptyList()
         }
 
         whenn()

@@ -4,7 +4,7 @@ import com.bookk.business.domain.api.employee.entity.Employee
 import com.bookk.business.domain.api.employee.entity.EmployeeInvitation
 import com.bookk.business.domain.api.employee.operation.ApproveEmployeeInvitation
 import com.bookk.business.domain.api.employee.operation.CreateEmployeeInvitation
-import com.bookk.business.domain.api.employee.operation.GetPendingEmployeeInvitations
+import com.bookk.business.domain.api.employee.operation.GetEmployeeInvitations
 import com.bookk.business.domain.api.employee.operation.GetPendingEmployeeInvitationsByEmail
 import com.bookk.business.domain.api.employee.operation.RejectEmployeeInvitation
 import com.bookk.business.domain.api.employee.operation.RevokeEmployeeInvitation
@@ -211,10 +211,13 @@ internal class EmployeeInvitationCrudTest {
     }
 
     @Test
-    fun `should return pending invitations sent by the caller`() = routeTest {
+    fun `should return all invitations sent by the caller`() = routeTest {
         given()
-        val useCase: GetPendingEmployeeInvitations = mockk()
-        val invitations = listOf(EmployeeInvitation.stub(businessId = businessId, invitedBy = userId))
+        val useCase: GetEmployeeInvitations = mockk()
+        val invitations = listOf(
+            EmployeeInvitation.stub(businessId = businessId, invitedBy = userId),
+            EmployeeInvitation.stub(businessId = businessId, invitedBy = userId)
+        )
         coEvery { useCase.invoke(userId, businessId) } returns Result.success(invitations)
 
         setupApplication(
@@ -233,9 +236,9 @@ internal class EmployeeInvitationCrudTest {
     }
 
     @Test
-    fun `should return unauthorized when listing pending invitations without authentication`() = routeTest {
+    fun `should return unauthorized when listing invitations without authentication`() = routeTest {
         given()
-        val useCase: GetPendingEmployeeInvitations = mockk()
+        val useCase: GetEmployeeInvitations = mockk()
 
         setupApplication(
             extension = { install(Authentication) { bearer { authenticate { null } } } },

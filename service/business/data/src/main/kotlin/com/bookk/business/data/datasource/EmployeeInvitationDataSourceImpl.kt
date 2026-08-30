@@ -36,12 +36,11 @@ internal class EmployeeInvitationDataSourceImpl : DataSource(), EmployeeInvitati
             ?.toDomain()
     }
 
-    override suspend fun getPendingInvitationsByInviter(businessId: Uuid, invitedBy: Uuid): List<EmployeeInvitation> =
+    override suspend fun getInvitationsByInviter(businessId: Uuid, invitedBy: Uuid): List<EmployeeInvitation> =
         dbQuery {
             EmployeeInvitationEntity.find {
                 (EmployeeInvitationTable.businessId eq businessId) and
-                    (EmployeeInvitationTable.invitedBy eq invitedBy) and
-                    (EmployeeInvitationTable.status eq EmployeeInvitationStatus.PENDING)
+                    (EmployeeInvitationTable.invitedBy eq invitedBy)
             }
                 .toList()
                 .map(EmployeeInvitationEntity::toDomain)

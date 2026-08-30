@@ -106,7 +106,7 @@ internal class EmployeeInvitationDataSourceImplTest {
     }
 
     @Test
-    fun `should return pending invitations matching business and inviter`() = runUnitTest {
+    fun `should return invitations matching business and inviter`() = runUnitTest {
         given()
         val fixture = SutFixture()
         fixture.setup()
@@ -123,7 +123,7 @@ internal class EmployeeInvitationDataSourceImplTest {
         }
 
         whenn()
-        val found = suspendTransaction { fixture.sut.getPendingInvitationsByInviter(fixture.businessId, invitedBy) }
+        val found = suspendTransaction { fixture.sut.getInvitationsByInviter(fixture.businessId, invitedBy) }
 
         then()
         assertEquals(1, found.size)
@@ -131,20 +131,45 @@ internal class EmployeeInvitationDataSourceImplTest {
     }
 
     @Test
-    fun `should not return approved invitations as pending by inviter`() = runUnitTest {
+    fun `should return invitations by inviter regardless of status`() = runUnitTest {
         given()
         val fixture = SutFixture()
         fixture.setup()
         val invitedBy = Uuid.random()
-        val created = suspendTransaction {
+        val approved = suspendTransaction {
             fixture.sut.createInvitation(
                 EmployeeInvitation.stub(businessId = fixture.businessId, invitedBy = invitedBy, email = "alice@test.com")
             )
         }
-        suspendTransaction { fixture.sut.approveInvitation(created.id) }
+        suspendTransaction { fixture.sut.approveInvitation(approved.id) }
+        suspendTransaction {
+            fixture.sut.createInvitation(
+                EmployeeInvitation.stub(businessId = fixture.businessId, invitedBy = invitedBy, email = "bob@test.com")
+            )
+        }
 
         whenn()
-        val found = suspendTransaction { fixture.sut.getPendingInvitationsByInviter(fixture.businessId, invitedBy) }
+        val found = suspendTransaction { fixture.sut.getInvitationsByInviter(fixture.businessId, invitedBy) }
+
+        then()
+        assertEquals(2, found.size)
+        assertTrue(found.any { it.email == "alice@test.com" && it.status == EmployeeInvitationStatus.APPROVED })
+        assertTrue(found.any { it.email == "bob@test.com" && it.status == EmployeeInvitationStatus.PENDING })
+    }
+
+    @Test
+    fun `should not return invitations from another inviter`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        suspendTransaction {
+            fixture.sut.createInvitation(
+                EmployeeInvitation.stub(businessId = fixture.businessId, invitedBy = Uuid.random(), email = "alice@test.com")
+            )
+        }
+
+        whenn()
+        val found = suspendTransaction { fixture.sut.getInvitationsByInviter(fixture.businessId, Uuid.random()) }
 
         then()
         assertTrue(found.isEmpty())

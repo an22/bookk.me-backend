@@ -4,7 +4,7 @@ import com.bookk.business.domain.api.employee.entity.EmployeeInvitation
 import com.bookk.business.domain.api.employee.entity.EmployeeInvitationStatus
 import com.bookk.business.domain.api.employee.operation.ApproveEmployeeInvitation
 import com.bookk.business.domain.api.employee.operation.CreateEmployeeInvitation
-import com.bookk.business.domain.api.employee.operation.GetPendingEmployeeInvitations
+import com.bookk.business.domain.api.employee.operation.GetEmployeeInvitations
 import com.bookk.business.domain.api.employee.operation.GetPendingEmployeeInvitationsByEmail
 import com.bookk.business.domain.api.employee.operation.RejectEmployeeInvitation
 import com.bookk.business.domain.api.employee.operation.RevokeEmployeeInvitation
@@ -68,21 +68,21 @@ fun Route.employeeInvitationCrud() {
         }
 
         /**
-         * Summary: Get pending employee invitations
-         * Description: Returns pending invitations in this business sent by the calling user
+         * Summary: Get employee invitations
+         * Description: Returns all invitations in this business sent by the calling user, regardless of status
          * Tag: employee
          * Security: jwt
          */
         get<Api.EmployeeInvitation> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
-            val getPendingEmployeeInvitations by application.inject<GetPendingEmployeeInvitations>()
+            val getEmployeeInvitations by application.inject<GetEmployeeInvitations>()
 
-            call.respondWith(getPendingEmployeeInvitations(userId = principal.userId, businessId = it.businessId))
+            call.respondWith(getEmployeeInvitations(userId = principal.userId, businessId = it.businessId))
         }.describe {
             responses {
                 response(HttpStatusCode.OK.value) {
                     schema = jsonSchema<List<EmployeeInvitation>>()
-                    description = "Pending invitations sent by the calling user"
+                    description = "Invitations sent by the calling user"
                     ContentType.Application.ProtoBuf()
                 }
             }

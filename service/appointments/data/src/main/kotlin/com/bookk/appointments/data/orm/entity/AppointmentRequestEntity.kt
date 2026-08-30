@@ -24,6 +24,7 @@ internal class AppointmentRequestEntity(id: EntityID<Uuid>) : UuidEntity(id) {
     var userId by AppointmentRequestTable.userId
     var businessId by AppointmentRequestTable.businessId
     var employeeId by AppointmentRequestTable.employeeId
+    var employeeUserId by AppointmentRequestTable.employeeUserId
     var employeeName by AppointmentRequestTable.employeeName
     var clientId by AppointmentRequestTable.clientId
     var clientName by AppointmentRequestTable.clientName
@@ -44,6 +45,7 @@ internal class AppointmentRequestEntity(id: EntityID<Uuid>) : UuidEntity(id) {
             businessId = businessId.value,
             employee = EmployeeSnapshot(
                 id = employeeId,
+                userId = employeeUserId,
                 fullName = employeeName
             ),
             client = ClientSnapshot(
@@ -77,6 +79,7 @@ internal class AppointmentRequestEntity(id: EntityID<Uuid>) : UuidEntity(id) {
             userId = request.userId
             businessId = EntityID(request.businessId, table = AppointmentBusinessTable)
             employeeId = request.employee.id
+            employeeUserId = request.employee.userId
             employeeName = request.employee.fullName
             clientId = request.client.id
             clientName = request.client.fullName
@@ -93,6 +96,7 @@ internal class AppointmentRequestEntity(id: EntityID<Uuid>) : UuidEntity(id) {
             it.userId = request.userId
             it.businessId = EntityID(request.businessId, table = AppointmentBusinessTable)
             it.employeeId = request.employee.id
+            it.employeeUserId = request.employee.userId
             it.employeeName = request.employee.fullName
             it.clientId = request.client.id
             it.clientName = request.client.fullName

@@ -2,22 +2,24 @@ package com.bookk.business.data.datasource
 
 import com.bookk.business.data.orm.entity.EmployeeEntity
 import com.bookk.business.data.orm.table.EmployeeCanProvideServiceTable
+import com.bookk.business.data.orm.table.EmployeeDayOffTable
 import com.bookk.business.data.orm.table.EmployeeTable
+import com.bookk.business.data.orm.table.EmployeeWorkingHoursTable
 import com.bookk.business.domain.api.employee.entity.Employee
 import com.bookk.business.domain.datasource.EmployeeDataSource
 import com.bookk.core.data.DataSource
+import com.bookk.core.domain.entity.Error
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.inList
 import org.jetbrains.exposed.v1.core.inSubQuery
 import org.jetbrains.exposed.v1.core.isNull
 import org.jetbrains.exposed.v1.core.less
 import org.jetbrains.exposed.v1.core.or
 import org.jetbrains.exposed.v1.dao.with
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
-import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.update
-import org.jetbrains.exposed.v1.jdbc.upsert
 import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
@@ -25,22 +27,11 @@ import kotlin.uuid.Uuid
 internal class EmployeeDataSourceImpl : DataSource(), EmployeeDataSource {
 
     override suspend fun createEmployee(employee: Employee): Employee = dbQuery {
-        val id = EmployeeTable.insertAndGetId {
-            it[businessId] = employee.businessId
-            it[name] = employee.name.trim()
-            it[lastName] = employee.lastName.trim()
-            it[phone] = employee.phone?.trim()
-            it[email] = employee.email?.trim()
-            it[userId] = employee.userId
-        }
-        employee.services.forEach { service ->
-            EmployeeCanProvideServiceTable.upsert {
-                it[employeeId] = id
-                it[serviceId] = service.id
-                it[businessId] = employee.businessId
-            }
-        }
-        employee.copy(id = id.value)
+        EmployeeEntity.new(employee).toDomain()
+    }
+
+    override suspend fun updateEmployee(employee: Employee): Employee = dbQuery {
+        (EmployeeEntity.findByIdAndUpdate(employee) ?: throw Error.NotFound()).toDomain()
     }
 
     override suspend fun getEmployees(businessId: Uuid): List<Employee> = dbQuery {
@@ -48,7 +39,7 @@ internal class EmployeeDataSourceImpl : DataSource(), EmployeeDataSource {
             EmployeeTable.businessId eq businessId
         }
             .toList()
-            .with(EmployeeEntity::services)
+            .with(EmployeeEntity::services, EmployeeEntity::workingHours, EmployeeEntity::dayOffs)
             .map(EmployeeEntity::toDomain)
     }
 
@@ -63,6 +54,14 @@ internal class EmployeeDataSourceImpl : DataSource(), EmployeeDataSource {
     override suspend fun getEmployeeByUserId(businessId: Uuid, userId: Uuid): Employee? = dbQuery {
         EmployeeEntity.find {
             (EmployeeTable.businessId eq businessId) and (EmployeeTable.userId eq userId)
+        }
+            .firstOrNull()
+            ?.toDomain()
+    }
+
+    override suspend fun getEmployeeByEmail(businessId: Uuid, email: String): Employee? = dbQuery {
+        EmployeeEntity.find {
+            (EmployeeTable.businessId eq businessId) and (EmployeeTable.email eq email)
         }
             .firstOrNull()
             ?.toDomain()
@@ -97,26 +96,32 @@ internal class EmployeeDataSourceImpl : DataSource(), EmployeeDataSource {
         }
     }
 
-    override suspend fun assignService(businessId: Uuid, employeeId: Uuid, serviceId: Uuid) = dbQuery<Unit> {
-        EmployeeCanProvideServiceTable.upsert {
-            it[this.employeeId] = employeeId
-            it[this.serviceId] = serviceId
-            it[this.businessId] = businessId
-        }
-    }
-
-    override suspend fun unassignService(employeeId: Uuid, serviceId: Uuid): Boolean = dbQuery {
-        EmployeeCanProvideServiceTable.deleteWhere {
-            (EmployeeCanProvideServiceTable.employeeId eq employeeId) and
-                (EmployeeCanProvideServiceTable.serviceId eq serviceId)
-        } != 0
-    }
-
     override suspend fun getServiceIds(employeeId: Uuid): List<Uuid> = dbQuery {
         EmployeeCanProvideServiceTable
             .select(EmployeeCanProvideServiceTable.serviceId)
             .where { EmployeeCanProvideServiceTable.employeeId eq employeeId }
             .map { it[EmployeeCanProvideServiceTable.serviceId].value }
+    }
+
+    override suspend fun anonymizeEmployeesByUserId(userId: Uuid): Int = dbQuery {
+        val employeeIds = EmployeeTable.select(EmployeeTable.id)
+            .where { EmployeeTable.userId eq userId }
+            .map { it[EmployeeTable.id].value }
+
+        if (employeeIds.isEmpty()) return@dbQuery 0
+
+        EmployeeCanProvideServiceTable.deleteWhere { EmployeeCanProvideServiceTable.employeeId inList employeeIds }
+        EmployeeWorkingHoursTable.deleteWhere { EmployeeWorkingHoursTable.employeeId inList employeeIds }
+        EmployeeDayOffTable.deleteWhere { EmployeeDayOffTable.employeeId inList employeeIds }
+
+        EmployeeTable.update(where = { EmployeeTable.userId eq userId }) {
+            it[name] = "Deleted User"
+            it[lastName] = ""
+            it[phone] = null
+            it[email] = null
+            it[workingDays] = 0
+            it[EmployeeTable.updatedAt] = Clock.System.now()
+        }
     }
 
     override suspend fun getEmployeesByService(serviceId: Uuid): List<Employee> = dbQuery {
@@ -128,7 +133,7 @@ internal class EmployeeDataSourceImpl : DataSource(), EmployeeDataSource {
             EmployeeTable.id inSubQuery employeeIds
         }
             .toList()
-            .with(EmployeeEntity::services)
+            .with(EmployeeEntity::services, EmployeeEntity::workingHours, EmployeeEntity::dayOffs)
             .map(EmployeeEntity::toDomain)
     }
 }

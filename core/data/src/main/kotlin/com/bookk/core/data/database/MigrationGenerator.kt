@@ -30,7 +30,7 @@ suspend fun createMigrationScriptFor(
         schemaName = schemaName
     )
     val fileSystemTarget = File("src/main/resources/db/migration/${schemaName}")
-    val file = suspendTransaction {
+    suspendTransaction {
         MigrationUtils.generateMigrationScript(
             tables = tables,
             scriptDirectory = "${fileSystemTarget.path}",
@@ -38,9 +38,17 @@ suspend fun createMigrationScriptFor(
             withLogs = true
         )
     }
+    testMigration(targetVersion, schemaName)
+}
+
+fun testMigration(
+    targetVersion: Int,
+    schemaName: String,
+) {
+    val file = File("src/main/resources/db/migration")
     createFlywayForVersion(
         schemaName = schemaName,
-        location = "filesystem:${file.parent}",
+        location = "filesystem:${file}",
         version = targetVersion
     ).migrate()
 }

@@ -19,7 +19,7 @@ interface CreateEmployeeInvitation {
         class ValidationError : BusinessError(
             statusCode = HttpStatusCode.UnprocessableEntity.value,
             code = BusinessErrorCodes.BUSINESS_EMPLOYEE_INVITATION_VALIDATION_ERROR,
-            message = "Invitation name or last name is blank or too long"
+            message = "Invitation email is blank or invalid"
         ), Error
 
         class EmployeeExist : BusinessError(

@@ -119,4 +119,8 @@ internal class BusinessDataSourceImpl : DataSource(), BusinessDataSource {
             it[this.permission] = permission
         }
     }
+
+    override suspend fun deleteUserPermissions(userId: Uuid) = dbQuery<Unit> {
+        BusinessPermissionsTable.deleteWhere { BusinessPermissionsTable.userId eq userId }
+    }
 }

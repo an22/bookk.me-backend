@@ -23,6 +23,7 @@ internal fun Route.registration() {
      * Body: application/x-protobuf [com.bookk.auth.domain.api.registration.entity.CreateAccountRequest] User parameters
      * Response: 200 application/x-protobuf [com.bookk.auth.domain.api.registration.entity.RegistrationChallengeResponse] Validation challenge returned
      * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Registration errors<br>EMAIL_EXIST (200001) This email already exists<br>INVALID_EMAIL_FORMAT (200002) Invalid email format
+     * See: docs/operations/authorization/sign-up-challenge.md
      */
     post<Api.Auth.PassKey.SignUpChallenge> {
         val info = call.receive<CreateAccountRequest>()
@@ -37,6 +38,7 @@ internal fun Route.registration() {
      * Body: application/x-protobuf [com.bookk.auth.domain.api.registration.entity.VerifyAccountCreationRequest] User parameters
      * Response: 200 application/x-protobuf [com.bookk.auth.domain.api.token.entity.AuthTokens] User has been created
      * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Registration errors<br>USER_ALREADY_EXIST (200003) User with this email already exist<br>INVALID_EMAIL_FORMAT (200002) Invalid email format<br>ACCOUNT_CREATION_FAILED (200004) Error during account creation try again later<br>CHALLENGE_WINDOW_EXPIRED (300001) Challenge window expired<br>VERIFICATION_FAILED (300002) Passkey verification failed
+     * See: docs/operations/authorization/sign-up.md
      */
     post<Api.Auth.SignUp> {
         val info = call.receive<VerifyAccountCreationRequest>()

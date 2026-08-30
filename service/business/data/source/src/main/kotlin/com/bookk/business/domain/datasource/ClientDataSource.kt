@@ -18,4 +18,5 @@ interface ClientDataSource {
         phone: String?,
         updatedAt: Instant
     ): Int
+    suspend fun anonymizeClientsByUserId(userId: Uuid): Int
 }

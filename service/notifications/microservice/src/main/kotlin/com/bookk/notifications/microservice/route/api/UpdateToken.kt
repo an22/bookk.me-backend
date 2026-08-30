@@ -23,6 +23,7 @@ internal fun Route.notificationToken() {
          * Security: jwt
          * Body: application/x-protobuf [com.bookk.notifications.microservice.route.api.UpdateTokenRequest]
          * Response: 200 application/x-protobuf [com.bookk.notifications.domain.api.entity.Device] Updated device
+         * See: docs/operations/notifications/update-push-token.md
          */
         put<Api.Notification.Token> {
             val body = call.receive<UpdateTokenRequest>()

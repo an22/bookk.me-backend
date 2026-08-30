@@ -14,7 +14,7 @@ import com.bookk.core.domain.entity.Error
 import com.bookk.library.serializer.moneyFormatter
 import com.bookk.server.appointments.client.api.event.AppointmentEvent
 import library.permissions.ObjectPermission
-import library.permissions.assert
+import library.permissions.assertOrOwner
 import org.slf4j.LoggerFactory
 import kotlin.uuid.Uuid
 
@@ -29,8 +29,9 @@ internal class CancelAppointmentImpl(
 ) : CancelAppointment {
 
     override suspend fun invoke(userId: Uuid, cancellation: AppointmentCancellation): Result<Appointment> = transactionManager.transaction {
-        permissionsDataSource.getPermissions(userId, cancellation.businessId).assert(ObjectPermission.EDIT)
         val appointment = appointmentDataSource.get(cancellation.id)
+        permissionsDataSource.getPermissions(userId, cancellation.businessId)
+            .assertOrOwner(ObjectPermission.EDIT, actorId = userId, assigneeId = appointment.employee.userId)
         val cancelled = when (appointment.status) {
             AppointmentStatus.COMPLETED -> throw CancelAppointment.Error.AlreadyCompleted()
             AppointmentStatus.CANCELLED -> throw CancelAppointment.Error.AlreadyCancelled()
@@ -56,7 +57,7 @@ internal class CancelAppointmentImpl(
                 to = appointment.dateEnd,
                 timeZone = business.timeZone,
                 businessName = business.name,
-                employeeUserId = appointment.employee.id,
+                employeeUserId = appointment.employee.userId,
                 employeeName = appointment.employee.fullName,
                 address = business.address,
                 price = moneyFormatter.print(appointment.totalAmount),

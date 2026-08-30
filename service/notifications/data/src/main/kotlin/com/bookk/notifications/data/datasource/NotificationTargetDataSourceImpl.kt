@@ -9,6 +9,7 @@ import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.isNull
 import org.jetbrains.exposed.v1.core.less
 import org.jetbrains.exposed.v1.core.or
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.update
@@ -67,5 +68,10 @@ internal class NotificationTargetDataSourceImpl : DataSource(), NotificationTarg
         ) {
             it[NotificationTelegramTargetTable.telegramTag] = telegramTag
         } > 0
+    }
+
+    override suspend fun deleteByUserId(userId: Uuid) = dbQuery<Unit> {
+        NotificationEmailTargetTable.deleteWhere { NotificationEmailTargetTable.userId eq userId }
+        NotificationTelegramTargetTable.deleteWhere { NotificationTelegramTargetTable.userId eq userId }
     }
 }

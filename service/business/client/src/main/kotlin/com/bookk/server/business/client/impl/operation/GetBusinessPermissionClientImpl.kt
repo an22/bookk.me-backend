@@ -5,13 +5,14 @@ import com.bookk.core.client.bodyOrThrow
 import com.bookk.server.business.client.impl.BusinessRouting
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.resources.get
+import library.permissions.ObjectPermission
 import kotlin.uuid.Uuid
 
 internal class GetBusinessPermissionClientImpl(
     private val httpClient: HttpClient
 ) : GetBusinessPermission {
 
-    override suspend fun invoke(userId: Uuid, businessId: Uuid): Result<Int> = runCatching {
+    override suspend fun invoke(userId: Uuid, businessId: Uuid): Result<ObjectPermission> = runCatching {
         httpClient.get(
             BusinessRouting.Api.Internal.Business.Id.Permissions(
                 parent = BusinessRouting.Api.Internal.Business.Id(id = businessId),

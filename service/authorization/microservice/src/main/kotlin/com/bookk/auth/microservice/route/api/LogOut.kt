@@ -19,6 +19,7 @@ internal fun Route.logOut() {
          * Tag: auth
          * Security: jwt
          * Response: 200 application/x-protobuf Success
+         * See: docs/operations/authorization/sign-out.md
          */
         delete<Api.Auth.SignOut> {
             val principal = requireNotNull(call.principal<AppPrincipal>())

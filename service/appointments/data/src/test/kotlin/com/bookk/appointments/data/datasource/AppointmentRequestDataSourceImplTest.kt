@@ -260,4 +260,71 @@ internal class AppointmentRequestDataSourceImplTest {
         then()
         assertFalse(inCache)
     }
+
+    @Test
+    fun `should delete requests booked with the deleted user as client`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val userId = Uuid.random()
+        val request = fixture.buildRequest().let {
+            it.copy(client = it.client.copy(id = userId))
+        }
+        val created = suspendTransaction { fixture.sut.create(request) }
+
+        whenn()
+        suspendTransaction { fixture.sut.deleteForUser(userId) }
+        val found = suspendTransaction { fixture.sut.get(created.id) }
+
+        then()
+        assertNull(found)
+    }
+
+    @Test
+    fun `should delete requests assigned to the deleted user as employee`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val userId = Uuid.random()
+        val request = fixture.buildRequest().let {
+            it.copy(employee = it.employee.copy(userId = userId))
+        }
+        val created = suspendTransaction { fixture.sut.create(request) }
+
+        whenn()
+        suspendTransaction { fixture.sut.deleteForUser(userId) }
+        val found = suspendTransaction { fixture.sut.get(created.id) }
+
+        then()
+        assertNull(found)
+    }
+
+    @Test
+    fun `should not delete requests belonging to other users`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val userId = Uuid.random()
+        val untouched = suspendTransaction { fixture.sut.create(fixture.buildRequest()) }
+
+        whenn()
+        suspendTransaction { fixture.sut.deleteForUser(userId) }
+        val found = suspendTransaction { fixture.sut.get(untouched.id) }
+
+        then()
+        assertNotNull(found)
+    }
+
+    @Test
+    fun `should not fail deleting requests for a user with none`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+
+        whenn()
+        val result = runCatching { suspendTransaction { fixture.sut.deleteForUser(Uuid.random()) } }
+
+        then()
+        assertTrue(result.isSuccess)
+    }
 }

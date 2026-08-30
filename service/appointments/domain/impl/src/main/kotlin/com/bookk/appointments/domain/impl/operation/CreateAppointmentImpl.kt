@@ -16,7 +16,7 @@ import com.bookk.core.domain.entity.Error
 import com.bookk.library.serializer.moneyFormatter
 import com.bookk.server.appointments.client.api.event.AppointmentEvent
 import library.permissions.ObjectPermission
-import library.permissions.assert
+import library.permissions.assertOrOwner
 import org.slf4j.LoggerFactory
 import kotlin.time.Clock
 import kotlin.uuid.Uuid
@@ -68,7 +68,8 @@ internal class CreateAppointmentImpl(
 
     private suspend fun verifyAppointment(userId: Uuid, appointment: AppointmentRepresentation) {
         val settings = settingsDataSource.getForUpdate(appointment.businessId) ?: throw Error.NotFound()
-        permissionsDataSource.getPermissions(userId, appointment.businessId).assert(ObjectPermission.EDIT)
+        permissionsDataSource.getPermissions(userId, appointment.businessId)
+            .assertOrOwner(ObjectPermission.EDIT, actorId = userId, assigneeId = appointment.employee.userId)
         if (appointment.date < Clock.System.now()) throw CreateAppointment.Error.DateInThePastNotAllowed()
         if (!settings.isInWorkday(appointment.date)) throw CreateAppointment.Error.RequestForThisDateNotAllowed()
         if (!settings.isInWorktime(appointment.date, appointment.dateEnd)) throw CreateAppointment.Error.RequestForThisTimeNotAllowed()
@@ -84,7 +85,7 @@ internal class CreateAppointmentImpl(
             AppointmentEvent.RequestApproved(
                 clientUserId = request.client.id,
                 clientName = request.client.fullName,
-                employeeUserId = request.employee.id,
+                employeeUserId = request.employee.userId,
                 employeeName = request.employee.fullName,
                 from = request.date,
                 to = request.dateEnd,

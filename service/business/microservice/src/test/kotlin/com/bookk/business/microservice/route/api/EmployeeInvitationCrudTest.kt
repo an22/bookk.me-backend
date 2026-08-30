@@ -4,6 +4,7 @@ import com.bookk.business.domain.api.employee.entity.Employee
 import com.bookk.business.domain.api.employee.entity.EmployeeInvitation
 import com.bookk.business.domain.api.employee.operation.ApproveEmployeeInvitation
 import com.bookk.business.domain.api.employee.operation.CreateEmployeeInvitation
+import com.bookk.business.domain.api.employee.operation.GetPendingEmployeeInvitations
 import com.bookk.business.domain.api.error.BusinessErrorCodes
 import com.bookk.business.microservice.route.BusinessRouting
 import com.bookk.core.domain.entity.Error
@@ -16,6 +17,7 @@ import com.bookk.core.test.then
 import com.bookk.core.test.whenn
 import com.bookk.server.auth.client.AppPrincipal
 import io.ktor.client.call.body
+import io.ktor.client.plugins.resources.get
 import io.ktor.client.plugins.resources.post
 import io.ktor.client.request.setBody
 import io.ktor.http.HttpStatusCode
@@ -35,13 +37,7 @@ internal class EmployeeInvitationCrudTest {
     private val businessId = Uuid.random()
     private val userId = Uuid.random()
 
-    private fun createTestRequest(invitedUserId: Uuid = Uuid.random()) = EmployeeInvitationRequest(
-        userId = invitedUserId,
-        name = "Alice",
-        lastName = "Smith",
-        phone = "+1234567890",
-        email = "alice@test.com"
-    )
+    private fun createTestRequest(email: String = "alice@test.com") = EmployeeInvitationRequest(email = email)
 
     private fun approveResource(id: Uuid) = BusinessRouting.Api.EmployeeInvitation.Approve(
         BusinessRouting.Api.EmployeeInvitation(businessId = businessId),
@@ -196,6 +192,47 @@ internal class EmployeeInvitationCrudTest {
         val response = client.post(BusinessRouting.Api.EmployeeInvitation(businessId = businessId)) {
             setBody(createTestRequest())
         }
+
+        then()
+        assertEquals(HttpStatusCode.Unauthorized, response.status)
+    }
+
+    @Test
+    fun `should return pending invitations addressed to the caller`() = routeTest {
+        given()
+        val useCase: GetPendingEmployeeInvitations = mockk()
+        val invitations = listOf(EmployeeInvitation.stub(businessId = businessId))
+        coEvery { useCase.invoke(userId, businessId) } returns Result.success(invitations)
+
+        setupApplication(
+            extension = jwtAuthentication(),
+            diModule = module { single { useCase } },
+            routeUnderTest = { employeeInvitationCrud() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.get(BusinessRouting.Api.EmployeeInvitation(businessId = businessId))
+
+        then()
+        assertEquals(HttpStatusCode.OK, response.status)
+        assertEquals(invitations.map { it.id }, response.body<List<EmployeeInvitation>>().map { it.id })
+    }
+
+    @Test
+    fun `should return unauthorized when listing pending invitations without authentication`() = routeTest {
+        given()
+        val useCase: GetPendingEmployeeInvitations = mockk()
+
+        setupApplication(
+            extension = { install(Authentication) { bearer { authenticate { null } } } },
+            diModule = module { single { useCase } },
+            routeUnderTest = { employeeInvitationCrud() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.get(BusinessRouting.Api.EmployeeInvitation(businessId = businessId))
 
         then()
         assertEquals(HttpStatusCode.Unauthorized, response.status)

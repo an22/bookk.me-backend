@@ -22,6 +22,7 @@ internal fun Route.deleteAccount() {
          * Security: jwt
          * Body: application/x-protobuf [com.bookk.auth.domain.api.delete_account.entity.VerifyDeleteAccRequest]
          * Response: 200 application/x-protobuf Success
+         * See: docs/operations/authorization/delete-account.md
          */
         delete<Api.Auth.Account> {
             val principal = requireNotNull(call.principal<AppPrincipal>())

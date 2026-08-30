@@ -6,4 +6,5 @@ plugins {
 dependencies {
     implementation(projects.core)
     implementation(projects.core.domain)
+    testImplementation(testFixtures(projects.core))
 }

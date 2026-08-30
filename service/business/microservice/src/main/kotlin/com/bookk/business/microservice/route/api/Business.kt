@@ -30,6 +30,7 @@ fun Route.businessCrud() {
          * Security: jwt
          * Body: application/x-protobuf [com.bookk.business.domain.api.business.entity.BusinessCreateRequest]
          * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Create business errors<br>BUSINESS_ALREADY_EXIST (200001) Business already exist<br>BUSINESS_NAME_VALIDATION_ERROR (200002) Business name invalid
+         * See: docs/operations/business/create-business.md
          */
          post<Api.Business> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
@@ -47,7 +48,8 @@ fun Route.businessCrud() {
          * Response: 204 application/x-protobuf No content
          * Response: 400 application/x-protobuf Path id does not match body id, or the working schedule does not cover all 7 days
          * Response: 404 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] User is not allowed to update the business
-         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Update business errors<br>BUSINESS_ACTIVE_DAY_WITHOUT_WORK_HOURS (200019) Active day must have at least one work hour<br>BUSINESS_INVALID_DAY_OFF_RANGE (200020) Day off range start date must be before end date
+         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Update business errors<br>BUSINESS_ACTIVE_DAY_WITHOUT_WORK_HOURS (200019) Active day must have at least one work hour<br>BUSINESS_INVALID_DAY_OFF_RANGE (200020) Day off range start date must not be after end date
+         * See: docs/operations/business/update-business.md
          */
         put<Api.Business.Id> {
             val principal = requireNotNull(call.principal<AppPrincipal>())

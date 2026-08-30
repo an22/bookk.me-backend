@@ -7,6 +7,7 @@ import com.bookk.appointments.domain.api.entity.AppointmentOffer
 import com.bookk.appointments.domain.api.entity.AppointmentRequest
 import com.bookk.appointments.domain.api.entity.AppointmentSettings
 import com.bookk.appointments.domain.api.entity.BusinessSnapshot
+import com.bookk.appointments.domain.api.entity.EmployeeSnapshot
 import com.bookk.appointments.domain.api.operation.CreateAppointment
 import com.bookk.appointments.domain.api.operation.CreateAppointmentRequest
 import com.bookk.appointments.domain.datasource.AppointmentDataSource
@@ -293,6 +294,40 @@ internal class CreateAppointmentRequestImplTest {
         then()
         assertTrue(result.isFailure)
         assertTrue(result.exceptionOrNull() is Error.OperationNotAllowed)
+    }
+
+    @Test
+    fun `should create own request successfully with read permission`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+        val businessId = Uuid.random()
+        val request = AppointmentRequest.stub(userId = userId, businessId = businessId, date = futureDate)
+            .copy(employee = EmployeeSnapshot.stub(userId = userId))
+        val offer = AppointmentOffer(request, "token")
+        val settings = mockk<AppointmentSettings>()
+        val businessSnapshot = BusinessSnapshot.stub()
+
+        with(fixture) {
+            coEvery { settingsDataSource.getForUpdate(businessId) } returns settings
+            coEvery { settings.automaticApproval } returns false
+            coEvery { settings.isInWorkday(request.date) } returns true
+            coEvery { settings.isInWorktime(request.date, request.dateEnd) } returns true
+            coEvery { permissionsDataSource.getPermissions(userId, businessId) } returns READ.int
+            coEvery { requestDataSource.hasOverlapsWith(request) } returns false
+            coEvery { appointmentDataSource.hasOverlapsWith(request) } returns false
+            coEvery { requestDataSource.create(request) } returns request
+            coEvery { subscriptionDataSource.getBusinessSnapshot(any()) } returns businessSnapshot
+            coEvery { eventProducer.send(any(), any()) } returns Unit
+            mockValidToken(request)
+            transactionManager.mockTransaction()
+        }
+
+        whenn()
+        val result = fixture.sut.invoke(userId, offer)
+
+        then()
+        assertTrue(result.isSuccess)
     }
 
     @Test

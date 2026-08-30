@@ -204,4 +204,32 @@ internal class NotificationTargetDataSourceImplTest {
         val telegram = suspendTransaction { fixture.sut.getTelegram(userId) }
         assertEquals("@new", telegram)
     }
+
+    @Test
+    fun `should delete both email and telegram targets for the user`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+        fixture.insertEmail(userId, "user@example.com")
+        fixture.insertTelegram(userId, "@user")
+
+        whenn()
+        suspendTransaction { fixture.sut.deleteByUserId(userId) }
+
+        then()
+        assertNull(suspendTransaction { fixture.sut.getEmail(userId) })
+        assertNull(suspendTransaction { fixture.sut.getTelegram(userId) })
+    }
+
+    @Test
+    fun `should not fail deleting targets for a user with none`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+
+        whenn()
+        val result = runCatching { suspendTransaction { fixture.sut.deleteByUserId(Uuid.random()) } }
+
+        then()
+        assertTrue(result.isSuccess)
+    }
 }

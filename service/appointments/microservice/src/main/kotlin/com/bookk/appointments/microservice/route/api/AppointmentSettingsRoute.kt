@@ -48,6 +48,7 @@ fun Routing.settings() {
          * Response: 200 application/x-protobuf [com.bookk.appointments.domain.api.entity.AppointmentSettings] Updated settings entity
          * Response: 400 application/x-protobuf Path business id does not match body business id
          * Response: 404 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Settings not found or user is not allowed to update them
+         * See: docs/operations/appointments/edit-appointment-settings.md
          */
         put<Api.Appointment.Settings> {
             val principal = requireNotNull(call.principal<AppPrincipal>())

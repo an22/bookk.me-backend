@@ -17,6 +17,8 @@ import com.bookk.core.test.runUnitTest
 import com.bookk.core.test.then
 import com.bookk.core.test.whenn
 import com.bookk.server.business.client.api.event.BusinessEvent
+import com.bookk.server.user.client.UserClient
+import com.bookk.server.user.client.api.UserSnapshot
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -34,12 +36,14 @@ internal class ApproveEmployeeInvitationImplTest {
         val invitationDataSource = mockk<EmployeeInvitationDataSource>()
         val employeeDataSource = mockk<EmployeeDataSource>()
         val businessDataSource = mockk<BusinessDataSource>()
+        val userClient = mockk<UserClient>()
         val transactionManager = mockk<TransactionManager>()
         val eventProducer = mockk<StandardEventProducer>(relaxed = true)
         val sut = ApproveEmployeeInvitationImpl(
             invitationDataSource,
             employeeDataSource,
             businessDataSource,
+            userClient,
             transactionManager,
             eventProducer
         )
@@ -54,37 +58,53 @@ internal class ApproveEmployeeInvitationImplTest {
         currencyCode = "USD"
     )
 
-    private fun SutFixture.stubHappyPath(invitation: EmployeeInvitation, employee: Employee) {
+    private fun userSnapshot(
+        id: Uuid,
+        email: String,
+        name: String = "Alice",
+        lastName: String = "Smith",
+        phone: String? = null
+    ) = UserSnapshot.stub(id = id, name = name, lastName = lastName, email = email, phone = phone)
+
+    private fun SutFixture.stubHappyPath(requestUserId: Uuid, invitation: EmployeeInvitation, employee: Employee) {
         transactionManager.mockTransaction()
         coEvery { invitationDataSource.getInvitation(invitation.businessId, invitation.id) } returns invitation
-        coEvery { employeeDataSource.getEmployeeByUserId(invitation.businessId, invitation.userId) } returns null
+        coEvery { userClient.getUserById(requestUserId) } returns
+            Result.success(userSnapshot(requestUserId, invitation.email))
+        coEvery { employeeDataSource.getEmployeeByUserId(invitation.businessId, requestUserId) } returns null
         coEvery { invitationDataSource.approveInvitation(invitation.id) } returns true
         coEvery { businessDataSource.getBusinessById(invitation.businessId) } returns business(invitation.businessId)
         coEvery { employeeDataSource.createEmployee(any()) } returns employee
-        coEvery { businessDataSource.setUserPermissions(invitation.userId, invitation.businessId, any()) } returns Unit
+        coEvery { businessDataSource.setUserPermissions(requestUserId, invitation.businessId, any()) } returns Unit
     }
 
     @Test
     fun `should create employee from invitation when approved by invited user`() = runUnitTest {
         given()
         val fixture = SutFixture()
-        val invitation = EmployeeInvitation.stub(name = "Alice", lastName = "Smith")
-        val employee = Employee.stub(businessId = invitation.businessId, userId = invitation.userId)
+        val requestUserId = Uuid.random()
+        val invitation = EmployeeInvitation.stub(email = "alice@test.com")
+        val employee = Employee.stub(businessId = invitation.businessId, userId = requestUserId)
         val createdEmployee = slot<Employee>()
         with(fixture) {
-            stubHappyPath(invitation, employee)
+            stubHappyPath(requestUserId, invitation, employee)
+            coEvery { userClient.getUserById(requestUserId) } returns
+                Result.success(
+                    userSnapshot(requestUserId, invitation.email, name = "Alice", lastName = "Smith", phone = "+10000000000")
+                )
             coEvery { employeeDataSource.createEmployee(capture(createdEmployee)) } returns employee
         }
 
         whenn()
-        val result = fixture.sut(invitation.userId, invitation.businessId, invitation.id)
+        val result = fixture.sut(requestUserId, invitation.businessId, invitation.id)
 
         then()
         assertTrue(result.isSuccess)
         assertEquals(employee, result.getOrNull())
         assertEquals("Alice", createdEmployee.captured.name)
         assertEquals("Smith", createdEmployee.captured.lastName)
-        assertEquals(invitation.userId, createdEmployee.captured.userId)
+        assertEquals("+10000000000", createdEmployee.captured.phone)
+        assertEquals(requestUserId, createdEmployee.captured.userId)
         assertEquals(invitation.businessId, createdEmployee.captured.businessId)
         coVerify(exactly = 1) { fixture.invitationDataSource.approveInvitation(invitation.id) }
     }
@@ -93,18 +113,19 @@ internal class ApproveEmployeeInvitationImplTest {
     fun `should grant read permission to the approved employee`() = runUnitTest {
         given()
         val fixture = SutFixture()
+        val requestUserId = Uuid.random()
         val invitation = EmployeeInvitation.stub()
-        val employee = Employee.stub(businessId = invitation.businessId, userId = invitation.userId)
-        with(fixture) { stubHappyPath(invitation, employee) }
+        val employee = Employee.stub(businessId = invitation.businessId, userId = requestUserId)
+        with(fixture) { stubHappyPath(requestUserId, invitation, employee) }
 
         whenn()
-        val result = fixture.sut(invitation.userId, invitation.businessId, invitation.id)
+        val result = fixture.sut(requestUserId, invitation.businessId, invitation.id)
 
         then()
         assertTrue(result.isSuccess)
         coVerify(exactly = 1) {
             fixture.businessDataSource.setUserPermissions(
-                invitation.userId,
+                requestUserId,
                 invitation.businessId,
                 ObjectPermission.READ.int
             )
@@ -115,23 +136,26 @@ internal class ApproveEmployeeInvitationImplTest {
     fun `should publish invitation approved event addressed to the inviter`() = runUnitTest {
         given()
         val fixture = SutFixture()
+        val requestUserId = Uuid.random()
         val inviterUserId = Uuid.random()
         val invitation = EmployeeInvitation.stub(invitedBy = inviterUserId)
         val employee = Employee.stub(
             businessId = invitation.businessId,
-            userId = invitation.userId,
+            userId = requestUserId,
             name = "Alice"
         )
         val event = slot<BusinessEvent.EmployeeInvitationApproved>()
         with(fixture) {
-            stubHappyPath(invitation, employee)
+            stubHappyPath(requestUserId, invitation, employee)
             coEvery { businessDataSource.getBusinessById(invitation.businessId) } returns
                 business(invitation.businessId, name = "Barbershop")
-            coEvery { eventProducer.send(capture(event), any()) } returns Unit
+            coEvery {
+                eventProducer.send(any(BusinessEvent.EmployeeInvitationApproved::class), any())
+            } answers { event.captured = firstArg() }
         }
 
         whenn()
-        val result = fixture.sut(invitation.userId, invitation.businessId, invitation.id)
+        val result = fixture.sut(requestUserId, invitation.businessId, invitation.id)
 
         then()
         assertTrue(result.isSuccess)
@@ -139,10 +163,38 @@ internal class ApproveEmployeeInvitationImplTest {
             fixture.eventProducer.send(any(BusinessEvent.EmployeeInvitationApproved::class), any())
         }
         assertEquals(inviterUserId, event.captured.inviterUserId)
-        assertEquals(invitation.userId, event.captured.employeeUserId)
+        assertEquals(requestUserId, event.captured.employeeUserId)
         assertEquals("Alice", event.captured.employeeName)
         assertEquals(invitation.businessId, event.captured.businessId)
         assertEquals("Barbershop", event.captured.businessName)
+    }
+
+    @Test
+    fun `should publish permission changed event granting read to the appointments service`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val requestUserId = Uuid.random()
+        val invitation = EmployeeInvitation.stub()
+        val employee = Employee.stub(businessId = invitation.businessId, userId = requestUserId)
+        val event = slot<BusinessEvent.EmployeePermissionChanged>()
+        with(fixture) {
+            stubHappyPath(requestUserId, invitation, employee)
+            coEvery {
+                eventProducer.send(any(BusinessEvent.EmployeePermissionChanged::class), any())
+            } answers { event.captured = firstArg() }
+        }
+
+        whenn()
+        val result = fixture.sut(requestUserId, invitation.businessId, invitation.id)
+
+        then()
+        assertTrue(result.isSuccess)
+        coVerify(exactly = 1) {
+            fixture.eventProducer.send(any(BusinessEvent.EmployeePermissionChanged::class), any())
+        }
+        assertEquals(requestUserId, event.captured.employeeUserId)
+        assertEquals(invitation.businessId, event.captured.businessId)
+        assertEquals(ObjectPermission.READ.int, event.captured.permission)
     }
 
     @Test
@@ -169,14 +221,17 @@ internal class ApproveEmployeeInvitationImplTest {
     fun `should return failure when invitation is approved by another user`() = runUnitTest {
         given()
         val fixture = SutFixture()
-        val invitation = EmployeeInvitation.stub()
+        val requestUserId = Uuid.random()
+        val invitation = EmployeeInvitation.stub(email = "alice@test.com")
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { invitationDataSource.getInvitation(invitation.businessId, invitation.id) } returns invitation
+            coEvery { userClient.getUserById(requestUserId) } returns
+                Result.success(userSnapshot(requestUserId, "someone-else@test.com"))
         }
 
         whenn()
-        val result = fixture.sut(Uuid.random(), invitation.businessId, invitation.id)
+        val result = fixture.sut(requestUserId, invitation.businessId, invitation.id)
 
         then()
         assertTrue(result.isFailure)
@@ -188,14 +243,17 @@ internal class ApproveEmployeeInvitationImplTest {
     fun `should return failure when invitation is already approved`() = runUnitTest {
         given()
         val fixture = SutFixture()
+        val requestUserId = Uuid.random()
         val invitation = EmployeeInvitation.stub(status = EmployeeInvitationStatus.APPROVED)
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { invitationDataSource.getInvitation(invitation.businessId, invitation.id) } returns invitation
+            coEvery { userClient.getUserById(requestUserId) } returns
+                Result.success(userSnapshot(requestUserId, invitation.email))
         }
 
         whenn()
-        val result = fixture.sut(invitation.userId, invitation.businessId, invitation.id)
+        val result = fixture.sut(requestUserId, invitation.businessId, invitation.id)
 
         then()
         assertTrue(result.isFailure)
@@ -207,18 +265,19 @@ internal class ApproveEmployeeInvitationImplTest {
     fun `should return failure when invitation was concurrently approved`() = runUnitTest {
         given()
         val fixture = SutFixture()
+        val requestUserId = Uuid.random()
         val invitation = EmployeeInvitation.stub()
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { invitationDataSource.getInvitation(invitation.businessId, invitation.id) } returns invitation
-            coEvery {
-                employeeDataSource.getEmployeeByUserId(invitation.businessId, invitation.userId)
-            } returns null
+            coEvery { userClient.getUserById(requestUserId) } returns
+                Result.success(userSnapshot(requestUserId, invitation.email))
+            coEvery { employeeDataSource.getEmployeeByUserId(invitation.businessId, requestUserId) } returns null
             coEvery { invitationDataSource.approveInvitation(invitation.id) } returns false
         }
 
         whenn()
-        val result = fixture.sut(invitation.userId, invitation.businessId, invitation.id)
+        val result = fixture.sut(requestUserId, invitation.businessId, invitation.id)
 
         then()
         assertTrue(result.isFailure)
@@ -231,17 +290,20 @@ internal class ApproveEmployeeInvitationImplTest {
     fun `should return failure when user is already an employee`() = runUnitTest {
         given()
         val fixture = SutFixture()
+        val requestUserId = Uuid.random()
         val invitation = EmployeeInvitation.stub()
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { invitationDataSource.getInvitation(invitation.businessId, invitation.id) } returns invitation
+            coEvery { userClient.getUserById(requestUserId) } returns
+                Result.success(userSnapshot(requestUserId, invitation.email))
             coEvery {
-                employeeDataSource.getEmployeeByUserId(invitation.businessId, invitation.userId)
-            } returns Employee.stub(businessId = invitation.businessId, userId = invitation.userId)
+                employeeDataSource.getEmployeeByUserId(invitation.businessId, requestUserId)
+            } returns Employee.stub(businessId = invitation.businessId, userId = requestUserId)
         }
 
         whenn()
-        val result = fixture.sut(invitation.userId, invitation.businessId, invitation.id)
+        val result = fixture.sut(requestUserId, invitation.businessId, invitation.id)
 
         then()
         assertTrue(result.isFailure)
@@ -254,19 +316,20 @@ internal class ApproveEmployeeInvitationImplTest {
     fun `should return failure when business does not exist`() = runUnitTest {
         given()
         val fixture = SutFixture()
+        val requestUserId = Uuid.random()
         val invitation = EmployeeInvitation.stub()
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { invitationDataSource.getInvitation(invitation.businessId, invitation.id) } returns invitation
-            coEvery {
-                employeeDataSource.getEmployeeByUserId(invitation.businessId, invitation.userId)
-            } returns null
+            coEvery { userClient.getUserById(requestUserId) } returns
+                Result.success(userSnapshot(requestUserId, invitation.email))
+            coEvery { employeeDataSource.getEmployeeByUserId(invitation.businessId, requestUserId) } returns null
             coEvery { invitationDataSource.approveInvitation(invitation.id) } returns true
             coEvery { businessDataSource.getBusinessById(invitation.businessId) } returns null
         }
 
         whenn()
-        val result = fixture.sut(invitation.userId, invitation.businessId, invitation.id)
+        val result = fixture.sut(requestUserId, invitation.businessId, invitation.id)
 
         then()
         assertTrue(result.isFailure)

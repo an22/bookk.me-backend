@@ -36,4 +36,8 @@ data class Schedule(
     fun activeDays(): List<DayOfWeek> = days.filterValues { it.isActive }.keys.toList()
 
     fun workingHours(): Map<DayOfWeek, List<WorkHour>> = days.mapValues { it.value.workingTime }
+
+    companion object {
+        fun empty(): Schedule = Schedule(workingDays = emptyList(), workingHours = emptyMap())
+    }
 }

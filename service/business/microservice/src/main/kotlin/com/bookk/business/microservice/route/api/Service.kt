@@ -34,6 +34,7 @@ fun Route.serviceCrud() {
          * Body: application/x-protobuf [com.bookk.business.domain.api.service.entity.Service]
          * Response: 200 application/x-protobuf [com.bookk.business.domain.api.service.entity.Service] Created service entity
          * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Create service errors<br>BUSINESS_SERVICE_EXISTS (200007) Service with this name already exists<br>BUSINESS_SERVICE_NAME_VALIDATION_ERROR (200008) Invalid service name
+         * See: docs/operations/business/create-service.md
          */
         post<Api.Service> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
@@ -56,6 +57,7 @@ fun Route.serviceCrud() {
          * Body: application/x-protobuf [com.bookk.business.domain.api.service.entity.Service]
          * Response: 200 application/x-protobuf [com.bookk.business.domain.api.service.entity.Service] Updated service entity
          * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Update service errors<br>BUSINESS_SERVICE_EXISTS (200007) Service with this name already exists<br>BUSINESS_SERVICE_NAME_VALIDATION_ERROR (200008) Invalid service name
+         * See: docs/operations/business/update-service.md
          */
         put<Api.Service.Id> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
@@ -97,6 +99,7 @@ fun Route.serviceCrud() {
          * Tag: service
          * Security: jwt
          * Response: 204 application/x-protobuf Service offering deleted
+         * See: docs/operations/business/delete-service.md
          */
         delete<Api.Service.Id> {
             val principal = requireNotNull(call.principal<AppPrincipal>())

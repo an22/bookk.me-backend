@@ -6,11 +6,12 @@ import kotlin.uuid.Uuid
 @Serializable
 data class EmployeeSnapshot(
     val id: Uuid,
+    val userId: Uuid,
     val fullName: String
 ) {
     companion object {
-        fun stub(id: Uuid = Uuid.random()): EmployeeSnapshot {
-            return EmployeeSnapshot(id = id, fullName = "Example name")
+        fun stub(id: Uuid = Uuid.random(), userId: Uuid = Uuid.random()): EmployeeSnapshot {
+            return EmployeeSnapshot(id = id, userId = userId, fullName = "Example name")
         }
     }
 }

@@ -312,4 +312,57 @@ internal class AppointmentDataSourceImplTest {
         val all = suspendTransaction { fixture.sut.getAll(fixture.businessId) }
         assertEquals(AppointmentStatus.SCHEDULED, all.first { it.id == created.id }.status)
     }
+
+    @Test
+    fun `should anonymize client PII on appointments booked with the deleted user as client`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val userId = Uuid.random()
+        val request = fixture.buildRequest().let {
+            it.copy(client = it.client.copy(id = userId, fullName = "Alice", phone = "+123", email = "alice@test.com"))
+        }
+        val created = suspendTransaction { fixture.sut.create(request) }
+
+        whenn()
+        suspendTransaction { fixture.sut.anonymizeForUser(userId) }
+        val found = suspendTransaction { fixture.sut.get(created.id) }
+
+        then()
+        assertEquals("Deleted User", found.client.fullName)
+        assertEquals("", found.client.phone)
+        assertEquals("", found.client.email)
+    }
+
+    @Test
+    fun `should anonymize employee name on appointments assigned to the deleted user as employee`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val userId = Uuid.random()
+        val request = fixture.buildRequest().let {
+            it.copy(employee = it.employee.copy(userId = userId, fullName = "Bob"))
+        }
+        val created = suspendTransaction { fixture.sut.create(request) }
+
+        whenn()
+        suspendTransaction { fixture.sut.anonymizeForUser(userId) }
+        val found = suspendTransaction { fixture.sut.get(created.id) }
+
+        then()
+        assertEquals("Deleted User", found.employee.fullName)
+    }
+
+    @Test
+    fun `should not fail anonymizing appointments for a user with none`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+
+        whenn()
+        val result = runCatching { suspendTransaction { fixture.sut.anonymizeForUser(Uuid.random()) } }
+
+        then()
+        assertTrue(result.isSuccess)
+    }
 }

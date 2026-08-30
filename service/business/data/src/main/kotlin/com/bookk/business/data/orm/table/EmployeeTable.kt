@@ -12,4 +12,5 @@ object EmployeeTable : BaseUUIDTable("employee") {
     val email = varchar("email", 512).nullable().index()
     val userId = uuid("user_id").index()
     val sourceUpdatedAt = timestamp("source_updated_at").nullable()
+    val workingDays = byte("working_days").default(0)
 }

@@ -4,6 +4,7 @@ import com.bookk.appointments.domain.api.entity.Appointment
 import com.bookk.appointments.domain.api.entity.AppointmentCancellation
 import com.bookk.appointments.domain.api.entity.AppointmentStatus
 import com.bookk.appointments.domain.api.entity.BusinessSnapshot
+import com.bookk.appointments.domain.api.entity.EmployeeSnapshot
 import com.bookk.appointments.domain.api.operation.CancelAppointment
 import com.bookk.appointments.domain.datasource.AppointmentDataSource
 import com.bookk.appointments.domain.datasource.AppointmentSubscriptionDataSource
@@ -112,11 +113,15 @@ internal class CancelAppointmentImplTest {
     }
 
     @Test
-    fun `should return failure when user has no permissions`() = runUnitTest {
+    fun `should return failure when user has read permission but appointment belongs to another employee`() = runUnitTest {
         val fixture = SutFixture()
         given()
         fixture.transactionManager.mockTransaction()
+        val appointment = Appointment.stub(id = testCancellation.id, businessId = testBusinessId)
+            .copy(status = AppointmentStatus.SCHEDULED)
+
         coEvery { fixture.permissionsDataSource.getPermissions(testUserId, testBusinessId) } returns ObjectPermission.READ.int
+        coEvery { fixture.appointmentDataSource.get(testCancellation.id) } returns appointment
 
         whenn()
         val result = fixture.sut.invoke(testUserId, testCancellation)
@@ -124,6 +129,26 @@ internal class CancelAppointmentImplTest {
         then()
         assertTrue(result.isFailure)
         assertTrue(result.exceptionOrNull() is com.bookk.core.domain.entity.Error.OperationNotAllowed)
+    }
+
+    @Test
+    fun `should cancel own appointment successfully with read permission`() = runUnitTest {
+        val fixture = SutFixture()
+        given()
+        fixture.transactionManager.mockTransaction()
+        val appointment = Appointment.stub(id = testCancellation.id, businessId = testBusinessId)
+            .copy(status = AppointmentStatus.SCHEDULED, employee = EmployeeSnapshot.stub(userId = testUserId))
+
+        coEvery { fixture.permissionsDataSource.getPermissions(testUserId, testBusinessId) } returns ObjectPermission.READ.int
+        coEvery { fixture.appointmentDataSource.get(testCancellation.id) } returns appointment
+        coEvery { fixture.appointmentDataSource.cancel(testCancellation.id, testCancellation.reason) } returns appointment.copy(status = AppointmentStatus.CANCELLED)
+        coEvery { fixture.subscriptionDataSource.getBusinessSnapshot(testBusinessId) } returns mockk(relaxed = true)
+
+        whenn()
+        val result = fixture.sut.invoke(testUserId, testCancellation)
+
+        then()
+        assertTrue(result.isSuccess)
     }
 
     @Test

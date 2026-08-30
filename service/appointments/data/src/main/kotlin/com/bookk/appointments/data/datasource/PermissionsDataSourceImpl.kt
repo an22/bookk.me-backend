@@ -5,19 +5,20 @@ import com.bookk.appointments.domain.datasource.PermissionsDataSource
 import com.bookk.core.data.DataSource
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
-import org.jetbrains.exposed.v1.jdbc.insertIgnore
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.upsert
 import kotlin.uuid.Uuid
 
 internal class PermissionsDataSourceImpl : DataSource(), PermissionsDataSource {
 
-    override suspend fun initPermissions(
+    override suspend fun setPermissions(
         userId: Uuid,
         businessId: Uuid,
         permissions: Int
     ) {
         dbQuery {
-            UserHasAppointmentPermissions.insertIgnore {
+            UserHasAppointmentPermissions.upsert {
                 it[this.userId] = userId
                 it[this.businessId] = businessId
                 it[this.permission] = permissions
@@ -33,4 +34,7 @@ internal class PermissionsDataSourceImpl : DataSource(), PermissionsDataSource {
         }
     }
 
+    override suspend fun deleteForUser(userId: Uuid) = dbQuery<Unit> {
+        UserHasAppointmentPermissions.deleteWhere { UserHasAppointmentPermissions.userId eq userId }
+    }
 }

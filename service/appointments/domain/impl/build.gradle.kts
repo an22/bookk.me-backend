@@ -9,6 +9,7 @@ dependencies {
     implementation(projects.core.data.eventstreaming.api)
     implementation(projects.service.appointments.domain.api)
     implementation(projects.service.appointments.data.source)
+    implementation(projects.service.authorization.client)
     implementation(projects.service.business.client)
     implementation(projects.service.appointments.client)
     implementation(projects.library.permissions)

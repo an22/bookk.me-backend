@@ -6,6 +6,7 @@ import com.bookk.appointments.domain.api.operation.CreateAppointmentRequest
 import com.bookk.appointments.domain.api.operation.DeclineAppointmentRequest
 import com.bookk.appointments.domain.api.operation.DeleteModule
 import com.bookk.appointments.domain.api.operation.DeleteOutdatedRequests
+import com.bookk.appointments.domain.api.operation.DeleteUserAppointmentData
 import com.bookk.appointments.domain.api.operation.EditSettings
 import com.bookk.appointments.domain.api.operation.EnableAppointmentsForBusiness
 import com.bookk.appointments.domain.api.operation.GetAppointmentHistory
@@ -23,6 +24,7 @@ import com.bookk.appointments.domain.impl.operation.CreateAppointmentRequestImpl
 import com.bookk.appointments.domain.impl.operation.DeclineAppointmentRequestImpl
 import com.bookk.appointments.domain.impl.operation.DeleteModuleImpl
 import com.bookk.appointments.domain.impl.operation.DeleteOutdatedRequestsImpl
+import com.bookk.appointments.domain.impl.operation.DeleteUserAppointmentDataImpl
 import com.bookk.appointments.domain.impl.operation.EditSettingsImpl
 import com.bookk.appointments.domain.impl.operation.EnableAppointmentsForBusinessImpl
 import com.bookk.appointments.domain.impl.operation.GetAppointmentHistoryImpl
@@ -32,6 +34,7 @@ import com.bookk.appointments.domain.impl.operation.GetPendingAppointmentRequest
 import com.bookk.appointments.domain.impl.operation.GetSettingsImpl
 import com.bookk.appointments.domain.impl.operation.IsAppointmentsEnabledImpl
 import com.bookk.appointments.domain.impl.operation.MarkAppointmentsCompletedImpl
+import com.bookk.appointments.domain.impl.operation.SyncEmployeePermission
 import com.bookk.appointments.domain.impl.operation.UpdateAppointmentImpl
 import com.bookk.appointments.domain.impl.operation.UpdateBusinessInformation
 import com.bookk.core.data.eventstreaming.EventHandler
@@ -54,8 +57,10 @@ fun appointmentsDomainModule() = module {
     factoryOf(::UpdateAppointmentImpl) bind UpdateAppointment::class
     factoryOf(::CancelAppointmentImpl) bind CancelAppointment::class
     factoryOf(::UpdateBusinessInformation)
+    factoryOf(::SyncEmployeePermission)
     factoryOf(::DeclineAppointmentRequestImpl) bind DeclineAppointmentRequest::class
     factoryOf(::IsAppointmentsEnabledImpl) bind IsAppointmentsEnabled::class
     factoryOf(::MarkAppointmentsCompletedImpl) bind MarkAppointmentsCompleted::class
     factoryOf(::DeleteOutdatedRequestsImpl) bind DeleteOutdatedRequests::class
+    factoryOf(::DeleteUserAppointmentDataImpl) bind DeleteUserAppointmentData::class
 }

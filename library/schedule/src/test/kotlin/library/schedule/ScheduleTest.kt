@@ -70,6 +70,20 @@ internal class ScheduleTest {
     }
 
     @Test
+    fun `should have no working days and no day offs when empty`() = runUnitTest {
+        given()
+
+        whenn()
+        val schedule = Schedule.empty()
+
+        then()
+        assertEquals(DayOfWeek.entries.toSet(), schedule.days.keys)
+        assertTrue(schedule.activeDays().isEmpty())
+        assertTrue(schedule.workingHours().values.all { it.isEmpty() })
+        assertTrue(schedule.dayOffs.isEmpty())
+    }
+
+    @Test
     fun `should round trip active days through the working days mask`() = runUnitTest {
         given()
         val activeDays = listOf(DayOfWeek.MONDAY, DayOfWeek.SATURDAY, DayOfWeek.SUNDAY)

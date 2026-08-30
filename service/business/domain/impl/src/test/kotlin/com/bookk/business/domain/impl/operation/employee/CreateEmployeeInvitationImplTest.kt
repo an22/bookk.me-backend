@@ -16,6 +16,8 @@ import com.bookk.core.test.runUnitTest
 import com.bookk.core.test.then
 import com.bookk.core.test.whenn
 import com.bookk.server.business.client.api.event.BusinessEvent
+import com.bookk.server.user.client.UserClient
+import com.bookk.server.user.client.api.UserSnapshot
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -33,12 +35,14 @@ internal class CreateEmployeeInvitationImplTest {
         val invitationDataSource = mockk<EmployeeInvitationDataSource>()
         val employeeDataSource = mockk<EmployeeDataSource>()
         val businessDataSource = mockk<BusinessDataSource>()
+        val userClient = mockk<UserClient>()
         val transactionManager = mockk<TransactionManager>()
         val eventProducer = mockk<StandardEventProducer>(relaxed = true)
         val sut = CreateEmployeeInvitationImpl(
             invitationDataSource,
             employeeDataSource,
             businessDataSource,
+            userClient,
             transactionManager,
             eventProducer
         )
@@ -64,13 +68,14 @@ internal class CreateEmployeeInvitationImplTest {
             transactionManager.mockTransaction()
             coEvery {
                 businessDataSource.getPermission(requestUserId, invitation.businessId)
-            } returns ObjectPermission.EDIT.int
+            } returns ObjectPermission.OWNER.int
             coEvery {
-                employeeDataSource.getEmployeeByUserId(invitation.businessId, invitation.userId)
+                employeeDataSource.getEmployeeByEmail(invitation.businessId, invitation.email)
             } returns null
             coEvery { businessDataSource.getBusinessById(invitation.businessId) } returns
                 business(invitation.businessId)
             coEvery { invitationDataSource.createInvitation(stored) } returns stored
+            coEvery { userClient.getUserByEmail(stored.email) } returns Result.failure(RuntimeException("not found"))
         }
 
         whenn()
@@ -93,13 +98,14 @@ internal class CreateEmployeeInvitationImplTest {
             transactionManager.mockTransaction()
             coEvery {
                 businessDataSource.getPermission(requestUserId, invitation.businessId)
-            } returns ObjectPermission.EDIT.int
+            } returns ObjectPermission.OWNER.int
             coEvery {
-                employeeDataSource.getEmployeeByUserId(invitation.businessId, invitation.userId)
+                employeeDataSource.getEmployeeByEmail(invitation.businessId, invitation.email)
             } returns null
             coEvery { businessDataSource.getBusinessById(invitation.businessId) } returns
                 business(invitation.businessId)
             coEvery { invitationDataSource.createInvitation(capture(persisted)) } answers { persisted.captured }
+            coEvery { userClient.getUserByEmail(invitation.email) } returns Result.failure(RuntimeException("not found"))
         }
 
         whenn()
@@ -111,24 +117,27 @@ internal class CreateEmployeeInvitationImplTest {
     }
 
     @Test
-    fun `should publish invitation created event`() = runUnitTest {
+    fun `should publish invitation created event when invited email belongs to a registered user`() = runUnitTest {
         given()
         val fixture = SutFixture()
         val requestUserId = Uuid.random()
-        val invitation = EmployeeInvitation.stub(name = "Alice")
+        val invitation = EmployeeInvitation.stub(email = "alice@test.com")
         val stored = invitation.copy(invitedBy = requestUserId)
+        val invitedUserId = Uuid.random()
         val event = slot<BusinessEvent.EmployeeInvitationCreated>()
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery {
                 businessDataSource.getPermission(requestUserId, invitation.businessId)
-            } returns ObjectPermission.EDIT.int
+            } returns ObjectPermission.OWNER.int
             coEvery {
-                employeeDataSource.getEmployeeByUserId(invitation.businessId, invitation.userId)
+                employeeDataSource.getEmployeeByEmail(invitation.businessId, invitation.email)
             } returns null
             coEvery { businessDataSource.getBusinessById(invitation.businessId) } returns
                 business(invitation.businessId, name = "Barbershop")
             coEvery { invitationDataSource.createInvitation(stored) } returns stored
+            coEvery { userClient.getUserByEmail(stored.email) } returns
+                Result.success(UserSnapshot.stub(id = invitedUserId, email = stored.email))
             coEvery { eventProducer.send(capture(event), any()) } returns Unit
         }
 
@@ -140,17 +149,45 @@ internal class CreateEmployeeInvitationImplTest {
         coVerify(exactly = 1) {
             fixture.eventProducer.send(any(BusinessEvent.EmployeeInvitationCreated::class), any())
         }
-        assertEquals(invitation.userId, event.captured.invitedUserId)
-        assertEquals("Alice", event.captured.invitedName)
+        assertEquals(invitedUserId, event.captured.invitedUserId)
         assertEquals(invitation.businessId, event.captured.businessId)
         assertEquals("Barbershop", event.captured.businessName)
     }
 
     @Test
-    fun `should return failure when name is blank`() = runUnitTest {
+    fun `should not publish an event when the invited email has no registered account`() = runUnitTest {
         given()
         val fixture = SutFixture()
-        val invitation = EmployeeInvitation.stub(name = " ")
+        val requestUserId = Uuid.random()
+        val invitation = EmployeeInvitation.stub(email = "unregistered@test.com")
+        val stored = invitation.copy(invitedBy = requestUserId)
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery {
+                businessDataSource.getPermission(requestUserId, invitation.businessId)
+            } returns ObjectPermission.OWNER.int
+            coEvery {
+                employeeDataSource.getEmployeeByEmail(invitation.businessId, invitation.email)
+            } returns null
+            coEvery { businessDataSource.getBusinessById(invitation.businessId) } returns
+                business(invitation.businessId)
+            coEvery { invitationDataSource.createInvitation(stored) } returns stored
+            coEvery { userClient.getUserByEmail(stored.email) } returns Result.failure(RuntimeException("not found"))
+        }
+
+        whenn()
+        val result = fixture.sut(requestUserId, invitation)
+
+        then()
+        assertTrue(result.isSuccess)
+        coVerify(exactly = 0) { fixture.eventProducer.send(any(), any()) }
+    }
+
+    @Test
+    fun `should return failure when email is blank`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val invitation = EmployeeInvitation.stub(email = " ")
 
         whenn()
         val result = fixture.sut(Uuid.random(), invitation)
@@ -161,10 +198,10 @@ internal class CreateEmployeeInvitationImplTest {
     }
 
     @Test
-    fun `should return failure when last name is blank`() = runUnitTest {
+    fun `should return failure when email is invalid`() = runUnitTest {
         given()
         val fixture = SutFixture()
-        val invitation = EmployeeInvitation.stub(lastName = "")
+        val invitation = EmployeeInvitation.stub(email = "not-an-email")
 
         whenn()
         val result = fixture.sut(Uuid.random(), invitation)
@@ -175,10 +212,10 @@ internal class CreateEmployeeInvitationImplTest {
     }
 
     @Test
-    fun `should return failure when name is too long`() = runUnitTest {
+    fun `should return failure when email is too long`() = runUnitTest {
         given()
         val fixture = SutFixture()
-        val invitation = EmployeeInvitation.stub(name = "a".repeat(513))
+        val invitation = EmployeeInvitation.stub(email = "${"a".repeat(513)}@test.com")
 
         whenn()
         val result = fixture.sut(Uuid.random(), invitation)
@@ -220,10 +257,10 @@ internal class CreateEmployeeInvitationImplTest {
             transactionManager.mockTransaction()
             coEvery {
                 businessDataSource.getPermission(requestUserId, invitation.businessId)
-            } returns ObjectPermission.EDIT.int
+            } returns ObjectPermission.OWNER.int
             coEvery {
-                employeeDataSource.getEmployeeByUserId(invitation.businessId, invitation.userId)
-            } returns Employee.stub(businessId = invitation.businessId, userId = invitation.userId)
+                employeeDataSource.getEmployeeByEmail(invitation.businessId, invitation.email)
+            } returns Employee.stub(businessId = invitation.businessId, email = invitation.email)
         }
 
         whenn()
@@ -245,9 +282,9 @@ internal class CreateEmployeeInvitationImplTest {
             transactionManager.mockTransaction()
             coEvery {
                 businessDataSource.getPermission(requestUserId, invitation.businessId)
-            } returns ObjectPermission.EDIT.int
+            } returns ObjectPermission.OWNER.int
             coEvery {
-                employeeDataSource.getEmployeeByUserId(invitation.businessId, invitation.userId)
+                employeeDataSource.getEmployeeByEmail(invitation.businessId, invitation.email)
             } returns null
             coEvery { businessDataSource.getBusinessById(invitation.businessId) } returns null
         }
@@ -271,9 +308,9 @@ internal class CreateEmployeeInvitationImplTest {
             transactionManager.mockTransaction()
             coEvery {
                 businessDataSource.getPermission(requestUserId, invitation.businessId)
-            } returns ObjectPermission.EDIT.int
+            } returns ObjectPermission.OWNER.int
             coEvery {
-                employeeDataSource.getEmployeeByUserId(invitation.businessId, invitation.userId)
+                employeeDataSource.getEmployeeByEmail(invitation.businessId, invitation.email)
             } returns null
             coEvery { businessDataSource.getBusinessById(invitation.businessId) } returns
                 business(invitation.businessId)

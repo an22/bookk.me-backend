@@ -31,4 +31,6 @@
     <logger name="io.swagger.codegen" level="error"/>
     <logger name="ch.qos.logback.core" level="warn"/>
     <logger name="io.micrometer" level="warn"/>
+    <logger name="io.ktor.auth.jwt" level="warn"/>
+    <logger name="IdempotencyPlugin" level="warn"/>
 </configuration>

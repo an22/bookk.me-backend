@@ -20,7 +20,7 @@ interface CreateClient {
         class ClientValidationError : BusinessError(
             statusCode = HttpStatusCode.UnprocessableEntity.value,
             code = BusinessErrorCodes.BUSINESS_CLIENT_NAME_VALIDATION_ERROR,
-            message = "Client name or last name is too long"
+            message = "Client name, last name or phone is invalid"
         )
     }
 }

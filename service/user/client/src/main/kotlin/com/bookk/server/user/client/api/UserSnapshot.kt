@@ -9,7 +9,8 @@ class UserSnapshot(
     val id: Uuid,
     val name: String,
     val lastName: String,
-    val email: String
+    val email: String,
+    val phone: String?
 ) {
     companion object {
         internal fun fromUser(user: User): UserSnapshot {
@@ -17,8 +18,17 @@ class UserSnapshot(
                 id = user.id,
                 name = user.name,
                 lastName = user.lastName,
-                email = user.email
+                email = user.email,
+                phone = user.phone
             )
         }
+
+        fun stub(
+            id: Uuid = Uuid.random(),
+            name: String = "Alice",
+            lastName: String = "Smith",
+            email: String = "user@example.com",
+            phone: String? = null
+        ) = UserSnapshot(id = id, name = name, lastName = lastName, email = email, phone = phone)
     }
 }

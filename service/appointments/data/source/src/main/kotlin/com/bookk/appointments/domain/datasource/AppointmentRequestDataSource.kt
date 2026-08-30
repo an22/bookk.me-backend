@@ -17,6 +17,7 @@ interface AppointmentRequestDataSource {
 
     suspend fun hasOverlapsWith(request: AppointmentRequest): Boolean
     suspend fun cancelOutdated(before: Instant)
+    suspend fun deleteForUser(userId: Uuid)
 
     suspend fun cacheOfferToken(token: String)
     suspend fun isTokenInCache(token: String): Boolean

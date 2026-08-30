@@ -8,12 +8,8 @@ import kotlin.uuid.Uuid
 data class EmployeeInvitation(
     val id: Uuid,
     val businessId: Uuid,
-    val userId: Uuid,
     val invitedBy: Uuid,
-    val name: String,
-    val lastName: String,
-    val phone: String?,
-    val email: String?,
+    val email: String,
     val status: EmployeeInvitationStatus,
     val createdAt: Instant
 ) {
@@ -21,22 +17,14 @@ data class EmployeeInvitation(
         fun stub(
             id: Uuid = Uuid.random(),
             businessId: Uuid = Uuid.random(),
-            userId: Uuid = Uuid.random(),
             invitedBy: Uuid = Uuid.random(),
-            name: String = "stub-name",
-            lastName: String = "stub-lastname",
-            phone: String? = "+10000000000",
-            email: String? = "stub@employee.com",
+            email: String = "stub@employee.com",
             status: EmployeeInvitationStatus = EmployeeInvitationStatus.PENDING,
             createdAt: Instant = Instant.fromEpochMilliseconds(0)
         ) = EmployeeInvitation(
             id = id,
             businessId = businessId,
-            userId = userId,
             invitedBy = invitedBy,
-            name = name,
-            lastName = lastName,
-            phone = phone,
             email = email,
             status = status,
             createdAt = createdAt

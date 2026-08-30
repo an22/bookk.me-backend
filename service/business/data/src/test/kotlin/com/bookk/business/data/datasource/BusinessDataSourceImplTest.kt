@@ -318,5 +318,37 @@ internal class BusinessDataSourceImplTest {
         assertNull(permission)
     }
 
+    @Test
+    fun `should delete user permissions across businesses`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+        val ownBusiness = suspendTransaction { fixture.sut.createBusiness(userId, "Salon", "USD", TimeZone.UTC) }
+        val otherBusiness = suspendTransaction { fixture.sut.createBusiness(Uuid.random(), "Other Salon", "USD", TimeZone.UTC) }
+        suspendTransaction {
+            fixture.sut.setUserPermissions(userId, ownBusiness.id, 7)
+            fixture.sut.setUserPermissions(userId, otherBusiness.id, 1)
+        }
+
+        whenn()
+        suspendTransaction { fixture.sut.deleteUserPermissions(userId) }
+
+        then()
+        assertNull(suspendTransaction { fixture.sut.getPermission(userId, ownBusiness.id) })
+        assertNull(suspendTransaction { fixture.sut.getPermission(userId, otherBusiness.id) })
+    }
+
+    @Test
+    fun `should not fail deleting permissions for a user with none`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+
+        whenn()
+        val result = runCatching { suspendTransaction { fixture.sut.deleteUserPermissions(Uuid.random()) } }
+
+        then()
+        assertTrue(result.isSuccess)
+    }
+
     // deleteUserBusinesses uses deleteReturning which is not supported by Exposed's H2 dialect
 }

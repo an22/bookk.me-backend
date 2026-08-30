@@ -10,11 +10,7 @@ import kotlin.uuid.Uuid
 internal class EmployeeInvitationEntity(id: EntityID<Uuid>) : UuidEntity(id) {
 
     var businessId by EmployeeInvitationTable.businessId
-    var userId by EmployeeInvitationTable.userId
     var invitedBy by EmployeeInvitationTable.invitedBy
-    var name by EmployeeInvitationTable.name
-    var lastName by EmployeeInvitationTable.lastName
-    var phone by EmployeeInvitationTable.phone
     var email by EmployeeInvitationTable.email
     var status by EmployeeInvitationTable.status
     var createdAt by EmployeeInvitationTable.createdAt
@@ -26,11 +22,7 @@ internal class EmployeeInvitationEntity(id: EntityID<Uuid>) : UuidEntity(id) {
         return EmployeeInvitation(
             id = id.value,
             businessId = businessId.value,
-            userId = userId,
             invitedBy = invitedBy,
-            name = name,
-            lastName = lastName,
-            phone = phone,
             email = email,
             status = status,
             createdAt = createdAt

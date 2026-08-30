@@ -22,6 +22,9 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
 internal class EmployeeInvitationDataSourceImplTest {
@@ -191,6 +194,188 @@ internal class EmployeeInvitationDataSourceImplTest {
 
         then()
         assertFalse(approved)
+    }
+
+    @Test
+    fun `should reject pending invitation`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val created = suspendTransaction {
+            fixture.sut.createInvitation(EmployeeInvitation.stub(businessId = fixture.businessId))
+        }
+
+        whenn()
+        val rejected = suspendTransaction { fixture.sut.rejectInvitation(created.id) }
+        val found = suspendTransaction { fixture.sut.getInvitation(fixture.businessId, created.id) }
+
+        then()
+        assertTrue(rejected)
+        assertEquals(EmployeeInvitationStatus.REJECTED, found?.status)
+    }
+
+    @Test
+    fun `should not reject invitation twice`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val created = suspendTransaction {
+            fixture.sut.createInvitation(EmployeeInvitation.stub(businessId = fixture.businessId))
+        }
+        suspendTransaction { fixture.sut.rejectInvitation(created.id) }
+
+        whenn()
+        val secondRejection = suspendTransaction { fixture.sut.rejectInvitation(created.id) }
+
+        then()
+        assertFalse(secondRejection)
+    }
+
+    @Test
+    fun `should not reject an already approved invitation`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val created = suspendTransaction {
+            fixture.sut.createInvitation(EmployeeInvitation.stub(businessId = fixture.businessId))
+        }
+        suspendTransaction { fixture.sut.approveInvitation(created.id) }
+
+        whenn()
+        val rejected = suspendTransaction { fixture.sut.rejectInvitation(created.id) }
+
+        then()
+        assertFalse(rejected)
+    }
+
+    @Test
+    fun `should return false when rejecting unknown invitation`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+
+        whenn()
+        val rejected = suspendTransaction { fixture.sut.rejectInvitation(Uuid.random()) }
+
+        then()
+        assertFalse(rejected)
+    }
+
+    @Test
+    fun `should revoke pending invitation`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val created = suspendTransaction {
+            fixture.sut.createInvitation(EmployeeInvitation.stub(businessId = fixture.businessId))
+        }
+
+        whenn()
+        val revoked = suspendTransaction { fixture.sut.revokeInvitation(created.id) }
+        val found = suspendTransaction { fixture.sut.getInvitation(fixture.businessId, created.id) }
+
+        then()
+        assertTrue(revoked)
+        assertEquals(EmployeeInvitationStatus.REVOKED, found?.status)
+    }
+
+    @Test
+    fun `should not revoke invitation twice`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val created = suspendTransaction {
+            fixture.sut.createInvitation(EmployeeInvitation.stub(businessId = fixture.businessId))
+        }
+        suspendTransaction { fixture.sut.revokeInvitation(created.id) }
+
+        whenn()
+        val secondRevocation = suspendTransaction { fixture.sut.revokeInvitation(created.id) }
+
+        then()
+        assertFalse(secondRevocation)
+    }
+
+    @Test
+    fun `should not revoke an already approved invitation`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val created = suspendTransaction {
+            fixture.sut.createInvitation(EmployeeInvitation.stub(businessId = fixture.businessId))
+        }
+        suspendTransaction { fixture.sut.approveInvitation(created.id) }
+
+        whenn()
+        val revoked = suspendTransaction { fixture.sut.revokeInvitation(created.id) }
+
+        then()
+        assertFalse(revoked)
+    }
+
+    @Test
+    fun `should return false when revoking unknown invitation`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+
+        whenn()
+        val revoked = suspendTransaction { fixture.sut.revokeInvitation(Uuid.random()) }
+
+        then()
+        assertFalse(revoked)
+    }
+
+    @Test
+    fun `should expire pending invitations created before the cutoff`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val created = suspendTransaction {
+            fixture.sut.createInvitation(EmployeeInvitation.stub(businessId = fixture.businessId))
+        }
+
+        whenn()
+        suspendTransaction { fixture.sut.expireOldInvitations(Clock.System.now().plus(1.hours)) }
+        val found = suspendTransaction { fixture.sut.getInvitation(fixture.businessId, created.id) }
+
+        then()
+        assertEquals(EmployeeInvitationStatus.EXPIRED, found?.status)
+    }
+
+    @Test
+    fun `should not expire invitations created after the cutoff`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val created = suspendTransaction {
+            fixture.sut.createInvitation(EmployeeInvitation.stub(businessId = fixture.businessId))
+        }
+
+        whenn()
+        suspendTransaction { fixture.sut.expireOldInvitations(Instant.fromEpochMilliseconds(0)) }
+        val found = suspendTransaction { fixture.sut.getInvitation(fixture.businessId, created.id) }
+
+        then()
+        assertEquals(EmployeeInvitationStatus.PENDING, found?.status)
+    }
+
+    @Test
+    fun `should not expire invitations that are already approved`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val created = suspendTransaction {
+            fixture.sut.createInvitation(EmployeeInvitation.stub(businessId = fixture.businessId))
+        }
+        suspendTransaction { fixture.sut.approveInvitation(created.id) }
+
+        whenn()
+        suspendTransaction { fixture.sut.expireOldInvitations(Clock.System.now().plus(1.hours)) }
+        val found = suspendTransaction { fixture.sut.getInvitation(fixture.businessId, created.id) }
+
+        then()
+        assertEquals(EmployeeInvitationStatus.APPROVED, found?.status)
     }
 
     @Test

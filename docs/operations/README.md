@@ -72,6 +72,8 @@ Reactions to cross-service events:
 | `POST /api/business/{businessId}/employee/{id}/promote` | [Promote employee](business/promote-employee.md) |
 | `POST /api/business/{businessId}/employee_invitation` | [Invite employee](business/create-employee-invitation.md) |
 | `POST /api/business/{businessId}/employee_invitation/{id}/approve` | [Approve employee invitation](business/approve-employee-invitation.md) |
+| `POST /api/business/{businessId}/employee_invitation/{id}/reject` | [Reject employee invitation](business/reject-employee-invitation.md) |
+| `POST /api/business/{businessId}/employee_invitation/{id}/revoke` | [Revoke employee invitation](business/revoke-employee-invitation.md) |
 | `POST /api/business/{businessId}/service` | [Create service](business/create-service.md) |
 | `PUT /api/business/{businessId}/service/{id}` | [Update service](business/update-service.md) |
 | `DELETE /api/business/{businessId}/service/{id}` | [Delete service](business/delete-service.md) |

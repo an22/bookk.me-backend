@@ -2,6 +2,7 @@ package com.bookk.business.microservice
 
 import com.bookk.business.data.di.businessDataModule
 import com.bookk.business.domain.api.business.operation.DeleteDayOffsInThePast
+import com.bookk.business.domain.api.employee.operation.ExpireEmployeeInvitations
 import com.bookk.business.domain.impl.di.businessDomainModule
 import com.bookk.business.microservice.route.businessRoute
 import com.bookk.core.data.cache.impl.di.cacheModule
@@ -42,6 +43,9 @@ fun Application.installScheduler() {
         }
         job("deleteDayOffsInThePast", interval = 1.days) {
             get<DeleteDayOffsInThePast>().invoke().getOrThrow()
+        }
+        job("expireEmployeeInvitations", interval = 1.days) {
+            get<ExpireEmployeeInvitations>().invoke().getOrThrow()
         }
     }
 }

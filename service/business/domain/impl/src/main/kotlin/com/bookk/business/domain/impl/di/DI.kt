@@ -13,9 +13,12 @@ import com.bookk.business.domain.api.client.operation.DeleteClient
 import com.bookk.business.domain.api.client.operation.GetClients
 import com.bookk.business.domain.api.employee.operation.ApproveEmployeeInvitation
 import com.bookk.business.domain.api.employee.operation.CreateEmployeeInvitation
+import com.bookk.business.domain.api.employee.operation.ExpireEmployeeInvitations
 import com.bookk.business.domain.api.employee.operation.GetEmployees
 import com.bookk.business.domain.api.employee.operation.GetPendingEmployeeInvitations
 import com.bookk.business.domain.api.employee.operation.PromoteEmployee
+import com.bookk.business.domain.api.employee.operation.RejectEmployeeInvitation
+import com.bookk.business.domain.api.employee.operation.RevokeEmployeeInvitation
 import com.bookk.business.domain.api.employee.operation.UpdateEmployee
 import com.bookk.business.domain.api.service.operation.CreateService
 import com.bookk.business.domain.api.service.operation.CreateServiceGroup
@@ -41,9 +44,12 @@ import com.bookk.business.domain.impl.operation.client.DeleteClientImpl
 import com.bookk.business.domain.impl.operation.client.GetClientsImpl
 import com.bookk.business.domain.impl.operation.employee.ApproveEmployeeInvitationImpl
 import com.bookk.business.domain.impl.operation.employee.CreateEmployeeInvitationImpl
+import com.bookk.business.domain.impl.operation.employee.ExpireEmployeeInvitationsImpl
 import com.bookk.business.domain.impl.operation.employee.GetEmployeesImpl
 import com.bookk.business.domain.impl.operation.employee.GetPendingEmployeeInvitationsImpl
 import com.bookk.business.domain.impl.operation.employee.PromoteEmployeeImpl
+import com.bookk.business.domain.impl.operation.employee.RejectEmployeeInvitationImpl
+import com.bookk.business.domain.impl.operation.employee.RevokeEmployeeInvitationImpl
 import com.bookk.business.domain.impl.operation.employee.UpdateEmployeeImpl
 import com.bookk.business.domain.impl.operation.service.CreateServiceGroupImpl
 import com.bookk.business.domain.impl.operation.service.CreateServiceImpl
@@ -93,4 +99,7 @@ fun businessDomainModule() = module {
     singleOf(::GetEmployeesImpl) bind GetEmployees::class
     singleOf(::UpdateEmployeeImpl) bind UpdateEmployee::class
     singleOf(::PromoteEmployeeImpl) bind PromoteEmployee::class
+    singleOf(::RejectEmployeeInvitationImpl) bind RejectEmployeeInvitation::class
+    singleOf(::RevokeEmployeeInvitationImpl) bind RevokeEmployeeInvitation::class
+    singleOf(::ExpireEmployeeInvitationsImpl) bind ExpireEmployeeInvitations::class
 }

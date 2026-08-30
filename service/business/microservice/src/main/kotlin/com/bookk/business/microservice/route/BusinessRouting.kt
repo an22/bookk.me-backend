@@ -48,6 +48,12 @@ object BusinessRouting {
         class EmployeeInvitation(val parent: Api = Api(), val businessId: Uuid) {
             @Resource("/{id}/approve")
             class Approve(val parent: EmployeeInvitation, val id: Uuid)
+
+            @Resource("/{id}/reject")
+            class Reject(val parent: EmployeeInvitation, val id: Uuid)
+
+            @Resource("/{id}/revoke")
+            class Revoke(val parent: EmployeeInvitation, val id: Uuid)
         }
 
         @Resource("/business/{businessId}/employee")

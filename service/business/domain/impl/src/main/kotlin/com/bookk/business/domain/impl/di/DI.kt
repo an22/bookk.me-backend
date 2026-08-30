@@ -16,6 +16,7 @@ import com.bookk.business.domain.api.employee.operation.CreateEmployeeInvitation
 import com.bookk.business.domain.api.employee.operation.ExpireEmployeeInvitations
 import com.bookk.business.domain.api.employee.operation.GetEmployees
 import com.bookk.business.domain.api.employee.operation.GetPendingEmployeeInvitations
+import com.bookk.business.domain.api.employee.operation.GetPendingEmployeeInvitationsByEmail
 import com.bookk.business.domain.api.employee.operation.PromoteEmployee
 import com.bookk.business.domain.api.employee.operation.RejectEmployeeInvitation
 import com.bookk.business.domain.api.employee.operation.RevokeEmployeeInvitation
@@ -46,6 +47,7 @@ import com.bookk.business.domain.impl.operation.employee.ApproveEmployeeInvitati
 import com.bookk.business.domain.impl.operation.employee.CreateEmployeeInvitationImpl
 import com.bookk.business.domain.impl.operation.employee.ExpireEmployeeInvitationsImpl
 import com.bookk.business.domain.impl.operation.employee.GetEmployeesImpl
+import com.bookk.business.domain.impl.operation.employee.GetPendingEmployeeInvitationsByEmailImpl
 import com.bookk.business.domain.impl.operation.employee.GetPendingEmployeeInvitationsImpl
 import com.bookk.business.domain.impl.operation.employee.PromoteEmployeeImpl
 import com.bookk.business.domain.impl.operation.employee.RejectEmployeeInvitationImpl
@@ -96,6 +98,7 @@ fun businessDomainModule() = module {
     singleOf(::CreateEmployeeInvitationImpl) bind CreateEmployeeInvitation::class
     singleOf(::ApproveEmployeeInvitationImpl) bind ApproveEmployeeInvitation::class
     singleOf(::GetPendingEmployeeInvitationsImpl) bind GetPendingEmployeeInvitations::class
+    singleOf(::GetPendingEmployeeInvitationsByEmailImpl) bind GetPendingEmployeeInvitationsByEmail::class
     singleOf(::GetEmployeesImpl) bind GetEmployees::class
     singleOf(::UpdateEmployeeImpl) bind UpdateEmployee::class
     singleOf(::PromoteEmployeeImpl) bind PromoteEmployee::class

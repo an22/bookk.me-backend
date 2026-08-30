@@ -7,7 +7,8 @@ import kotlin.uuid.Uuid
 interface EmployeeInvitationDataSource {
     suspend fun createInvitation(invitation: EmployeeInvitation): EmployeeInvitation
     suspend fun getInvitation(businessId: Uuid, id: Uuid): EmployeeInvitation?
-    suspend fun getPendingInvitations(businessId: Uuid, email: String): List<EmployeeInvitation>
+    suspend fun getPendingInvitationsByInviter(businessId: Uuid, invitedBy: Uuid): List<EmployeeInvitation>
+    suspend fun getPendingInvitationsByEmail(email: String): List<EmployeeInvitation>
     suspend fun approveInvitation(id: Uuid): Boolean
     suspend fun rejectInvitation(id: Uuid): Boolean
     suspend fun revokeInvitation(id: Uuid): Boolean

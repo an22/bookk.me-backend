@@ -1,7 +1,7 @@
 package com.bookk.business.domain.impl.operation.service
 
 import com.bookk.business.domain.api.service.entity.Service
-import com.bookk.business.domain.api.service.operation.IssueQuote
+import com.bookk.business.domain.api.service.operation.IssueServiceQuote
 import com.bookk.business.domain.datasource.ServiceDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.datasource.transaction.mockTransaction
@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import kotlin.uuid.Uuid
 
-internal class IssueQuoteImplTest {
+internal class IssueServiceQuoteImplTest {
 
     private class SutFixture {
         val serviceDataSource = mockk<ServiceDataSource>()
@@ -64,7 +64,7 @@ internal class IssueQuoteImplTest {
 
         then()
         assertTrue(result.isFailure)
-        assertTrue(result.exceptionOrNull() is IssueQuote.Error.EmptyServiceList)
+        assertTrue(result.exceptionOrNull() is IssueServiceQuote.Error.EmptyServiceList)
     }
 
     @Test
@@ -85,6 +85,6 @@ internal class IssueQuoteImplTest {
 
         then()
         assertTrue(result.isFailure)
-        assertTrue(result.exceptionOrNull() is IssueQuote.Error.ServiceNotFound)
+        assertTrue(result.exceptionOrNull() is IssueServiceQuote.Error.ServiceNotFound)
     }
 }

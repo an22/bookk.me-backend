@@ -3,7 +3,7 @@
 `POST /api/appointments/request` → `CreateAppointmentRequest`
 
 A client submits an `AppointmentOffer` produced earlier by the business
-service's `POST /api/service/quote` (`IssueQuote`, read-only — not
+service's `POST /api/service/quote` (`IssueServiceQuote`, read-only — not
 diagrammed here): a signed `offerToken` plus the
 requested slot. The token is verified and its claims (services, total,
 business id) are cross-checked against the request body before anything is

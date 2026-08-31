@@ -1,6 +1,6 @@
 package com.bookk.business.microservice.route.api
 
-import com.bookk.business.domain.api.service.operation.IssueQuote
+import com.bookk.business.domain.api.service.operation.IssueServiceQuote
 import com.bookk.business.microservice.route.BusinessRouting.Api
 import com.bookk.core.service.enity.respondWith
 import com.bookk.server.auth.client.AppPrincipal
@@ -25,13 +25,13 @@ fun Route.quote() {
          * Tag: service
          * Security: jwt
          * Body: application/x-protobuf [com.bookk.business.microservice.route.api.QuoteRequest]
-         * Response: 200 application/x-protobuf [com.bookk.business.domain.api.service.entity.Quote] Quote with full service models and token
+         * Response: 200 application/x-protobuf [com.bookk.business.domain.api.service.entity.ServiceQuote] Quote with full service models and token
          * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Issue quote errors<br>BUSINESS_QUOTE_SERVICE_NOT_FOUND (200013) One or more services not found
          */
         post<Api.Service.Quote> {
             requireNotNull(call.principal<AppPrincipal>())
             val body = call.receive<QuoteRequest>()
-            val issueQuote by application.inject<IssueQuote>()
+            val issueQuote by application.inject<IssueServiceQuote>()
 
             call.respondWith(
                 issueQuote(

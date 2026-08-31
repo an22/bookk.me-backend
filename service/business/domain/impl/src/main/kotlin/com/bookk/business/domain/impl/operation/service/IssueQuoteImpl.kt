@@ -1,8 +1,8 @@
 package com.bookk.business.domain.impl.operation.service
 
-import com.bookk.business.domain.api.service.entity.Quote
 import com.bookk.business.domain.api.service.entity.Service
-import com.bookk.business.domain.api.service.operation.IssueQuote
+import com.bookk.business.domain.api.service.entity.ServiceQuote
+import com.bookk.business.domain.api.service.operation.IssueServiceQuote
 import com.bookk.business.domain.datasource.ServiceDataSource
 import com.bookk.core.AppLevelConstants
 import com.bookk.core.domain.datasource.transaction.TransactionManager
@@ -15,19 +15,19 @@ internal class IssueQuoteImpl(
     private val serviceDataSource: ServiceDataSource,
     private val transactionManager: TransactionManager,
     private val tokenIssuer: TokenIssuer
-) : IssueQuote {
+) : IssueServiceQuote {
 
-    override suspend fun invoke(businessId: Uuid, serviceIds: List<Uuid>): Result<Quote> {
-        if (serviceIds.isEmpty()) return Result.failure(IssueQuote.Error.EmptyServiceList())
+    override suspend fun invoke(businessId: Uuid, serviceIds: List<Uuid>): Result<ServiceQuote> {
+        if (serviceIds.isEmpty()) return Result.failure(IssueServiceQuote.Error.EmptyServiceList())
         return transactionManager.transaction {
             val services = serviceDataSource.getServicesByIds(serviceIds)
-            if (services.size != serviceIds.size) throw IssueQuote.Error.ServiceNotFound()
-            if (services.any { it.businessId != businessId }) throw IssueQuote.Error.ServiceNotFound()
+            if (services.size != serviceIds.size) throw IssueServiceQuote.Error.ServiceNotFound()
+            if (services.any { it.businessId != businessId }) throw IssueServiceQuote.Error.ServiceNotFound()
 
             val quoteId = Uuid.random()
             val token = buildToken(quoteId, businessId, services)
 
-            Quote(id = quoteId, services = services, token = token)
+            ServiceQuote(id = quoteId, services = services, token = token)
         }
     }
 

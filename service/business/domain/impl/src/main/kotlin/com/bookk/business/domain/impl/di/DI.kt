@@ -27,7 +27,7 @@ import com.bookk.business.domain.api.service.operation.DeleteService
 import com.bookk.business.domain.api.service.operation.DeleteServiceGroup
 import com.bookk.business.domain.api.service.operation.GetServiceGroups
 import com.bookk.business.domain.api.service.operation.GetServices
-import com.bookk.business.domain.api.service.operation.IssueQuote
+import com.bookk.business.domain.api.service.operation.IssueServiceQuote
 import com.bookk.business.domain.api.service.operation.UpdateService
 import com.bookk.business.domain.api.user.operation.AnonymizeUserProfile
 import com.bookk.business.domain.api.user.operation.SyncUserProfile
@@ -94,7 +94,7 @@ fun businessDomainModule() = module {
     singleOf(::UpdateServiceImpl) bind UpdateService::class
     singleOf(::GetServicesImpl) bind GetServices::class
     singleOf(::GetServiceGroupsImpl) bind GetServiceGroups::class
-    singleOf(::IssueQuoteImpl) bind IssueQuote::class
+    singleOf(::IssueQuoteImpl) bind IssueServiceQuote::class
     singleOf(::CreateEmployeeInvitationImpl) bind CreateEmployeeInvitation::class
     singleOf(::ApproveEmployeeInvitationImpl) bind ApproveEmployeeInvitation::class
     singleOf(::GetEmployeeInvitationsImpl) bind GetEmployeeInvitations::class

@@ -59,6 +59,12 @@ internal class ClientDataSourceImpl : DataSource(), ClientDataSource {
             .firstOrNull()
     }
 
+    override suspend fun getClientById(businessId: Uuid, id: Uuid): Client? = dbQuery {
+        ClientEntity.findById(id)
+            ?.takeIf { it.businessId.value == businessId }
+            ?.toDomain()
+    }
+
     override suspend fun deleteClient(businessId: Uuid, id: Uuid) = dbQuery {
         ClientTable.deleteWhere {
             (ClientTable.businessId eq businessId) and (ClientTable.id eq id)

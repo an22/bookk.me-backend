@@ -68,6 +68,30 @@ internal class IssueServiceQuoteImplTest {
     }
 
     @Test
+    fun `should expand a repeated service id into one quote line per requested count`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val businessId = Uuid.random()
+        val serviceX = Service.stub(businessId = businessId)
+        val serviceY = Service.stub(businessId = businessId)
+        val serviceIds = listOf(serviceX.id, serviceX.id, serviceX.id, serviceX.id, serviceX.id, serviceY.id)
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { serviceDataSource.getServicesByIds(listOf(serviceX.id, serviceY.id)) } returns listOf(serviceX, serviceY)
+            coEvery { tokenIssuer.issue(any(), any()) } returns "signed-token"
+        }
+
+        whenn()
+        val result = fixture.sut(businessId, serviceIds)
+
+        then()
+        assertTrue(result.isSuccess)
+        val quote = result.getOrThrow()
+        assertTrue(quote.services.count { it == serviceX } == 5)
+        assertTrue(quote.services.count { it == serviceY } == 1)
+    }
+
+    @Test
     fun `should return ServiceNotFound when a requested service id is missing`() = runUnitTest {
         given()
         val fixture = SutFixture()

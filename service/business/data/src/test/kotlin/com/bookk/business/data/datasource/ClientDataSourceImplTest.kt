@@ -122,6 +122,59 @@ internal class ClientDataSourceImplTest {
     }
 
     @Test
+    fun `should retrieve client by id`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val client = Client.Detached(
+            id = Uuid.random(), name = "Erin", lastName = "Black",
+            phone = "+1231231234", email = "erin@test.com"
+        )
+        val created = suspendTransaction { fixture.sut.createDetachedClient(fixture.businessId, client) }
+
+        whenn()
+        val found = suspendTransaction { fixture.sut.getClientById(fixture.businessId, created.id) }
+
+        then()
+        assertNotNull(found)
+        assertEquals("Erin", found!!.name)
+    }
+
+    @Test
+    fun `should return null when client not found by id`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+
+        whenn()
+        val found = suspendTransaction { fixture.sut.getClientById(fixture.businessId, Uuid.random()) }
+
+        then()
+        assertNull(found)
+    }
+
+    @Test
+    fun `should return null when client id belongs to a different business`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val otherBusinessId = suspendTransaction {
+            fixture.businessSut.createBusiness(Uuid.random(), "Other Business", "USD", TimeZone.UTC)
+        }.id
+        val client = Client.Detached(
+            id = Uuid.random(), name = "Frank", lastName = "Green",
+            phone = "+3213214321", email = "frank@test.com"
+        )
+        val created = suspendTransaction { fixture.sut.createDetachedClient(fixture.businessId, client) }
+
+        whenn()
+        val found = suspendTransaction { fixture.sut.getClientById(otherBusinessId, created.id) }
+
+        then()
+        assertNull(found)
+    }
+
+    @Test
     fun `should delete client and return true`() = runUnitTest {
         given()
         val fixture = SutFixture()

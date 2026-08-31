@@ -1,10 +1,11 @@
 package com.bookk.appointments.microservice.route.api
 
 import com.bookk.appointments.domain.api.entity.AppointmentErrorCodes
-import com.bookk.appointments.domain.api.entity.AppointmentOffer
-import com.bookk.appointments.domain.api.entity.AppointmentRequest
+import com.bookk.appointments.domain.api.entity.AppointmentRequestDraft
 import com.bookk.appointments.domain.api.operation.CreateAppointmentRequest
 import com.bookk.appointments.microservice.route.AppointmentsRouting.Api
+import com.bookk.business.domain.api.appointment.operation.GetAppointmentBookingContext
+import com.bookk.business.domain.api.error.BusinessErrorCodes
 import com.bookk.core.domain.entity.SimpleServerError
 import com.bookk.core.service.test.createTestClient
 import com.bookk.core.service.test.routeTest
@@ -34,7 +35,7 @@ internal class CreateAppointmentRequestTest {
         given()
         val useCase: CreateAppointmentRequest = mockk()
         val userId = Uuid.random()
-        val offer = AppointmentOffer.stub(request = AppointmentRequest.stub(userId = userId))
+        val draft = AppointmentRequestDraft.stub()
         coEvery { useCase.invoke(userId, any()) } returns Result.success(Unit)
 
         setupApplication(
@@ -54,7 +55,7 @@ internal class CreateAppointmentRequestTest {
         whenn()
         val client = createTestClient()
         val response = client.post(Api.Appointment.Request()) {
-            setBody(offer)
+            setBody(draft)
         }
 
         then()
@@ -66,7 +67,7 @@ internal class CreateAppointmentRequestTest {
         given()
         val useCase: CreateAppointmentRequest = mockk()
         val userId = Uuid.random()
-        val offer = AppointmentOffer.stub(request = AppointmentRequest.stub(userId = userId))
+        val draft = AppointmentRequestDraft.stub()
         coEvery { useCase.invoke(userId, any()) } returns Result.failure(CreateAppointmentRequest.Error.RequestForThisTimeExists())
 
         setupApplication(
@@ -86,7 +87,7 @@ internal class CreateAppointmentRequestTest {
         whenn()
         val client = createTestClient()
         val response = client.post(Api.Appointment.Request()) {
-            setBody(offer)
+            setBody(draft)
         }
 
         then()
@@ -99,7 +100,7 @@ internal class CreateAppointmentRequestTest {
         given()
         val useCase: CreateAppointmentRequest = mockk()
         val userId = Uuid.random()
-        val offer = AppointmentOffer.stub(request = AppointmentRequest.stub(userId = userId))
+        val draft = AppointmentRequestDraft.stub()
         coEvery { useCase.invoke(userId, any()) } returns Result.failure(CreateAppointmentRequest.Error.RequestForThisTimeNotAllowed())
 
         setupApplication(
@@ -119,7 +120,7 @@ internal class CreateAppointmentRequestTest {
         whenn()
         val client = createTestClient()
         val response = client.post(Api.Appointment.Request()) {
-            setBody(offer)
+            setBody(draft)
         }
 
         then()
@@ -132,7 +133,7 @@ internal class CreateAppointmentRequestTest {
         given()
         val useCase: CreateAppointmentRequest = mockk()
         val userId = Uuid.random()
-        val offer = AppointmentOffer.stub(request = AppointmentRequest.stub(userId = userId))
+        val draft = AppointmentRequestDraft.stub()
         coEvery { useCase.invoke(userId, any()) } returns Result.failure(CreateAppointmentRequest.Error.RequestForThisDateNotAllowed())
 
         setupApplication(
@@ -152,7 +153,7 @@ internal class CreateAppointmentRequestTest {
         whenn()
         val client = createTestClient()
         val response = client.post(Api.Appointment.Request()) {
-            setBody(offer)
+            setBody(draft)
         }
 
         then()
@@ -165,7 +166,7 @@ internal class CreateAppointmentRequestTest {
         given()
         val useCase: CreateAppointmentRequest = mockk()
         val userId = Uuid.random()
-        val offer = AppointmentOffer.stub(request = AppointmentRequest.stub(userId = userId))
+        val draft = AppointmentRequestDraft.stub()
         coEvery { useCase.invoke(userId, any()) } returns Result.failure(CreateAppointmentRequest.Error.DateInThePastNotAllowed())
 
         setupApplication(
@@ -185,7 +186,7 @@ internal class CreateAppointmentRequestTest {
         whenn()
         val client = createTestClient()
         val response = client.post(Api.Appointment.Request()) {
-            setBody(offer)
+            setBody(draft)
         }
 
         then()
@@ -198,7 +199,7 @@ internal class CreateAppointmentRequestTest {
         given()
         val useCase: CreateAppointmentRequest = mockk()
         val userId = Uuid.random()
-        val offer = AppointmentOffer.stub(request = AppointmentRequest.stub(userId = userId))
+        val draft = AppointmentRequestDraft.stub()
         coEvery { useCase.invoke(userId, any()) } returns Result.failure(CreateAppointmentRequest.Error.PriceChanged())
 
         setupApplication(
@@ -218,7 +219,7 @@ internal class CreateAppointmentRequestTest {
         whenn()
         val client = createTestClient()
         val response = client.post(Api.Appointment.Request()) {
-            setBody(offer)
+            setBody(draft)
         }
 
         then()
@@ -227,11 +228,44 @@ internal class CreateAppointmentRequestTest {
     }
 
     @Test
+    fun `should return bad request when duration changed`() = routeTest {
+        given()
+        val useCase: CreateAppointmentRequest = mockk()
+        val userId = Uuid.random()
+        val draft = AppointmentRequestDraft.stub()
+        coEvery { useCase.invoke(userId, any()) } returns Result.failure(CreateAppointmentRequest.Error.DurationChanged())
+
+        setupApplication(
+            extension = {
+                install(Authentication) {
+                    provider {
+                        authenticate { context ->
+                            context.principal(AppPrincipal(Uuid.random(), userId, Uuid.random()))
+                        }
+                    }
+                }
+            },
+            diModule = module { single { useCase } },
+            routeUnderTest = { requests() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.post(Api.Appointment.Request()) {
+            setBody(draft)
+        }
+
+        then()
+        assertEquals(HttpStatusCode.BadRequest, response.status)
+        assertEquals(AppointmentErrorCodes.DURATION_CHANGED, response.body<SimpleServerError>().errorCode)
+    }
+
+    @Test
     fun `should return bad request when services signature does not match`() = routeTest {
         given()
         val useCase: CreateAppointmentRequest = mockk()
         val userId = Uuid.random()
-        val offer = AppointmentOffer.stub(request = AppointmentRequest.stub(userId = userId))
+        val draft = AppointmentRequestDraft.stub()
         coEvery { useCase.invoke(userId, any()) } returns Result.failure(CreateAppointmentRequest.Error.ServicesSignatureMiss())
 
         setupApplication(
@@ -251,7 +285,7 @@ internal class CreateAppointmentRequestTest {
         whenn()
         val client = createTestClient()
         val response = client.post(Api.Appointment.Request()) {
-            setBody(offer)
+            setBody(draft)
         }
 
         then()
@@ -264,7 +298,7 @@ internal class CreateAppointmentRequestTest {
         given()
         val useCase: CreateAppointmentRequest = mockk()
         val userId = Uuid.random()
-        val offer = AppointmentOffer.stub(request = AppointmentRequest.stub(userId = userId))
+        val draft = AppointmentRequestDraft.stub()
         coEvery { useCase.invoke(userId, any()) } returns Result.failure(CreateAppointmentRequest.Error.TokenAlreadyUsed())
 
         setupApplication(
@@ -284,12 +318,109 @@ internal class CreateAppointmentRequestTest {
         whenn()
         val client = createTestClient()
         val response = client.post(Api.Appointment.Request()) {
-            setBody(offer)
+            setBody(draft)
         }
 
         then()
         assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
         assertEquals(AppointmentErrorCodes.QUOTE_TOKEN_ALREADY_USED, response.body<SimpleServerError>().errorCode)
+    }
+
+    @Test
+    fun `should return not found when employee is not found in business`() = routeTest {
+        given()
+        val useCase: CreateAppointmentRequest = mockk()
+        val userId = Uuid.random()
+        val draft = AppointmentRequestDraft.stub()
+        coEvery { useCase.invoke(userId, any()) } returns Result.failure(GetAppointmentBookingContext.Error.EmployeeNotFound())
+
+        setupApplication(
+            extension = {
+                install(Authentication) {
+                    provider {
+                        authenticate { context ->
+                            context.principal(AppPrincipal(Uuid.random(), userId, Uuid.random()))
+                        }
+                    }
+                }
+            },
+            diModule = module { single { useCase } },
+            routeUnderTest = { requests() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.post(Api.Appointment.Request()) {
+            setBody(draft)
+        }
+
+        then()
+        assertEquals(HttpStatusCode.NotFound, response.status)
+    }
+
+    @Test
+    fun `should return not found when client is not found in business`() = routeTest {
+        given()
+        val useCase: CreateAppointmentRequest = mockk()
+        val userId = Uuid.random()
+        val draft = AppointmentRequestDraft.stub()
+        coEvery { useCase.invoke(userId, any()) } returns Result.failure(GetAppointmentBookingContext.Error.ClientNotFound())
+
+        setupApplication(
+            extension = {
+                install(Authentication) {
+                    provider {
+                        authenticate { context ->
+                            context.principal(AppPrincipal(Uuid.random(), userId, Uuid.random()))
+                        }
+                    }
+                }
+            },
+            diModule = module { single { useCase } },
+            routeUnderTest = { requests() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.post(Api.Appointment.Request()) {
+            setBody(draft)
+        }
+
+        then()
+        assertEquals(HttpStatusCode.NotFound, response.status)
+    }
+
+    @Test
+    fun `should return unprocessable entity when a service is not found in business`() = routeTest {
+        given()
+        val useCase: CreateAppointmentRequest = mockk()
+        val userId = Uuid.random()
+        val draft = AppointmentRequestDraft.stub()
+        coEvery { useCase.invoke(userId, any()) } returns Result.failure(GetAppointmentBookingContext.Error.ServiceNotFound())
+
+        setupApplication(
+            extension = {
+                install(Authentication) {
+                    provider {
+                        authenticate { context ->
+                            context.principal(AppPrincipal(Uuid.random(), userId, Uuid.random()))
+                        }
+                    }
+                }
+            },
+            diModule = module { single { useCase } },
+            routeUnderTest = { requests() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.post(Api.Appointment.Request()) {
+            setBody(draft)
+        }
+
+        then()
+        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
+        assertEquals(BusinessErrorCodes.BUSINESS_QUOTE_SERVICE_NOT_FOUND, response.body<SimpleServerError>().errorCode)
     }
 
     @Test
@@ -306,7 +437,7 @@ internal class CreateAppointmentRequestTest {
         whenn()
         val client = createTestClient()
         val response = client.post(Api.Appointment.Request()) {
-            setBody(AppointmentOffer.stub())
+            setBody(AppointmentRequestDraft.stub())
         }
 
         then()

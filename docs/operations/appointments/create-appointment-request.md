@@ -2,18 +2,37 @@
 
 `POST /api/appointments/request` → `CreateAppointmentRequest`
 
-A client submits an `AppointmentOffer` produced earlier by the business
-service's `POST /api/service/quote` (`IssueServiceQuote`, read-only — not
-diagrammed here): a signed `offerToken` plus the
-requested slot. The token is verified and its claims (services, total,
-business id) are cross-checked against the request body before anything is
-persisted, so a stale or tampered quote is rejected up front — this
-signature check is the operation's only authorization gate; there is no
-business-permission check, since the caller is the client booking with the
-business, not a staff member. If the business has `automaticApproval` on,
-the request is approved immediately by delegating into [Create appointment
-from a pending request](create-appointment-from-request.md)'s shared
-verify/persist logic instead of being stored as pending.
+A client submits an `AppointmentRequestDraft` carrying the signed
+`offerToken` produced earlier by the business service's
+`POST /api/service/quote` (`IssueServiceQuote`, read-only — not diagrammed
+here) alongside only the requested slot and the ids of the employee, client
+and services — no name, contact or pricing data travels from the client. A
+service id may repeat in `draft.serviceIds` to request more than one count
+of it (e.g. 5 counts of service X); `IssueServiceQuote` signs the *count per
+distinct service id* into `QuoteClaims.CLAIM_SERVICES`
+(`QuoteClaims.encodeServiceCounts` — `"<serviceId>:<count>"` entries, not a
+flat repeated list) rather than a plain id set. The token's claims (service
+counts, business id) are cross-checked against the draft's own per-id
+counts before anything else happens, so a stale or tampered quote — or a
+request that changes how many of a service were asked for — is rejected up
+front. The employee, client and services are then resolved from the
+business service in a single call to `GetAppointmentBookingContext`
+(`BusinessClient.getAppointmentBookingContext`) — this is the operation's
+actual authorization gate for *identity*: an employee or client that no
+longer exists in the business, or a service that has since been removed,
+fails here even if the signature check passed. Only once that context is
+resolved is the full `AppointmentRequest` (with real `EmployeeSnapshot`,
+`ClientSnapshot`, `ServiceSnapshot`s) built and its total price *and* total
+duration compared against the token's frozen values — the quote signs both
+(`QuoteClaims.CLAIM_TOTAL`, `CLAIM_DURATION`), so a service whose duration
+changes after the quote was issued (even if its price didn't) is caught the
+same way a price change is, instead of silently booking a
+longer-or-shorter slot than the client agreed to. There is no business-permission check on
+top of this, since the caller is the client booking with the business, not
+a staff member. If the business has `automaticApproval` on, the request is
+approved immediately by delegating into [Create appointment from a pending
+request](create-appointment-from-request.md)'s shared verify/persist logic
+instead of being stored as pending.
 
 ```mermaid
 flowchart TD
@@ -23,11 +42,19 @@ flowchart TD
     TokenCached -- Yes --> R422a([422 TOKEN_ALREADY_USED 300016])
     TokenCached -- No --> Verify[Verify offerToken signature - SERVICE_QUOTE]
     Verify -- invalid signature --> R422b([422 SERVICES_VALIDATION_FAILED 300014])
-    Verify -- valid --> PriceCheck{request.totalAmount == token.total?}
-    PriceCheck -- No --> R400a([400 PRICE_CHANGED 300013])
-    PriceCheck -- Yes --> ServicesCheck{request.services and businessId match token claims?}
+    Verify -- valid --> ServicesCheck{draft's per-service counts and businessId match token claims?}
     ServicesCheck -- No --> R400b([400 SERVICES_VALIDATION_FAILED 300014])
-    ServicesCheck -- Yes --> Tx[[Begin transaction]]
+    ServicesCheck -- Yes --> Resolve[BusinessClient.getAppointmentBookingContext businessId employeeId clientId serviceIds]
+    Resolve -- employee missing --> R404b([404 BUSINESS_EMPLOYEE_NOT_EXISTS 200024])
+    Resolve -- client missing --> R404c([404 BUSINESS_CLIENT_NOT_EXISTS 200006])
+    Resolve -- service missing --> R422g([422 BUSINESS_QUOTE_SERVICE_NOT_FOUND 200013])
+    Resolve -- empty service list --> R422h([422 BUSINESS_QUOTE_EMPTY_SERVICE_LIST 200014 - unreachable here, ServicesCheck already rejects an empty list])
+    Resolve -- resolved --> BuildRequest[Build AppointmentRequest from resolved employee/client/services]
+    BuildRequest --> PriceCheck{request.totalAmount == token.total?}
+    PriceCheck -- No --> R400a([400 PRICE_CHANGED 300013])
+    PriceCheck -- Yes --> DurationCheck{request.dateEnd - request.date == token.duration?}
+    DurationCheck -- No --> R400c([400 DURATION_CHANGED 300017])
+    DurationCheck -- Yes --> Tx[[Begin transaction]]
     Tx --> Settings[AppointmentSettingsDataSource.getForUpdate businessId]
     Settings -- not found --> R404a([404 Error.NotFound])
     Settings -- found --> AutoApproval{settings.automaticApproval?}
@@ -46,7 +73,7 @@ flowchart TD
     OverlapAppointments -- Yes --> R422f
     OverlapAppointments -- No --> Create[AppointmentRequestDataSource.create request]
     Create --> Snapshot[AppointmentSubscriptionDataSource.getBusinessSnapshot businessId]
-    Snapshot -- missing --> R404c([404 Error.NotFound - logged as data inconsistency])
+    Snapshot -- missing --> R404d([404 Error.NotFound - logged as data inconsistency])
     Snapshot -- found --> Event[eventProducer.send AppointmentEvent.RequestCreated]
     Event --> CacheToken[requestDataSource.cacheOfferToken offerToken]
     CacheToken --> R204([204 No Content])

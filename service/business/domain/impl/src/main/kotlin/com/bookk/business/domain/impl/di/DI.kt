@@ -1,5 +1,6 @@
 package com.bookk.business.domain.impl.di
 
+import com.bookk.business.domain.api.appointment.operation.GetAppointmentBookingContext
 import com.bookk.business.domain.api.business.operation.CreateBusiness
 import com.bookk.business.domain.api.business.operation.DeleteBusiness
 import com.bookk.business.domain.api.business.operation.DeleteDayOffsInThePast
@@ -32,6 +33,7 @@ import com.bookk.business.domain.api.service.operation.UpdateService
 import com.bookk.business.domain.api.user.operation.AnonymizeUserProfile
 import com.bookk.business.domain.api.user.operation.SyncUserProfile
 import com.bookk.business.domain.impl.event.BusinessEventHandlerImpl
+import com.bookk.business.domain.impl.operation.appointment.GetAppointmentBookingContextImpl
 import com.bookk.business.domain.impl.operation.business.CreateBusinessImpl
 import com.bookk.business.domain.impl.operation.business.DeleteBusinessImpl
 import com.bookk.business.domain.impl.operation.business.DeleteDayOffsInThePastImpl
@@ -105,4 +107,5 @@ fun businessDomainModule() = module {
     singleOf(::RejectEmployeeInvitationImpl) bind RejectEmployeeInvitation::class
     singleOf(::RevokeEmployeeInvitationImpl) bind RevokeEmployeeInvitation::class
     singleOf(::ExpireEmployeeInvitationsImpl) bind ExpireEmployeeInvitations::class
+    singleOf(::GetAppointmentBookingContextImpl) bind GetAppointmentBookingContext::class
 }

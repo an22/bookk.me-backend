@@ -14,6 +14,9 @@ object BusinessRouting {
                 class Id(val parent: Business = Business(), val id: Uuid) {
                     @Resource("/permissions/{userId}")
                     class Permissions(val parent: Id, val userId: Uuid)
+
+                    @Resource("/appointment-booking-context")
+                    class AppointmentBookingContext(val parent: Id)
                 }
             }
         }

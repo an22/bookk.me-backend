@@ -1,13 +1,13 @@
 package com.bookk.appointments.domain.api.operation
 
 import com.bookk.appointments.domain.api.entity.AppointmentErrorCodes
-import com.bookk.appointments.domain.api.entity.AppointmentOffer
+import com.bookk.appointments.domain.api.entity.AppointmentRequestDraft
 import com.bookk.core.domain.entity.BusinessError
 import io.ktor.http.HttpStatusCode
 import kotlin.uuid.Uuid
 
 interface CreateAppointmentRequest {
-    suspend operator fun invoke(userId: Uuid, offer: AppointmentOffer): Result<Unit>
+    suspend operator fun invoke(userId: Uuid, draft: AppointmentRequestDraft): Result<Unit>
 
     sealed interface Error {
         class RequestForThisTimeExists : BusinessError(
@@ -38,6 +38,12 @@ interface CreateAppointmentRequest {
             statusCode = HttpStatusCode.BadRequest.value,
             code = AppointmentErrorCodes.PRICE_CHANGED,
             message = "While booking, price for services has been changed, refresh"
+        ), Error
+
+        class DurationChanged : BusinessError(
+            statusCode = HttpStatusCode.BadRequest.value,
+            code = AppointmentErrorCodes.DURATION_CHANGED,
+            message = "While booking, duration for services has been changed, refresh"
         ), Error
 
         class ServicesSignatureMiss : BusinessError(

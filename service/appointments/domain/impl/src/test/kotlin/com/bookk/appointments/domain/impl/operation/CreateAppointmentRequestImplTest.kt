@@ -7,18 +7,15 @@ import com.bookk.appointments.domain.api.entity.AppointmentOffer
 import com.bookk.appointments.domain.api.entity.AppointmentRequest
 import com.bookk.appointments.domain.api.entity.AppointmentSettings
 import com.bookk.appointments.domain.api.entity.BusinessSnapshot
-import com.bookk.appointments.domain.api.entity.EmployeeSnapshot
 import com.bookk.appointments.domain.api.operation.CreateAppointment
 import com.bookk.appointments.domain.api.operation.CreateAppointmentRequest
 import com.bookk.appointments.domain.datasource.AppointmentDataSource
 import com.bookk.appointments.domain.datasource.AppointmentRequestDataSource
 import com.bookk.appointments.domain.datasource.AppointmentSettingsDataSource
 import com.bookk.appointments.domain.datasource.AppointmentSubscriptionDataSource
-import com.bookk.appointments.domain.datasource.PermissionsDataSource
 import com.bookk.core.data.eventstreaming.StandardEventProducer
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.datasource.transaction.mockTransaction
-import com.bookk.core.domain.entity.Error
 import com.bookk.core.test.given
 import com.bookk.core.test.runUnitTest
 import com.bookk.core.test.then
@@ -31,8 +28,6 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import kotlinx.datetime.TimeZone
-import library.permissions.ObjectPermission.EDIT
-import library.permissions.ObjectPermission.READ
 import library.signing.TokenValidator
 import library.signing.TokenValidatorFactory
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -49,7 +44,6 @@ internal class CreateAppointmentRequestImplTest {
         val requestDataSource = mockk<AppointmentRequestDataSource>()
         val appointmentDataSource = mockk<AppointmentDataSource>()
         val settingsDataSource = mockk<AppointmentSettingsDataSource>()
-        val permissionsDataSource = mockk<PermissionsDataSource>()
         val createAppointment = mockk<CreateAppointment>()
         val transactionManager = mockk<TransactionManager>()
         val subscriptionDataSource = mockk<AppointmentSubscriptionDataSource>()
@@ -60,7 +54,6 @@ internal class CreateAppointmentRequestImplTest {
             requestDataSource,
             appointmentDataSource,
             settingsDataSource,
-            permissionsDataSource,
             subscriptionDataSource,
             eventProducer,
             createAppointment,
@@ -106,7 +99,6 @@ internal class CreateAppointmentRequestImplTest {
             coEvery { settings.automaticApproval } returns false
             coEvery { settings.isInWorkday(request.date) } returns true
             coEvery { settings.isInWorktime(request.date, request.dateEnd) } returns true
-            coEvery { permissionsDataSource.getPermissions(userId, businessId) } returns EDIT.int
             coEvery { requestDataSource.hasOverlapsWith(request) } returns false
             coEvery { appointmentDataSource.hasOverlapsWith(request) } returns false
             coEvery { requestDataSource.create(request) } returns request
@@ -139,7 +131,6 @@ internal class CreateAppointmentRequestImplTest {
         with(fixture) {
             coEvery { settingsDataSource.getForUpdate(businessId) } returns settings
             coEvery { settings.automaticApproval } returns true
-            coEvery { permissionsDataSource.getPermissions(userId, businessId) } returns EDIT.int
             coEvery { requestDataSource.hasOverlapsWith(request) } returns false
             coEvery { requestDataSource.create(request) } returns request
             coEvery { subscriptionDataSource.getBusinessSnapshot(businessId) } returns businessSnapshot
@@ -172,7 +163,6 @@ internal class CreateAppointmentRequestImplTest {
             coEvery { settingsDataSource.getForUpdate(businessId) } returns settings
             coEvery { settings.automaticApproval } returns false
             coEvery { settings.isInWorkday(request.date) } returns false
-            coEvery { permissionsDataSource.getPermissions(userId, businessId) } returns EDIT.int
             mockValidToken(request)
             transactionManager.mockTransaction()
         }
@@ -199,7 +189,6 @@ internal class CreateAppointmentRequestImplTest {
         with(fixture) {
             coEvery { settingsDataSource.getForUpdate(businessId) } returns settings
             coEvery { settings.automaticApproval } returns false
-            coEvery { permissionsDataSource.getPermissions(userId, businessId) } returns EDIT.int
             mockValidToken(request)
             transactionManager.mockTransaction()
         }
@@ -226,7 +215,6 @@ internal class CreateAppointmentRequestImplTest {
         with(fixture) {
             coEvery { settingsDataSource.getForUpdate(businessId) } returns settings
             coEvery { settings.automaticApproval } returns true
-            coEvery { permissionsDataSource.getPermissions(userId, businessId) } returns EDIT.int
             coEvery { requestDataSource.hasOverlapsWith(request) } returns false
             coEvery { requestDataSource.create(request) } returns request
             coEvery { subscriptionDataSource.getBusinessSnapshot(businessId) } returns businessSnapshot
@@ -258,7 +246,6 @@ internal class CreateAppointmentRequestImplTest {
             coEvery { settings.automaticApproval } returns false
             coEvery { settings.isInWorkday(request.date) } returns true
             coEvery { settings.isInWorktime(request.date, request.dateEnd) } returns false
-            coEvery { permissionsDataSource.getPermissions(userId, businessId) } returns EDIT.int
             mockValidToken(request)
             transactionManager.mockTransaction()
         }
@@ -272,38 +259,12 @@ internal class CreateAppointmentRequestImplTest {
     }
 
     @Test
-    fun `should return failure when READ permissions`() = runUnitTest {
+    fun `should create request successfully when caller has no business permissions`() = runUnitTest {
         given()
         val fixture = SutFixture()
         val userId = Uuid.random()
         val businessId = Uuid.random()
         val request = AppointmentRequest.stub(userId = userId, businessId = businessId, date = futureDate)
-        val offer = AppointmentOffer(request, "token")
-        val settings = mockk<AppointmentSettings>()
-
-        with(fixture) {
-            coEvery { settingsDataSource.getForUpdate(businessId) } returns settings
-            coEvery { settings.automaticApproval } returns false
-            coEvery { permissionsDataSource.getPermissions(userId, businessId) } returns READ.int
-            mockValidToken(request)
-            transactionManager.mockTransaction()
-        }
-        whenn()
-        val result = fixture.sut.invoke(userId, offer)
-
-        then()
-        assertTrue(result.isFailure)
-        assertTrue(result.exceptionOrNull() is Error.OperationNotAllowed)
-    }
-
-    @Test
-    fun `should create own request successfully with read permission`() = runUnitTest {
-        given()
-        val fixture = SutFixture()
-        val userId = Uuid.random()
-        val businessId = Uuid.random()
-        val request = AppointmentRequest.stub(userId = userId, businessId = businessId, date = futureDate)
-            .copy(employee = EmployeeSnapshot.stub(userId = userId))
         val offer = AppointmentOffer(request, "token")
         val settings = mockk<AppointmentSettings>()
         val businessSnapshot = BusinessSnapshot.stub()
@@ -313,7 +274,6 @@ internal class CreateAppointmentRequestImplTest {
             coEvery { settings.automaticApproval } returns false
             coEvery { settings.isInWorkday(request.date) } returns true
             coEvery { settings.isInWorktime(request.date, request.dateEnd) } returns true
-            coEvery { permissionsDataSource.getPermissions(userId, businessId) } returns READ.int
             coEvery { requestDataSource.hasOverlapsWith(request) } returns false
             coEvery { appointmentDataSource.hasOverlapsWith(request) } returns false
             coEvery { requestDataSource.create(request) } returns request
@@ -346,7 +306,6 @@ internal class CreateAppointmentRequestImplTest {
             coEvery { settings.automaticApproval } returns false
             coEvery { settings.isInWorkday(request.date) } returns true
             coEvery { settings.isInWorktime(request.date, request.dateEnd) } returns true
-            coEvery { permissionsDataSource.getPermissions(userId, businessId) } returns EDIT.int
             coEvery { requestDataSource.hasOverlapsWith(request) } returns false
             coEvery { appointmentDataSource.hasOverlapsWith(request) } returns false
             coEvery { requestDataSource.create(request) } returns request
@@ -379,7 +338,6 @@ internal class CreateAppointmentRequestImplTest {
             coEvery { settings.automaticApproval } returns false
             coEvery { settings.isInWorkday(request.date) } returns true
             coEvery { settings.isInWorktime(request.date, request.dateEnd) } returns true
-            coEvery { permissionsDataSource.getPermissions(userId, businessId) } returns EDIT.int
             coEvery { requestDataSource.hasOverlapsWith(request) } returns true
             mockValidToken(request)
             transactionManager.mockTransaction()
@@ -409,7 +367,6 @@ internal class CreateAppointmentRequestImplTest {
             coEvery { settings.automaticApproval } returns false
             coEvery { settings.isInWorkday(request.date) } returns true
             coEvery { settings.isInWorktime(request.date, request.dateEnd) } returns true
-            coEvery { permissionsDataSource.getPermissions(userId, businessId) } returns EDIT.int
             coEvery { requestDataSource.hasOverlapsWith(request) } returns false
             coEvery { appointmentDataSource.hasOverlapsWith(request) } returns false
             coEvery { requestDataSource.create(request) } returns request
@@ -439,7 +396,6 @@ internal class CreateAppointmentRequestImplTest {
         with(fixture) {
             coEvery { requestDataSource.isTokenInCache("token") } returns false
             coEvery { settingsDataSource.getForUpdate(businessId) } returns settings
-            coEvery { permissionsDataSource.getPermissions(userId, businessId) } returns EDIT.int
             val jwtVerifier = mockk<JWTVerifier>()
             val decodedJwt = mockk<DecodedJWT>()
             val servicesClaim = mockk<Claim>()
@@ -480,7 +436,6 @@ internal class CreateAppointmentRequestImplTest {
         with(fixture) {
             coEvery { requestDataSource.isTokenInCache("token") } returns false
             coEvery { settingsDataSource.getForUpdate(businessId) } returns settings
-            coEvery { permissionsDataSource.getPermissions(userId, businessId) } returns EDIT.int
             val jwtVerifier = mockk<JWTVerifier>()
             val decodedJwt = mockk<DecodedJWT>()
             val servicesClaim = mockk<Claim>()
@@ -521,7 +476,6 @@ internal class CreateAppointmentRequestImplTest {
         with(fixture) {
             coEvery { requestDataSource.isTokenInCache("token") } returns false
             coEvery { settingsDataSource.getForUpdate(businessId) } returns settings
-            coEvery { permissionsDataSource.getPermissions(userId, businessId) } returns EDIT.int
             val jwtVerifier = mockk<JWTVerifier>()
             val decodedJwt = mockk<DecodedJWT>()
             val servicesClaim = mockk<Claim>()
@@ -587,7 +541,6 @@ internal class CreateAppointmentRequestImplTest {
             coEvery { settings.automaticApproval } returns false
             coEvery { settings.isInWorkday(request.date) } returns true
             coEvery { settings.isInWorktime(request.date, request.dateEnd) } returns true
-            coEvery { permissionsDataSource.getPermissions(userId, businessId) } returns EDIT.int
             coEvery { requestDataSource.hasOverlapsWith(request) } returns false
             coEvery { appointmentDataSource.hasOverlapsWith(request) } returns false
             coEvery { requestDataSource.create(request) } returns request
@@ -622,7 +575,6 @@ internal class CreateAppointmentRequestImplTest {
             coEvery { settings.automaticApproval } returns false
             coEvery { settings.isInWorkday(request.date) } returns true
             coEvery { settings.isInWorktime(request.date, request.dateEnd) } returns true
-            coEvery { permissionsDataSource.getPermissions(userId, businessId) } returns EDIT.int
             coEvery { requestDataSource.hasOverlapsWith(request) } returns false
             coEvery { appointmentDataSource.hasOverlapsWith(request) } returns false
             coEvery { requestDataSource.create(request) } returns request

@@ -15,7 +15,6 @@ import com.bookk.appointments.domain.datasource.AppointmentDataSource
 import com.bookk.appointments.domain.datasource.AppointmentRequestDataSource
 import com.bookk.appointments.domain.datasource.AppointmentSettingsDataSource
 import com.bookk.appointments.domain.datasource.AppointmentSubscriptionDataSource
-import com.bookk.appointments.domain.datasource.PermissionsDataSource
 import com.bookk.core.data.eventstreaming.StandardEventProducer
 import com.bookk.core.data.eventstreaming.send
 import com.bookk.core.domain.datasource.transaction.TransactionManager
@@ -23,8 +22,6 @@ import com.bookk.core.domain.entity.Error
 import com.bookk.library.serializer.moneyFormatter
 import com.bookk.server.appointments.client.api.event.AppointmentEvent
 import com.bookk.server.business.client.api.QuoteClaims
-import library.permissions.ObjectPermission
-import library.permissions.assertOrOwner
 import library.signing.TokenValidatorFactory
 import library.signing.ValidationType
 import org.joda.money.Money
@@ -39,7 +36,6 @@ internal class CreateAppointmentRequestImpl(
     private val requestDataSource: AppointmentRequestDataSource,
     private val appointmentDataSource: AppointmentDataSource,
     private val settingsDataSource: AppointmentSettingsDataSource,
-    private val permissionsDataSource: PermissionsDataSource,
     private val subscriptionDataSource: AppointmentSubscriptionDataSource,
     private val eventProducer: StandardEventProducer,
     private val createAppointment: CreateAppointment,
@@ -67,8 +63,6 @@ internal class CreateAppointmentRequestImpl(
 
         return transactionManager.transaction<Unit> {
             val settings = settingsDataSource.getForUpdate(request.businessId) ?: throw Error.NotFound()
-            permissionsDataSource.getPermissions(userId, request.businessId)
-                .assertOrOwner(ObjectPermission.EDIT, actorId = userId, assigneeId = request.employee.userId)
 
             if (settings.automaticApproval) {
                 return@transaction createAppointment(userId, request)

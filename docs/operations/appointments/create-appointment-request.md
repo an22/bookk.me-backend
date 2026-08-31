@@ -7,14 +7,13 @@ service's `POST /api/service/quote` (`IssueServiceQuote`, read-only — not
 diagrammed here): a signed `offerToken` plus the
 requested slot. The token is verified and its claims (services, total,
 business id) are cross-checked against the request body before anything is
-persisted, so a stale or tampered quote is rejected up front. If the
-business has `automaticApproval` on, the request is approved immediately by
-delegating into [Create appointment from a pending
-request](create-appointment-from-request.md)'s shared verify/persist logic
-instead of being stored as pending. A `READ`-level employee can create a
-request assigned to themselves; see [Managing your own resource on a
-`READ`
-grant](../../object-permissions.md#managing-your-own-resource-on-a-read-grant).
+persisted, so a stale or tampered quote is rejected up front — this
+signature check is the operation's only authorization gate; there is no
+business-permission check, since the caller is the client booking with the
+business, not a staff member. If the business has `automaticApproval` on,
+the request is approved immediately by delegating into [Create appointment
+from a pending request](create-appointment-from-request.md)'s shared
+verify/persist logic instead of being stored as pending.
 
 ```mermaid
 flowchart TD
@@ -31,9 +30,7 @@ flowchart TD
     ServicesCheck -- Yes --> Tx[[Begin transaction]]
     Tx --> Settings[AppointmentSettingsDataSource.getForUpdate businessId]
     Settings -- not found --> R404a([404 Error.NotFound])
-    Settings -- found --> Perm{permission >= EDIT, or permission >= READ and request.employee.userId == userId?}
-    Perm -- No --> R404b([404 Error.OperationNotAllowed])
-    Perm -- Yes --> AutoApproval{settings.automaticApproval?}
+    Settings -- found --> AutoApproval{settings.automaticApproval?}
     AutoApproval -- Yes --> Delegate[Delegate to CreateAppointment userId request]
     Delegate --> DelegateFlow[[See create-appointment-from-request.md verify and persist flow]]
     DelegateFlow --> R200a([200 Appointment - created directly])

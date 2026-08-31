@@ -2,20 +2,25 @@ package com.bookk.business.microservice.route.api
 
 import com.bookk.business.domain.api.employee.entity.Employee
 import com.bookk.business.domain.api.employee.entity.EmployeeRole
+import com.bookk.business.domain.api.employee.operation.GetEmployees
 import com.bookk.business.domain.api.employee.operation.PromoteEmployee
 import com.bookk.business.domain.api.employee.operation.UpdateEmployee
 import com.bookk.business.microservice.route.BusinessRouting.Api
 import com.bookk.core.service.enity.respondWith
 import com.bookk.server.auth.client.AppPrincipal
+import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
+import io.ktor.openapi.jsonSchema
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.principal
 import io.ktor.server.request.receive
+import io.ktor.server.resources.get
 import io.ktor.server.resources.post
 import io.ktor.server.resources.put
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.application
+import io.ktor.server.routing.openapi.describe
 import kotlinx.serialization.Serializable
 import org.koin.ktor.ext.inject
 
@@ -26,6 +31,27 @@ internal class PromoteEmployeeRequest(
 
 fun Route.employeeCrud() {
     authenticate {
+        /**
+         * Summary: Get employees
+         * Description: Returns all employees of the business; only the business owner can list employees
+         * Tag: employee
+         * Security: jwt
+         */
+        get<Api.Employee> {
+            val principal = requireNotNull(call.principal<AppPrincipal>())
+            val getEmployees by application.inject<GetEmployees>()
+
+            call.respondWith(getEmployees(userId = principal.userId, businessId = it.businessId))
+        }.describe {
+            responses {
+                response(HttpStatusCode.OK.value) {
+                    schema = jsonSchema<List<Employee>>()
+                    description = "List of employees"
+                    ContentType.Application.ProtoBuf()
+                }
+            }
+        }
+
         /**
          * Summary: Update employee
          * Description: Updates the employee profile, schedule and provided services

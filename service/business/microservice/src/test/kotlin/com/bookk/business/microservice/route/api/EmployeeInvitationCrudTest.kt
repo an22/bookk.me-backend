@@ -4,7 +4,10 @@ import com.bookk.business.domain.api.employee.entity.Employee
 import com.bookk.business.domain.api.employee.entity.EmployeeInvitation
 import com.bookk.business.domain.api.employee.operation.ApproveEmployeeInvitation
 import com.bookk.business.domain.api.employee.operation.CreateEmployeeInvitation
-import com.bookk.business.domain.api.employee.operation.GetPendingEmployeeInvitations
+import com.bookk.business.domain.api.employee.operation.GetEmployeeInvitations
+import com.bookk.business.domain.api.employee.operation.GetPendingEmployeeInvitationsByEmail
+import com.bookk.business.domain.api.employee.operation.RejectEmployeeInvitation
+import com.bookk.business.domain.api.employee.operation.RevokeEmployeeInvitation
 import com.bookk.business.domain.api.error.BusinessErrorCodes
 import com.bookk.business.microservice.route.BusinessRouting
 import com.bookk.core.domain.entity.Error
@@ -40,6 +43,16 @@ internal class EmployeeInvitationCrudTest {
     private fun createTestRequest(email: String = "alice@test.com") = EmployeeInvitationRequest(email = email)
 
     private fun approveResource(id: Uuid) = BusinessRouting.Api.EmployeeInvitation.Approve(
+        BusinessRouting.Api.EmployeeInvitation(businessId = businessId),
+        id
+    )
+
+    private fun rejectResource(id: Uuid) = BusinessRouting.Api.EmployeeInvitation.Reject(
+        BusinessRouting.Api.EmployeeInvitation(businessId = businessId),
+        id
+    )
+
+    private fun revokeResource(id: Uuid) = BusinessRouting.Api.EmployeeInvitation.Revoke(
         BusinessRouting.Api.EmployeeInvitation(businessId = businessId),
         id
     )
@@ -198,10 +211,13 @@ internal class EmployeeInvitationCrudTest {
     }
 
     @Test
-    fun `should return pending invitations addressed to the caller`() = routeTest {
+    fun `should return all invitations sent by the caller`() = routeTest {
         given()
-        val useCase: GetPendingEmployeeInvitations = mockk()
-        val invitations = listOf(EmployeeInvitation.stub(businessId = businessId))
+        val useCase: GetEmployeeInvitations = mockk()
+        val invitations = listOf(
+            EmployeeInvitation.stub(businessId = businessId, invitedBy = userId),
+            EmployeeInvitation.stub(businessId = businessId, invitedBy = userId)
+        )
         coEvery { useCase.invoke(userId, businessId) } returns Result.success(invitations)
 
         setupApplication(
@@ -220,9 +236,9 @@ internal class EmployeeInvitationCrudTest {
     }
 
     @Test
-    fun `should return unauthorized when listing pending invitations without authentication`() = routeTest {
+    fun `should return unauthorized when listing invitations without authentication`() = routeTest {
         given()
-        val useCase: GetPendingEmployeeInvitations = mockk()
+        val useCase: GetEmployeeInvitations = mockk()
 
         setupApplication(
             extension = { install(Authentication) { bearer { authenticate { null } } } },
@@ -233,6 +249,78 @@ internal class EmployeeInvitationCrudTest {
         whenn()
         val client = createTestClient()
         val response = client.get(BusinessRouting.Api.EmployeeInvitation(businessId = businessId))
+
+        then()
+        assertEquals(HttpStatusCode.Unauthorized, response.status)
+    }
+
+    @Test
+    fun `should return pending invitations for the requested email`() = routeTest {
+        given()
+        val useCase: GetPendingEmployeeInvitationsByEmail = mockk()
+        val invitations = listOf(EmployeeInvitation.stub(email = "alice@test.com"))
+        coEvery { useCase.invoke("alice@test.com") } returns Result.success(invitations)
+
+        setupApplication(
+            extension = jwtAuthentication(),
+            diModule = module { single { useCase } },
+            routeUnderTest = { employeeInvitationCrud() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.post(BusinessRouting.Api.PendingEmployeeInvitations()) {
+            setBody(createTestRequest(email = "alice@test.com"))
+        }
+
+        then()
+        assertEquals(HttpStatusCode.OK, response.status)
+        assertEquals(invitations.map { it.id }, response.body<List<EmployeeInvitation>>().map { it.id })
+    }
+
+    @Test
+    fun `should return unprocessable entity when requested email is invalid`() = routeTest {
+        given()
+        val useCase: GetPendingEmployeeInvitationsByEmail = mockk()
+        coEvery { useCase.invoke("not-an-email") } returns
+            Result.failure(GetPendingEmployeeInvitationsByEmail.Error.ValidationError())
+
+        setupApplication(
+            extension = jwtAuthentication(),
+            diModule = module { single { useCase } },
+            routeUnderTest = { employeeInvitationCrud() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.post(BusinessRouting.Api.PendingEmployeeInvitations()) {
+            setBody(createTestRequest(email = "not-an-email"))
+        }
+
+        then()
+        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
+        assertEquals(
+            BusinessErrorCodes.BUSINESS_EMPLOYEE_INVITATION_VALIDATION_ERROR,
+            response.body<SimpleServerError>().errorCode
+        )
+    }
+
+    @Test
+    fun `should return unauthorized when requesting pending invitations by email without authentication`() = routeTest {
+        given()
+        val useCase: GetPendingEmployeeInvitationsByEmail = mockk()
+
+        setupApplication(
+            extension = { install(Authentication) { bearer { authenticate { null } } } },
+            diModule = module { single { useCase } },
+            routeUnderTest = { employeeInvitationCrud() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.post(BusinessRouting.Api.PendingEmployeeInvitations()) {
+            setBody(createTestRequest())
+        }
 
         then()
         assertEquals(HttpStatusCode.Unauthorized, response.status)
@@ -366,6 +454,222 @@ internal class EmployeeInvitationCrudTest {
         whenn()
         val client = createTestClient()
         val response = client.post(approveResource(Uuid.random()))
+
+        then()
+        assertEquals(HttpStatusCode.Unauthorized, response.status)
+    }
+
+    @Test
+    fun `should reject employee invitation`() = routeTest {
+        given()
+        val useCase: RejectEmployeeInvitation = mockk()
+        val id = Uuid.random()
+        coEvery { useCase.invoke(userId, businessId, id) } returns Result.success(Unit)
+
+        setupApplication(
+            extension = jwtAuthentication(),
+            diModule = module { single { useCase } },
+            routeUnderTest = { employeeInvitationCrud() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.post(rejectResource(id))
+
+        then()
+        assertEquals(HttpStatusCode.NoContent, response.status)
+    }
+
+    @Test
+    fun `should return not found when rejecting unknown invitation`() = routeTest {
+        given()
+        val useCase: RejectEmployeeInvitation = mockk()
+        val id = Uuid.random()
+        coEvery { useCase.invoke(userId, businessId, id) } returns Result.failure(Error.NotFound())
+
+        setupApplication(
+            extension = jwtAuthentication(),
+            diModule = module { single { useCase } },
+            routeUnderTest = { employeeInvitationCrud() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.post(rejectResource(id))
+
+        then()
+        assertEquals(HttpStatusCode.NotFound, response.status)
+    }
+
+    @Test
+    fun `should return not found when rejecting invitation of another user`() = routeTest {
+        given()
+        val useCase: RejectEmployeeInvitation = mockk()
+        val id = Uuid.random()
+        coEvery { useCase.invoke(userId, businessId, id) } returns Result.failure(Error.OperationNotAllowed())
+
+        setupApplication(
+            extension = jwtAuthentication(),
+            diModule = module { single { useCase } },
+            routeUnderTest = { employeeInvitationCrud() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.post(rejectResource(id))
+
+        then()
+        assertEquals(HttpStatusCode.NotFound, response.status)
+    }
+
+    @Test
+    fun `should return unprocessable entity when rejecting an already processed invitation`() = routeTest {
+        given()
+        val useCase: RejectEmployeeInvitation = mockk()
+        val id = Uuid.random()
+        coEvery { useCase.invoke(userId, businessId, id) } returns
+            Result.failure(RejectEmployeeInvitation.Error.InvitationAlreadyProcessed())
+
+        setupApplication(
+            extension = jwtAuthentication(),
+            diModule = module { single { useCase } },
+            routeUnderTest = { employeeInvitationCrud() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.post(rejectResource(id))
+
+        then()
+        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
+        assertEquals(
+            BusinessErrorCodes.BUSINESS_EMPLOYEE_INVITATION_ALREADY_PROCESSED,
+            response.body<SimpleServerError>().errorCode
+        )
+    }
+
+    @Test
+    fun `should return unauthorized when rejecting invitation without authentication`() = routeTest {
+        given()
+        val useCase: RejectEmployeeInvitation = mockk()
+
+        setupApplication(
+            extension = { install(Authentication) { bearer { authenticate { null } } } },
+            diModule = module { single { useCase } },
+            routeUnderTest = { employeeInvitationCrud() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.post(rejectResource(Uuid.random()))
+
+        then()
+        assertEquals(HttpStatusCode.Unauthorized, response.status)
+    }
+
+    @Test
+    fun `should revoke employee invitation`() = routeTest {
+        given()
+        val useCase: RevokeEmployeeInvitation = mockk()
+        val id = Uuid.random()
+        coEvery { useCase.invoke(userId, businessId, id) } returns Result.success(Unit)
+
+        setupApplication(
+            extension = jwtAuthentication(),
+            diModule = module { single { useCase } },
+            routeUnderTest = { employeeInvitationCrud() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.post(revokeResource(id))
+
+        then()
+        assertEquals(HttpStatusCode.NoContent, response.status)
+    }
+
+    @Test
+    fun `should return not found when revoking unknown invitation`() = routeTest {
+        given()
+        val useCase: RevokeEmployeeInvitation = mockk()
+        val id = Uuid.random()
+        coEvery { useCase.invoke(userId, businessId, id) } returns Result.failure(Error.NotFound())
+
+        setupApplication(
+            extension = jwtAuthentication(),
+            diModule = module { single { useCase } },
+            routeUnderTest = { employeeInvitationCrud() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.post(revokeResource(id))
+
+        then()
+        assertEquals(HttpStatusCode.NotFound, response.status)
+    }
+
+    @Test
+    fun `should return not found when caller has no rights to revoke invitations`() = routeTest {
+        given()
+        val useCase: RevokeEmployeeInvitation = mockk()
+        val id = Uuid.random()
+        coEvery { useCase.invoke(userId, businessId, id) } returns Result.failure(Error.OperationNotAllowed())
+
+        setupApplication(
+            extension = jwtAuthentication(),
+            diModule = module { single { useCase } },
+            routeUnderTest = { employeeInvitationCrud() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.post(revokeResource(id))
+
+        then()
+        assertEquals(HttpStatusCode.NotFound, response.status)
+    }
+
+    @Test
+    fun `should return unprocessable entity when revoking an already processed invitation`() = routeTest {
+        given()
+        val useCase: RevokeEmployeeInvitation = mockk()
+        val id = Uuid.random()
+        coEvery { useCase.invoke(userId, businessId, id) } returns
+            Result.failure(RevokeEmployeeInvitation.Error.InvitationAlreadyProcessed())
+
+        setupApplication(
+            extension = jwtAuthentication(),
+            diModule = module { single { useCase } },
+            routeUnderTest = { employeeInvitationCrud() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.post(revokeResource(id))
+
+        then()
+        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
+        assertEquals(
+            BusinessErrorCodes.BUSINESS_EMPLOYEE_INVITATION_ALREADY_PROCESSED,
+            response.body<SimpleServerError>().errorCode
+        )
+    }
+
+    @Test
+    fun `should return unauthorized when revoking invitation without authentication`() = routeTest {
+        given()
+        val useCase: RevokeEmployeeInvitation = mockk()
+
+        setupApplication(
+            extension = { install(Authentication) { bearer { authenticate { null } } } },
+            diModule = module { single { useCase } },
+            routeUnderTest = { employeeInvitationCrud() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.post(revokeResource(Uuid.random()))
 
         then()
         assertEquals(HttpStatusCode.Unauthorized, response.status)

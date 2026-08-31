@@ -13,7 +13,9 @@ following either direction from any file traces the whole cascade.
 Read-only (`GET`) routes and routes with no persisted side effect (e.g.
 issuing a signed quote token) are out of scope — see [Database ER
 diagrams](../database/README.md) for the schema those mutations write
-to.
+to. Background operations that run on a timer instead of a route or event
+are documented separately in [Scheduled (recurring)
+jobs](scheduled-jobs.md).
 
 - [Appointments service](#appointments-service)
 - [Authorization service](#authorization-service)
@@ -21,6 +23,7 @@ to.
 - [Notifications service](#notifications-service)
 - [User service](#user-service)
 - [Cross-service event map](#cross-service-event-map)
+- [Scheduled (recurring) jobs](scheduled-jobs.md)
 
 ## Appointments service
 
@@ -69,6 +72,8 @@ Reactions to cross-service events:
 | `POST /api/business/{businessId}/employee/{id}/promote` | [Promote employee](business/promote-employee.md) |
 | `POST /api/business/{businessId}/employee_invitation` | [Invite employee](business/create-employee-invitation.md) |
 | `POST /api/business/{businessId}/employee_invitation/{id}/approve` | [Approve employee invitation](business/approve-employee-invitation.md) |
+| `POST /api/business/{businessId}/employee_invitation/{id}/reject` | [Reject employee invitation](business/reject-employee-invitation.md) |
+| `POST /api/business/{businessId}/employee_invitation/{id}/revoke` | [Revoke employee invitation](business/revoke-employee-invitation.md) |
 | `POST /api/business/{businessId}/service` | [Create service](business/create-service.md) |
 | `PUT /api/business/{businessId}/service/{id}` | [Update service](business/update-service.md) |
 | `DELETE /api/business/{businessId}/service/{id}` | [Delete service](business/delete-service.md) |

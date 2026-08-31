@@ -4,7 +4,10 @@ import com.bookk.business.domain.api.employee.entity.EmployeeInvitation
 import com.bookk.business.domain.api.employee.entity.EmployeeInvitationStatus
 import com.bookk.business.domain.api.employee.operation.ApproveEmployeeInvitation
 import com.bookk.business.domain.api.employee.operation.CreateEmployeeInvitation
-import com.bookk.business.domain.api.employee.operation.GetPendingEmployeeInvitations
+import com.bookk.business.domain.api.employee.operation.GetEmployeeInvitations
+import com.bookk.business.domain.api.employee.operation.GetPendingEmployeeInvitationsByEmail
+import com.bookk.business.domain.api.employee.operation.RejectEmployeeInvitation
+import com.bookk.business.domain.api.employee.operation.RevokeEmployeeInvitation
 import com.bookk.business.microservice.route.BusinessRouting.Api
 import com.bookk.core.service.enity.respondWith
 import com.bookk.server.auth.client.AppPrincipal
@@ -65,21 +68,44 @@ fun Route.employeeInvitationCrud() {
         }
 
         /**
-         * Summary: Get pending employee invitations
-         * Description: Returns pending invitations in this business addressed to the calling user
+         * Summary: Get employee invitations
+         * Description: Returns all invitations in this business sent by the calling user, regardless of status
          * Tag: employee
          * Security: jwt
          */
         get<Api.EmployeeInvitation> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
-            val getPendingEmployeeInvitations by application.inject<GetPendingEmployeeInvitations>()
+            val getEmployeeInvitations by application.inject<GetEmployeeInvitations>()
 
-            call.respondWith(getPendingEmployeeInvitations(userId = principal.userId, businessId = it.businessId))
+            call.respondWith(getEmployeeInvitations(userId = principal.userId, businessId = it.businessId))
         }.describe {
             responses {
                 response(HttpStatusCode.OK.value) {
                     schema = jsonSchema<List<EmployeeInvitation>>()
-                    description = "Pending invitations addressed to the calling user"
+                    description = "Invitations sent by the calling user"
+                    ContentType.Application.ProtoBuf()
+                }
+            }
+        }
+
+        /**
+         * Summary: Get pending employee invitations by email
+         * Description: Returns pending invitations across all businesses addressed to the email in the request body
+         * Tag: employee
+         * Security: jwt
+         * Body: application/x-protobuf [com.bookk.business.microservice.route.api.EmployeeInvitationRequest]
+         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Get pending invitations by email errors<br>BUSINESS_EMPLOYEE_INVITATION_VALIDATION_ERROR (200016) Invitation email is blank or invalid
+         */
+        post<Api.PendingEmployeeInvitations> {
+            val body = call.receive<EmployeeInvitationRequest>()
+            val getPendingEmployeeInvitationsByEmail by application.inject<GetPendingEmployeeInvitationsByEmail>()
+
+            call.respondWith(getPendingEmployeeInvitationsByEmail(email = body.email))
+        }.describe {
+            responses {
+                response(HttpStatusCode.OK.value) {
+                    schema = jsonSchema<List<EmployeeInvitation>>()
+                    description = "Pending invitations addressed to the given email"
                     ContentType.Application.ProtoBuf()
                 }
             }
@@ -101,6 +127,52 @@ fun Route.employeeInvitationCrud() {
 
             call.respondWith(
                 approveEmployeeInvitation(
+                    requestUserId = principal.userId,
+                    businessId = it.parent.businessId,
+                    id = it.id
+                )
+            )
+        }
+
+        /**
+         * Summary: Reject employee invitation
+         * Description: Rejects a pending invitation addressed to the calling user
+         * Tag: employee
+         * Security: jwt
+         * Response: 204 application/x-protobuf Invitation rejected
+         * Response: 404 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Invitation is not found or is addressed to another user
+         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Reject invitation errors<br>BUSINESS_EMPLOYEE_INVITATION_ALREADY_PROCESSED (200017) Invitation is already processed
+         * See: docs/operations/business/reject-employee-invitation.md
+         */
+        post<Api.EmployeeInvitation.Reject> {
+            val principal = requireNotNull(call.principal<AppPrincipal>())
+            val rejectEmployeeInvitation by application.inject<RejectEmployeeInvitation>()
+
+            call.respondWith(
+                rejectEmployeeInvitation(
+                    requestUserId = principal.userId,
+                    businessId = it.parent.businessId,
+                    id = it.id
+                )
+            )
+        }
+
+        /**
+         * Summary: Revoke employee invitation
+         * Description: Lets the business owner manually revoke a pending invitation before it is approved, rejected or expires
+         * Tag: employee
+         * Security: jwt
+         * Response: 204 application/x-protobuf Invitation revoked
+         * Response: 404 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Invitation is not found or the caller has no rights to revoke it
+         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Revoke invitation errors<br>BUSINESS_EMPLOYEE_INVITATION_ALREADY_PROCESSED (200017) Invitation is already processed
+         * See: docs/operations/business/revoke-employee-invitation.md
+         */
+        post<Api.EmployeeInvitation.Revoke> {
+            val principal = requireNotNull(call.principal<AppPrincipal>())
+            val revokeEmployeeInvitation by application.inject<RevokeEmployeeInvitation>()
+
+            call.respondWith(
+                revokeEmployeeInvitation(
                     requestUserId = principal.userId,
                     businessId = it.parent.businessId,
                     id = it.id

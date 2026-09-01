@@ -2,11 +2,12 @@ package library.schedule
 
 import kotlinx.datetime.DayOfWeek
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.protobuf.ProtoNumber
 
 @Serializable
 data class Schedule(
-    val days: Map<DayOfWeek, DayOfWeekSchedule>,
-    val dayOffs: List<DayOffRange> = emptyList()
+    @ProtoNumber(1) val days: Map<DayOfWeek, DayOfWeekSchedule>,
+    @ProtoNumber(2) val dayOffs: List<DayOffRange> = emptyList()
 ) {
 
     init {

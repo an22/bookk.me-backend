@@ -22,11 +22,12 @@ import io.ktor.server.routing.Route
 import io.ktor.server.routing.application
 import io.ktor.server.routing.openapi.describe
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.protobuf.ProtoNumber
 import org.koin.ktor.ext.inject
 
 @Serializable
 internal class PromoteEmployeeRequest(
-    val role: EmployeeRole
+    @ProtoNumber(1) val role: EmployeeRole
 )
 
 fun Route.employeeCrud() {

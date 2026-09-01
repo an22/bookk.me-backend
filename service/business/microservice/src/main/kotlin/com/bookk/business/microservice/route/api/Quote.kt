@@ -11,11 +11,12 @@ import io.ktor.server.resources.post
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.application
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.protobuf.ProtoNumber
 import org.koin.ktor.ext.inject
 import kotlin.uuid.Uuid
 
 @Serializable
-internal class QuoteRequest(val serviceIds: List<Uuid>)
+internal class QuoteRequest(@ProtoNumber(1) val serviceIds: List<Uuid>)
 
 fun Route.quote() {
     authenticate {

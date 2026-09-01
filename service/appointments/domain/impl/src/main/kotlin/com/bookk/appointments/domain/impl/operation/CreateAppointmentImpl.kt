@@ -43,10 +43,11 @@ internal class CreateAppointmentImpl(
         createAppointment(request)
     }
 
-    override suspend fun invoke(userId: Uuid, request: AppointmentRequest): Result<Appointment> =
-        transactionManager.transaction {
+    override suspend fun invoke(userId: Uuid, request: AppointmentRequest): Result<Appointment> {
+        return transactionManager.transaction {
             createAppointment(request)
         }
+    }
 
     override suspend fun invoke(userId: Uuid, appointment: Appointment, isInstant: Boolean): Result<Appointment> {
         if (isInstant && userId != appointment.userId) return Result.failure(CreateAppointment.Error.InstantAppointmentOnlySelfAllowed())

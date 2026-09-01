@@ -3,6 +3,7 @@ package com.bookk.appointments.domain.impl.operation
 import com.bookk.appointments.domain.api.entity.AppointmentRequest
 import com.bookk.appointments.domain.api.entity.AppointmentRequestDraft
 import com.bookk.appointments.domain.api.entity.AppointmentRequestStatus
+import com.bookk.appointments.domain.api.entity.AppointmentSettings
 import com.bookk.appointments.domain.api.entity.ClientSnapshot
 import com.bookk.appointments.domain.api.entity.EmployeeSnapshot
 import com.bookk.appointments.domain.api.entity.ServiceSnapshot
@@ -20,9 +21,11 @@ import com.bookk.appointments.domain.datasource.AppointmentDataSource
 import com.bookk.appointments.domain.datasource.AppointmentRequestDataSource
 import com.bookk.appointments.domain.datasource.AppointmentSettingsDataSource
 import com.bookk.appointments.domain.datasource.AppointmentSubscriptionDataSource
+import com.bookk.business.domain.api.appointment.entity.AppointmentBookingContext
 import com.bookk.core.data.eventstreaming.StandardEventProducer
 import com.bookk.core.data.eventstreaming.send
 import com.bookk.core.domain.datasource.transaction.TransactionManager
+import com.bookk.core.domain.entity.BusinessError
 import com.bookk.core.domain.entity.Error
 import com.bookk.library.serializer.moneyFormatter
 import com.bookk.server.appointments.client.api.event.AppointmentEvent
@@ -38,6 +41,12 @@ import kotlin.uuid.Uuid
 
 private val createAppointmentRequestLogger = LoggerFactory.getLogger(CreateAppointmentRequestImpl::class.java)
 
+private data class QuoteOffer(
+    val businessId: String,
+    val serviceCounts: Map<Uuid, Int>,
+    val total: String,
+    val duration: String
+)
 
 internal class CreateAppointmentRequestImpl(
     private val requestDataSource: AppointmentRequestDataSource,
@@ -53,31 +62,52 @@ internal class CreateAppointmentRequestImpl(
 
     override suspend fun invoke(userId: Uuid, draft: AppointmentRequestDraft): Result<Unit> {
         if (requestDataSource.isTokenInCache(draft.offerToken)) return Result.failure(TokenAlreadyUsed())
-        if (draft.services.any { it.count <= 0 }) return Result.failure(ServicesSignatureMiss())
-        val requestedServiceIds = draft.services.map { it.serviceId }
-        if (requestedServiceIds.distinct().size != requestedServiceIds.size) return Result.failure(ServicesSignatureMiss())
-        val decodedOffer = runCatching {
-            tokenValidatorFactory.forType(ValidationType.SERVICE_QUOTE)
-                .verifier
-                .verify(draft.offerToken)
-        }.getOrElse { return Result.failure(ServicesSignatureMiss()) }
+        if (hasInvalidServicesSignature(draft)) return Result.failure(ServicesSignatureMiss())
 
-        val claimedServiceCounts = QuoteClaims.decodeServiceCounts(decodedOffer.getClaim(QuoteClaims.CLAIM_SERVICES).asList(String::class.java))
-        val total = decodedOffer.getClaim(QuoteClaims.CLAIM_TOTAL).asString()
-        val totalDuration = decodedOffer.getClaim(QuoteClaims.CLAIM_DURATION).asString()
-        val businessId = decodedOffer.getClaim(QuoteClaims.CLAIM_BUSINESS_ID).asString()
+        val quoteOffer = decodeQuoteOffer(draft.offerToken) ?: return Result.failure(ServicesSignatureMiss())
+        if (!quoteOfferMatchesDraft(draft, quoteOffer)) return Result.failure(ServicesSignatureMiss())
 
-        val requestedServiceCounts = draft.services.associate { it.serviceId to it.count }
-        if (requestedServiceCounts != claimedServiceCounts) return Result.failure(ServicesSignatureMiss())
-        if (draft.businessId.toString() != businessId) return Result.failure(ServicesSignatureMiss())
-
-        val context = businessClient.getAppointmentBookingContext(draft.businessId, draft.employeeId, userId, requestedServiceIds)
+        val context = businessClient
+            .getAppointmentBookingContext(
+                businessId = draft.businessId,
+                employeeId = draft.employeeId,
+                userId = userId,
+                serviceIds = draft.services.map { it.serviceId }
+            )
             .getOrElse { return Result.failure(it) }
 
+        val request = buildAppointmentRequest(userId, draft, context)
+        quoteMismatchError(request, quoteOffer)?.let { return Result.failure(it) }
+
+        return createOrRequestAppointment(userId, draft, request)
+    }
+
+    private fun hasInvalidServicesSignature(draft: AppointmentRequestDraft): Boolean {
+        if (draft.services.any { it.count <= 0 }) return true
+        val requestedServiceIds = draft.services.map { it.serviceId }
+        return requestedServiceIds.distinct().size != requestedServiceIds.size
+    }
+
+    private fun decodeQuoteOffer(offerToken: String): QuoteOffer? = runCatching {
+        val decodedOffer = tokenValidatorFactory.forType(ValidationType.SERVICE_QUOTE).verifier.verify(offerToken)
+        QuoteOffer(
+            businessId = decodedOffer.getClaim(QuoteClaims.CLAIM_BUSINESS_ID).asString(),
+            serviceCounts = QuoteClaims.decodeServiceCounts(decodedOffer.getClaim(QuoteClaims.CLAIM_SERVICES).asList(String::class.java)),
+            total = decodedOffer.getClaim(QuoteClaims.CLAIM_TOTAL).asString(),
+            duration = decodedOffer.getClaim(QuoteClaims.CLAIM_DURATION).asString()
+        )
+    }.getOrNull()
+
+    private fun quoteOfferMatchesDraft(draft: AppointmentRequestDraft, quoteOffer: QuoteOffer): Boolean {
+        val requestedServiceCounts = draft.services.associate { it.serviceId to it.count }
+        return requestedServiceCounts == quoteOffer.serviceCounts && draft.businessId.toString() == quoteOffer.businessId
+    }
+
+    private fun buildAppointmentRequest(userId: Uuid, draft: AppointmentRequestDraft, context: AppointmentBookingContext): AppointmentRequest {
         val servicesById = context.services.associateBy { it.id }
         val expandedServices = draft.services.flatMap { requested -> List(requested.count) { servicesById.getValue(requested.serviceId) } }
 
-        val request = AppointmentRequest(
+        return AppointmentRequest(
             id = Uuid.random(),
             userId = userId,
             businessId = draft.businessId,
@@ -100,11 +130,16 @@ internal class CreateAppointmentRequestImpl(
             note = draft.note,
             declineReason = ""
         )
+    }
 
-        if (request.totalAmount != Money.parse(total)) return Result.failure(PriceChanged())
-        if (request.dateEnd - request.date != Duration.parse(totalDuration)) return Result.failure(DurationChanged())
+    private fun quoteMismatchError(request: AppointmentRequest, quoteOffer: QuoteOffer): BusinessError? = when {
+        request.totalAmount != Money.parse(quoteOffer.total) -> PriceChanged()
+        request.dateEnd - request.date != Duration.parse(quoteOffer.duration) -> DurationChanged()
+        else -> null
+    }
 
-        return transactionManager.transaction<Unit> {
+    private suspend fun createOrRequestAppointment(userId: Uuid, draft: AppointmentRequestDraft, request: AppointmentRequest): Result<Unit> =
+        transactionManager.transaction<Unit> {
             val settings = settingsDataSource.getForUpdate(request.businessId) ?: throw Error.NotFound()
 
             if (settings.automaticApproval) {
@@ -112,11 +147,8 @@ internal class CreateAppointmentRequestImpl(
                     .map { Unit }
                     .getOrThrow()
             }
-            if (request.date < Clock.System.now()) throw DateInThePastNotAllowed()
-            if (!settings.isInWorkday(request.date)) throw RequestForThisDateNotAllowed()
-            if (!settings.isInWorktime(request.date, request.dateEnd)) throw RequestForThisTimeNotAllowed()
-            if (requestDataSource.hasOverlapsWith(request)) throw RequestForThisTimeExists()
-            if (appointmentDataSource.hasOverlapsWith(request)) throw RequestForThisTimeExists()
+
+            assertRequestIsSchedulable(request, settings)
 
             requestDataSource.create(request).also {
                 sendRequestCreatedNotification(request)
@@ -124,6 +156,13 @@ internal class CreateAppointmentRequestImpl(
         }.onSuccess {
             requestDataSource.cacheOfferToken(draft.offerToken)
         }
+
+    private suspend fun assertRequestIsSchedulable(request: AppointmentRequest, settings: AppointmentSettings) {
+        if (request.date < Clock.System.now()) throw DateInThePastNotAllowed()
+        if (!settings.isInWorkday(request.date)) throw RequestForThisDateNotAllowed()
+        if (!settings.isInWorktime(request.date, request.dateEnd)) throw RequestForThisTimeNotAllowed()
+        if (requestDataSource.hasOverlapsWith(request)) throw RequestForThisTimeExists()
+        if (appointmentDataSource.hasOverlapsWith(request)) throw RequestForThisTimeExists()
     }
 
     private suspend fun sendRequestCreatedNotification(request: AppointmentRequest) {

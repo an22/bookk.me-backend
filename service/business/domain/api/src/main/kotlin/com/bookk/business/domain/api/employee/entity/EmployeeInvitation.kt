@@ -1,17 +1,18 @@
 package com.bookk.business.domain.api.employee.entity
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.protobuf.ProtoNumber
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
 @Serializable
 data class EmployeeInvitation(
-    val id: Uuid,
-    val businessId: Uuid,
-    val invitedBy: Uuid,
-    val email: String,
-    val status: EmployeeInvitationStatus,
-    val createdAt: Instant
+    @ProtoNumber(1) val id: Uuid,
+    @ProtoNumber(2) val businessId: Uuid,
+    @ProtoNumber(3) val invitedBy: Uuid,
+    @ProtoNumber(4) val email: String,
+    @ProtoNumber(5) val status: EmployeeInvitationStatus,
+    @ProtoNumber(6) val createdAt: Instant
 ) {
     companion object {
         fun stub(

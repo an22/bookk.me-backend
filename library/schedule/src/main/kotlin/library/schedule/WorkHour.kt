@@ -2,11 +2,12 @@ package library.schedule
 
 import kotlinx.datetime.LocalTime
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.protobuf.ProtoNumber
 
 @Serializable
 data class WorkHour(
-    val from: LocalTime,
-    val to: LocalTime
+    @ProtoNumber(1) val from: LocalTime,
+    @ProtoNumber(2) val to: LocalTime
 ) {
     companion object {
         val NINE_TO_FIVE = WorkHour(

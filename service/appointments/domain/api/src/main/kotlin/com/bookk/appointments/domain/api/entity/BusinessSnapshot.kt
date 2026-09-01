@@ -2,17 +2,18 @@ package com.bookk.appointments.domain.api.entity
 
 import kotlinx.datetime.TimeZone
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.protobuf.ProtoNumber
 import library.schedule.Schedule
 import kotlin.uuid.Uuid
 
 @Serializable
 data class BusinessSnapshot(
-    val id: Uuid,
-    val name: String,
-    val address: String,
-    val timeZone: TimeZone,
-    val isEnabled: Boolean,
-    val schedule: Schedule
+    @ProtoNumber(1) val id: Uuid,
+    @ProtoNumber(2) val name: String,
+    @ProtoNumber(3) val address: String,
+    @ProtoNumber(4) val timeZone: TimeZone,
+    @ProtoNumber(5) val isEnabled: Boolean,
+    @ProtoNumber(6) val schedule: Schedule
 ) {
     companion object {
         fun stub(

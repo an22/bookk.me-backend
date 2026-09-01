@@ -23,13 +23,14 @@ import io.ktor.server.routing.Route
 import io.ktor.server.routing.application
 import io.ktor.server.routing.openapi.describe
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.protobuf.ProtoNumber
 import org.koin.ktor.ext.inject
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
 @Serializable
 internal class EmployeeInvitationRequest(
-    val email: String
+    @ProtoNumber(1) val email: String
 )
 
 internal fun EmployeeInvitationRequest.toDomain(businessId: Uuid, invitedBy: Uuid) = EmployeeInvitation(

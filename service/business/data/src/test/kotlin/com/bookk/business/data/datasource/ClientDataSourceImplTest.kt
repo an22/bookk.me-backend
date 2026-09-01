@@ -76,6 +76,44 @@ internal class ClientDataSourceImplTest {
     }
 
     @Test
+    fun `should create detached client with no email`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val client = Client.Detached(
+            id = Uuid.random(), name = "Walk", lastName = "In",
+            phone = "+1231110000", email = null
+        )
+
+        whenn()
+        val created = suspendTransaction { fixture.sut.createDetachedClient(fixture.businessId, client) }
+        val found = suspendTransaction { fixture.sut.getClientById(fixture.businessId, created.id) }
+
+        then()
+        assertNotNull(found)
+        assertNull(found!!.email)
+    }
+
+    @Test
+    fun `should create detached client with no phone`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val client = Client.Detached(
+            id = Uuid.random(), name = "Walk", lastName = "In",
+            phone = null, email = "walkin@test.com"
+        )
+
+        whenn()
+        val created = suspendTransaction { fixture.sut.createDetachedClient(fixture.businessId, client) }
+        val found = suspendTransaction { fixture.sut.getClientById(fixture.businessId, created.id) }
+
+        then()
+        assertNotNull(found)
+        assertNull(found!!.phone)
+    }
+
+    @Test
     fun `should return empty list when no clients exist`() = runUnitTest {
         given()
         val fixture = SutFixture()
@@ -116,6 +154,59 @@ internal class ClientDataSourceImplTest {
 
         whenn()
         val found = suspendTransaction { fixture.sut.getClient(fixture.businessId, "+0000000000") }
+
+        then()
+        assertNull(found)
+    }
+
+    @Test
+    fun `should retrieve client by id`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val client = Client.Detached(
+            id = Uuid.random(), name = "Erin", lastName = "Black",
+            phone = "+1231231234", email = "erin@test.com"
+        )
+        val created = suspendTransaction { fixture.sut.createDetachedClient(fixture.businessId, client) }
+
+        whenn()
+        val found = suspendTransaction { fixture.sut.getClientById(fixture.businessId, created.id) }
+
+        then()
+        assertNotNull(found)
+        assertEquals("Erin", found!!.name)
+    }
+
+    @Test
+    fun `should return null when client not found by id`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+
+        whenn()
+        val found = suspendTransaction { fixture.sut.getClientById(fixture.businessId, Uuid.random()) }
+
+        then()
+        assertNull(found)
+    }
+
+    @Test
+    fun `should return null when client id belongs to a different business`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val otherBusinessId = suspendTransaction {
+            fixture.businessSut.createBusiness(Uuid.random(), "Other Business", "USD", TimeZone.UTC)
+        }.id
+        val client = Client.Detached(
+            id = Uuid.random(), name = "Frank", lastName = "Green",
+            phone = "+3213214321", email = "frank@test.com"
+        )
+        val created = suspendTransaction { fixture.sut.createDetachedClient(fixture.businessId, client) }
+
+        whenn()
+        val found = suspendTransaction { fixture.sut.getClientById(otherBusinessId, created.id) }
 
         then()
         assertNull(found)
@@ -348,5 +439,108 @@ internal class ClientDataSourceImplTest {
 
         then()
         assertEquals(0, affected)
+    }
+
+    @Test
+    fun `should return client by user id`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val userId = Uuid.random()
+        val client = Client.Integrated(
+            id = Uuid.random(), name = "Grace", lastName = "Hopper",
+            phone = "+1230001234", email = "grace@test.com", userId = userId
+        )
+        suspendTransaction { fixture.sut.createIntegratedClient(fixture.businessId, client) }
+
+        whenn()
+        val found = suspendTransaction { fixture.sut.getClientByUserId(fixture.businessId, userId) }
+
+        then()
+        assertNotNull(found)
+        assertEquals("Grace", found!!.name)
+    }
+
+    @Test
+    fun `should return null when no client exists for user id`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+
+        whenn()
+        val found = suspendTransaction { fixture.sut.getClientByUserId(fixture.businessId, Uuid.random()) }
+
+        then()
+        assertNull(found)
+    }
+
+    @Test
+    fun `should return null when the client for user id belongs to a different business`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val userId = Uuid.random()
+        val otherBusinessId = suspendTransaction {
+            fixture.businessSut.createBusiness(Uuid.random(), "Other Business", "USD", TimeZone.UTC)
+        }.id
+        val client = Client.Integrated(
+            id = Uuid.random(), name = "Jack", lastName = "Ryan",
+            phone = "+1119998888", email = "jack@test.com", userId = userId
+        )
+        suspendTransaction { fixture.sut.createIntegratedClient(otherBusinessId, client) }
+
+        whenn()
+        val found = suspendTransaction { fixture.sut.getClientByUserId(fixture.businessId, userId) }
+
+        then()
+        assertNull(found)
+    }
+
+    @Test
+    fun `should create a new integrated client when none exists for user id`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val userId = Uuid.random()
+        val client = Client.Integrated(
+            id = Uuid.random(), name = "Henry", lastName = "Ford",
+            phone = "+1112223333", email = "henry@test.com", userId = userId
+        )
+
+        whenn()
+        val result = suspendTransaction { fixture.sut.getOrCreateIntegratedClient(fixture.businessId, client) }
+
+        then()
+        assertTrue(result is Client.Integrated)
+        assertEquals(userId, (result as Client.Integrated).userId)
+        assertEquals("Henry", result.name)
+        val clients = suspendTransaction { fixture.sut.getClients(fixture.businessId) }
+        assertEquals(1, clients.size)
+    }
+
+    @Test
+    fun `should return the existing integrated client when one already exists for user id`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val userId = Uuid.random()
+        val existing = Client.Integrated(
+            id = Uuid.random(), name = "Iris", lastName = "West",
+            phone = "+4445556677", email = "iris@test.com", userId = userId
+        )
+        val created = suspendTransaction { fixture.sut.createIntegratedClient(fixture.businessId, existing) }
+        val attempt = Client.Integrated(
+            id = Uuid.random(), name = "Different", lastName = "Name",
+            phone = "+0000000000", email = "different@test.com", userId = userId
+        )
+
+        whenn()
+        val result = suspendTransaction { fixture.sut.getOrCreateIntegratedClient(fixture.businessId, attempt) }
+
+        then()
+        assertEquals(created.id, result.id)
+        assertEquals("Iris", result.name)
+        val clients = suspendTransaction { fixture.sut.getClients(fixture.businessId) }
+        assertEquals(1, clients.size)
     }
 }

@@ -38,38 +38,38 @@ internal class CreateAppointmentImpl(
         appointmentRequestId: Uuid
     ): Result<Appointment> = transactionManager.transaction {
         val request = requestDataSource.get(appointmentRequestId) ?: throw Error.NotFound()
-        createAppointment(userId, request)
+        permissionsDataSource.getPermissions(userId, request.businessId)
+            .assertOrOwner(ObjectPermission.EDIT, actorId = userId, assigneeId = request.employee.userId)
+        createAppointment(request)
     }
 
     override suspend fun invoke(userId: Uuid, request: AppointmentRequest): Result<Appointment> =
         transactionManager.transaction {
-            createAppointment(userId, request)
+            createAppointment(request)
         }
 
     override suspend fun invoke(userId: Uuid, appointment: Appointment, isInstant: Boolean): Result<Appointment> {
         if (isInstant && userId != appointment.userId) return Result.failure(CreateAppointment.Error.InstantAppointmentOnlySelfAllowed())
         return transactionManager.transaction {
-            createAppointment(userId, appointment)
+            createAppointment(appointment)
         }
     }
 
-    private suspend fun createAppointment(userId: Uuid, appointment: Appointment): Appointment {
-        verifyAppointment(userId, appointment)
+    private suspend fun createAppointment(appointment: Appointment): Appointment {
+        verifyAppointment(appointment)
         return appointmentDataSource.create(appointment)
     }
 
-    private suspend fun createAppointment(userId: Uuid, request: AppointmentRequest): Appointment {
-        verifyAppointment(userId, request)
+    private suspend fun createAppointment(request: AppointmentRequest): Appointment {
+        verifyAppointment(request)
         return appointmentDataSource.create(request).also {
             requestDataSource.approve(request)
             sendRequestApprovedNotification(request)
         }
     }
 
-    private suspend fun verifyAppointment(userId: Uuid, appointment: AppointmentRepresentation) {
+    private suspend fun verifyAppointment(appointment: AppointmentRepresentation) {
         val settings = settingsDataSource.getForUpdate(appointment.businessId) ?: throw Error.NotFound()
-        permissionsDataSource.getPermissions(userId, appointment.businessId)
-            .assertOrOwner(ObjectPermission.EDIT, actorId = userId, assigneeId = appointment.employee.userId)
         if (appointment.date < Clock.System.now()) throw CreateAppointment.Error.DateInThePastNotAllowed()
         if (!settings.isInWorkday(appointment.date)) throw CreateAppointment.Error.RequestForThisDateNotAllowed()
         if (!settings.isInWorktime(appointment.date, appointment.dateEnd)) throw CreateAppointment.Error.RequestForThisTimeNotAllowed()

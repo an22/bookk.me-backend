@@ -4,7 +4,7 @@ import kotlinx.serialization.Serializable
 import kotlin.uuid.Uuid
 
 @Serializable
-data class Quote(
+data class ServiceQuote(
     val id: Uuid,
     val services: List<Service>,
     val token: String
@@ -14,6 +14,6 @@ data class Quote(
             id: Uuid = Uuid.random(),
             services: List<Service> = emptyList(),
             token: String = "stub-quote-token"
-        ) = Quote(id = id, services = services, token = token)
+        ) = ServiceQuote(id = id, services = services, token = token)
     }
 }

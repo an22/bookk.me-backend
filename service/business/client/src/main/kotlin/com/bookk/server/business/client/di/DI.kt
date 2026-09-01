@@ -1,11 +1,13 @@
 package com.bookk.server.business.client.di
 
+import com.bookk.business.domain.api.appointment.operation.GetAppointmentBookingContext
 import com.bookk.business.domain.api.business.operation.GetBusinessById
 import com.bookk.business.domain.api.business.operation.GetBusinessPermission
 import com.bookk.core.AppLevelConstants
 import com.bookk.core.AppLevelConstants.SupportedSerializers
 import com.bookk.server.business.client.api.BusinessClient
 import com.bookk.server.business.client.impl.BusinessClientImpl
+import com.bookk.server.business.client.impl.operation.GetAppointmentBookingContextClientImpl
 import com.bookk.server.business.client.impl.operation.GetBusinessByIdClientImpl
 import com.bookk.server.business.client.impl.operation.GetBusinessPermissionClientImpl
 import io.ktor.client.HttpClient
@@ -80,5 +82,6 @@ fun businessClientModule(clientTag: String) = module {
     }
     single<GetBusinessById> { GetBusinessByIdClientImpl(get(named(BUSINESS_HTTP_CLIENT))) }
     single<GetBusinessPermission> { GetBusinessPermissionClientImpl(get(named(BUSINESS_HTTP_CLIENT))) }
-    single<BusinessClient> { BusinessClientImpl(get(), get()) }
+    single<GetAppointmentBookingContext> { GetAppointmentBookingContextClientImpl(get(named(BUSINESS_HTTP_CLIENT))) }
+    single<BusinessClient> { BusinessClientImpl(get(), get(), get()) }
 }

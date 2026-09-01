@@ -17,11 +17,11 @@ flowchart TD
     Auth -- Yes --> Tx[[Begin transaction]]
     Tx --> GetRequest[AppointmentRequestDataSource.get appointmentRequestId]
     GetRequest -- not found --> R404a([404 Error.NotFound])
-    GetRequest -- found --> Settings[AppointmentSettingsDataSource.getForUpdate businessId]
-    Settings -- not found --> R404b([404 Error.NotFound])
-    Settings -- found --> Perm{permission >= EDIT, or permission >= READ and request.employee.userId == userId?}
-    Perm -- No --> R404c([404 Error.OperationNotAllowed])
-    Perm -- Yes --> PastCheck{request.date < now?}
+    GetRequest -- found --> Perm{permission >= EDIT, or permission >= READ and request.employee.userId == userId?}
+    Perm -- No --> R404b([404 Error.OperationNotAllowed])
+    Perm -- Yes --> Settings[AppointmentSettingsDataSource.getForUpdate businessId]
+    Settings -- not found --> R404c([404 Error.NotFound])
+    Settings -- found --> PastCheck{request.date < now?}
     PastCheck -- Yes --> R422a([422 DATE_IN_PAST 300012])
     PastCheck -- No --> WorkdayCheck{date within business workday?}
     WorkdayCheck -- No --> R422b([422 DATE_NOT_ALLOWED 300003])

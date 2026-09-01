@@ -1,13 +1,13 @@
 package com.bookk.business.domain.api.service.operation
 
 import com.bookk.business.domain.api.error.BusinessErrorCodes
-import com.bookk.business.domain.api.service.entity.Quote
+import com.bookk.business.domain.api.service.entity.ServiceQuote
 import com.bookk.core.domain.entity.BusinessError
 import io.ktor.http.HttpStatusCode
 import kotlin.uuid.Uuid
 
-interface IssueQuote {
-    suspend operator fun invoke(businessId: Uuid, serviceIds: List<Uuid>): Result<Quote>
+interface IssueServiceQuote {
+    suspend operator fun invoke(businessId: Uuid, serviceIds: List<Uuid>): Result<ServiceQuote>
 
     sealed interface Error {
         class ServiceNotFound : BusinessError(

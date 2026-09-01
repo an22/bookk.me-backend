@@ -21,8 +21,8 @@ import org.jetbrains.exposed.v1.core.Table
 fun main() {
     runBlocking {
         createMigrationScriptFor(
-            referenceVersion = 0,
-            targetVersion = 1,
+            referenceVersion = 3,
+            targetVersion = 4,
             schemaName = "business",
             tables = tables() + signingKeyTables()
         )

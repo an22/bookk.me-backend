@@ -200,6 +200,36 @@ internal class ClientCrudTest {
     }
 
     @Test
+    fun `should return unprocessable entity when client has no phone or email`() = routeTest {
+        given()
+        val useCase: CreateClient = mockk()
+        val clientRemote = createTestClientRemote()
+        coEvery { useCase.invoke(userId, businessId, clientRemote.toDomain()) } returns Result.failure(CreateClient.Error.MissingContactInfo())
+
+        setupApplication(
+            extension = {
+                install(Authentication) {
+                    provider {
+                        authenticate { it.principal(AppPrincipal(Uuid.random(), userId, Uuid.random())) }
+                    }
+                }
+            },
+            diModule = module { single { useCase } },
+            routeUnderTest = { clientCrud() }
+        )
+
+        whenn()
+        val httpClient = createTestClient()
+        val response = httpClient.post(BusinessRouting.Api.Clients(businessId = businessId)) {
+            setBody(clientRemote)
+        }
+
+        then()
+        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
+        assertEquals(BusinessErrorCodes.BUSINESS_CLIENT_MISSING_CONTACT_INFO, response.body<SimpleServerError>().errorCode)
+    }
+
+    @Test
     fun `should return not found when deleting client that does not exist`() = routeTest {
         given()
         val useCase: DeleteClient = mockk()

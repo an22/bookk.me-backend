@@ -4,10 +4,11 @@
 
 Books a slot directly without going through the request/approval flow.
 Restricted to self-booking: the caller must be the appointment's own
-client. No request-approval event fires here since there was never a
-pending request. A `READ`-level employee can book an instant appointment
-assigned to themselves; see [Managing your own resource on a `READ`
-grant](../../object-permissions.md#managing-your-own-resource-on-a-read-grant).
+client, checked via `userId == appointment.userId` before anything else runs.
+No request-approval event fires here since there was never a pending
+request. That self-check is this operation's only authorization gate —
+there is no business-permission check, since the caller is the client
+booking with the business, not a staff member.
 
 ```mermaid
 flowchart TD
@@ -18,9 +19,7 @@ flowchart TD
     SelfCheck -- Yes --> Tx[[Begin transaction]]
     Tx --> Settings[AppointmentSettingsDataSource.getForUpdate businessId]
     Settings -- not found --> R404a([404 Error.NotFound])
-    Settings -- found --> Perm{permission >= EDIT, or permission >= READ and appointment.employee.userId == userId?}
-    Perm -- No --> R404b([404 Error.OperationNotAllowed])
-    Perm -- Yes --> PastCheck{appointment.date < now?}
+    Settings -- found --> PastCheck{appointment.date < now?}
     PastCheck -- Yes --> R422b([422 DATE_IN_PAST 300012])
     PastCheck -- No --> WorkdayCheck{date within business workday?}
     WorkdayCheck -- No --> R422c([422 DATE_NOT_ALLOWED 300003])

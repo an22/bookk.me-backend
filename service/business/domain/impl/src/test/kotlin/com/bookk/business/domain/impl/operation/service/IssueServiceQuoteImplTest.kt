@@ -1,7 +1,7 @@
 package com.bookk.business.domain.impl.operation.service
 
 import com.bookk.business.domain.api.service.entity.Service
-import com.bookk.business.domain.api.service.operation.IssueQuote
+import com.bookk.business.domain.api.service.operation.IssueServiceQuote
 import com.bookk.business.domain.datasource.ServiceDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.datasource.transaction.mockTransaction
@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import kotlin.uuid.Uuid
 
-internal class IssueQuoteImplTest {
+internal class IssueServiceQuoteImplTest {
 
     private class SutFixture {
         val serviceDataSource = mockk<ServiceDataSource>()
@@ -64,7 +64,31 @@ internal class IssueQuoteImplTest {
 
         then()
         assertTrue(result.isFailure)
-        assertTrue(result.exceptionOrNull() is IssueQuote.Error.EmptyServiceList)
+        assertTrue(result.exceptionOrNull() is IssueServiceQuote.Error.EmptyServiceList)
+    }
+
+    @Test
+    fun `should expand a repeated service id into one quote line per requested count`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val businessId = Uuid.random()
+        val serviceX = Service.stub(businessId = businessId)
+        val serviceY = Service.stub(businessId = businessId)
+        val serviceIds = listOf(serviceX.id, serviceX.id, serviceX.id, serviceX.id, serviceX.id, serviceY.id)
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { serviceDataSource.getServicesByIds(listOf(serviceX.id, serviceY.id)) } returns listOf(serviceX, serviceY)
+            coEvery { tokenIssuer.issue(any(), any()) } returns "signed-token"
+        }
+
+        whenn()
+        val result = fixture.sut(businessId, serviceIds)
+
+        then()
+        assertTrue(result.isSuccess)
+        val quote = result.getOrThrow()
+        assertTrue(quote.services.count { it == serviceX } == 5)
+        assertTrue(quote.services.count { it == serviceY } == 1)
     }
 
     @Test
@@ -85,6 +109,6 @@ internal class IssueQuoteImplTest {
 
         then()
         assertTrue(result.isFailure)
-        assertTrue(result.exceptionOrNull() is IssueQuote.Error.ServiceNotFound)
+        assertTrue(result.exceptionOrNull() is IssueServiceQuote.Error.ServiceNotFound)
     }
 }

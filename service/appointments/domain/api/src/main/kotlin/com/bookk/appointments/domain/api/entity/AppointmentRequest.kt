@@ -26,9 +26,7 @@ data class AppointmentRequest(
     }
 
     @Transient
-    val totalAmount = services.fold(services[0].price) { acc, service ->
-        acc + service.price
-    }
+    val totalAmount = services.map { it.price }.reduce { acc, price -> acc + price }
 
     companion object {
         fun stub(

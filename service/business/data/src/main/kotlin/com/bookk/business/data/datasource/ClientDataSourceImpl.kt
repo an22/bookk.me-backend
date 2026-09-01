@@ -5,6 +5,8 @@ import com.bookk.business.data.orm.table.ClientTable
 import com.bookk.business.domain.api.client.entity.Client
 import com.bookk.business.domain.datasource.ClientDataSource
 import com.bookk.core.data.DataSource
+import com.bookk.core.data.map.toDomain
+import com.bookk.core.domain.entity.Error
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.isNull
@@ -22,8 +24,8 @@ internal class ClientDataSourceImpl : DataSource(), ClientDataSource {
             it[this.businessId] = businessId
             it[name] = client.name.trim()
             it[lastName] = client.lastName.trim()
-            it[phone] = client.phone.trim()
-            it[email] = client.email.trim()
+            it[phone] = client.phone?.trim()
+            it[email] = client.email?.trim()
             it[userId] = null
         }
         client.copy(
@@ -32,17 +34,7 @@ internal class ClientDataSourceImpl : DataSource(), ClientDataSource {
     }
 
     override suspend fun createIntegratedClient(businessId: Uuid, client: Client.Integrated): Client = dbQuery {
-        val id = ClientTable.insertAndGetId {
-            it[this.businessId] = businessId
-            it[name] = client.name.trim()
-            it[lastName] = client.lastName.trim()
-            it[phone] = client.phone.trim()
-            it[email] = client.email.trim()
-            it[userId] = client.userId
-        }
-        client.copy(
-            id = id.value
-        )
+        insertIntegratedClient(businessId, client)
     }
 
     override suspend fun getClients(businessId: Uuid): List<Client> = dbQuery {
@@ -57,6 +49,44 @@ internal class ClientDataSourceImpl : DataSource(), ClientDataSource {
         }
             .map(ClientEntity::toDomain)
             .firstOrNull()
+    }
+
+    override suspend fun getClientById(businessId: Uuid, id: Uuid): Client? = dbQuery {
+        ClientEntity.findById(id)
+            ?.takeIf { it.businessId.value == businessId }
+            ?.toDomain()
+    }
+
+    override suspend fun getClientByUserId(businessId: Uuid, userId: Uuid): Client? = dbQuery {
+        findIntegratedClient(businessId, userId)
+    }
+
+    override suspend fun getOrCreateIntegratedClient(businessId: Uuid, client: Client.Integrated): Client = dbQuery {
+        findIntegratedClient(businessId, client.userId)
+            ?: runCatching { insertIntegratedClient(businessId, client) }
+                .getOrElse { failure ->
+                    if (failure.toDomain() !is Error.UniqueConstraintFailed) throw failure
+                    findIntegratedClient(businessId, client.userId) ?: throw failure
+                }
+    }
+
+    private fun findIntegratedClient(businessId: Uuid, userId: Uuid): Client? =
+        ClientEntity.find {
+            (ClientTable.businessId eq businessId) and (ClientTable.userId eq userId)
+        }
+            .map(ClientEntity::toDomain)
+            .firstOrNull()
+
+    private fun insertIntegratedClient(businessId: Uuid, client: Client.Integrated): Client {
+        val id = ClientTable.insertAndGetId {
+            it[this.businessId] = businessId
+            it[name] = client.name.trim()
+            it[lastName] = client.lastName.trim()
+            it[phone] = client.phone?.trim()
+            it[email] = client.email?.trim()
+            it[userId] = client.userId
+        }
+        return client.copy(id = id.value)
     }
 
     override suspend fun deleteClient(businessId: Uuid, id: Uuid) = dbQuery {

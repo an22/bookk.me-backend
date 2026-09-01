@@ -8,8 +8,8 @@ class ClientRemote(
     val id: Uuid,
     val name: String,
     val lastName: String,
-    val phone: String,
-    val email: String,
+    val phone: String?,
+    val email: String?,
     val userId: Uuid?
 )
 
@@ -17,23 +17,23 @@ sealed interface Client {
     val id: Uuid
     val name: String
     val lastName: String
-    val phone: String
-    val email: String
+    val phone: String?
+    val email: String?
 
     data class Detached(
         override val id: Uuid,
         override val name: String,
         override val lastName: String,
-        override val phone: String,
-        override val email: String
+        override val phone: String?,
+        override val email: String?
     ) : Client
 
     data class Integrated(
         override val id: Uuid,
         override val name: String,
         override val lastName: String,
-        override val phone: String,
-        override val email: String,
+        override val phone: String?,
+        override val email: String?,
         val userId: Uuid
     ) : Client
 }

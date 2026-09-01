@@ -17,7 +17,7 @@ internal class GetAppointmentBookingContextClientImpl(
     override suspend fun invoke(
         businessId: Uuid,
         employeeId: Uuid,
-        clientId: Uuid,
+        userId: Uuid,
         serviceIds: List<Uuid>
     ): Result<AppointmentBookingContext> = runCatching {
         httpClient.post(
@@ -25,7 +25,7 @@ internal class GetAppointmentBookingContextClientImpl(
                 parent = BusinessRouting.Api.Internal.Business.Id(id = businessId)
             )
         ) {
-            setBody(AppointmentBookingContextRequest(employeeId = employeeId, clientId = clientId, serviceIds = serviceIds))
+            setBody(AppointmentBookingContextRequest(employeeId = employeeId, userId = userId, serviceIds = serviceIds))
         }.bodyOrThrow()
     }
 }

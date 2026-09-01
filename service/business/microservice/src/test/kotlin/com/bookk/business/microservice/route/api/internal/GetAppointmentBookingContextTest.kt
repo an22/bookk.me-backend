@@ -36,7 +36,7 @@ internal class GetAppointmentBookingContextTest {
         val body = AppointmentBookingContextRequest.stub()
         val context = AppointmentBookingContext.stub()
         coEvery {
-            useCase.invoke(businessId, body.employeeId, body.clientId, body.serviceIds)
+            useCase.invoke(businessId, body.employeeId, body.userId, body.serviceIds)
         } returns Result.success(context)
 
         setupApplication(
@@ -66,30 +66,8 @@ internal class GetAppointmentBookingContextTest {
         val useCase: GetAppointmentBookingContext = mockk()
         val body = AppointmentBookingContextRequest.stub()
         coEvery {
-            useCase.invoke(businessId, body.employeeId, body.clientId, body.serviceIds)
+            useCase.invoke(businessId, body.employeeId, body.userId, body.serviceIds)
         } returns Result.failure(GetAppointmentBookingContext.Error.EmployeeNotFound())
-
-        setupApplication(
-            diModule = module { single { useCase } },
-            routeUnderTest = { getAppointmentBookingContext() }
-        )
-
-        whenn()
-        val client = createTestClient()
-        val response = client.post(resource()) { setBody(body) }
-
-        then()
-        assertEquals(HttpStatusCode.NotFound, response.status)
-    }
-
-    @Test
-    fun `should return not found when client is missing`() = routeTest {
-        given()
-        val useCase: GetAppointmentBookingContext = mockk()
-        val body = AppointmentBookingContextRequest.stub()
-        coEvery {
-            useCase.invoke(businessId, body.employeeId, body.clientId, body.serviceIds)
-        } returns Result.failure(GetAppointmentBookingContext.Error.ClientNotFound())
 
         setupApplication(
             diModule = module { single { useCase } },
@@ -110,7 +88,7 @@ internal class GetAppointmentBookingContextTest {
         val useCase: GetAppointmentBookingContext = mockk()
         val body = AppointmentBookingContextRequest.stub()
         coEvery {
-            useCase.invoke(businessId, body.employeeId, body.clientId, body.serviceIds)
+            useCase.invoke(businessId, body.employeeId, body.userId, body.serviceIds)
         } returns Result.failure(GetAppointmentBookingContext.Error.ServiceNotFound())
 
         setupApplication(
@@ -132,7 +110,7 @@ internal class GetAppointmentBookingContextTest {
         val useCase: GetAppointmentBookingContext = mockk()
         val body = AppointmentBookingContextRequest.stub()
         coEvery {
-            useCase.invoke(businessId, body.employeeId, body.clientId, body.serviceIds)
+            useCase.invoke(businessId, body.employeeId, body.userId, body.serviceIds)
         } returns Result.failure(GetAppointmentBookingContext.Error.EmptyServiceList())
 
         setupApplication(

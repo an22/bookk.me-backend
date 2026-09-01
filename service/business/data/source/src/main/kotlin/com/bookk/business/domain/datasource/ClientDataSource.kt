@@ -10,6 +10,8 @@ interface ClientDataSource {
     suspend fun getClients(businessId: Uuid): List<Client>
     suspend fun getClient(businessId: Uuid, phone: String): Client?
     suspend fun getClientById(businessId: Uuid, id: Uuid): Client?
+    suspend fun getClientByUserId(businessId: Uuid, userId: Uuid): Client?
+    suspend fun getOrCreateIntegratedClient(businessId: Uuid, client: Client.Integrated): Client
     suspend fun deleteClient(businessId: Uuid, id: Uuid): Boolean
     suspend fun updateIntegratedClients(
         userId: Uuid,

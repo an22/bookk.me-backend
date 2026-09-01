@@ -68,7 +68,7 @@ internal class CreateAppointmentRequestImpl(
         if (requestedServiceCounts != claimedServiceCounts) return Result.failure(ServicesSignatureMiss())
         if (draft.businessId.toString() != businessId) return Result.failure(ServicesSignatureMiss())
 
-        val context = businessClient.getAppointmentBookingContext(draft.businessId, draft.employeeId, draft.clientId, draft.serviceIds)
+        val context = businessClient.getAppointmentBookingContext(draft.businessId, draft.employeeId, userId, draft.serviceIds)
             .getOrElse { return Result.failure(it) }
 
         val request = AppointmentRequest(
@@ -83,8 +83,8 @@ internal class CreateAppointmentRequestImpl(
             client = ClientSnapshot(
                 id = context.client.id,
                 fullName = "${context.client.name} ${context.client.lastName}".trim(),
-                phone = context.client.phone,
-                email = context.client.email
+                phone = context.client.phone.orEmpty(),
+                email = context.client.email.orEmpty()
             ),
             services = context.services.map {
                 ServiceSnapshot(id = it.id, name = it.name, groupId = it.group.id, price = it.price, duration = it.duration)

@@ -48,7 +48,7 @@ internal class CreateClientImplTest {
         val client = Client.Detached(Uuid.random(), "John", "Doe", "123456", "john@doe.com")
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { clientDataSource.getClient(businessId, client.phone) } returns null
+            coEvery { clientDataSource.getClient(businessId, client.phone!!) } returns null
             coEvery { clientDataSource.createDetachedClient(businessId, client) } returns client
         }
 
@@ -75,7 +75,7 @@ internal class CreateClientImplTest {
         val client = Client.Integrated(Uuid.random(), "John", "Doe", "123456", "john@doe.com", Uuid.random())
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { clientDataSource.getClient(businessId, client.phone) } returns null
+            coEvery { clientDataSource.getClient(businessId, client.phone!!) } returns null
             coEvery { clientDataSource.createIntegratedClient(businessId, client) } returns client
         }
 
@@ -95,6 +95,63 @@ internal class CreateClientImplTest {
     }
 
     @Test
+    fun `should create detached client successfully when email is not provided`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val businessId = Uuid.random()
+        val client = Client.Detached(Uuid.random(), "John", "Doe", "123456", null)
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { clientDataSource.getClient(businessId, client.phone!!) } returns null
+            coEvery { clientDataSource.createDetachedClient(businessId, client) } returns client
+        }
+
+        whenn()
+        val result = fixture.sut(requestUserId, businessId, client)
+
+        then()
+        assertTrue(result.isSuccess)
+        assertEquals(null, result.getOrNull()?.email)
+    }
+
+    @Test
+    fun `should create detached client successfully when phone is not provided`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val businessId = Uuid.random()
+        val client = Client.Detached(Uuid.random(), "John", "Doe", null, "john@doe.com")
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { clientDataSource.createDetachedClient(businessId, client) } returns client
+        }
+
+        whenn()
+        val result = fixture.sut(requestUserId, businessId, client)
+
+        then()
+        assertTrue(result.isSuccess)
+        assertEquals(null, result.getOrNull()?.phone)
+        coVerify(exactly = 0) { fixture.clientDataSource.getClient(any(), any()) }
+    }
+
+    @Test
+    fun `should return error when neither phone nor email is provided`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val businessId = Uuid.random()
+        val client = Client.Detached(Uuid.random(), "John", "Doe", null, null)
+        fixture.transactionManager.mockTransaction()
+
+        whenn()
+        val result = fixture.sut(requestUserId, businessId, client)
+
+        then()
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is CreateClient.Error.MissingContactInfo)
+        coVerify(exactly = 0) { fixture.clientDataSource.createDetachedClient(any(), any()) }
+    }
+
+    @Test
     fun `should return error when client already exists`() = runUnitTest {
         given()
         val fixture = SutFixture()
@@ -102,7 +159,7 @@ internal class CreateClientImplTest {
         val client = Client.Detached(Uuid.random(), "John", "Doe", "123456", "john@doe.com")
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { clientDataSource.getClient(businessId, client.phone) } returns client
+            coEvery { clientDataSource.getClient(businessId, client.phone!!) } returns client
         }
 
         whenn()
@@ -175,7 +232,7 @@ internal class CreateClientImplTest {
         val client = Client.Detached(Uuid.random(), "John", "Doe", "123456", "john@doe.com")
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { clientDataSource.getClient(businessId, client.phone) } returns null
+            coEvery { clientDataSource.getClient(businessId, client.phone!!) } returns null
             coEvery { clientDataSource.createDetachedClient(businessId, client) } returns client
         }
 
@@ -233,5 +290,25 @@ internal class CreateClientImplTest {
         then()
         assertTrue(result.isFailure)
         assertTrue(result.exceptionOrNull() is CreateClient.Error.ClientValidationError)
+    }
+
+    @Test
+    fun `should return validation error when email is malformed`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val businessId = Uuid.random()
+        val client = Client.Detached(Uuid.random(), "John", "Doe", "123456", "not-an-email")
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { clientDataSource.getClient(businessId, client.phone!!) } returns null
+        }
+
+        whenn()
+        val result = fixture.sut(requestUserId, businessId, client)
+
+        then()
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is CreateClient.Error.ClientValidationError)
+        coVerify(exactly = 0) { fixture.clientDataSource.createDetachedClient(any(), any()) }
     }
 }

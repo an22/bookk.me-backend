@@ -10,7 +10,7 @@ interface BusinessClient {
     suspend fun getAppointmentBookingContext(
         businessId: Uuid,
         employeeId: Uuid,
-        clientId: Uuid,
+        userId: Uuid,
         serviceIds: List<Uuid>
     ): Result<AppointmentBookingContext>
 }

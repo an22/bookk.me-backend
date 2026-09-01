@@ -9,6 +9,7 @@ import com.bookk.business.domain.datasource.ClientDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import library.permissions.ObjectPermission
 import library.permissions.assert
+import library.validation.EmailValidator
 import library.validation.NameValidator
 import library.validation.PhoneValidator
 import kotlin.uuid.Uuid
@@ -21,14 +22,20 @@ internal class CreateClientImpl(
     override suspend fun invoke(requestUserId: Uuid, businessId: Uuid, client: Client): Result<ClientRemote> =
         transactionManager.transaction {
             businessDataSource.getPermission(requestUserId, businessId).assert(ObjectPermission.EDIT)
+            if (client.phone == null && client.email == null) throw CreateClient.Error.MissingContactInfo()
             if (!NameValidator.isValid(client.name, minLength = 0, maxLength = MAX_NAME_LENGTH)) {
                 throw CreateClient.Error.ClientValidationError()
             }
             if (!NameValidator.isValid(client.lastName, minLength = 0, maxLength = MAX_NAME_LENGTH)) {
                 throw CreateClient.Error.ClientValidationError()
             }
-            if (!PhoneValidator.isValid(client.phone)) throw CreateClient.Error.ClientValidationError()
-            if (clientDataSource.getClient(businessId, client.phone) != null) throw CreateClient.Error.ClientExist()
+            client.phone?.let { phone ->
+                if (!PhoneValidator.isValid(phone)) throw CreateClient.Error.ClientValidationError()
+                if (clientDataSource.getClient(businessId, phone) != null) throw CreateClient.Error.ClientExist()
+            }
+            client.email?.let { email ->
+                if (!EmailValidator.isValid(email)) throw CreateClient.Error.ClientValidationError()
+            }
 
             when (client) {
                 is Client.Detached -> clientDataSource.createDetachedClient(businessId, client)

@@ -13,6 +13,8 @@ import com.bookk.core.test.given
 import com.bookk.core.test.runUnitTest
 import com.bookk.core.test.then
 import com.bookk.core.test.whenn
+import com.bookk.server.user.client.UserClient
+import com.bookk.server.user.client.api.UserSnapshot
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -27,8 +29,9 @@ internal class GetAppointmentBookingContextImplTest {
         val employeeDataSource = mockk<EmployeeDataSource>()
         val clientDataSource = mockk<ClientDataSource>()
         val serviceDataSource = mockk<ServiceDataSource>()
+        val userClient = mockk<UserClient>()
         val transactionManager = mockk<TransactionManager>()
-        val sut = GetAppointmentBookingContextImpl(employeeDataSource, clientDataSource, serviceDataSource, transactionManager)
+        val sut = GetAppointmentBookingContextImpl(employeeDataSource, clientDataSource, serviceDataSource, userClient, transactionManager)
     }
 
     @Test
@@ -36,20 +39,20 @@ internal class GetAppointmentBookingContextImplTest {
         given()
         val businessId = Uuid.random()
         val employeeId = Uuid.random()
-        val clientId = Uuid.random()
+        val userId = Uuid.random()
         val employee = Employee.stub(id = employeeId, businessId = businessId)
-        val client = Client.Detached(id = clientId, name = "Alice", lastName = "Smith", phone = "123", email = "a@b.com")
+        val client = Client.Integrated(id = Uuid.random(), name = "Alice", lastName = "Smith", phone = "123", email = "a@b.com", userId = userId)
         val service = Service.stub(businessId = businessId)
         val fixture = SutFixture()
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { employeeDataSource.getEmployee(businessId, employeeId) } returns employee
-            coEvery { clientDataSource.getClientById(businessId, clientId) } returns client
+            coEvery { clientDataSource.getClientByUserId(businessId, userId) } returns client
             coEvery { serviceDataSource.getServicesByIds(listOf(service.id)) } returns listOf(service)
         }
 
         whenn()
-        val result = fixture.sut.invoke(businessId, employeeId, clientId, listOf(service.id))
+        val result = fixture.sut.invoke(businessId, employeeId, userId, listOf(service.id))
 
         then()
         assertTrue(result.isSuccess)
@@ -61,6 +64,82 @@ internal class GetAppointmentBookingContextImplTest {
         assertEquals(client.phone, context.client.phone)
         assertEquals(client.email, context.client.email)
         assertEquals(listOf(service), context.services)
+        coVerify(exactly = 0) { fixture.userClient.getUserById(any()) }
+        coVerify(exactly = 0) { fixture.clientDataSource.getOrCreateIntegratedClient(any(), any()) }
+    }
+
+    @Test
+    fun `should create an integrated client from the user profile when no client exists for this user yet`() = runUnitTest {
+        given()
+        val businessId = Uuid.random()
+        val employeeId = Uuid.random()
+        val userId = Uuid.random()
+        val employee = Employee.stub(id = employeeId, businessId = businessId)
+        val user = UserSnapshot.stub(id = userId, name = "Bob", lastName = "Jones", email = "bob@test.com", phone = "+123456789")
+        val createdClient = Client.Integrated(id = Uuid.random(), name = user.name, lastName = user.lastName, phone = user.phone!!, email = user.email, userId = userId)
+        val service = Service.stub(businessId = businessId)
+        val fixture = SutFixture()
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { employeeDataSource.getEmployee(businessId, employeeId) } returns employee
+            coEvery { clientDataSource.getClientByUserId(businessId, userId) } returns null
+            coEvery { userClient.getUserById(userId) } returns Result.success(user)
+            coEvery { clientDataSource.getOrCreateIntegratedClient(businessId, any()) } returns createdClient
+            coEvery { serviceDataSource.getServicesByIds(listOf(service.id)) } returns listOf(service)
+        }
+
+        whenn()
+        val result = fixture.sut.invoke(businessId, employeeId, userId, listOf(service.id))
+
+        then()
+        assertTrue(result.isSuccess)
+        val context = result.getOrNull()!!
+        assertEquals(createdClient.id, context.client.id)
+        assertEquals(createdClient.name, context.client.name)
+        assertEquals(createdClient.phone, context.client.phone)
+        coVerify(exactly = 1) {
+            fixture.clientDataSource.getOrCreateIntegratedClient(
+                businessId,
+                match<Client.Integrated> {
+                    it.name == user.name && it.lastName == user.lastName && it.phone == user.phone && it.email == user.email && it.userId == userId
+                }
+            )
+        }
+    }
+
+    @Test
+    fun `should create an integrated client with no phone when the user profile has none`() = runUnitTest {
+        given()
+        val businessId = Uuid.random()
+        val employeeId = Uuid.random()
+        val userId = Uuid.random()
+        val employee = Employee.stub(id = employeeId, businessId = businessId)
+        val user = UserSnapshot.stub(id = userId, phone = null)
+        val createdClient = Client.Integrated(id = Uuid.random(), name = user.name, lastName = user.lastName, phone = null, email = user.email, userId = userId)
+        val service = Service.stub(businessId = businessId)
+        val fixture = SutFixture()
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { employeeDataSource.getEmployee(businessId, employeeId) } returns employee
+            coEvery { clientDataSource.getClientByUserId(businessId, userId) } returns null
+            coEvery { userClient.getUserById(userId) } returns Result.success(user)
+            coEvery { clientDataSource.getOrCreateIntegratedClient(businessId, any()) } returns createdClient
+            coEvery { serviceDataSource.getServicesByIds(listOf(service.id)) } returns listOf(service)
+        }
+
+        whenn()
+        val result = fixture.sut.invoke(businessId, employeeId, userId, listOf(service.id))
+
+        then()
+        assertTrue(result.isSuccess)
+        coVerify(exactly = 1) {
+            fixture.clientDataSource.getOrCreateIntegratedClient(
+                businessId,
+                match<Client.Integrated> {
+                    it.name == user.name && it.lastName == user.lastName && it.phone == null && it.email == user.email && it.userId == userId
+                }
+            )
+        }
     }
 
     @Test
@@ -68,21 +147,21 @@ internal class GetAppointmentBookingContextImplTest {
         given()
         val businessId = Uuid.random()
         val employeeId = Uuid.random()
-        val clientId = Uuid.random()
+        val userId = Uuid.random()
         val employee = Employee.stub(id = employeeId, businessId = businessId)
-        val client = Client.Detached(id = clientId, name = "Alice", lastName = "Smith", phone = "123", email = "a@b.com")
+        val client = Client.Integrated(id = Uuid.random(), name = "Alice", lastName = "Smith", phone = "123", email = "a@b.com", userId = userId)
         val serviceX = Service.stub(businessId = businessId)
         val serviceIds = listOf(serviceX.id, serviceX.id, serviceX.id, serviceX.id, serviceX.id)
         val fixture = SutFixture()
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { employeeDataSource.getEmployee(businessId, employeeId) } returns employee
-            coEvery { clientDataSource.getClientById(businessId, clientId) } returns client
+            coEvery { clientDataSource.getClientByUserId(businessId, userId) } returns client
             coEvery { serviceDataSource.getServicesByIds(listOf(serviceX.id)) } returns listOf(serviceX)
         }
 
         whenn()
-        val result = fixture.sut.invoke(businessId, employeeId, clientId, serviceIds)
+        val result = fixture.sut.invoke(businessId, employeeId, userId, serviceIds)
 
         then()
         assertTrue(result.isSuccess)
@@ -95,11 +174,11 @@ internal class GetAppointmentBookingContextImplTest {
         given()
         val businessId = Uuid.random()
         val employeeId = Uuid.random()
-        val clientId = Uuid.random()
+        val userId = Uuid.random()
         val fixture = SutFixture()
 
         whenn()
-        val result = fixture.sut.invoke(businessId, employeeId, clientId, emptyList())
+        val result = fixture.sut.invoke(businessId, employeeId, userId, emptyList())
 
         then()
         assertTrue(result.isFailure)
@@ -112,7 +191,7 @@ internal class GetAppointmentBookingContextImplTest {
         given()
         val businessId = Uuid.random()
         val employeeId = Uuid.random()
-        val clientId = Uuid.random()
+        val userId = Uuid.random()
         val fixture = SutFixture()
         with(fixture) {
             transactionManager.mockTransaction()
@@ -120,7 +199,7 @@ internal class GetAppointmentBookingContextImplTest {
         }
 
         whenn()
-        val result = fixture.sut.invoke(businessId, employeeId, clientId, listOf(Uuid.random()))
+        val result = fixture.sut.invoke(businessId, employeeId, userId, listOf(Uuid.random()))
 
         then()
         assertTrue(result.isFailure)
@@ -128,46 +207,24 @@ internal class GetAppointmentBookingContextImplTest {
     }
 
     @Test
-    fun `should return failure when client not found`() = runUnitTest {
-        given()
-        val businessId = Uuid.random()
-        val employeeId = Uuid.random()
-        val clientId = Uuid.random()
-        val employee = Employee.stub(id = employeeId, businessId = businessId)
-        val fixture = SutFixture()
-        with(fixture) {
-            transactionManager.mockTransaction()
-            coEvery { employeeDataSource.getEmployee(businessId, employeeId) } returns employee
-            coEvery { clientDataSource.getClientById(businessId, clientId) } returns null
-        }
-
-        whenn()
-        val result = fixture.sut.invoke(businessId, employeeId, clientId, listOf(Uuid.random()))
-
-        then()
-        assertTrue(result.isFailure)
-        assertTrue(result.exceptionOrNull() is GetAppointmentBookingContext.Error.ClientNotFound)
-    }
-
-    @Test
     fun `should return failure when some services are not found`() = runUnitTest {
         given()
         val businessId = Uuid.random()
         val employeeId = Uuid.random()
-        val clientId = Uuid.random()
+        val userId = Uuid.random()
         val employee = Employee.stub(id = employeeId, businessId = businessId)
-        val client = Client.Detached(id = clientId, name = "Alice", lastName = "Smith", phone = "123", email = "a@b.com")
+        val client = Client.Integrated(id = Uuid.random(), name = "Alice", lastName = "Smith", phone = "123", email = "a@b.com", userId = userId)
         val serviceIds = listOf(Uuid.random(), Uuid.random())
         val fixture = SutFixture()
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { employeeDataSource.getEmployee(businessId, employeeId) } returns employee
-            coEvery { clientDataSource.getClientById(businessId, clientId) } returns client
+            coEvery { clientDataSource.getClientByUserId(businessId, userId) } returns client
             coEvery { serviceDataSource.getServicesByIds(serviceIds) } returns listOf(Service.stub(businessId = businessId))
         }
 
         whenn()
-        val result = fixture.sut.invoke(businessId, employeeId, clientId, serviceIds)
+        val result = fixture.sut.invoke(businessId, employeeId, userId, serviceIds)
 
         then()
         assertTrue(result.isFailure)
@@ -179,20 +236,20 @@ internal class GetAppointmentBookingContextImplTest {
         given()
         val businessId = Uuid.random()
         val employeeId = Uuid.random()
-        val clientId = Uuid.random()
+        val userId = Uuid.random()
         val employee = Employee.stub(id = employeeId, businessId = businessId)
-        val client = Client.Detached(id = clientId, name = "Alice", lastName = "Smith", phone = "123", email = "a@b.com")
+        val client = Client.Integrated(id = Uuid.random(), name = "Alice", lastName = "Smith", phone = "123", email = "a@b.com", userId = userId)
         val foreignService = Service.stub(businessId = Uuid.random())
         val fixture = SutFixture()
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { employeeDataSource.getEmployee(businessId, employeeId) } returns employee
-            coEvery { clientDataSource.getClientById(businessId, clientId) } returns client
+            coEvery { clientDataSource.getClientByUserId(businessId, userId) } returns client
             coEvery { serviceDataSource.getServicesByIds(listOf(foreignService.id)) } returns listOf(foreignService)
         }
 
         whenn()
-        val result = fixture.sut.invoke(businessId, employeeId, clientId, listOf(foreignService.id))
+        val result = fixture.sut.invoke(businessId, employeeId, userId, listOf(foreignService.id))
 
         then()
         assertTrue(result.isFailure)

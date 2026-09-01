@@ -7,19 +7,13 @@ import io.ktor.http.HttpStatusCode
 import kotlin.uuid.Uuid
 
 interface GetAppointmentBookingContext {
-    suspend operator fun invoke(businessId: Uuid, employeeId: Uuid, clientId: Uuid, serviceIds: List<Uuid>): Result<AppointmentBookingContext>
+    suspend operator fun invoke(businessId: Uuid, employeeId: Uuid, userId: Uuid, serviceIds: List<Uuid>): Result<AppointmentBookingContext>
 
     sealed interface Error {
         class EmployeeNotFound : BusinessError(
             statusCode = HttpStatusCode.NotFound.value,
             code = BusinessErrorCodes.BUSINESS_EMPLOYEE_NOT_EXISTS,
             message = "Employee with this id is missing"
-        ), Error
-
-        class ClientNotFound : BusinessError(
-            statusCode = HttpStatusCode.NotFound.value,
-            code = BusinessErrorCodes.BUSINESS_CLIENT_NOT_EXISTS,
-            message = "Client with this id is missing"
         ), Error
 
         class ServiceNotFound : BusinessError(

@@ -117,7 +117,6 @@ internal class CreateAppointmentRequestImplTest {
     private fun draftFor(context: AppointmentBookingContext, businessId: Uuid, date: Instant) = AppointmentRequestDraft(
         businessId = businessId,
         employeeId = context.employee.id,
-        clientId = context.client.id,
         serviceIds = context.services.map { it.id },
         date = date,
         note = "Note",
@@ -144,7 +143,7 @@ internal class CreateAppointmentRequestImplTest {
 
         with(fixture) {
             coEvery {
-                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, draft.clientId, draft.serviceIds)
+                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, userId, draft.serviceIds)
             } returns Result.success(context)
             coEvery { settingsDataSource.getForUpdate(businessId) } returns settings
             coEvery { settings.automaticApproval } returns false
@@ -195,7 +194,7 @@ internal class CreateAppointmentRequestImplTest {
 
         with(fixture) {
             coEvery {
-                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, draft.clientId, draft.serviceIds)
+                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, userId, draft.serviceIds)
             } returns Result.success(context)
             coEvery { settingsDataSource.getForUpdate(businessId) } returns settings
             coEvery { settings.automaticApproval } returns false
@@ -233,7 +232,7 @@ internal class CreateAppointmentRequestImplTest {
 
         with(fixture) {
             coEvery {
-                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, draft.clientId, draft.serviceIds)
+                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, userId, draft.serviceIds)
             } returns Result.success(context)
             coEvery { settingsDataSource.getForUpdate(businessId) } returns settings
             coEvery { settings.automaticApproval } returns true
@@ -263,7 +262,7 @@ internal class CreateAppointmentRequestImplTest {
 
         with(fixture) {
             coEvery {
-                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, draft.clientId, draft.serviceIds)
+                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, userId, draft.serviceIds)
             } returns Result.success(context)
             coEvery { settingsDataSource.getForUpdate(businessId) } returns settings
             coEvery { settings.automaticApproval } returns false
@@ -293,7 +292,7 @@ internal class CreateAppointmentRequestImplTest {
 
         with(fixture) {
             coEvery {
-                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, draft.clientId, draft.serviceIds)
+                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, userId, draft.serviceIds)
             } returns Result.success(context)
             coEvery { settingsDataSource.getForUpdate(businessId) } returns settings
             coEvery { settings.automaticApproval } returns false
@@ -321,7 +320,7 @@ internal class CreateAppointmentRequestImplTest {
 
         with(fixture) {
             coEvery {
-                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, draft.clientId, draft.serviceIds)
+                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, userId, draft.serviceIds)
             } returns Result.success(context)
             coEvery { settingsDataSource.getForUpdate(businessId) } returns settings
             coEvery { settings.automaticApproval } returns true
@@ -349,7 +348,7 @@ internal class CreateAppointmentRequestImplTest {
 
         with(fixture) {
             coEvery {
-                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, draft.clientId, draft.serviceIds)
+                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, userId, draft.serviceIds)
             } returns Result.success(context)
             coEvery { settingsDataSource.getForUpdate(businessId) } returns settings
             coEvery { settings.automaticApproval } returns false
@@ -380,7 +379,7 @@ internal class CreateAppointmentRequestImplTest {
 
         with(fixture) {
             coEvery {
-                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, draft.clientId, draft.serviceIds)
+                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, userId, draft.serviceIds)
             } returns Result.success(context)
             coEvery { settingsDataSource.getForUpdate(businessId) } returns settings
             coEvery { settings.automaticApproval } returns false
@@ -415,7 +414,7 @@ internal class CreateAppointmentRequestImplTest {
 
         with(fixture) {
             coEvery {
-                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, draft.clientId, draft.serviceIds)
+                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, userId, draft.serviceIds)
             } returns Result.success(context)
             coEvery { settingsDataSource.getForUpdate(businessId) } returns settings
             coEvery { settings.automaticApproval } returns false
@@ -447,7 +446,7 @@ internal class CreateAppointmentRequestImplTest {
 
         with(fixture) {
             coEvery {
-                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, draft.clientId, draft.serviceIds)
+                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, userId, draft.serviceIds)
             } returns Result.success(context)
             coEvery { settingsDataSource.getForUpdate(businessId) } returns settings
             coEvery { settings.automaticApproval } returns false
@@ -480,7 +479,7 @@ internal class CreateAppointmentRequestImplTest {
 
         with(fixture) {
             coEvery {
-                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, draft.clientId, draft.serviceIds)
+                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, userId, draft.serviceIds)
             } returns Result.success(context)
             mockValidToken(draft, "USD 0.00", durationOf(context))
             transactionManager.mockTransaction()
@@ -505,7 +504,7 @@ internal class CreateAppointmentRequestImplTest {
 
         with(fixture) {
             coEvery {
-                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, draft.clientId, draft.serviceIds)
+                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, userId, draft.serviceIds)
             } returns Result.success(context)
             mockValidToken(draft, totalOf(context), "999m")
             transactionManager.mockTransaction()
@@ -635,7 +634,7 @@ internal class CreateAppointmentRequestImplTest {
 
         with(fixture) {
             coEvery {
-                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, draft.clientId, draft.serviceIds)
+                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, userId, draft.serviceIds)
             } returns Result.success(context)
             coEvery { settingsDataSource.getForUpdate(businessId) } returns settings
             coEvery { settings.automaticApproval } returns false
@@ -672,7 +671,7 @@ internal class CreateAppointmentRequestImplTest {
 
         with(fixture) {
             coEvery {
-                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, draft.clientId, draft.serviceIds)
+                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, userId, draft.serviceIds)
             } returns Result.success(context)
             coEvery { settingsDataSource.getForUpdate(businessId) } returns settings
             coEvery { settings.automaticApproval } returns false
@@ -706,7 +705,7 @@ internal class CreateAppointmentRequestImplTest {
 
         with(fixture) {
             coEvery {
-                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, draft.clientId, draft.serviceIds)
+                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, userId, draft.serviceIds)
             } returns Result.failure(GetAppointmentBookingContext.Error.EmployeeNotFound())
             mockValidToken(draft, totalOf(context), durationOf(context))
         }
@@ -721,31 +720,6 @@ internal class CreateAppointmentRequestImplTest {
     }
 
     @Test
-    fun `should return failure when client is not found in business`() = runUnitTest {
-        given()
-        val fixture = SutFixture()
-        val userId = Uuid.random()
-        val businessId = Uuid.random()
-        val context = bookingContext(businessId, Uuid.random(), Uuid.random(), Uuid.random())
-        val draft = draftFor(context, businessId, futureDate)
-
-        with(fixture) {
-            coEvery {
-                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, draft.clientId, draft.serviceIds)
-            } returns Result.failure(GetAppointmentBookingContext.Error.ClientNotFound())
-            mockValidToken(draft, totalOf(context), durationOf(context))
-        }
-
-        whenn()
-        val result = fixture.sut.invoke(userId, draft)
-
-        then()
-        assertTrue(result.isFailure)
-        assertTrue(result.exceptionOrNull() is GetAppointmentBookingContext.Error.ClientNotFound)
-        coVerify(exactly = 0) { fixture.requestDataSource.create(any()) }
-    }
-
-    @Test
     fun `should return failure when a service is not found in business`() = runUnitTest {
         given()
         val fixture = SutFixture()
@@ -756,7 +730,7 @@ internal class CreateAppointmentRequestImplTest {
 
         with(fixture) {
             coEvery {
-                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, draft.clientId, draft.serviceIds)
+                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, userId, draft.serviceIds)
             } returns Result.failure(GetAppointmentBookingContext.Error.ServiceNotFound())
             mockValidToken(draft, totalOf(context), durationOf(context))
         }

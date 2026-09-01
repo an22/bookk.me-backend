@@ -8,7 +8,6 @@ import kotlin.uuid.Uuid
 data class AppointmentRequestDraft(
     val businessId: Uuid,
     val employeeId: Uuid,
-    val clientId: Uuid,
     val serviceIds: List<Uuid>,
     val date: Instant,
     val note: String,
@@ -18,14 +17,12 @@ data class AppointmentRequestDraft(
         fun stub(
             businessId: Uuid = Uuid.random(),
             employeeId: Uuid = Uuid.random(),
-            clientId: Uuid = Uuid.random(),
             serviceIds: List<Uuid> = listOf(Uuid.random()),
             date: Instant = Instant.fromEpochMilliseconds(0),
             offerToken: String = "token"
         ) = AppointmentRequestDraft(
             businessId = businessId,
             employeeId = employeeId,
-            clientId = clientId,
             serviceIds = serviceIds,
             date = date,
             note = "Note",

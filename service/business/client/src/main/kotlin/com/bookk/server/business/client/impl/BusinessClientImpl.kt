@@ -25,9 +25,9 @@ internal class BusinessClientImpl(
     override suspend fun getAppointmentBookingContext(
         businessId: Uuid,
         employeeId: Uuid,
-        clientId: Uuid,
+        userId: Uuid,
         serviceIds: List<Uuid>
     ): Result<AppointmentBookingContext> {
-        return getAppointmentBookingContext.invoke(businessId, employeeId, clientId, serviceIds)
+        return getAppointmentBookingContext.invoke(businessId, employeeId, userId, serviceIds)
     }
 }

@@ -21,9 +21,8 @@ internal class IssueQuoteImpl(
     override suspend fun invoke(businessId: Uuid, serviceIds: List<Uuid>): Result<ServiceQuote> {
         if (serviceIds.isEmpty()) return Result.failure(IssueServiceQuote.Error.EmptyServiceList())
         return transactionManager.transaction {
-            val requestedServices = serviceDataSource.getServicesExpanded(businessId, serviceIds) {
-                throw IssueServiceQuote.Error.ServiceNotFound()
-            }
+            val requestedServices = serviceDataSource.getServicesExpanded(businessId, serviceIds.toSet())
+                ?: throw IssueServiceQuote.Error.ServiceNotFound()
 
             val quoteId = Uuid.random()
             val token = buildToken(quoteId, businessId, serviceIds, requestedServices)

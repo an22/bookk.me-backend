@@ -7,6 +7,7 @@ import com.bookk.appointments.domain.api.entity.AppointmentRequest
 import com.bookk.appointments.domain.api.entity.AppointmentRequestDraft
 import com.bookk.appointments.domain.api.entity.AppointmentSettings
 import com.bookk.appointments.domain.api.entity.BusinessSnapshot
+import com.bookk.appointments.domain.api.entity.RequestedService
 import com.bookk.appointments.domain.api.operation.CreateAppointment
 import com.bookk.appointments.domain.api.operation.CreateAppointmentRequest
 import com.bookk.appointments.domain.datasource.AppointmentDataSource
@@ -42,6 +43,17 @@ import kotlin.test.assertEquals
 import kotlin.time.Duration
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
+
+private fun flattenedIds(draft: AppointmentRequestDraft): List<Uuid> =
+    draft.services.flatMap { requested -> List(requested.count) { requested.serviceId } }
+
+private fun distinctIds(draft: AppointmentRequestDraft): List<Uuid> =
+    draft.services.map { it.serviceId }
+
+private fun expand(context: AppointmentBookingContext, draft: AppointmentRequestDraft): List<Service> {
+    val servicesById = context.services.associateBy { it.id }
+    return draft.services.flatMap { requested -> List(requested.count) { servicesById.getValue(requested.serviceId) } }
+}
 
 internal class CreateAppointmentRequestImplTest {
 
@@ -88,7 +100,7 @@ internal class CreateAppointmentRequestImplTest {
             every { decodedJwt.getClaim(QuoteClaims.CLAIM_TOTAL) } returns totalClaim
             every { decodedJwt.getClaim(QuoteClaims.CLAIM_DURATION) } returns durationClaim
             every { decodedJwt.getClaim(QuoteClaims.CLAIM_BUSINESS_ID) } returns businessIdClaim
-            every { servicesClaim.asList(String::class.java) } returns QuoteClaims.encodeServiceCounts(draft.serviceIds)
+            every { servicesClaim.asList(String::class.java) } returns QuoteClaims.encodeServiceCounts(flattenedIds(draft))
             every { totalClaim.asString() } returns totalAmount
             every { durationClaim.asString() } returns totalDuration
             every { businessIdClaim.asString() } returns draft.businessId.toString()
@@ -114,20 +126,25 @@ internal class CreateAppointmentRequestImplTest {
         return AppointmentBookingContext(employee = employee, client = client, services = services)
     }
 
-    private fun draftFor(context: AppointmentBookingContext, businessId: Uuid, date: Instant) = AppointmentRequestDraft(
+    private fun draftFor(
+        context: AppointmentBookingContext,
+        businessId: Uuid,
+        date: Instant,
+        counts: Map<Uuid, Int> = context.services.associate { it.id to 1 }
+    ) = AppointmentRequestDraft(
         businessId = businessId,
         employeeId = context.employee.id,
-        serviceIds = context.services.map { it.id },
+        services = context.services.map { RequestedService(it.id, counts.getValue(it.id)) },
         date = date,
         note = "Note",
         offerToken = "token"
     )
 
-    private fun totalOf(context: AppointmentBookingContext) =
-        context.services.map { it.price }.reduce { acc, price -> acc + price }.toString()
+    private fun totalOf(services: List<Service>) =
+        services.map { it.price }.reduce { acc, price -> acc + price }.toString()
 
-    private fun durationOf(context: AppointmentBookingContext) =
-        context.services.fold(Duration.ZERO) { acc, service -> acc + service.duration }.toString()
+    private fun durationOf(services: List<Service>) =
+        services.fold(Duration.ZERO) { acc, service -> acc + service.duration }.toString()
 
     @Test
     fun `should create request successfully when valid request provided`() = runUnitTest {
@@ -143,7 +160,7 @@ internal class CreateAppointmentRequestImplTest {
 
         with(fixture) {
             coEvery {
-                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, userId, draft.serviceIds)
+                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, userId, distinctIds(draft))
             } returns Result.success(context)
             coEvery { settingsDataSource.getForUpdate(businessId) } returns settings
             coEvery { settings.automaticApproval } returns false
@@ -154,7 +171,7 @@ internal class CreateAppointmentRequestImplTest {
             coEvery { requestDataSource.create(capture(createdSlot)) } answers { createdSlot.captured }
             coEvery { subscriptionDataSource.getBusinessSnapshot(any()) } returns businessSnapshot
             coEvery { eventProducer.send(any(), any()) } returns Unit
-            mockValidToken(draft, totalOf(context), durationOf(context))
+            mockValidToken(draft, totalOf(expand(context, draft)), durationOf(expand(context, draft)))
             transactionManager.mockTransaction()
         }
 
@@ -186,15 +203,15 @@ internal class CreateAppointmentRequestImplTest {
         val userId = Uuid.random()
         val businessId = Uuid.random()
         val serviceX = Service.stub(businessId = businessId)
-        val context = bookingContext(businessId, Uuid.random(), Uuid.random(), List(5) { serviceX })
-        val draft = draftFor(context, businessId, futureDate)
+        val context = bookingContext(businessId, Uuid.random(), Uuid.random(), listOf(serviceX))
+        val draft = draftFor(context, businessId, futureDate, counts = mapOf(serviceX.id to 5))
         val settings = mockk<AppointmentSettings>()
         val businessSnapshot = BusinessSnapshot.stub()
         val createdSlot = slot<AppointmentRequest>()
 
         with(fixture) {
             coEvery {
-                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, userId, draft.serviceIds)
+                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, userId, distinctIds(draft))
             } returns Result.success(context)
             coEvery { settingsDataSource.getForUpdate(businessId) } returns settings
             coEvery { settings.automaticApproval } returns false
@@ -205,7 +222,7 @@ internal class CreateAppointmentRequestImplTest {
             coEvery { requestDataSource.create(capture(createdSlot)) } answers { createdSlot.captured }
             coEvery { subscriptionDataSource.getBusinessSnapshot(any()) } returns businessSnapshot
             coEvery { eventProducer.send(any(), any()) } returns Unit
-            mockValidToken(draft, totalOf(context), durationOf(context))
+            mockValidToken(draft, totalOf(expand(context, draft)), durationOf(expand(context, draft)))
             transactionManager.mockTransaction()
         }
 
@@ -217,6 +234,51 @@ internal class CreateAppointmentRequestImplTest {
         val created = createdSlot.captured
         assertEquals(5, created.services.count { it.id == serviceX.id })
         assertEquals(serviceX.price.multipliedBy(5), created.totalAmount)
+    }
+
+    @Test
+    fun `should return failure when a requested service has a non-positive count`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+        val businessId = Uuid.random()
+        val draft = AppointmentRequestDraft.stub(
+            businessId = businessId,
+            services = listOf(RequestedService(Uuid.random(), 0)),
+            date = futureDate
+        )
+        coEvery { fixture.requestDataSource.isTokenInCache("token") } returns false
+
+        whenn()
+        val result = fixture.sut.invoke(userId, draft)
+
+        then()
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is CreateAppointmentRequest.Error.ServicesSignatureMiss)
+        coVerify(exactly = 0) { fixture.businessClient.getAppointmentBookingContext(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `should return failure when draft has duplicate entries for the same service`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+        val businessId = Uuid.random()
+        val serviceId = Uuid.random()
+        val draft = AppointmentRequestDraft.stub(
+            businessId = businessId,
+            services = listOf(RequestedService(serviceId, 2), RequestedService(serviceId, 3)),
+            date = futureDate
+        )
+        coEvery { fixture.requestDataSource.isTokenInCache("token") } returns false
+
+        whenn()
+        val result = fixture.sut.invoke(userId, draft)
+
+        then()
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is CreateAppointmentRequest.Error.ServicesSignatureMiss)
+        coVerify(exactly = 0) { fixture.businessClient.getAppointmentBookingContext(any(), any(), any(), any()) }
     }
 
     @Test
@@ -232,12 +294,12 @@ internal class CreateAppointmentRequestImplTest {
 
         with(fixture) {
             coEvery {
-                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, userId, draft.serviceIds)
+                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, userId, distinctIds(draft))
             } returns Result.success(context)
             coEvery { settingsDataSource.getForUpdate(businessId) } returns settings
             coEvery { settings.automaticApproval } returns true
             coEvery { createAppointment.invoke(userId, any<AppointmentRequest>()) } returns Result.success(mockk())
-            mockValidToken(draft, totalOf(context), durationOf(context))
+            mockValidToken(draft, totalOf(expand(context, draft)), durationOf(expand(context, draft)))
             transactionManager.mockTransaction()
         }
 
@@ -262,12 +324,12 @@ internal class CreateAppointmentRequestImplTest {
 
         with(fixture) {
             coEvery {
-                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, userId, draft.serviceIds)
+                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, userId, distinctIds(draft))
             } returns Result.success(context)
             coEvery { settingsDataSource.getForUpdate(businessId) } returns settings
             coEvery { settings.automaticApproval } returns false
             coEvery { settings.isInWorkday(draft.date) } returns false
-            mockValidToken(draft, totalOf(context), durationOf(context))
+            mockValidToken(draft, totalOf(expand(context, draft)), durationOf(expand(context, draft)))
             transactionManager.mockTransaction()
         }
 
@@ -292,11 +354,11 @@ internal class CreateAppointmentRequestImplTest {
 
         with(fixture) {
             coEvery {
-                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, userId, draft.serviceIds)
+                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, userId, distinctIds(draft))
             } returns Result.success(context)
             coEvery { settingsDataSource.getForUpdate(businessId) } returns settings
             coEvery { settings.automaticApproval } returns false
-            mockValidToken(draft, totalOf(context), durationOf(context))
+            mockValidToken(draft, totalOf(expand(context, draft)), durationOf(expand(context, draft)))
             transactionManager.mockTransaction()
         }
 
@@ -320,12 +382,12 @@ internal class CreateAppointmentRequestImplTest {
 
         with(fixture) {
             coEvery {
-                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, userId, draft.serviceIds)
+                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, userId, distinctIds(draft))
             } returns Result.success(context)
             coEvery { settingsDataSource.getForUpdate(businessId) } returns settings
             coEvery { settings.automaticApproval } returns true
             coEvery { createAppointment.invoke(userId, any<AppointmentRequest>()) } returns Result.failure(RuntimeException())
-            mockValidToken(draft, totalOf(context), durationOf(context))
+            mockValidToken(draft, totalOf(expand(context, draft)), durationOf(expand(context, draft)))
             transactionManager.mockTransaction()
         }
         whenn()
@@ -348,13 +410,13 @@ internal class CreateAppointmentRequestImplTest {
 
         with(fixture) {
             coEvery {
-                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, userId, draft.serviceIds)
+                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, userId, distinctIds(draft))
             } returns Result.success(context)
             coEvery { settingsDataSource.getForUpdate(businessId) } returns settings
             coEvery { settings.automaticApproval } returns false
             coEvery { settings.isInWorkday(draft.date) } returns true
             coEvery { settings.isInWorktime(any(), any()) } returns false
-            mockValidToken(draft, totalOf(context), durationOf(context))
+            mockValidToken(draft, totalOf(expand(context, draft)), durationOf(expand(context, draft)))
             transactionManager.mockTransaction()
         }
 
@@ -379,7 +441,7 @@ internal class CreateAppointmentRequestImplTest {
 
         with(fixture) {
             coEvery {
-                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, userId, draft.serviceIds)
+                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, userId, distinctIds(draft))
             } returns Result.success(context)
             coEvery { settingsDataSource.getForUpdate(businessId) } returns settings
             coEvery { settings.automaticApproval } returns false
@@ -390,7 +452,7 @@ internal class CreateAppointmentRequestImplTest {
             coEvery { requestDataSource.create(any()) } answers { firstArg() }
             coEvery { subscriptionDataSource.getBusinessSnapshot(businessId) } returns businessSnapshot
             coEvery { eventProducer.send(any(), any()) } answers { throw RuntimeException("Producer fail") }
-            mockValidToken(draft, totalOf(context), durationOf(context))
+            mockValidToken(draft, totalOf(expand(context, draft)), durationOf(expand(context, draft)))
             transactionManager.mockTransaction()
         }
         whenn()
@@ -414,14 +476,14 @@ internal class CreateAppointmentRequestImplTest {
 
         with(fixture) {
             coEvery {
-                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, userId, draft.serviceIds)
+                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, userId, distinctIds(draft))
             } returns Result.success(context)
             coEvery { settingsDataSource.getForUpdate(businessId) } returns settings
             coEvery { settings.automaticApproval } returns false
             coEvery { settings.isInWorkday(draft.date) } returns true
             coEvery { settings.isInWorktime(any(), any()) } returns true
             coEvery { requestDataSource.hasOverlapsWith(any()) } returns true
-            mockValidToken(draft, totalOf(context), durationOf(context))
+            mockValidToken(draft, totalOf(expand(context, draft)), durationOf(expand(context, draft)))
             transactionManager.mockTransaction()
         }
 
@@ -446,7 +508,7 @@ internal class CreateAppointmentRequestImplTest {
 
         with(fixture) {
             coEvery {
-                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, userId, draft.serviceIds)
+                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, userId, distinctIds(draft))
             } returns Result.success(context)
             coEvery { settingsDataSource.getForUpdate(businessId) } returns settings
             coEvery { settings.automaticApproval } returns false
@@ -457,7 +519,7 @@ internal class CreateAppointmentRequestImplTest {
             coEvery { requestDataSource.create(any()) } answers { firstArg() }
             coEvery { subscriptionDataSource.getBusinessSnapshot(businessId) } returns businessSnapshot
             coEvery { eventProducer.send(any(), any()) } returns Unit
-            mockValidToken(draft, totalOf(context), durationOf(context))
+            mockValidToken(draft, totalOf(expand(context, draft)), durationOf(expand(context, draft)))
             transactionManager.mockTransaction()
         }
         whenn()
@@ -479,9 +541,9 @@ internal class CreateAppointmentRequestImplTest {
 
         with(fixture) {
             coEvery {
-                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, userId, draft.serviceIds)
+                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, userId, distinctIds(draft))
             } returns Result.success(context)
-            mockValidToken(draft, "USD 0.00", durationOf(context))
+            mockValidToken(draft, "USD 0.00", durationOf(expand(context, draft)))
             transactionManager.mockTransaction()
         }
 
@@ -504,9 +566,9 @@ internal class CreateAppointmentRequestImplTest {
 
         with(fixture) {
             coEvery {
-                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, userId, draft.serviceIds)
+                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, userId, distinctIds(draft))
             } returns Result.success(context)
-            mockValidToken(draft, totalOf(context), "999m")
+            mockValidToken(draft, totalOf(expand(context, draft)), "999m")
             transactionManager.mockTransaction()
         }
 
@@ -545,8 +607,8 @@ internal class CreateAppointmentRequestImplTest {
             every { decodedJwt.getClaim(QuoteClaims.CLAIM_DURATION) } returns durationClaim
             every { decodedJwt.getClaim(QuoteClaims.CLAIM_BUSINESS_ID) } returns businessIdClaim
             every { servicesClaim.asList(String::class.java) } returns listOf(Uuid.random().toString())
-            every { totalClaim.asString() } returns totalOf(context)
-            every { durationClaim.asString() } returns durationOf(context)
+            every { totalClaim.asString() } returns totalOf(expand(context, draft))
+            every { durationClaim.asString() } returns durationOf(expand(context, draft))
             every { businessIdClaim.asString() } returns businessId.toString()
         }
 
@@ -585,9 +647,9 @@ internal class CreateAppointmentRequestImplTest {
             every { decodedJwt.getClaim(QuoteClaims.CLAIM_TOTAL) } returns totalClaim
             every { decodedJwt.getClaim(QuoteClaims.CLAIM_DURATION) } returns durationClaim
             every { decodedJwt.getClaim(QuoteClaims.CLAIM_BUSINESS_ID) } returns businessIdClaim
-            every { servicesClaim.asList(String::class.java) } returns draft.serviceIds.map { it.toString() }
-            every { totalClaim.asString() } returns totalOf(context)
-            every { durationClaim.asString() } returns durationOf(context)
+            every { servicesClaim.asList(String::class.java) } returns flattenedIds(draft).map { it.toString() }
+            every { totalClaim.asString() } returns totalOf(expand(context, draft))
+            every { durationClaim.asString() } returns durationOf(expand(context, draft))
             every { businessIdClaim.asString() } returns Uuid.random().toString()
         }
 
@@ -634,7 +696,7 @@ internal class CreateAppointmentRequestImplTest {
 
         with(fixture) {
             coEvery {
-                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, userId, draft.serviceIds)
+                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, userId, distinctIds(draft))
             } returns Result.success(context)
             coEvery { settingsDataSource.getForUpdate(businessId) } returns settings
             coEvery { settings.automaticApproval } returns false
@@ -645,7 +707,7 @@ internal class CreateAppointmentRequestImplTest {
             coEvery { requestDataSource.create(any()) } answers { firstArg() }
             coEvery { subscriptionDataSource.getBusinessSnapshot(any()) } returns businessSnapshot
             coEvery { eventProducer.send(any(), any()) } returns Unit
-            mockValidToken(draft, totalOf(context), durationOf(context))
+            mockValidToken(draft, totalOf(expand(context, draft)), durationOf(expand(context, draft)))
             transactionManager.mockTransaction()
         }
 
@@ -671,7 +733,7 @@ internal class CreateAppointmentRequestImplTest {
 
         with(fixture) {
             coEvery {
-                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, userId, draft.serviceIds)
+                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, userId, distinctIds(draft))
             } returns Result.success(context)
             coEvery { settingsDataSource.getForUpdate(businessId) } returns settings
             coEvery { settings.automaticApproval } returns false
@@ -682,7 +744,7 @@ internal class CreateAppointmentRequestImplTest {
             coEvery { requestDataSource.create(any()) } answers { firstArg() }
             coEvery { subscriptionDataSource.getBusinessSnapshot(any()) } returns businessSnapshot
             coEvery { eventProducer.send(capture(eventSlot), any()) } returns Unit
-            mockValidToken(draft, totalOf(context), durationOf(context))
+            mockValidToken(draft, totalOf(expand(context, draft)), durationOf(expand(context, draft)))
             transactionManager.mockTransaction()
         }
 
@@ -705,9 +767,9 @@ internal class CreateAppointmentRequestImplTest {
 
         with(fixture) {
             coEvery {
-                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, userId, draft.serviceIds)
+                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, userId, distinctIds(draft))
             } returns Result.failure(GetAppointmentBookingContext.Error.EmployeeNotFound())
-            mockValidToken(draft, totalOf(context), durationOf(context))
+            mockValidToken(draft, totalOf(expand(context, draft)), durationOf(expand(context, draft)))
         }
 
         whenn()
@@ -730,9 +792,9 @@ internal class CreateAppointmentRequestImplTest {
 
         with(fixture) {
             coEvery {
-                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, userId, draft.serviceIds)
+                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, userId, distinctIds(draft))
             } returns Result.failure(GetAppointmentBookingContext.Error.ServiceNotFound())
-            mockValidToken(draft, totalOf(context), durationOf(context))
+            mockValidToken(draft, totalOf(expand(context, draft)), durationOf(expand(context, draft)))
         }
 
         whenn()

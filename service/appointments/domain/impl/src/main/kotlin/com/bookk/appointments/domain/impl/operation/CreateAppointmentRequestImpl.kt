@@ -53,6 +53,9 @@ internal class CreateAppointmentRequestImpl(
 
     override suspend fun invoke(userId: Uuid, draft: AppointmentRequestDraft): Result<Unit> {
         if (requestDataSource.isTokenInCache(draft.offerToken)) return Result.failure(TokenAlreadyUsed())
+        if (draft.services.any { it.count <= 0 }) return Result.failure(ServicesSignatureMiss())
+        val requestedServiceIds = draft.services.map { it.serviceId }
+        if (requestedServiceIds.distinct().size != requestedServiceIds.size) return Result.failure(ServicesSignatureMiss())
         val decodedOffer = runCatching {
             tokenValidatorFactory.forType(ValidationType.SERVICE_QUOTE)
                 .verifier
@@ -64,12 +67,15 @@ internal class CreateAppointmentRequestImpl(
         val totalDuration = decodedOffer.getClaim(QuoteClaims.CLAIM_DURATION).asString()
         val businessId = decodedOffer.getClaim(QuoteClaims.CLAIM_BUSINESS_ID).asString()
 
-        val requestedServiceCounts = draft.serviceIds.groupingBy { it }.eachCount()
+        val requestedServiceCounts = draft.services.associate { it.serviceId to it.count }
         if (requestedServiceCounts != claimedServiceCounts) return Result.failure(ServicesSignatureMiss())
         if (draft.businessId.toString() != businessId) return Result.failure(ServicesSignatureMiss())
 
-        val context = businessClient.getAppointmentBookingContext(draft.businessId, draft.employeeId, userId, draft.serviceIds)
+        val context = businessClient.getAppointmentBookingContext(draft.businessId, draft.employeeId, userId, requestedServiceIds)
             .getOrElse { return Result.failure(it) }
+
+        val servicesById = context.services.associateBy { it.id }
+        val expandedServices = draft.services.flatMap { requested -> List(requested.count) { servicesById.getValue(requested.serviceId) } }
 
         val request = AppointmentRequest(
             id = Uuid.random(),
@@ -86,7 +92,7 @@ internal class CreateAppointmentRequestImpl(
                 phone = context.client.phone.orEmpty(),
                 email = context.client.email.orEmpty()
             ),
-            services = context.services.map {
+            services = expandedServices.map {
                 ServiceSnapshot(id = it.id, name = it.name, groupId = it.group.id, price = it.price, duration = it.duration)
             },
             status = AppointmentRequestStatus.PENDING,

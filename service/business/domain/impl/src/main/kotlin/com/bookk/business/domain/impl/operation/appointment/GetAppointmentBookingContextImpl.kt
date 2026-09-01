@@ -30,7 +30,7 @@ internal class GetAppointmentBookingContextImpl(
         return transactionManager.transaction {
             val employee = employeeDataSource.getEmployee(businessId, employeeId) ?: throw Error.EmployeeNotFound()
             val client = clientDataSource.getClientByUserId(businessId, userId) ?: createAndAttachClientToBusiness(businessId, userId)
-            val requestedServices = serviceDataSource.getServicesExpanded(businessId, serviceIds.toSet()) ?: throw Error.ServiceNotFound()
+            val requestedServices = serviceDataSource.getServicesExpanded(businessId, serviceIds) ?: throw Error.ServiceNotFound()
 
             AppointmentBookingContext(employee = employee, client = client.toRemote(), services = requestedServices)
         }

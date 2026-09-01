@@ -6,11 +6,12 @@ import kotlin.uuid.Uuid
 
 internal suspend fun ServiceDataSource.getServicesExpanded(
     businessId: Uuid,
-    serviceIds: Set<Uuid>
+    serviceIds: List<Uuid>
 ): List<Service>? {
-    val foundServices = getServicesByIds(serviceIds.toList())
+    val distinctIds = serviceIds.toSet()
+    val foundServices = getServicesByIds(distinctIds.toList())
 
-    val isSizeNotMatched = foundServices.size != serviceIds.size
+    val isSizeNotMatched = foundServices.size != distinctIds.size
     val isNotBelongToBusiness = foundServices.any { it.businessId != businessId }
     if (isSizeNotMatched || isNotBelongToBusiness) return null
 

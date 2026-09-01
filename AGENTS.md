@@ -182,7 +182,7 @@ Hard rules (enforced by fixtures or review):
 - Fresh SUT and fresh mocks per test — no sharing across tests, no class-level mocks.
 - DO NOT EDIT `core/src/testFixtures/kotlin/com/bookk/core/test/Test.kt`.
 - Test names: backticked sentences, e.g. `` fun `should return failure when request overlaps with existing appointment`() ``.
-- Use entity `stub()` factories instead of hand-built instances; pass only the fields the test depends on. Provide real entity instances to mocks (ProtoBuf serialization NPEs otherwise).
+- Use entity `stub()` factories instead of hand-built instances; pass only the fields the test depends on. Provide real entity instances to mocks (ProtoBuf serialization NPEs otherwise). **Never write a local test-file helper function (`private fun createTestX()`, `makeX()`, …) that re-lists an entity's fields to construct it** — that duplicates the field list the entity's own `stub()` exists to own. If the entity has no `stub()` yet, add one to its companion (see the Entities rule above) and call it directly at each test call site instead. The one exception is a partial-update DTO (`BusinessUpdateModel`, `ClientUpdateModel`, …) — those are request shapes, not domain entities, so they don't get a `stub()`; a local private helper (conventionally named `updateModel(...)`, defaulting every field to `null`) is the established pattern for building them in tests, e.g. `UpdateBusinessImplTest.updateModel()`.
 - JUnit assertions (`org.junit.jupiter.api.Assertions`). Assert error types with `is`: `assertTrue(result.exceptionOrNull() is DoThing.Error.ThingExists)`.
 - If the operation sends events: include a test with `coVerify(exactly = 1) { eventProducer.send(any(SvcEvent.X::class), any()) }`.
 

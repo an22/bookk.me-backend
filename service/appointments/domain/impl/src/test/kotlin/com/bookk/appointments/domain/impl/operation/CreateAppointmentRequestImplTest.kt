@@ -109,20 +109,14 @@ internal class CreateAppointmentRequestImplTest {
 
     private fun bookingContext(businessId: Uuid, employeeId: Uuid, clientId: Uuid, serviceId: Uuid): AppointmentBookingContext {
         val employee = Employee.stub(id = employeeId, businessId = businessId)
-        val client = ClientRemote(
-            id = clientId, name = "Client", lastName = "Name",
-            phone = "123456789", email = "client@example.com", userId = null
-        )
+        val client = ClientRemote.stub(id = clientId)
         val service = Service.stub(id = serviceId, businessId = businessId)
         return AppointmentBookingContext(employee = employee, client = client, services = listOf(service))
     }
 
     private fun bookingContext(businessId: Uuid, employeeId: Uuid, clientId: Uuid, services: List<Service>): AppointmentBookingContext {
         val employee = Employee.stub(id = employeeId, businessId = businessId)
-        val client = ClientRemote(
-            id = clientId, name = "Client", lastName = "Name",
-            phone = "123456789", email = "client@example.com", userId = null
-        )
+        val client = ClientRemote.stub(id = clientId)
         return AppointmentBookingContext(employee = employee, client = client, services = services)
     }
 

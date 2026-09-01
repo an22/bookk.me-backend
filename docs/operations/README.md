@@ -68,6 +68,7 @@ Reactions to cross-service events:
 | `PUT /api/business/{id}` | [Update business](business/update-business.md) |
 | `POST /api/business/{businessId}/clients` | [Create client](business/create-client.md) |
 | `DELETE /api/business/{businessId}/clients/{id}` | [Delete client](business/delete-client.md) |
+| `PUT /api/business/{businessId}/clients/{id}` | [Update client](business/update-client.md) |
 | `PUT /api/business/{businessId}/employee/{id}` | [Update employee](business/update-employee.md) |
 | `POST /api/business/{businessId}/employee/{id}/promote` | [Promote employee](business/promote-employee.md) |
 | `POST /api/business/{businessId}/employee_invitation` | [Invite employee](business/create-employee-invitation.md) |

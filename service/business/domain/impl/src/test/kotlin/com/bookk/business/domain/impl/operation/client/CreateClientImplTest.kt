@@ -45,7 +45,7 @@ internal class CreateClientImplTest {
         given()
         val fixture = SutFixture()
         val businessId = Uuid.random()
-        val client = Client.Detached(Uuid.random(), "John", "Doe", "123456", "john@doe.com")
+        val client = Client.Detached.stub()
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { clientDataSource.getClient(businessId, client.phone!!) } returns null
@@ -72,7 +72,7 @@ internal class CreateClientImplTest {
         given()
         val fixture = SutFixture()
         val businessId = Uuid.random()
-        val client = Client.Integrated(Uuid.random(), "John", "Doe", "123456", "john@doe.com", Uuid.random())
+        val client = Client.Integrated.stub()
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { clientDataSource.getClient(businessId, client.phone!!) } returns null
@@ -99,7 +99,7 @@ internal class CreateClientImplTest {
         given()
         val fixture = SutFixture()
         val businessId = Uuid.random()
-        val client = Client.Detached(Uuid.random(), "John", "Doe", "123456", null)
+        val client = Client.Detached.stub(email = null)
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { clientDataSource.getClient(businessId, client.phone!!) } returns null
@@ -119,7 +119,7 @@ internal class CreateClientImplTest {
         given()
         val fixture = SutFixture()
         val businessId = Uuid.random()
-        val client = Client.Detached(Uuid.random(), "John", "Doe", null, "john@doe.com")
+        val client = Client.Detached.stub(phone = null)
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { clientDataSource.createDetachedClient(businessId, client) } returns client
@@ -139,7 +139,7 @@ internal class CreateClientImplTest {
         given()
         val fixture = SutFixture()
         val businessId = Uuid.random()
-        val client = Client.Detached(Uuid.random(), "John", "Doe", null, null)
+        val client = Client.Detached.stub(phone = null, email = null)
         fixture.transactionManager.mockTransaction()
 
         whenn()
@@ -156,7 +156,7 @@ internal class CreateClientImplTest {
         given()
         val fixture = SutFixture()
         val businessId = Uuid.random()
-        val client = Client.Detached(Uuid.random(), "John", "Doe", "123456", "john@doe.com")
+        val client = Client.Detached.stub()
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { clientDataSource.getClient(businessId, client.phone!!) } returns client
@@ -175,7 +175,7 @@ internal class CreateClientImplTest {
         given()
         val fixture = SutFixture()
         val businessId = Uuid.random()
-        val client = Client.Detached(Uuid.random(), "A".repeat(513), "Doe", "123456", "john@doe.com")
+        val client = Client.Detached.stub(name = "A".repeat(513))
         fixture.transactionManager.mockTransaction()
 
         whenn()
@@ -191,7 +191,7 @@ internal class CreateClientImplTest {
         given()
         val fixture = SutFixture()
         val businessId = Uuid.random()
-        val client = Client.Detached(Uuid.random(), "John", "Doe", "123456", "john@doe.com")
+        val client = Client.Detached.stub()
         with(fixture) {
             transactionManager.mockTransaction()
             grantPermission(ObjectPermission.READ)
@@ -210,7 +210,7 @@ internal class CreateClientImplTest {
         given()
         val fixture = SutFixture()
         val businessId = Uuid.random()
-        val client = Client.Detached(Uuid.random(), "John", "Doe", "123456", "john@doe.com")
+        val client = Client.Detached.stub()
         with(fixture) {
             transactionManager.mockTransaction()
             grantPermission(null)
@@ -229,7 +229,7 @@ internal class CreateClientImplTest {
         given()
         val fixture = SutFixture()
         val businessId = Uuid.random()
-        val client = Client.Detached(Uuid.random(), "John", "Doe", "123456", "john@doe.com")
+        val client = Client.Detached.stub()
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { clientDataSource.getClient(businessId, client.phone!!) } returns null
@@ -249,7 +249,7 @@ internal class CreateClientImplTest {
         given()
         val fixture = SutFixture()
         val businessId = Uuid.random()
-        val client = Client.Detached(Uuid.random(), "John", "A".repeat(513), "123456", "john@doe.com")
+        val client = Client.Detached.stub(lastName = "A".repeat(513))
         fixture.transactionManager.mockTransaction()
 
         whenn()
@@ -265,7 +265,7 @@ internal class CreateClientImplTest {
         given()
         val fixture = SutFixture()
         val businessId = Uuid.random()
-        val client = Client.Detached(Uuid.random(), "John", "Doe", "call-me-maybe", "john@doe.com")
+        val client = Client.Detached.stub(phone = "call-me-maybe")
         fixture.transactionManager.mockTransaction()
 
         whenn()
@@ -281,7 +281,7 @@ internal class CreateClientImplTest {
         given()
         val fixture = SutFixture()
         val businessId = Uuid.random()
-        val client = Client.Detached(Uuid.random(), "John", "Doe", "12", "john@doe.com")
+        val client = Client.Detached.stub(phone = "12")
         fixture.transactionManager.mockTransaction()
 
         whenn()
@@ -297,7 +297,7 @@ internal class CreateClientImplTest {
         given()
         val fixture = SutFixture()
         val businessId = Uuid.random()
-        val client = Client.Detached(Uuid.random(), "John", "Doe", "123456", "not-an-email")
+        val client = Client.Detached.stub(email = "not-an-email")
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { clientDataSource.getClient(businessId, client.phone!!) } returns null

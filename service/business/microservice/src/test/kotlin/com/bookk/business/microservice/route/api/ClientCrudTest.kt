@@ -1,10 +1,12 @@
 package com.bookk.business.microservice.route.api
 
 import com.bookk.business.domain.api.client.entity.ClientRemote
+import com.bookk.business.domain.api.client.entity.ClientUpdateModel
 import com.bookk.business.domain.api.client.entity.toDomain
 import com.bookk.business.domain.api.client.operation.CreateClient
 import com.bookk.business.domain.api.client.operation.DeleteClient
 import com.bookk.business.domain.api.client.operation.GetClients
+import com.bookk.business.domain.api.client.operation.UpdateClient
 import com.bookk.business.domain.api.error.BusinessErrorCodes
 import com.bookk.business.microservice.route.BusinessRouting
 import com.bookk.core.domain.entity.Error
@@ -20,6 +22,7 @@ import io.ktor.client.call.body
 import io.ktor.client.plugins.resources.delete
 import io.ktor.client.plugins.resources.get
 import io.ktor.client.plugins.resources.post
+import io.ktor.client.plugins.resources.put
 import io.ktor.client.request.setBody
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.install
@@ -37,20 +40,11 @@ internal class ClientCrudTest {
     private val businessId = Uuid.random()
     private val userId = Uuid.random()
 
-    private fun createTestClientRemote() = ClientRemote(
-        id = Uuid.random(),
-        name = "John",
-        lastName = "Doe",
-        phone = "123456789",
-        email = "john@example.com",
-        userId = null
-    )
-
     @Test
     fun `should create client`() = routeTest {
         given()
         val useCase: CreateClient = mockk()
-        val clientRemote = createTestClientRemote()
+        val clientRemote = ClientRemote.stub()
         val client = clientRemote.toDomain()
         
         coEvery { useCase.invoke(userId, businessId, client) } returns Result.success(clientRemote)
@@ -83,7 +77,7 @@ internal class ClientCrudTest {
     fun `should return clients`() = routeTest {
         given()
         val useCase: GetClients = mockk()
-        val clients = listOf(createTestClientRemote())
+        val clients = listOf(ClientRemote.stub())
         
         coEvery { useCase.invoke(userId, businessId) } returns Result.success(clients)
         
@@ -139,11 +133,258 @@ internal class ClientCrudTest {
         assertEquals(HttpStatusCode.NoContent, response.status)
     }
 
+    private fun updateModel(
+        id: Uuid,
+        name: String? = null,
+        lastName: String? = null,
+        phone: String? = null,
+        email: String? = null,
+        description: String? = null
+    ) = ClientUpdateModel(id = id, name = name, lastName = lastName, phone = phone, email = email, description = description)
+
+    @Test
+    fun `should update client`() = routeTest {
+        given()
+        val useCase: UpdateClient = mockk()
+        val id = Uuid.random()
+        val body = updateModel(id = id, description = "Prefers evening appointments")
+        val updated = ClientRemote.stub()
+
+        coEvery { useCase.invoke(userId, businessId, body) } returns Result.success(updated)
+
+        setupApplication(
+            extension = {
+                install(Authentication) {
+                    provider {
+                        authenticate { it.principal(AppPrincipal(Uuid.random(), userId, Uuid.random())) }
+                    }
+                }
+            },
+            diModule = module { single { useCase } },
+            routeUnderTest = { clientCrud() }
+        )
+
+        whenn()
+        val httpClient = createTestClient()
+        val response = httpClient.put(BusinessRouting.Api.Clients.Id(BusinessRouting.Api.Clients(businessId = businessId), id)) {
+            setBody(body)
+        }
+
+        then()
+        assertEquals(HttpStatusCode.OK, response.status)
+        assertEquals(updated.id, response.body<ClientRemote>().id)
+    }
+
+    @Test
+    fun `should return bad request when path id does not match body id`() = routeTest {
+        given()
+        val useCase: UpdateClient = mockk()
+        val id = Uuid.random()
+        val body = updateModel(id = Uuid.random(), description = "notes")
+
+        setupApplication(
+            extension = {
+                install(Authentication) {
+                    provider {
+                        authenticate { it.principal(AppPrincipal(Uuid.random(), userId, Uuid.random())) }
+                    }
+                }
+            },
+            diModule = module { single { useCase } },
+            routeUnderTest = { clientCrud() }
+        )
+
+        whenn()
+        val httpClient = createTestClient()
+        val response = httpClient.put(BusinessRouting.Api.Clients.Id(BusinessRouting.Api.Clients(businessId = businessId), id)) {
+            setBody(body)
+        }
+
+        then()
+        assertEquals(HttpStatusCode.BadRequest, response.status)
+    }
+
+    @Test
+    fun `should return not found when updating a client that does not exist`() = routeTest {
+        given()
+        val useCase: UpdateClient = mockk()
+        val id = Uuid.random()
+        val body = updateModel(id = id, description = "notes")
+        coEvery { useCase.invoke(userId, businessId, body) } returns Result.failure(UpdateClient.Error.NotFound())
+
+        setupApplication(
+            extension = {
+                install(Authentication) {
+                    provider {
+                        authenticate { it.principal(AppPrincipal(Uuid.random(), userId, Uuid.random())) }
+                    }
+                }
+            },
+            diModule = module { single { useCase } },
+            routeUnderTest = { clientCrud() }
+        )
+
+        whenn()
+        val httpClient = createTestClient()
+        val response = httpClient.put(BusinessRouting.Api.Clients.Id(BusinessRouting.Api.Clients(businessId = businessId), id)) {
+            setBody(body)
+        }
+
+        then()
+        assertEquals(HttpStatusCode.NotFound, response.status)
+        assertEquals(BusinessErrorCodes.BUSINESS_CLIENT_NOT_EXISTS, response.body<SimpleServerError>().errorCode)
+    }
+
+    @Test
+    fun `should return unprocessable entity when updating personal info of an integrated client`() = routeTest {
+        given()
+        val useCase: UpdateClient = mockk()
+        val id = Uuid.random()
+        val body = updateModel(id = id, name = "New Name")
+        coEvery { useCase.invoke(userId, businessId, body) } returns Result.failure(UpdateClient.Error.PersonalInfoNotEditable())
+
+        setupApplication(
+            extension = {
+                install(Authentication) {
+                    provider {
+                        authenticate { it.principal(AppPrincipal(Uuid.random(), userId, Uuid.random())) }
+                    }
+                }
+            },
+            diModule = module { single { useCase } },
+            routeUnderTest = { clientCrud() }
+        )
+
+        whenn()
+        val httpClient = createTestClient()
+        val response = httpClient.put(BusinessRouting.Api.Clients.Id(BusinessRouting.Api.Clients(businessId = businessId), id)) {
+            setBody(body)
+        }
+
+        then()
+        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
+        assertEquals(BusinessErrorCodes.BUSINESS_CLIENT_PERSONAL_INFO_NOT_EDITABLE, response.body<SimpleServerError>().errorCode)
+    }
+
+    @Test
+    fun `should return unprocessable entity when updated client phone already exists`() = routeTest {
+        given()
+        val useCase: UpdateClient = mockk()
+        val id = Uuid.random()
+        val body = updateModel(id = id, phone = "999999999")
+        coEvery { useCase.invoke(userId, businessId, body) } returns Result.failure(UpdateClient.Error.ClientExist())
+
+        setupApplication(
+            extension = {
+                install(Authentication) {
+                    provider {
+                        authenticate { it.principal(AppPrincipal(Uuid.random(), userId, Uuid.random())) }
+                    }
+                }
+            },
+            diModule = module { single { useCase } },
+            routeUnderTest = { clientCrud() }
+        )
+
+        whenn()
+        val httpClient = createTestClient()
+        val response = httpClient.put(BusinessRouting.Api.Clients.Id(BusinessRouting.Api.Clients(businessId = businessId), id)) {
+            setBody(body)
+        }
+
+        then()
+        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
+        assertEquals(BusinessErrorCodes.BUSINESS_CLIENT_EXISTS, response.body<SimpleServerError>().errorCode)
+    }
+
+    @Test
+    fun `should return unprocessable entity when updated client validation fails`() = routeTest {
+        given()
+        val useCase: UpdateClient = mockk()
+        val id = Uuid.random()
+        val body = updateModel(id = id, phone = "not-a-phone")
+        coEvery { useCase.invoke(userId, businessId, body) } returns Result.failure(UpdateClient.Error.ClientValidationError())
+
+        setupApplication(
+            extension = {
+                install(Authentication) {
+                    provider {
+                        authenticate { it.principal(AppPrincipal(Uuid.random(), userId, Uuid.random())) }
+                    }
+                }
+            },
+            diModule = module { single { useCase } },
+            routeUnderTest = { clientCrud() }
+        )
+
+        whenn()
+        val httpClient = createTestClient()
+        val response = httpClient.put(BusinessRouting.Api.Clients.Id(BusinessRouting.Api.Clients(businessId = businessId), id)) {
+            setBody(body)
+        }
+
+        then()
+        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
+        assertEquals(BusinessErrorCodes.BUSINESS_CLIENT_NAME_VALIDATION_ERROR, response.body<SimpleServerError>().errorCode)
+    }
+
+    @Test
+    fun `should return not found when user is not allowed to update client`() = routeTest {
+        given()
+        val useCase: UpdateClient = mockk()
+        val id = Uuid.random()
+        val body = updateModel(id = id, description = "notes")
+        coEvery { useCase.invoke(userId, businessId, body) } returns Result.failure(Error.OperationNotAllowed())
+
+        setupApplication(
+            extension = {
+                install(Authentication) {
+                    provider {
+                        authenticate { it.principal(AppPrincipal(Uuid.random(), userId, Uuid.random())) }
+                    }
+                }
+            },
+            diModule = module { single { useCase } },
+            routeUnderTest = { clientCrud() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.put(BusinessRouting.Api.Clients.Id(BusinessRouting.Api.Clients(businessId = businessId), id)) {
+            setBody(body)
+        }
+
+        then()
+        assertEquals(HttpStatusCode.NotFound, response.status)
+    }
+
+    @Test
+    fun `should return unauthorized when updating client without authentication`() = routeTest {
+        given()
+        val useCase: UpdateClient = mockk()
+        val id = Uuid.random()
+
+        setupApplication(
+            extension = { install(Authentication) { bearer { authenticate { null } } } },
+            diModule = module { single { useCase } },
+            routeUnderTest = { clientCrud() }
+        )
+
+        whenn()
+        val httpClient = createTestClient()
+        val response = httpClient.put(BusinessRouting.Api.Clients.Id(BusinessRouting.Api.Clients(businessId = businessId), id)) {
+            setBody(updateModel(id = id, description = "notes"))
+        }
+
+        then()
+        assertEquals(HttpStatusCode.Unauthorized, response.status)
+    }
+
     @Test
     fun `should return unprocessable entity when client already exists`() = routeTest {
         given()
         val useCase: CreateClient = mockk()
-        val clientRemote = createTestClientRemote()
+        val clientRemote = ClientRemote.stub()
         coEvery { useCase.invoke(userId, businessId, clientRemote.toDomain()) } returns Result.failure(CreateClient.Error.ClientExist())
 
         setupApplication(
@@ -173,7 +414,7 @@ internal class ClientCrudTest {
     fun `should return unprocessable entity when client validation error`() = routeTest {
         given()
         val useCase: CreateClient = mockk()
-        val clientRemote = createTestClientRemote()
+        val clientRemote = ClientRemote.stub()
         coEvery { useCase.invoke(userId, businessId, clientRemote.toDomain()) } returns Result.failure(CreateClient.Error.ClientValidationError())
 
         setupApplication(
@@ -203,7 +444,7 @@ internal class ClientCrudTest {
     fun `should return unprocessable entity when client has no phone or email`() = routeTest {
         given()
         val useCase: CreateClient = mockk()
-        val clientRemote = createTestClientRemote()
+        val clientRemote = ClientRemote.stub()
         coEvery { useCase.invoke(userId, businessId, clientRemote.toDomain()) } returns Result.failure(CreateClient.Error.MissingContactInfo())
 
         setupApplication(
@@ -287,7 +528,7 @@ internal class ClientCrudTest {
     fun `should return not found when user is not allowed to create client`() = routeTest {
         given()
         val useCase: CreateClient = mockk()
-        val clientRemote = createTestClientRemote()
+        val clientRemote = ClientRemote.stub()
         coEvery {
             useCase.invoke(userId, businessId, clientRemote.toDomain())
         } returns Result.failure(Error.OperationNotAllowed())
@@ -357,7 +598,7 @@ internal class ClientCrudTest {
         whenn()
         val httpClient = createTestClient()
         val response = httpClient.post(BusinessRouting.Api.Clients(businessId = businessId)) {
-            setBody(createTestClientRemote())
+            setBody(ClientRemote.stub())
         }
 
         then()

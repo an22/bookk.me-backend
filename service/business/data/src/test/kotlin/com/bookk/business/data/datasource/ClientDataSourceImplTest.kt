@@ -7,6 +7,7 @@ import com.bookk.business.data.orm.table.BusinessTable
 import com.bookk.business.data.orm.table.BusinessWorkingHoursTable
 import com.bookk.business.data.orm.table.ClientTable
 import com.bookk.business.domain.api.client.entity.Client
+import com.bookk.business.domain.api.client.entity.ClientUpdateModel
 import com.bookk.core.data.test.createTestDatabase
 import com.bookk.core.test.given
 import com.bookk.core.test.runUnitTest
@@ -42,10 +43,7 @@ internal class ClientDataSourceImplTest {
         given()
         val fixture = SutFixture()
         fixture.setup()
-        val client = Client.Detached(
-            id = Uuid.random(), name = "Alice", lastName = "Smith",
-            phone = "+1234567890", email = "alice@test.com"
-        )
+        val client = Client.Detached.stub(name = "Alice")
 
         whenn()
         suspendTransaction { fixture.sut.createDetachedClient(fixture.businessId, client) }
@@ -57,15 +55,27 @@ internal class ClientDataSourceImplTest {
     }
 
     @Test
+    fun `should create detached client with a description`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val client = Client.Detached.stub(description = "Prefers evening appointments")
+
+        whenn()
+        val created = suspendTransaction { fixture.sut.createDetachedClient(fixture.businessId, client) }
+        val found = suspendTransaction { fixture.sut.getClientById(fixture.businessId, created.id) }
+
+        then()
+        assertEquals("Prefers evening appointments", found!!.description)
+    }
+
+    @Test
     fun `should create integrated client with user id`() = runUnitTest {
         given()
         val fixture = SutFixture()
         fixture.setup()
         val userId = Uuid.random()
-        val client = Client.Integrated(
-            id = Uuid.random(), name = "Bob", lastName = "Jones",
-            phone = "+9876543210", email = "bob@test.com", userId = userId
-        )
+        val client = Client.Integrated.stub(userId = userId)
 
         whenn()
         val created = suspendTransaction { fixture.sut.createIntegratedClient(fixture.businessId, client) }
@@ -80,10 +90,7 @@ internal class ClientDataSourceImplTest {
         given()
         val fixture = SutFixture()
         fixture.setup()
-        val client = Client.Detached(
-            id = Uuid.random(), name = "Walk", lastName = "In",
-            phone = "+1231110000", email = null
-        )
+        val client = Client.Detached.stub(email = null)
 
         whenn()
         val created = suspendTransaction { fixture.sut.createDetachedClient(fixture.businessId, client) }
@@ -99,10 +106,7 @@ internal class ClientDataSourceImplTest {
         given()
         val fixture = SutFixture()
         fixture.setup()
-        val client = Client.Detached(
-            id = Uuid.random(), name = "Walk", lastName = "In",
-            phone = null, email = "walkin@test.com"
-        )
+        val client = Client.Detached.stub(phone = null)
 
         whenn()
         val created = suspendTransaction { fixture.sut.createDetachedClient(fixture.businessId, client) }
@@ -131,15 +135,11 @@ internal class ClientDataSourceImplTest {
         given()
         val fixture = SutFixture()
         fixture.setup()
-        val phone = "+1112223333"
-        val client = Client.Detached(
-            id = Uuid.random(), name = "Carol", lastName = "White",
-            phone = phone, email = "carol@test.com"
-        )
+        val client = Client.Detached.stub(name = "Carol")
         suspendTransaction { fixture.sut.createDetachedClient(fixture.businessId, client) }
 
         whenn()
-        val found = suspendTransaction { fixture.sut.getClient(fixture.businessId, phone) }
+        val found = suspendTransaction { fixture.sut.getClient(fixture.businessId, client.phone!!) }
 
         then()
         assertNotNull(found)
@@ -164,10 +164,7 @@ internal class ClientDataSourceImplTest {
         given()
         val fixture = SutFixture()
         fixture.setup()
-        val client = Client.Detached(
-            id = Uuid.random(), name = "Erin", lastName = "Black",
-            phone = "+1231231234", email = "erin@test.com"
-        )
+        val client = Client.Detached.stub(name = "Erin")
         val created = suspendTransaction { fixture.sut.createDetachedClient(fixture.businessId, client) }
 
         whenn()
@@ -199,10 +196,7 @@ internal class ClientDataSourceImplTest {
         val otherBusinessId = suspendTransaction {
             fixture.businessSut.createBusiness(Uuid.random(), "Other Business", "USD", TimeZone.UTC)
         }.id
-        val client = Client.Detached(
-            id = Uuid.random(), name = "Frank", lastName = "Green",
-            phone = "+3213214321", email = "frank@test.com"
-        )
+        val client = Client.Detached.stub()
         val created = suspendTransaction { fixture.sut.createDetachedClient(fixture.businessId, client) }
 
         whenn()
@@ -217,10 +211,7 @@ internal class ClientDataSourceImplTest {
         given()
         val fixture = SutFixture()
         fixture.setup()
-        val client = Client.Detached(
-            id = Uuid.random(), name = "Dave", lastName = "Brown",
-            phone = "+4445556666", email = "dave@test.com"
-        )
+        val client = Client.Detached.stub()
         val created = suspendTransaction { fixture.sut.createDetachedClient(fixture.businessId, client) }
 
         whenn()
@@ -246,23 +237,99 @@ internal class ClientDataSourceImplTest {
     }
 
     @Test
+    fun `should update client personal info and description`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val client = Client.Detached.stub()
+        val created = suspendTransaction { fixture.sut.createDetachedClient(fixture.businessId, client) }
+        val model = ClientUpdateModel(
+            id = created.id, name = "Grant2", lastName = "Hill2",
+            phone = "+7778889998", email = "grant2@test.com", description = "Allergic to nut-based products"
+        )
+
+        whenn()
+        val updated = suspendTransaction { fixture.sut.updateClient(fixture.businessId, model) }
+
+        then()
+        assertNotNull(updated)
+        assertEquals("Grant2", updated!!.name)
+        assertEquals("Hill2", updated.lastName)
+        assertEquals("+7778889998", updated.phone)
+        assertEquals("grant2@test.com", updated.email)
+        assertEquals("Allergic to nut-based products", updated.description)
+    }
+
+    @Test
+    fun `should leave fields absent from the update model unchanged`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val client = Client.Detached.stub(description = "Old notes")
+        val created = suspendTransaction { fixture.sut.createDetachedClient(fixture.businessId, client) }
+        val model = ClientUpdateModel(
+            id = created.id, name = null, lastName = null, phone = null, email = null, description = "New notes"
+        )
+
+        whenn()
+        val updated = suspendTransaction { fixture.sut.updateClient(fixture.businessId, model) }
+
+        then()
+        assertNotNull(updated)
+        assertEquals(client.name, updated!!.name)
+        assertEquals(client.phone, updated.phone)
+        assertEquals("New notes", updated.description)
+    }
+
+    @Test
+    fun `should return null when updating a client that does not exist`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val model = ClientUpdateModel(id = Uuid.random(), name = null, lastName = null, phone = null, email = null, description = "notes")
+
+        whenn()
+        val updated = suspendTransaction { fixture.sut.updateClient(fixture.businessId, model) }
+
+        then()
+        assertNull(updated)
+    }
+
+    @Test
+    fun `should not update client when it belongs to a different business`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val otherBusinessId = suspendTransaction {
+            fixture.businessSut.createBusiness(Uuid.random(), "Other Business", "USD", TimeZone.UTC)
+        }.id
+        val client = Client.Detached.stub()
+        val created = suspendTransaction { fixture.sut.createDetachedClient(fixture.businessId, client) }
+        val model = ClientUpdateModel(id = created.id, name = null, lastName = null, phone = null, email = null, description = "notes")
+
+        whenn()
+        val updated = suspendTransaction { fixture.sut.updateClient(otherBusinessId, model) }
+        val found = suspendTransaction { fixture.sut.getClientById(fixture.businessId, created.id) }
+
+        then()
+        assertNull(updated)
+        assertNull(found!!.description)
+    }
+
+    @Test
     fun `should update integrated client fields by user id`() = runUnitTest {
         given()
         val fixture = SutFixture()
         fixture.setup()
         val userId = Uuid.random()
-        val phone = "+5556667777"
-        val client = Client.Integrated(
-            id = Uuid.random(), name = "Old", lastName = "Name",
-            phone = phone, email = "old@test.com", userId = userId
-        )
+        val client = Client.Integrated.stub(userId = userId)
         suspendTransaction { fixture.sut.createIntegratedClient(fixture.businessId, client) }
 
         whenn()
         val updated = suspendTransaction {
             fixture.sut.updateIntegratedClients(userId, "New", "Surname", "new@test.com", null, Instant.fromEpochMilliseconds(1000))
         }
-        val found = suspendTransaction { fixture.sut.getClient(fixture.businessId, phone) }
+        val found = suspendTransaction { fixture.sut.getClient(fixture.businessId, client.phone!!) }
 
         then()
         assertEquals(1, updated)
@@ -280,10 +347,7 @@ internal class ClientDataSourceImplTest {
         val fixture = SutFixture()
         fixture.setup()
         val userId = Uuid.random()
-        val client = Client.Integrated(
-            id = Uuid.random(), name = "Old", lastName = "Name",
-            phone = "+1111111111", email = "old@test.com", userId = userId
-        )
+        val client = Client.Integrated.stub(userId = userId)
         suspendTransaction { fixture.sut.createIntegratedClient(fixture.businessId, client) }
 
         whenn()
@@ -304,11 +368,7 @@ internal class ClientDataSourceImplTest {
         val fixture = SutFixture()
         fixture.setup()
         val userId = Uuid.random()
-        val phone = "+1111100000"
-        val client = Client.Integrated(
-            id = Uuid.random(), name = "Old", lastName = "Name",
-            phone = phone, email = "old@test.com", userId = userId
-        )
+        val client = Client.Integrated.stub(userId = userId)
         suspendTransaction { fixture.sut.createIntegratedClient(fixture.businessId, client) }
 
         whenn()
@@ -319,8 +379,8 @@ internal class ClientDataSourceImplTest {
         }
 
         then()
-        val found = suspendTransaction { fixture.sut.getClient(fixture.businessId, phone) }
-        assertEquals(phone, found!!.phone)
+        val found = suspendTransaction { fixture.sut.getClient(fixture.businessId, client.phone!!) }
+        assertEquals(client.phone, found!!.phone)
         assertEquals("New", found.name)
     }
 
@@ -330,11 +390,7 @@ internal class ClientDataSourceImplTest {
         val fixture = SutFixture()
         fixture.setup()
         val userId = Uuid.random()
-        val phone = "+5556660001"
-        val client = Client.Integrated(
-            id = Uuid.random(), name = "Old", lastName = "Name",
-            phone = phone, email = "old@test.com", userId = userId
-        )
+        val client = Client.Integrated.stub(userId = userId)
         suspendTransaction { fixture.sut.createIntegratedClient(fixture.businessId, client) }
         val newer = Instant.fromEpochMilliseconds(2000)
         val older = Instant.fromEpochMilliseconds(1000)
@@ -344,7 +400,7 @@ internal class ClientDataSourceImplTest {
         val updated = suspendTransaction {
             fixture.sut.updateIntegratedClients(userId, "Older", "Surname", "older@test.com", null, older)
         }
-        val found = suspendTransaction { fixture.sut.getClient(fixture.businessId, phone) }
+        val found = suspendTransaction { fixture.sut.getClient(fixture.businessId, client.phone!!) }
 
         then()
         assertEquals(0, updated)
@@ -358,11 +414,7 @@ internal class ClientDataSourceImplTest {
         val fixture = SutFixture()
         fixture.setup()
         val userId = Uuid.random()
-        val phone = "+5556660002"
-        val client = Client.Integrated(
-            id = Uuid.random(), name = "Old", lastName = "Name",
-            phone = phone, email = "old@test.com", userId = userId
-        )
+        val client = Client.Integrated.stub(userId = userId)
         suspendTransaction { fixture.sut.createIntegratedClient(fixture.businessId, client) }
         suspendTransaction {
             fixture.sut.updateIntegratedClients(userId, "First", "Surname", "first@test.com", null, Instant.fromEpochMilliseconds(1000))
@@ -372,7 +424,7 @@ internal class ClientDataSourceImplTest {
         val updated = suspendTransaction {
             fixture.sut.updateIntegratedClients(userId, "Second", "Surname", "second@test.com", null, Instant.fromEpochMilliseconds(2000))
         }
-        val found = suspendTransaction { fixture.sut.getClient(fixture.businessId, phone) }
+        val found = suspendTransaction { fixture.sut.getClient(fixture.businessId, client.phone!!) }
 
         then()
         assertEquals(1, updated)
@@ -384,18 +436,14 @@ internal class ClientDataSourceImplTest {
         given()
         val fixture = SutFixture()
         fixture.setup()
-        val detachedPhone = "+1010101010"
-        val detached = Client.Detached(
-            id = Uuid.random(), name = "Keep", lastName = "Me",
-            phone = detachedPhone, email = "keep@test.com"
-        )
+        val detached = Client.Detached.stub(name = "Keep")
         suspendTransaction { fixture.sut.createDetachedClient(fixture.businessId, detached) }
 
         whenn()
         val updated = suspendTransaction {
             fixture.sut.updateIntegratedClients(Uuid.random(), "New", "Surname", "new@test.com", null, Instant.fromEpochMilliseconds(1000))
         }
-        val found = suspendTransaction { fixture.sut.getClient(fixture.businessId, detachedPhone) }
+        val found = suspendTransaction { fixture.sut.getClient(fixture.businessId, detached.phone!!) }
 
         then()
         assertEquals(0, updated)
@@ -409,10 +457,7 @@ internal class ClientDataSourceImplTest {
         val fixture = SutFixture()
         fixture.setup()
         val userId = Uuid.random()
-        val client = Client.Integrated(
-            id = Uuid.random(), name = "Alice", lastName = "Smith",
-            phone = "+5551234567", email = "alice@test.com", userId = userId
-        )
+        val client = Client.Integrated.stub(userId = userId)
         val created = suspendTransaction { fixture.sut.createIntegratedClient(fixture.businessId, client) }
 
         whenn()
@@ -423,8 +468,8 @@ internal class ClientDataSourceImplTest {
         assertEquals(1, affected)
         assertEquals("Deleted User", found.name)
         assertEquals("", found.lastName)
-        assertEquals("", found.phone)
-        assertEquals("", found.email)
+        assertNull(found.phone)
+        assertNull(found.email)
         assertTrue(found is Client.Detached)
     }
 
@@ -447,10 +492,7 @@ internal class ClientDataSourceImplTest {
         val fixture = SutFixture()
         fixture.setup()
         val userId = Uuid.random()
-        val client = Client.Integrated(
-            id = Uuid.random(), name = "Grace", lastName = "Hopper",
-            phone = "+1230001234", email = "grace@test.com", userId = userId
-        )
+        val client = Client.Integrated.stub(name = "Grace", userId = userId)
         suspendTransaction { fixture.sut.createIntegratedClient(fixture.businessId, client) }
 
         whenn()
@@ -483,10 +525,7 @@ internal class ClientDataSourceImplTest {
         val otherBusinessId = suspendTransaction {
             fixture.businessSut.createBusiness(Uuid.random(), "Other Business", "USD", TimeZone.UTC)
         }.id
-        val client = Client.Integrated(
-            id = Uuid.random(), name = "Jack", lastName = "Ryan",
-            phone = "+1119998888", email = "jack@test.com", userId = userId
-        )
+        val client = Client.Integrated.stub(userId = userId)
         suspendTransaction { fixture.sut.createIntegratedClient(otherBusinessId, client) }
 
         whenn()
@@ -502,10 +541,7 @@ internal class ClientDataSourceImplTest {
         val fixture = SutFixture()
         fixture.setup()
         val userId = Uuid.random()
-        val client = Client.Integrated(
-            id = Uuid.random(), name = "Henry", lastName = "Ford",
-            phone = "+1112223333", email = "henry@test.com", userId = userId
-        )
+        val client = Client.Integrated.stub(name = "Henry", userId = userId)
 
         whenn()
         val result = suspendTransaction { fixture.sut.getOrCreateIntegratedClient(fixture.businessId, client) }
@@ -524,15 +560,9 @@ internal class ClientDataSourceImplTest {
         val fixture = SutFixture()
         fixture.setup()
         val userId = Uuid.random()
-        val existing = Client.Integrated(
-            id = Uuid.random(), name = "Iris", lastName = "West",
-            phone = "+4445556677", email = "iris@test.com", userId = userId
-        )
+        val existing = Client.Integrated.stub(name = "Iris", userId = userId)
         val created = suspendTransaction { fixture.sut.createIntegratedClient(fixture.businessId, existing) }
-        val attempt = Client.Integrated(
-            id = Uuid.random(), name = "Different", lastName = "Name",
-            phone = "+0000000000", email = "different@test.com", userId = userId
-        )
+        val attempt = Client.Integrated.stub(name = "Different", userId = userId)
 
         whenn()
         val result = suspendTransaction { fixture.sut.getOrCreateIntegratedClient(fixture.businessId, attempt) }

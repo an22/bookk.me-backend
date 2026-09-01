@@ -37,4 +37,6 @@ object BusinessErrorCodes {
     const val BUSINESS_EMPLOYEE_NOT_EXISTS = BASE + 24
 
     const val BUSINESS_CLIENT_MISSING_CONTACT_INFO = BASE + 25
+
+    const val BUSINESS_CLIENT_PERSONAL_INFO_NOT_EDITABLE = BASE + 26
 }

@@ -4,7 +4,6 @@ import com.bookk.business.domain.api.client.entity.ClientRemote
 import com.bookk.business.domain.api.employee.entity.Employee
 import com.bookk.business.domain.api.service.entity.Service
 import kotlinx.serialization.Serializable
-import kotlin.uuid.Uuid
 
 @Serializable
 data class AppointmentBookingContext(
@@ -15,14 +14,7 @@ data class AppointmentBookingContext(
     companion object {
         fun stub(
             employee: Employee = Employee.stub(),
-            client: ClientRemote = ClientRemote(
-                id = Uuid.random(),
-                name = "Client",
-                lastName = "Name",
-                phone = "123456789",
-                email = "client@example.com",
-                userId = null
-            ),
+            client: ClientRemote = ClientRemote.stub(),
             services: List<Service> = listOf(Service.stub(businessId = employee.businessId))
         ) = AppointmentBookingContext(employee = employee, client = client, services = services)
     }

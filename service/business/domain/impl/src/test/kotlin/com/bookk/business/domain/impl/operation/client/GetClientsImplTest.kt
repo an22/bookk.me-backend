@@ -45,8 +45,8 @@ internal class GetClientsImplTest {
         val fixture = SutFixture()
         val businessId = Uuid.random()
         val clients = listOf(
-            Client.Detached(Uuid.random(), "John", "Doe", "123456", "john@doe.com"),
-            Client.Integrated(Uuid.random(), "Jane", "Doe", "654321", "jane@doe.com", Uuid.random())
+            Client.Detached.stub(),
+            Client.Integrated.stub()
         )
         with(fixture) {
             transactionManager.mockTransaction()

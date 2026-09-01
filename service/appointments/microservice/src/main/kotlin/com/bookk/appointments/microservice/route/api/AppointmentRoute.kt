@@ -24,12 +24,13 @@ import io.ktor.server.routing.Routing
 import io.ktor.server.routing.application
 import io.ktor.server.routing.openapi.describe
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.protobuf.ProtoNumber
 import org.koin.ktor.ext.inject
 import kotlin.uuid.Uuid
 
 @Serializable
 internal class AppointmentRequestId(
-    val requestId: Uuid,
+    @ProtoNumber(1) val requestId: Uuid,
 )
 
 fun Routing.appointment() {

@@ -2,22 +2,23 @@ package com.bookk.business.domain.api.employee.entity
 
 import com.bookk.business.domain.api.service.entity.Service
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.protobuf.ProtoNumber
 import library.schedule.Schedule
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
 @Serializable
 data class Employee(
-    val id: Uuid,
-    val businessId: Uuid,
-    val name: String,
-    val lastName: String,
-    val phone: String?,
-    val email: String?,
-    val userId: Uuid,
-    val services: List<Service>,
-    val schedule: Schedule,
-    val createdAt: Instant
+    @ProtoNumber(1) val id: Uuid,
+    @ProtoNumber(2) val businessId: Uuid,
+    @ProtoNumber(3) val name: String,
+    @ProtoNumber(4) val lastName: String,
+    @ProtoNumber(5) val phone: String?,
+    @ProtoNumber(6) val email: String?,
+    @ProtoNumber(7) val userId: Uuid,
+    @ProtoNumber(8) val services: List<Service>,
+    @ProtoNumber(9) val schedule: Schedule,
+    @ProtoNumber(10) val createdAt: Instant
 ) {
     companion object {
         fun stub(

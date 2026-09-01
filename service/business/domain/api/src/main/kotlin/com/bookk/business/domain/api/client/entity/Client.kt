@@ -1,17 +1,18 @@
 package com.bookk.business.domain.api.client.entity
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.protobuf.ProtoNumber
 import kotlin.uuid.Uuid
 
 @Serializable
 class ClientRemote(
-    val id: Uuid,
-    val name: String,
-    val lastName: String,
-    val phone: String?,
-    val email: String?,
-    val userId: Uuid?,
-    val description: String?
+    @ProtoNumber(1) val id: Uuid,
+    @ProtoNumber(2) val name: String,
+    @ProtoNumber(3) val lastName: String,
+    @ProtoNumber(4) val phone: String?,
+    @ProtoNumber(5) val email: String?,
+    @ProtoNumber(6) val userId: Uuid?,
+    @ProtoNumber(7) val description: String?
 ) {
     companion object {
         fun stub(

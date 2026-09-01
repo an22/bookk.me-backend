@@ -1,13 +1,14 @@
 package com.bookk.appointments.domain.api.entity
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.protobuf.ProtoNumber
 import kotlin.uuid.Uuid
 
 @Serializable
 data class AppointmentCancellation(
-    val id: Uuid,
-    val businessId: Uuid,
-    val reason: String
+    @ProtoNumber(1) val id: Uuid,
+    @ProtoNumber(2) val businessId: Uuid,
+    @ProtoNumber(3) val reason: String
 ) {
     companion object {
         fun stub(

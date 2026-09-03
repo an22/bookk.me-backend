@@ -189,7 +189,7 @@ internal class EmployeeInvitationDataSourceImplTest {
 
         then()
         assertEquals(2, found.size)
-        assertTrue(found.any { it.code == "AAAA1111" && it.status == EmployeeInvitationStatus.REDEEMED })
+        assertTrue(found.any { it.code == null && it.status == EmployeeInvitationStatus.REDEEMED })
         assertTrue(found.any { it.code == "BBBB2222" && it.status == EmployeeInvitationStatus.PENDING })
     }
 
@@ -374,6 +374,121 @@ internal class EmployeeInvitationDataSourceImplTest {
 
         then()
         assertEquals(EmployeeInvitationStatus.REDEEMED, found?.status)
+    }
+
+    @Test
+    fun `should clear the code when redeeming an invitation`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val created = suspendTransaction {
+            fixture.sut.createInvitation(EmployeeInvitation.stub(businessId = fixture.businessId, code = "REDEEM01"))
+        }
+
+        whenn()
+        suspendTransaction { fixture.sut.redeemInvitation(created.id) }
+        val found = suspendTransaction { fixture.sut.getInvitation(fixture.businessId, created.id) }
+
+        then()
+        assertEquals(EmployeeInvitationStatus.REDEEMED, found?.status)
+        assertNull(found?.code)
+    }
+
+    @Test
+    fun `should clear the code when revoking an invitation`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val created = suspendTransaction {
+            fixture.sut.createInvitation(EmployeeInvitation.stub(businessId = fixture.businessId, code = "REVOKE01"))
+        }
+
+        whenn()
+        suspendTransaction { fixture.sut.revokeInvitation(created.id) }
+        val found = suspendTransaction { fixture.sut.getInvitation(fixture.businessId, created.id) }
+
+        then()
+        assertEquals(EmployeeInvitationStatus.REVOKED, found?.status)
+        assertNull(found?.code)
+    }
+
+    @Test
+    fun `should clear the code when expiring an invitation`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val created = suspendTransaction {
+            fixture.sut.createInvitation(EmployeeInvitation.stub(businessId = fixture.businessId, code = "EXPIRE01"))
+        }
+
+        whenn()
+        suspendTransaction { fixture.sut.expireOldInvitations(Clock.System.now().plus(1.hours)) }
+        val found = suspendTransaction { fixture.sut.getInvitation(fixture.businessId, created.id) }
+
+        then()
+        assertEquals(EmployeeInvitationStatus.EXPIRED, found?.status)
+        assertNull(found?.code)
+    }
+
+    @Test
+    fun `should no longer find a redeemed invitation by its old code`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val created = suspendTransaction {
+            fixture.sut.createInvitation(EmployeeInvitation.stub(businessId = fixture.businessId, code = "STALE001"))
+        }
+        suspendTransaction { fixture.sut.redeemInvitation(created.id) }
+
+        whenn()
+        val found = suspendTransaction { fixture.sut.getInvitationByCode("STALE001") }
+
+        then()
+        assertNull(found)
+    }
+
+    @Test
+    fun `should allow reusing a code once its previous invitation is redeemed`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val created = suspendTransaction {
+            fixture.sut.createInvitation(EmployeeInvitation.stub(businessId = fixture.businessId, code = "REUSE001"))
+        }
+        suspendTransaction { fixture.sut.redeemInvitation(created.id) }
+
+        whenn()
+        val recreated = suspendTransaction {
+            fixture.sut.createInvitation(EmployeeInvitation.stub(businessId = fixture.businessId, code = "REUSE001"))
+        }
+
+        then()
+        assertEquals("REUSE001", recreated.code)
+        assertEquals(EmployeeInvitationStatus.PENDING, recreated.status)
+    }
+
+    @Test
+    fun `should allow two different processed invitations to both have a null code`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val first = suspendTransaction {
+            fixture.sut.createInvitation(EmployeeInvitation.stub(businessId = fixture.businessId, code = "FIRST001"))
+        }
+        val second = suspendTransaction {
+            fixture.sut.createInvitation(EmployeeInvitation.stub(businessId = fixture.businessId, code = "SECOND01"))
+        }
+
+        whenn()
+        suspendTransaction { fixture.sut.redeemInvitation(first.id) }
+        val revoked = suspendTransaction { fixture.sut.revokeInvitation(second.id) }
+
+        then()
+        assertTrue(revoked)
+        val foundFirst = suspendTransaction { fixture.sut.getInvitation(fixture.businessId, first.id) }
+        val foundSecond = suspendTransaction { fixture.sut.getInvitation(fixture.businessId, second.id) }
+        assertNull(foundFirst?.code)
+        assertNull(foundSecond?.code)
     }
 
     @Test

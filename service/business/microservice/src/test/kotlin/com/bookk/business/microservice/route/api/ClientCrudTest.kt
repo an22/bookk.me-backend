@@ -21,8 +21,8 @@ import com.bookk.server.auth.client.AppPrincipal
 import io.ktor.client.call.body
 import io.ktor.client.plugins.resources.delete
 import io.ktor.client.plugins.resources.get
+import io.ktor.client.plugins.resources.patch
 import io.ktor.client.plugins.resources.post
-import io.ktor.client.plugins.resources.put
 import io.ktor.client.request.setBody
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.install
@@ -166,7 +166,7 @@ internal class ClientCrudTest {
 
         whenn()
         val httpClient = createTestClient()
-        val response = httpClient.put(BusinessRouting.Api.Clients.Id(BusinessRouting.Api.Clients(businessId = businessId), id)) {
+        val response = httpClient.patch(BusinessRouting.Api.Clients.Id(BusinessRouting.Api.Clients(businessId = businessId), id)) {
             setBody(body)
         }
 
@@ -196,7 +196,7 @@ internal class ClientCrudTest {
 
         whenn()
         val httpClient = createTestClient()
-        val response = httpClient.put(BusinessRouting.Api.Clients.Id(BusinessRouting.Api.Clients(businessId = businessId), id)) {
+        val response = httpClient.patch(BusinessRouting.Api.Clients.Id(BusinessRouting.Api.Clients(businessId = businessId), id)) {
             setBody(body)
         }
 
@@ -226,7 +226,7 @@ internal class ClientCrudTest {
 
         whenn()
         val httpClient = createTestClient()
-        val response = httpClient.put(BusinessRouting.Api.Clients.Id(BusinessRouting.Api.Clients(businessId = businessId), id)) {
+        val response = httpClient.patch(BusinessRouting.Api.Clients.Id(BusinessRouting.Api.Clients(businessId = businessId), id)) {
             setBody(body)
         }
 
@@ -257,7 +257,7 @@ internal class ClientCrudTest {
 
         whenn()
         val httpClient = createTestClient()
-        val response = httpClient.put(BusinessRouting.Api.Clients.Id(BusinessRouting.Api.Clients(businessId = businessId), id)) {
+        val response = httpClient.patch(BusinessRouting.Api.Clients.Id(BusinessRouting.Api.Clients(businessId = businessId), id)) {
             setBody(body)
         }
 
@@ -288,7 +288,7 @@ internal class ClientCrudTest {
 
         whenn()
         val httpClient = createTestClient()
-        val response = httpClient.put(BusinessRouting.Api.Clients.Id(BusinessRouting.Api.Clients(businessId = businessId), id)) {
+        val response = httpClient.patch(BusinessRouting.Api.Clients.Id(BusinessRouting.Api.Clients(businessId = businessId), id)) {
             setBody(body)
         }
 
@@ -319,7 +319,7 @@ internal class ClientCrudTest {
 
         whenn()
         val httpClient = createTestClient()
-        val response = httpClient.put(BusinessRouting.Api.Clients.Id(BusinessRouting.Api.Clients(businessId = businessId), id)) {
+        val response = httpClient.patch(BusinessRouting.Api.Clients.Id(BusinessRouting.Api.Clients(businessId = businessId), id)) {
             setBody(body)
         }
 
@@ -350,7 +350,7 @@ internal class ClientCrudTest {
 
         whenn()
         val client = createTestClient()
-        val response = client.put(BusinessRouting.Api.Clients.Id(BusinessRouting.Api.Clients(businessId = businessId), id)) {
+        val response = client.patch(BusinessRouting.Api.Clients.Id(BusinessRouting.Api.Clients(businessId = businessId), id)) {
             setBody(body)
         }
 
@@ -372,7 +372,7 @@ internal class ClientCrudTest {
 
         whenn()
         val httpClient = createTestClient()
-        val response = httpClient.put(BusinessRouting.Api.Clients.Id(BusinessRouting.Api.Clients(businessId = businessId), id)) {
+        val response = httpClient.patch(BusinessRouting.Api.Clients.Id(BusinessRouting.Api.Clients(businessId = businessId), id)) {
             setBody(updateModel(id = id, description = "notes"))
         }
 

@@ -171,6 +171,7 @@ Required imports: `io.ktor.http.ContentType`, `io.ktor.openapi.jsonSchema`, `io.
 4. When a path id duplicates a body id, validate: `if (it.id != body.id) call.respond(HttpStatusCode.BadRequest, "Invalid request") else ...`.
 5. Register the new route fn in `route/<Svc>Route.kt` aggregator (`fun Routing.<svc>Route()`); the aggregator is already wired in `<Svc>Microservice.kt`.
 6. `AppPrincipal` fields: `authId`, `userId`, `deviceId` (all `Uuid`).
+7. **For `get`/`post`/`delete`/`put`/`patch` matching a typed `@Resource`, import from `io.ktor.server.resources.*`, never `io.ktor.server.routing.*`.** The two packages both export a same-named function taking a generic type parameter, so the wrong import still compiles: `io.ktor.server.routing.patch<R>(body: suspend RoutingContext.(R) -> Unit)` treats `R` as a **request-body type to deserialize** (`call.receive<R>()`) and registers a bare `method(HttpMethod.Patch)` node with no path — it silently ignores the `@Resource` class entirely instead of routing by it. A route written as `patch<Api.Thing.Id> { ... }` with that import compiles clean but never matches its real URL, so every request 404s with no error anywhere (found via `service/business/microservice/route/api/Client.kt`, which had `import io.ktor.server.routing.patch` where every sibling handler in the same file correctly imported from `io.ktor.server.resources.*`).
 
 ## Testing
 

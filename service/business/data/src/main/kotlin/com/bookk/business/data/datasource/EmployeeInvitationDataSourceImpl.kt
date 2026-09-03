@@ -60,6 +60,7 @@ internal class EmployeeInvitationDataSourceImpl : DataSource(), EmployeeInvitati
             }
         ) {
             it[status] = EmployeeInvitationStatus.REDEEMED
+            it[code] = null
             it[updatedAt] = Clock.System.now()
         } != 0
     }
@@ -72,6 +73,7 @@ internal class EmployeeInvitationDataSourceImpl : DataSource(), EmployeeInvitati
             }
         ) {
             it[status] = EmployeeInvitationStatus.REVOKED
+            it[code] = null
             it[updatedAt] = Clock.System.now()
         } != 0
     }
@@ -85,6 +87,7 @@ internal class EmployeeInvitationDataSourceImpl : DataSource(), EmployeeInvitati
                 }
             ) {
                 it[status] = EmployeeInvitationStatus.EXPIRED
+                it[code] = null
                 it[updatedAt] = Clock.System.now()
             }
         }

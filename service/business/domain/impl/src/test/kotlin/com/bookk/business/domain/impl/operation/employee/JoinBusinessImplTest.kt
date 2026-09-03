@@ -67,7 +67,7 @@ internal class JoinBusinessImplTest {
 
     private fun SutFixture.stubHappyPath(requestUserId: Uuid, invitation: EmployeeInvitation, employee: Employee) {
         transactionManager.mockTransaction()
-        coEvery { invitationDataSource.getInvitationByCode(invitation.code) } returns invitation
+        coEvery { invitationDataSource.getInvitationByCode(requireNotNull(invitation.code)) } returns invitation
         coEvery { employeeDataSource.getEmployeeByUserId(invitation.businessId, requestUserId) } returns null
         coEvery { invitationDataSource.redeemInvitation(invitation.id) } returns true
         coEvery { userClient.getUserById(requestUserId) } returns Result.success(userSnapshot(requestUserId))
@@ -92,7 +92,7 @@ internal class JoinBusinessImplTest {
         }
 
         whenn()
-        val result = fixture.sut(requestUserId, invitation.code)
+        val result = fixture.sut(requestUserId, requireNotNull(invitation.code))
 
         then()
         assertTrue(result.isSuccess)
@@ -115,7 +115,7 @@ internal class JoinBusinessImplTest {
         with(fixture) { stubHappyPath(requestUserId, invitation, employee) }
 
         whenn()
-        val result = fixture.sut(requestUserId, invitation.code)
+        val result = fixture.sut(requestUserId, requireNotNull(invitation.code))
 
         then()
         assertTrue(result.isSuccess)
@@ -151,7 +151,7 @@ internal class JoinBusinessImplTest {
         }
 
         whenn()
-        val result = fixture.sut(requestUserId, invitation.code)
+        val result = fixture.sut(requestUserId, requireNotNull(invitation.code))
 
         then()
         assertTrue(result.isSuccess)
@@ -181,7 +181,7 @@ internal class JoinBusinessImplTest {
         }
 
         whenn()
-        val result = fixture.sut(requestUserId, invitation.code)
+        val result = fixture.sut(requestUserId, requireNotNull(invitation.code))
 
         then()
         assertTrue(result.isSuccess)
@@ -220,11 +220,11 @@ internal class JoinBusinessImplTest {
         val invitation = EmployeeInvitation.stub(status = EmployeeInvitationStatus.REDEEMED)
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { invitationDataSource.getInvitationByCode(invitation.code) } returns invitation
+            coEvery { invitationDataSource.getInvitationByCode(requireNotNull(invitation.code)) } returns invitation
         }
 
         whenn()
-        val result = fixture.sut(requestUserId, invitation.code)
+        val result = fixture.sut(requestUserId, requireNotNull(invitation.code))
 
         then()
         assertTrue(result.isFailure)
@@ -240,13 +240,13 @@ internal class JoinBusinessImplTest {
         val invitation = EmployeeInvitation.stub()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { invitationDataSource.getInvitationByCode(invitation.code) } returns invitation
+            coEvery { invitationDataSource.getInvitationByCode(requireNotNull(invitation.code)) } returns invitation
             coEvery { employeeDataSource.getEmployeeByUserId(invitation.businessId, requestUserId) } returns null
             coEvery { invitationDataSource.redeemInvitation(invitation.id) } returns false
         }
 
         whenn()
-        val result = fixture.sut(requestUserId, invitation.code)
+        val result = fixture.sut(requestUserId, requireNotNull(invitation.code))
 
         then()
         assertTrue(result.isFailure)
@@ -263,14 +263,14 @@ internal class JoinBusinessImplTest {
         val invitation = EmployeeInvitation.stub()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { invitationDataSource.getInvitationByCode(invitation.code) } returns invitation
+            coEvery { invitationDataSource.getInvitationByCode(requireNotNull(invitation.code)) } returns invitation
             coEvery {
                 employeeDataSource.getEmployeeByUserId(invitation.businessId, requestUserId)
             } returns Employee.stub(businessId = invitation.businessId, userId = requestUserId)
         }
 
         whenn()
-        val result = fixture.sut(requestUserId, invitation.code)
+        val result = fixture.sut(requestUserId, requireNotNull(invitation.code))
 
         then()
         assertTrue(result.isFailure)
@@ -287,7 +287,7 @@ internal class JoinBusinessImplTest {
         val invitation = EmployeeInvitation.stub()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { invitationDataSource.getInvitationByCode(invitation.code) } returns invitation
+            coEvery { invitationDataSource.getInvitationByCode(requireNotNull(invitation.code)) } returns invitation
             coEvery { employeeDataSource.getEmployeeByUserId(invitation.businessId, requestUserId) } returns null
             coEvery { invitationDataSource.redeemInvitation(invitation.id) } returns true
             coEvery { userClient.getUserById(requestUserId) } returns Result.success(userSnapshot(requestUserId))
@@ -295,7 +295,7 @@ internal class JoinBusinessImplTest {
         }
 
         whenn()
-        val result = fixture.sut(requestUserId, invitation.code)
+        val result = fixture.sut(requestUserId, requireNotNull(invitation.code))
 
         then()
         assertTrue(result.isFailure)

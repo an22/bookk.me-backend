@@ -1,5 +1,6 @@
 package com.bookk.business.domain.impl.operation.employee
 
+import java.security.MessageDigest
 import java.security.SecureRandom
 
 internal object EmployeeInvitationCode {
@@ -13,4 +14,7 @@ internal object EmployeeInvitationCode {
             append(ALPHABET[secureRandom.nextInt(ALPHABET.length)])
         }
     }
+
+    fun hash(code: String): String =
+        MessageDigest.getInstance("SHA-256").digest(code.toByteArray()).toHexString()
 }

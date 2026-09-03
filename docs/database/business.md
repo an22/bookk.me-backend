@@ -124,7 +124,7 @@ erDiagram
         uuid id PK
         uuid business_id FK
         uuid invited_by "logical FK -> user.profile.id"
-        string code UK "nullable; cleared once the invitation leaves PENDING so the code can be reused"
+        string code_hash UK "SHA-256 hex of the invite code, never the plaintext; nullable, cleared once the invitation leaves PENDING so the code can be reused"
         enum status
         timestamp created_at
         timestamp updated_at

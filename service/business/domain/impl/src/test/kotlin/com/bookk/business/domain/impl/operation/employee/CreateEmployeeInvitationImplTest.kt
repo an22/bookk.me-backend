@@ -19,6 +19,7 @@ import io.mockk.slot
 import kotlinx.datetime.TimeZone
 import library.permissions.ObjectPermission
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -66,6 +67,31 @@ internal class CreateEmployeeInvitationImplTest {
         assertEquals(EmployeeInvitationStatus.PENDING, persisted.captured.status)
         assertNotNull(persisted.captured.code)
         coVerify(exactly = 1) { fixture.invitationDataSource.createInvitation(any()) }
+    }
+
+    @Test
+    fun `should send a hashed code to the datasource and return the plaintext code to the caller`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val requestUserId = Uuid.random()
+        val businessId = Uuid.random()
+        val persisted = slot<EmployeeInvitation>()
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { businessDataSource.getPermission(requestUserId, businessId) } returns ObjectPermission.OWNER.int
+            coEvery { businessDataSource.getBusinessById(businessId) } returns business(businessId)
+            coEvery { invitationDataSource.createInvitation(capture(persisted)) } answers { persisted.captured }
+        }
+
+        whenn()
+        val result = fixture.sut(requestUserId, businessId)
+
+        then()
+        assertTrue(result.isSuccess)
+        val plainCode = requireNotNull(result.getOrNull()?.code)
+        val hashSentToDatasource = requireNotNull(persisted.captured.code)
+        assertNotEquals(plainCode, hashSentToDatasource)
+        assertEquals(EmployeeInvitationCode.hash(plainCode), hashSentToDatasource)
     }
 
     @Test

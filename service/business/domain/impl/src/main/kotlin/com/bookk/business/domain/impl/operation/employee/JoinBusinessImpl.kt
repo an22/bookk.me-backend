@@ -27,7 +27,8 @@ internal class JoinBusinessImpl(
 ) : JoinBusiness {
     override suspend fun invoke(requestUserId: Uuid, code: String): Result<Employee> =
         transactionManager.transaction {
-            val invitation = invitationDataSource.getInvitationByCode(code) ?: throw Error.NotFound()
+            val invitation = invitationDataSource.getInvitationByCodeHash(EmployeeInvitationCode.hash(code))
+                ?: throw Error.NotFound()
             if (invitation.status != EmployeeInvitationStatus.PENDING) {
                 throw JoinBusiness.Error.InvitationAlreadyProcessed()
             }

@@ -21,7 +21,7 @@ internal class EmployeeInvitationDataSourceImpl : DataSource(), EmployeeInvitati
         val id = EmployeeInvitationTable.insertAndGetId {
             it[businessId] = invitation.businessId
             it[invitedBy] = invitation.invitedBy
-            it[code] = invitation.code
+            it[codeHash] = invitation.code
             it[status] = EmployeeInvitationStatus.PENDING
         }
         invitation.copy(id = id.value, status = EmployeeInvitationStatus.PENDING)
@@ -36,8 +36,8 @@ internal class EmployeeInvitationDataSourceImpl : DataSource(), EmployeeInvitati
             ?.toDomain()
     }
 
-    override suspend fun getInvitationByCode(code: String): EmployeeInvitation? = dbQuery {
-        EmployeeInvitationEntity.find { EmployeeInvitationTable.code eq code }
+    override suspend fun getInvitationByCodeHash(codeHash: String): EmployeeInvitation? = dbQuery {
+        EmployeeInvitationEntity.find { EmployeeInvitationTable.codeHash eq codeHash }
             .firstOrNull()
             ?.toDomain()
     }
@@ -60,7 +60,7 @@ internal class EmployeeInvitationDataSourceImpl : DataSource(), EmployeeInvitati
             }
         ) {
             it[status] = EmployeeInvitationStatus.REDEEMED
-            it[code] = null
+            it[codeHash] = null
             it[updatedAt] = Clock.System.now()
         } != 0
     }
@@ -73,7 +73,7 @@ internal class EmployeeInvitationDataSourceImpl : DataSource(), EmployeeInvitati
             }
         ) {
             it[status] = EmployeeInvitationStatus.REVOKED
-            it[code] = null
+            it[codeHash] = null
             it[updatedAt] = Clock.System.now()
         } != 0
     }
@@ -87,7 +87,7 @@ internal class EmployeeInvitationDataSourceImpl : DataSource(), EmployeeInvitati
                 }
             ) {
                 it[status] = EmployeeInvitationStatus.EXPIRED
-                it[code] = null
+                it[codeHash] = null
                 it[updatedAt] = Clock.System.now()
             }
         }

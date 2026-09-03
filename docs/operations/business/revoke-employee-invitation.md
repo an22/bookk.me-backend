@@ -7,7 +7,7 @@ still `PENDING` — this lets an owner invalidate a shared invite code
 before it is redeemed (or before it expires on its own via the
 `expireEmployeeInvitations` scheduled job, see [Scheduled (recurring)
 jobs](../scheduled-jobs.md)). The caller is checked via `ObjectPermission`.
-Revocation flips the invitation's status and clears its `code` column
+Revocation flips the invitation's status and clears its `code_hash` column
 (nullable, see [Invite employee](create-employee-invitation.md)) so the
 code is freed for reuse; it does not touch `Employee` or
 `BusinessPermissionsTable`, and no cross-service event is published.
@@ -23,7 +23,7 @@ flowchart TD
     GetInvite -- not found --> R404b([404 Error.NotFound])
     GetInvite -- found --> Status{invitation.status == PENDING?}
     Status -- No --> R422([422 BUSINESS_EMPLOYEE_INVITATION_ALREADY_PROCESSED 200017])
-    Status -- Yes --> Revoke[EmployeeInvitationDataSource.revokeInvitation id, clears code]
+    Status -- Yes --> Revoke[EmployeeInvitationDataSource.revokeInvitation id, clears code_hash]
     Revoke -- race lost, already processed --> R422
     Revoke -- ok --> R204([204 Invitation revoked])
 ```

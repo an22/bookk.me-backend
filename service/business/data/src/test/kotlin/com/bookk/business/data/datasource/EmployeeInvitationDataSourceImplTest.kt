@@ -65,7 +65,7 @@ internal class EmployeeInvitationDataSourceImplTest {
         assertEquals("AAAA1111", created.code)
         assertEquals(EmployeeInvitationStatus.PENDING, created.status)
         assertEquals(invitedBy, found?.invitedBy)
-        assertEquals("AAAA1111", found?.code)
+        assertNull(found?.code)
     }
 
     @Test
@@ -85,7 +85,7 @@ internal class EmployeeInvitationDataSourceImplTest {
         then()
         assertNotNull(found)
         assertEquals(created.id, found?.id)
-        assertEquals("BBBB2222", found?.code)
+        assertNull(found?.code)
         assertEquals(EmployeeInvitationStatus.PENDING, found?.status)
     }
 
@@ -106,7 +106,7 @@ internal class EmployeeInvitationDataSourceImplTest {
     }
 
     @Test
-    fun `should return invitation by code`() = runUnitTest {
+    fun `should return invitation by code hash`() = runUnitTest {
         given()
         val fixture = SutFixture()
         fixture.setup()
@@ -117,16 +117,17 @@ internal class EmployeeInvitationDataSourceImplTest {
         }
 
         whenn()
-        val found = suspendTransaction { fixture.sut.getInvitationByCode("CCCC3333") }
+        val found = suspendTransaction { fixture.sut.getInvitationByCodeHash("CCCC3333") }
 
         then()
         assertNotNull(found)
         assertEquals(created.id, found?.id)
         assertEquals(fixture.businessId, found?.businessId)
+        assertNull(found?.code)
     }
 
     @Test
-    fun `should return null when code does not match any invitation`() = runUnitTest {
+    fun `should return null when code hash does not match any invitation`() = runUnitTest {
         given()
         val fixture = SutFixture()
         fixture.setup()
@@ -135,7 +136,7 @@ internal class EmployeeInvitationDataSourceImplTest {
         }
 
         whenn()
-        val found = suspendTransaction { fixture.sut.getInvitationByCode("UNKNOWN1") }
+        val found = suspendTransaction { fixture.sut.getInvitationByCodeHash("UNKNOWN1") }
 
         then()
         assertNull(found)
@@ -163,7 +164,7 @@ internal class EmployeeInvitationDataSourceImplTest {
 
         then()
         assertEquals(1, found.size)
-        assertEquals("AAAA1111", found.first().code)
+        assertNull(found.first().code)
     }
 
     @Test
@@ -190,7 +191,7 @@ internal class EmployeeInvitationDataSourceImplTest {
         then()
         assertEquals(2, found.size)
         assertTrue(found.any { it.code == null && it.status == EmployeeInvitationStatus.REDEEMED })
-        assertTrue(found.any { it.code == "BBBB2222" && it.status == EmployeeInvitationStatus.PENDING })
+        assertTrue(found.any { it.code == null && it.status == EmployeeInvitationStatus.PENDING })
     }
 
     @Test
@@ -377,61 +378,7 @@ internal class EmployeeInvitationDataSourceImplTest {
     }
 
     @Test
-    fun `should clear the code when redeeming an invitation`() = runUnitTest {
-        given()
-        val fixture = SutFixture()
-        fixture.setup()
-        val created = suspendTransaction {
-            fixture.sut.createInvitation(EmployeeInvitation.stub(businessId = fixture.businessId, code = "REDEEM01"))
-        }
-
-        whenn()
-        suspendTransaction { fixture.sut.redeemInvitation(created.id) }
-        val found = suspendTransaction { fixture.sut.getInvitation(fixture.businessId, created.id) }
-
-        then()
-        assertEquals(EmployeeInvitationStatus.REDEEMED, found?.status)
-        assertNull(found?.code)
-    }
-
-    @Test
-    fun `should clear the code when revoking an invitation`() = runUnitTest {
-        given()
-        val fixture = SutFixture()
-        fixture.setup()
-        val created = suspendTransaction {
-            fixture.sut.createInvitation(EmployeeInvitation.stub(businessId = fixture.businessId, code = "REVOKE01"))
-        }
-
-        whenn()
-        suspendTransaction { fixture.sut.revokeInvitation(created.id) }
-        val found = suspendTransaction { fixture.sut.getInvitation(fixture.businessId, created.id) }
-
-        then()
-        assertEquals(EmployeeInvitationStatus.REVOKED, found?.status)
-        assertNull(found?.code)
-    }
-
-    @Test
-    fun `should clear the code when expiring an invitation`() = runUnitTest {
-        given()
-        val fixture = SutFixture()
-        fixture.setup()
-        val created = suspendTransaction {
-            fixture.sut.createInvitation(EmployeeInvitation.stub(businessId = fixture.businessId, code = "EXPIRE01"))
-        }
-
-        whenn()
-        suspendTransaction { fixture.sut.expireOldInvitations(Clock.System.now().plus(1.hours)) }
-        val found = suspendTransaction { fixture.sut.getInvitation(fixture.businessId, created.id) }
-
-        then()
-        assertEquals(EmployeeInvitationStatus.EXPIRED, found?.status)
-        assertNull(found?.code)
-    }
-
-    @Test
-    fun `should no longer find a redeemed invitation by its old code`() = runUnitTest {
+    fun `should no longer find a redeemed invitation by its old code hash`() = runUnitTest {
         given()
         val fixture = SutFixture()
         fixture.setup()
@@ -441,7 +388,41 @@ internal class EmployeeInvitationDataSourceImplTest {
         suspendTransaction { fixture.sut.redeemInvitation(created.id) }
 
         whenn()
-        val found = suspendTransaction { fixture.sut.getInvitationByCode("STALE001") }
+        val found = suspendTransaction { fixture.sut.getInvitationByCodeHash("STALE001") }
+
+        then()
+        assertNull(found)
+    }
+
+    @Test
+    fun `should no longer find a revoked invitation by its old code hash`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val created = suspendTransaction {
+            fixture.sut.createInvitation(EmployeeInvitation.stub(businessId = fixture.businessId, code = "STALE002"))
+        }
+        suspendTransaction { fixture.sut.revokeInvitation(created.id) }
+
+        whenn()
+        val found = suspendTransaction { fixture.sut.getInvitationByCodeHash("STALE002") }
+
+        then()
+        assertNull(found)
+    }
+
+    @Test
+    fun `should no longer find an expired invitation by its old code hash`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        suspendTransaction {
+            fixture.sut.createInvitation(EmployeeInvitation.stub(businessId = fixture.businessId, code = "STALE003"))
+        }
+        suspendTransaction { fixture.sut.expireOldInvitations(Clock.System.now().plus(1.hours)) }
+
+        whenn()
+        val found = suspendTransaction { fixture.sut.getInvitationByCodeHash("STALE003") }
 
         then()
         assertNull(found)
@@ -468,7 +449,7 @@ internal class EmployeeInvitationDataSourceImplTest {
     }
 
     @Test
-    fun `should allow two different processed invitations to both have a null code`() = runUnitTest {
+    fun `should allow reusing codes from two independently processed invitations`() = runUnitTest {
         given()
         val fixture = SutFixture()
         fixture.setup()
@@ -478,17 +459,20 @@ internal class EmployeeInvitationDataSourceImplTest {
         val second = suspendTransaction {
             fixture.sut.createInvitation(EmployeeInvitation.stub(businessId = fixture.businessId, code = "SECOND01"))
         }
+        suspendTransaction { fixture.sut.redeemInvitation(first.id) }
+        suspendTransaction { fixture.sut.revokeInvitation(second.id) }
 
         whenn()
-        suspendTransaction { fixture.sut.redeemInvitation(first.id) }
-        val revoked = suspendTransaction { fixture.sut.revokeInvitation(second.id) }
+        val recreatedFirst = suspendTransaction {
+            fixture.sut.createInvitation(EmployeeInvitation.stub(businessId = fixture.businessId, code = "FIRST001"))
+        }
+        val recreatedSecond = suspendTransaction {
+            fixture.sut.createInvitation(EmployeeInvitation.stub(businessId = fixture.businessId, code = "SECOND01"))
+        }
 
         then()
-        assertTrue(revoked)
-        val foundFirst = suspendTransaction { fixture.sut.getInvitation(fixture.businessId, first.id) }
-        val foundSecond = suspendTransaction { fixture.sut.getInvitation(fixture.businessId, second.id) }
-        assertNull(foundFirst?.code)
-        assertNull(foundSecond?.code)
+        assertEquals(EmployeeInvitationStatus.PENDING, recreatedFirst.status)
+        assertEquals(EmployeeInvitationStatus.PENDING, recreatedSecond.status)
     }
 
     @Test

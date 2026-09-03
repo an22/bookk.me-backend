@@ -11,7 +11,7 @@ internal class EmployeeInvitationEntity(id: EntityID<Uuid>) : UuidEntity(id) {
 
     var businessId by EmployeeInvitationTable.businessId
     var invitedBy by EmployeeInvitationTable.invitedBy
-    var code by EmployeeInvitationTable.code
+    var codeHash by EmployeeInvitationTable.codeHash
     var status by EmployeeInvitationTable.status
     var createdAt by EmployeeInvitationTable.createdAt
     var updatedAt by EmployeeInvitationTable.updatedAt
@@ -23,7 +23,7 @@ internal class EmployeeInvitationEntity(id: EntityID<Uuid>) : UuidEntity(id) {
             id = id.value,
             businessId = businessId.value,
             invitedBy = invitedBy,
-            code = code,
+            code = null,
             status = status,
             createdAt = createdAt
         )

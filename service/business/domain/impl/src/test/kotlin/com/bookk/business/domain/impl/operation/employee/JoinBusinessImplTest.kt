@@ -67,7 +67,9 @@ internal class JoinBusinessImplTest {
 
     private fun SutFixture.stubHappyPath(requestUserId: Uuid, invitation: EmployeeInvitation, employee: Employee) {
         transactionManager.mockTransaction()
-        coEvery { invitationDataSource.getInvitationByCode(requireNotNull(invitation.code)) } returns invitation
+        coEvery {
+            invitationDataSource.getInvitationByCodeHash(EmployeeInvitationCode.hash(requireNotNull(invitation.code)))
+        } returns invitation
         coEvery { employeeDataSource.getEmployeeByUserId(invitation.businessId, requestUserId) } returns null
         coEvery { invitationDataSource.redeemInvitation(invitation.id) } returns true
         coEvery { userClient.getUserById(requestUserId) } returns Result.success(userSnapshot(requestUserId))
@@ -200,7 +202,7 @@ internal class JoinBusinessImplTest {
         val code = "UNKNOWN1"
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { invitationDataSource.getInvitationByCode(code) } returns null
+            coEvery { invitationDataSource.getInvitationByCodeHash(EmployeeInvitationCode.hash(code)) } returns null
         }
 
         whenn()
@@ -220,7 +222,7 @@ internal class JoinBusinessImplTest {
         val invitation = EmployeeInvitation.stub(status = EmployeeInvitationStatus.REDEEMED)
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { invitationDataSource.getInvitationByCode(requireNotNull(invitation.code)) } returns invitation
+            coEvery { invitationDataSource.getInvitationByCodeHash(EmployeeInvitationCode.hash(requireNotNull(invitation.code))) } returns invitation
         }
 
         whenn()
@@ -240,7 +242,7 @@ internal class JoinBusinessImplTest {
         val invitation = EmployeeInvitation.stub()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { invitationDataSource.getInvitationByCode(requireNotNull(invitation.code)) } returns invitation
+            coEvery { invitationDataSource.getInvitationByCodeHash(EmployeeInvitationCode.hash(requireNotNull(invitation.code))) } returns invitation
             coEvery { employeeDataSource.getEmployeeByUserId(invitation.businessId, requestUserId) } returns null
             coEvery { invitationDataSource.redeemInvitation(invitation.id) } returns false
         }
@@ -263,7 +265,7 @@ internal class JoinBusinessImplTest {
         val invitation = EmployeeInvitation.stub()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { invitationDataSource.getInvitationByCode(requireNotNull(invitation.code)) } returns invitation
+            coEvery { invitationDataSource.getInvitationByCodeHash(EmployeeInvitationCode.hash(requireNotNull(invitation.code))) } returns invitation
             coEvery {
                 employeeDataSource.getEmployeeByUserId(invitation.businessId, requestUserId)
             } returns Employee.stub(businessId = invitation.businessId, userId = requestUserId)
@@ -287,7 +289,7 @@ internal class JoinBusinessImplTest {
         val invitation = EmployeeInvitation.stub()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { invitationDataSource.getInvitationByCode(requireNotNull(invitation.code)) } returns invitation
+            coEvery { invitationDataSource.getInvitationByCodeHash(EmployeeInvitationCode.hash(requireNotNull(invitation.code))) } returns invitation
             coEvery { employeeDataSource.getEmployeeByUserId(invitation.businessId, requestUserId) } returns null
             coEvery { invitationDataSource.redeemInvitation(invitation.id) } returns true
             coEvery { userClient.getUserById(requestUserId) } returns Result.success(userSnapshot(requestUserId))

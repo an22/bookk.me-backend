@@ -30,16 +30,17 @@ internal class CreateEmployeeInvitationImpl(
         businessId: Uuid,
         remainingAttempts: Int = MAX_CODE_ATTEMPTS
     ): EmployeeInvitation {
+        val plainCode = EmployeeInvitationCode.generate()
         val invitation = EmployeeInvitation(
             id = Uuid.random(),
             businessId = businessId,
             invitedBy = requestUserId,
-            code = EmployeeInvitationCode.generate(),
+            code = EmployeeInvitationCode.hash(plainCode),
             status = EmployeeInvitationStatus.PENDING,
             createdAt = Clock.System.now()
         )
         return try {
-            invitationDataSource.createInvitation(invitation)
+            invitationDataSource.createInvitation(invitation).copy(code = plainCode)
         } catch (error: Error.UniqueConstraintFailed) {
             if (remainingAttempts <= 1) throw error
             createInvitationWithUniqueCode(requestUserId, businessId, remainingAttempts - 1)

@@ -59,14 +59,6 @@ internal class EmployeeDataSourceImpl : DataSource(), EmployeeDataSource {
             ?.toDomain()
     }
 
-    override suspend fun getEmployeeByEmail(businessId: Uuid, email: String): Employee? = dbQuery {
-        EmployeeEntity.find {
-            (EmployeeTable.businessId eq businessId) and (EmployeeTable.email eq email)
-        }
-            .firstOrNull()
-            ?.toDomain()
-    }
-
     override suspend fun deleteEmployee(businessId: Uuid, id: Uuid): Boolean = dbQuery {
         EmployeeTable.deleteWhere {
             (EmployeeTable.businessId eq businessId) and (EmployeeTable.id eq id)

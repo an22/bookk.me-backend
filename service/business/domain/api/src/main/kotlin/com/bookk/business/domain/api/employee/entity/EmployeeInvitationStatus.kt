@@ -5,8 +5,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 enum class EmployeeInvitationStatus {
     PENDING,
-    APPROVED,
-    REJECTED,
+    REDEEMED,
     EXPIRED,
     REVOKED
 }

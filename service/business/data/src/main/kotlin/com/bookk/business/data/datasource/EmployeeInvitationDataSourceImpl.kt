@@ -21,7 +21,7 @@ internal class EmployeeInvitationDataSourceImpl : DataSource(), EmployeeInvitati
         val id = EmployeeInvitationTable.insertAndGetId {
             it[businessId] = invitation.businessId
             it[invitedBy] = invitation.invitedBy
-            it[email] = invitation.email.trim()
+            it[code] = invitation.code
             it[status] = EmployeeInvitationStatus.PENDING
         }
         invitation.copy(id = id.value, status = EmployeeInvitationStatus.PENDING)
@@ -36,6 +36,12 @@ internal class EmployeeInvitationDataSourceImpl : DataSource(), EmployeeInvitati
             ?.toDomain()
     }
 
+    override suspend fun getInvitationByCode(code: String): EmployeeInvitation? = dbQuery {
+        EmployeeInvitationEntity.find { EmployeeInvitationTable.code eq code }
+            .firstOrNull()
+            ?.toDomain()
+    }
+
     override suspend fun getInvitationsByInviter(businessId: Uuid, invitedBy: Uuid): List<EmployeeInvitation> =
         dbQuery {
             EmployeeInvitationEntity.find {
@@ -46,35 +52,14 @@ internal class EmployeeInvitationDataSourceImpl : DataSource(), EmployeeInvitati
                 .map(EmployeeInvitationEntity::toDomain)
         }
 
-    override suspend fun getPendingInvitationsByEmail(email: String): List<EmployeeInvitation> = dbQuery {
-        EmployeeInvitationEntity.find {
-            (EmployeeInvitationTable.email eq email) and
-                (EmployeeInvitationTable.status eq EmployeeInvitationStatus.PENDING)
-        }
-            .toList()
-            .map(EmployeeInvitationEntity::toDomain)
-    }
-
-    override suspend fun approveInvitation(id: Uuid): Boolean = dbQuery {
+    override suspend fun redeemInvitation(id: Uuid): Boolean = dbQuery {
         EmployeeInvitationTable.update(
             where = {
                 (EmployeeInvitationTable.id eq id) and
                     (EmployeeInvitationTable.status eq EmployeeInvitationStatus.PENDING)
             }
         ) {
-            it[status] = EmployeeInvitationStatus.APPROVED
-            it[updatedAt] = Clock.System.now()
-        } != 0
-    }
-
-    override suspend fun rejectInvitation(id: Uuid): Boolean = dbQuery {
-        EmployeeInvitationTable.update(
-            where = {
-                (EmployeeInvitationTable.id eq id) and
-                    (EmployeeInvitationTable.status eq EmployeeInvitationStatus.PENDING)
-            }
-        ) {
-            it[status] = EmployeeInvitationStatus.REJECTED
+            it[status] = EmployeeInvitationStatus.REDEEMED
             it[updatedAt] = Clock.System.now()
         } != 0
     }

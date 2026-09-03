@@ -91,7 +91,7 @@ Can view the business's data but not change it.
   - List clients (`GetClientsImpl`)
 
 This is also the level granted automatically to an **employee** once their
-invitation is approved (`ApproveEmployeeInvitationImpl`) or when an owner
+they join the business (`JoinBusinessImpl`) or when an owner
 demotes/sets them to the `Employee` role via the promote-employee route
 (see [Roles](#roles-employee--manager) below).
 
@@ -168,7 +168,7 @@ below) and cannot be promoted to.
 | Grant | Where | Level |
 |---|---|---|
 | Business creator | `CreateBusinessImpl` → `businessDataSource.setUserPermissions(userId, businessId, ObjectPermission.OWNER.int)` | `OWNER` |
-| Approved employee | `ApproveEmployeeInvitationImpl` → `businessDataSource.setUserPermissions(requestUserId, businessId, ObjectPermission.READ.int)` | `READ` |
+| Employee who joined | `JoinBusinessImpl` → `businessDataSource.setUserPermissions(requestUserId, businessId, ObjectPermission.READ.int)` | `READ` |
 | Employee promoted/demoted by the owner | `PromoteEmployeeImpl` → `businessDataSource.setUserPermissions(employee.userId, businessId, role.toPermission().int)` | `READ` or `EDIT`, per the request's `role` |
 
 The first two rows only ever create a grant once, for a specific user; the
@@ -198,7 +198,7 @@ grant rather than sharing one table across services.
   row is written/overwritten by `SyncEmployeePermission`, called from
   `AppointmentEventHandler` in reaction to
   `BusinessEvent.EmployeePermissionChanged` (fired by
-  `ApproveEmployeeInvitationImpl` and `PromoteEmployeeImpl` — see [How
+  `JoinBusinessImpl` and `PromoteEmployeeImpl` — see [How
   grants are created](#how-grants-are-created)), and is a no-op if
   the business hasn't enabled appointments yet
   (`AppointmentSubscriptionDataSource.isBusinessEnabled`) — an employee

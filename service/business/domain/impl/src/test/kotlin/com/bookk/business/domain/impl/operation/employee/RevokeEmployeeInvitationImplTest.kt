@@ -110,7 +110,7 @@ internal class RevokeEmployeeInvitationImplTest {
         given()
         val fixture = SutFixture()
         fixture.transactionManager.mockTransaction()
-        val invitation = EmployeeInvitation.stub(businessId = businessId, status = EmployeeInvitationStatus.APPROVED)
+        val invitation = EmployeeInvitation.stub(businessId = businessId, status = EmployeeInvitationStatus.REDEEMED)
         coEvery { fixture.invitationDataSource.getInvitation(businessId, invitation.id) } returns invitation
 
         whenn()

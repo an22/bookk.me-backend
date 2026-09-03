@@ -2,7 +2,7 @@
 
 Kafka topic `BusinessEvent.EmployeePermissionChanged` → `AppointmentEventHandler` → `SyncEmployeePermission`
 
-Produced by [Approve employee invitation](../business/approve-employee-invitation.md)
+Produced by [Join business](../business/join-business.md)
 (grants `READ`) and [Promote employee](../business/promote-employee.md)
 (grants `READ` or `EDIT`, per the requested role). Keeps the appointments
 service's own copy of the grant (`UserHasAppointmentPermissions`) in sync

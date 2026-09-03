@@ -72,8 +72,7 @@ Reactions to cross-service events:
 | `PUT /api/business/{businessId}/employee/{id}` | [Update employee](business/update-employee.md) |
 | `POST /api/business/{businessId}/employee/{id}/promote` | [Promote employee](business/promote-employee.md) |
 | `POST /api/business/{businessId}/employee_invitation` | [Invite employee](business/create-employee-invitation.md) |
-| `POST /api/business/{businessId}/employee_invitation/{id}/approve` | [Approve employee invitation](business/approve-employee-invitation.md) |
-| `POST /api/business/{businessId}/employee_invitation/{id}/reject` | [Reject employee invitation](business/reject-employee-invitation.md) |
+| `POST /api/employee_invitation/redeem` | [Join business](business/join-business.md) |
 | `POST /api/business/{businessId}/employee_invitation/{id}/revoke` | [Revoke employee invitation](business/revoke-employee-invitation.md) |
 | `POST /api/business/{businessId}/service` | [Create service](business/create-service.md) |
 | `PUT /api/business/{businessId}/service/{id}` | [Update service](business/update-service.md) |
@@ -109,8 +108,7 @@ Reactions to cross-service events (all handled by the same
 | `AppointmentEvent.RequestApproved` | [React to appointment request approval](notifications/on-appointment-request-approved.md) |
 | `AppointmentEvent.RequestRejected` | [React to appointment request decline](notifications/on-appointment-request-rejected.md) |
 | `AppointmentEvent.Cancelled` | [React to appointment cancellation](notifications/on-appointment-cancelled.md) |
-| `BusinessEvent.EmployeeInvitationCreated` | [React to employee invitation creation](notifications/on-employee-invitation-created.md) |
-| `BusinessEvent.EmployeeInvitationApproved` | [React to employee invitation approval](notifications/on-employee-invitation-approved.md) |
+| `BusinessEvent.EmployeeInvitationRedeemed` | [React to an employee joining the business](notifications/on-employee-invitation-redeemed.md) |
 
 ## User service
 
@@ -141,9 +139,8 @@ order.
 | `AuthEvent.DeviceLanguageUpdated` | [Verify sign-in](authorization/sign-in.md) | [notifications](notifications/on-device-language-updated.md) |
 | `BusinessEvent.Updated` | [Update business](business/update-business.md) | [appointments](appointments/on-business-updated.md) |
 | `BusinessEvent.Deleted` | [React to user deletion (business)](business/on-user-deleted.md) | [appointments](appointments/on-business-deleted.md) |
-| `BusinessEvent.EmployeeInvitationCreated` | [Invite employee](business/create-employee-invitation.md) | [notifications](notifications/on-employee-invitation-created.md) |
-| `BusinessEvent.EmployeeInvitationApproved` | [Approve employee invitation](business/approve-employee-invitation.md) | [notifications](notifications/on-employee-invitation-approved.md) |
-| `BusinessEvent.EmployeePermissionChanged` | [Approve employee invitation](business/approve-employee-invitation.md), [Promote employee](business/promote-employee.md) | [appointments](appointments/on-employee-permission-changed.md) |
+| `BusinessEvent.EmployeeInvitationRedeemed` | [Join business](business/join-business.md) | [notifications](notifications/on-employee-invitation-redeemed.md) |
+| `BusinessEvent.EmployeePermissionChanged` | [Join business](business/join-business.md), [Promote employee](business/promote-employee.md) | [appointments](appointments/on-employee-permission-changed.md) |
 | `UserEvent.Updated` | [Update user](user/update-user.md) | [business](business/on-user-updated.md), [notifications](notifications/on-user-updated.md) |
 | `AppointmentEvent.RequestCreated` | [Create appointment request](appointments/create-appointment-request.md) | [notifications](notifications/on-appointment-request-created.md) |
 | `AppointmentEvent.RequestApproved` | [Create appointment from a pending request](appointments/create-appointment-from-request.md), [Create appointment request](appointments/create-appointment-request.md) (auto-approval) | [notifications](notifications/on-appointment-request-approved.md) |

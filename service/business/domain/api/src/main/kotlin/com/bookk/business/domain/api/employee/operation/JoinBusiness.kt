@@ -6,8 +6,8 @@ import com.bookk.core.domain.entity.BusinessError
 import io.ktor.http.HttpStatusCode
 import kotlin.uuid.Uuid
 
-interface ApproveEmployeeInvitation {
-    suspend operator fun invoke(requestUserId: Uuid, businessId: Uuid, id: Uuid): Result<Employee>
+interface JoinBusiness {
+    suspend operator fun invoke(requestUserId: Uuid, code: String): Result<Employee>
 
     sealed interface Error {
         class InvitationAlreadyProcessed : BusinessError(

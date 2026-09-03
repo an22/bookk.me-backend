@@ -55,8 +55,7 @@ internal class NotificationEventHandlerEventTest {
             KafkaTestBroker.createTopic(AppointmentEvent.RequestApproved.TOPIC, partitions = 3)
             KafkaTestBroker.createTopic(AppointmentEvent.RequestRejected.TOPIC, partitions = 3)
             KafkaTestBroker.createTopic(AppointmentEvent.Cancelled.TOPIC, partitions = 3)
-            KafkaTestBroker.createTopic(BusinessEvent.EmployeeInvitationCreated.TOPIC, partitions = 3)
-            KafkaTestBroker.createTopic(BusinessEvent.EmployeeInvitationApproved.TOPIC, partitions = 3)
+            KafkaTestBroker.createTopic(BusinessEvent.EmployeeInvitationRedeemed.TOPIC, partitions = 3)
         }
     }
 
@@ -315,29 +314,7 @@ internal class NotificationEventHandlerEventTest {
     }
 
     @Test
-    fun `should notify the invited user when an employee invitation is created`() = runIntegrationTest {
-        given()
-        val fixture = SutFixture()
-        val invitedUserId = Uuid.random()
-        val businessId = Uuid.random()
-        val arrived = fixture.awaitNotificationTo(invitedUserId)
-
-        whenn()
-        publishAndAwait(
-            fixture, arrived,
-            BusinessEvent.EmployeeInvitationCreated(
-                invitedUserId = invitedUserId,
-                businessId = businessId, businessName = "Salon"
-            ),
-            typeOf<BusinessEvent.EmployeeInvitationCreated>()
-        )
-
-        then()
-        coVerify(exactly = 1) { fixture.sendNotification(invitedUserId, any()) }
-    }
-
-    @Test
-    fun `should notify the inviter when an employee invitation is approved`() = runIntegrationTest {
+    fun `should notify the inviter when an employee invitation is redeemed`() = runIntegrationTest {
         given()
         val fixture = SutFixture()
         val inviterUserId = Uuid.random()
@@ -347,11 +324,11 @@ internal class NotificationEventHandlerEventTest {
         whenn()
         publishAndAwait(
             fixture, arrived,
-            BusinessEvent.EmployeeInvitationApproved(
+            BusinessEvent.EmployeeInvitationRedeemed(
                 inviterUserId = inviterUserId, employeeUserId = employeeUserId, employeeName = "Employee",
                 businessId = Uuid.random(), businessName = "Salon"
             ),
-            typeOf<BusinessEvent.EmployeeInvitationApproved>()
+            typeOf<BusinessEvent.EmployeeInvitationRedeemed>()
         )
 
         then()

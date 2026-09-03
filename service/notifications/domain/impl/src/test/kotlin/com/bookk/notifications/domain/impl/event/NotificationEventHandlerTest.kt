@@ -75,36 +75,14 @@ internal class NotificationEventHandlerTest {
         fixture.start(this)
 
         then()
-        assertTrue(fixture.receivers.containsKey(BusinessEvent.EmployeeInvitationCreated.TOPIC))
-        assertTrue(fixture.receivers.containsKey(BusinessEvent.EmployeeInvitationApproved.TOPIC))
+        assertTrue(fixture.receivers.containsKey(BusinessEvent.EmployeeInvitationRedeemed.TOPIC))
     }
 
     @Test
-    fun `should notify the invited user when an invitation is created`() = runUnitTest {
+    fun `should notify the inviter when an invitation is redeemed`() = runUnitTest {
         given()
         val fixture = SutFixture()
-        val event = BusinessEvent.EmployeeInvitationCreated(
-            invitedUserId = Uuid.random(),
-            businessId = Uuid.random(),
-            businessName = "Barbershop"
-        )
-        val params = slot<NotificationParameters>()
-        coEvery { fixture.sendNotification.invoke(any(), capture(params)) } returns Result.success(Unit)
-        fixture.start(this)
-
-        whenn()
-        fixture.dispatch(BusinessEvent.EmployeeInvitationCreated.TOPIC, event)
-
-        then()
-        coVerify(exactly = 1) { fixture.sendNotification.invoke(event.invitedUserId, any()) }
-        assertEquals(NotificationType.EMPLOYEE, params.captured.type)
-    }
-
-    @Test
-    fun `should notify the inviter when an invitation is approved`() = runUnitTest {
-        given()
-        val fixture = SutFixture()
-        val event = BusinessEvent.EmployeeInvitationApproved(
+        val event = BusinessEvent.EmployeeInvitationRedeemed(
             inviterUserId = Uuid.random(),
             employeeUserId = Uuid.random(),
             employeeName = "Alice",
@@ -116,7 +94,7 @@ internal class NotificationEventHandlerTest {
         fixture.start(this)
 
         whenn()
-        fixture.dispatch(BusinessEvent.EmployeeInvitationApproved.TOPIC, event)
+        fixture.dispatch(BusinessEvent.EmployeeInvitationRedeemed.TOPIC, event)
 
         then()
         coVerify(exactly = 1) { fixture.sendNotification.invoke(event.inviterUserId, any()) }

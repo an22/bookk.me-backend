@@ -3,14 +3,13 @@
 `POST /api/business/{businessId}/employee_invitation/{id}/revoke` → `RevokeEmployeeInvitation`
 
 Only the business owner can revoke an invitation, and only while it is
-still `PENDING` — this lets an owner withdraw an invite before the invited
-user acts on it (or before it expires on its own via the
+still `PENDING` — this lets an owner invalidate a shared invite code
+before it is redeemed (or before it expires on its own via the
 `expireEmployeeInvitations` scheduled job, see [Scheduled (recurring)
-jobs](../scheduled-jobs.md)). Unlike reject/approve, this is an
-owner-initiated action, so the caller is checked via `ObjectPermission`
-rather than by matching the invitation's `email`. Revocation only flips
-the invitation's status; it does not touch `Employee` or
-`BusinessPermissionsTable`, and no cross-service event is published.
+jobs](../scheduled-jobs.md)). The caller is checked via `ObjectPermission`.
+Revocation only flips the invitation's status; it does not touch
+`Employee` or `BusinessPermissionsTable`, and no cross-service event is
+published.
 
 ```mermaid
 flowchart TD

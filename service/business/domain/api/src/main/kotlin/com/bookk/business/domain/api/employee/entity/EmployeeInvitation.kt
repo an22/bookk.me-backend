@@ -10,7 +10,7 @@ data class EmployeeInvitation(
     @ProtoNumber(1) val id: Uuid,
     @ProtoNumber(2) val businessId: Uuid,
     @ProtoNumber(3) val invitedBy: Uuid,
-    @ProtoNumber(4) val email: String,
+    @ProtoNumber(4) val code: String,
     @ProtoNumber(5) val status: EmployeeInvitationStatus,
     @ProtoNumber(6) val createdAt: Instant
 ) {
@@ -19,14 +19,14 @@ data class EmployeeInvitation(
             id: Uuid = Uuid.random(),
             businessId: Uuid = Uuid.random(),
             invitedBy: Uuid = Uuid.random(),
-            email: String = "stub@employee.com",
+            code: String = "STUBCODE",
             status: EmployeeInvitationStatus = EmployeeInvitationStatus.PENDING,
             createdAt: Instant = Instant.fromEpochMilliseconds(0)
         ) = EmployeeInvitation(
             id = id,
             businessId = businessId,
             invitedBy = invitedBy,
-            email = email,
+            code = code,
             status = status,
             createdAt = createdAt
         )

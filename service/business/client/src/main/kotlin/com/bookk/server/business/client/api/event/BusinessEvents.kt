@@ -36,21 +36,7 @@ interface BusinessEvent : EventStreaming.Event<String> {
     }
 
     @Serializable
-    data class EmployeeInvitationCreated(
-        val invitedUserId: Uuid,
-        val businessId: Uuid,
-        val businessName: String,
-        override val idempotencyKey: String = Uuid.random().toString()
-    ) : BusinessEvent {
-        override val topic: String = TOPIC
-
-        companion object {
-            const val TOPIC = "business.employee_invitation_created"
-        }
-    }
-
-    @Serializable
-    data class EmployeeInvitationApproved(
+    data class EmployeeInvitationRedeemed(
         val inviterUserId: Uuid,
         val employeeUserId: Uuid,
         val employeeName: String,
@@ -61,7 +47,7 @@ interface BusinessEvent : EventStreaming.Event<String> {
         override val topic: String = TOPIC
 
         companion object {
-            const val TOPIC = "business.employee_invitation_approved"
+            const val TOPIC = "business.employee_invitation_redeemed"
         }
     }
 

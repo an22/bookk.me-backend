@@ -57,13 +57,8 @@ internal class NotificationEventHandler(
                 sendNotification(event.clientUserId, event.notification)
             }
             .registerResultReceiver(
-                BusinessEvent.EmployeeInvitationCreated.TOPIC
-            ) { event : BusinessEvent.EmployeeInvitationCreated ->
-                sendNotification(event.invitedUserId, event.notification)
-            }
-            .registerResultReceiver(
-                BusinessEvent.EmployeeInvitationApproved.TOPIC
-            ) { event : BusinessEvent.EmployeeInvitationApproved ->
+                BusinessEvent.EmployeeInvitationRedeemed.TOPIC
+            ) { event : BusinessEvent.EmployeeInvitationRedeemed ->
                 sendNotification(event.inviterUserId, event.notification)
             }
             .start(scope)

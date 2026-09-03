@@ -122,9 +122,9 @@ erDiagram
 
     EMPLOYEE_INVITATION {
         uuid id PK
-        uuid business_id FK "UK with email"
+        uuid business_id FK
         uuid invited_by "logical FK -> user.profile.id"
-        string email
+        string code UK
         enum status
         timestamp created_at
         timestamp updated_at

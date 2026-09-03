@@ -8,13 +8,16 @@ import com.bookk.core.test.whenn
 import com.bookk.notifications.domain.impl.notification.NotificationType
 import com.bookk.server.business.client.api.event.BusinessEvent
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import kotlin.uuid.Uuid
 
-internal class EmployeeInvitationCreatedNotificationTest {
+internal class EmployeeInvitationRedeemedNotificationTest {
 
-    private fun event() = BusinessEvent.EmployeeInvitationCreated(
-        invitedUserId = Uuid.random(),
+    private fun event() = BusinessEvent.EmployeeInvitationRedeemed(
+        inviterUserId = Uuid.random(),
+        employeeUserId = Uuid.random(),
+        employeeName = "Alice",
         businessId = Uuid.random(),
         businessName = "Barbershop"
     )
@@ -40,8 +43,8 @@ internal class EmployeeInvitationCreatedNotificationTest {
         val push = event.notification.push(Language.EN)
 
         then()
-        assertEquals("New employee invitation", push.title)
-        assertEquals("You were invited to join Barbershop as an employee", push.body)
+        assertEquals("Invitation accepted", push.title)
+        assertEquals("Alice accepted your invitation to join Barbershop", push.body)
     }
 
     @Test
@@ -53,8 +56,8 @@ internal class EmployeeInvitationCreatedNotificationTest {
         val push = event.notification.push(Language.UK)
 
         then()
-        assertEquals("Нове запрошення до команди", push.title)
-        assertEquals("Вас запросили приєднатися до Barbershop як працівника", push.body)
+        assertEquals("Запрошення прийнято", push.title)
+        assertEquals("Alice прийняв(ла) ваше запрошення приєднатися до Barbershop", push.body)
     }
 
     @Test
@@ -66,11 +69,9 @@ internal class EmployeeInvitationCreatedNotificationTest {
         val email = event.notification.email(Language.EN)
 
         then()
-        assertEquals("You were invited to join Barbershop", email.subject)
-        assertEquals(
-            "You were invited to join Barbershop as an employee. Open the app to accept the invitation.",
-            email.body
-        )
+        assertEquals("Alice accepted your invitation", email.subject)
+        assertTrue(email.body.contains("Alice"))
+        assertTrue(email.body.contains("Barbershop"))
     }
 
     @Test
@@ -82,11 +83,9 @@ internal class EmployeeInvitationCreatedNotificationTest {
         val email = event.notification.email(Language.UK)
 
         then()
-        assertEquals("Вас запросили приєднатися до Barbershop", email.subject)
-        assertEquals(
-            "Вас запросили приєднатися до Barbershop як працівника. Відкрийте застосунок, щоб прийняти запрошення.",
-            email.body
-        )
+        assertEquals("Alice прийняв(ла) ваше запрошення", email.subject)
+        assertTrue(email.body.contains("Alice"))
+        assertTrue(email.body.contains("Barbershop"))
     }
 
     @Test
@@ -98,7 +97,7 @@ internal class EmployeeInvitationCreatedNotificationTest {
         val text = event.notification.text(Language.EN)
 
         then()
-        assertEquals("You were invited to join Barbershop as an employee.", text.text)
+        assertEquals("Alice accepted your invitation to join Barbershop.", text.text)
     }
 
     @Test
@@ -110,6 +109,6 @@ internal class EmployeeInvitationCreatedNotificationTest {
         val text = event.notification.text(Language.UK)
 
         then()
-        assertEquals("Вас запросили приєднатися до Barbershop як працівника.", text.text)
+        assertEquals("Alice прийняв(ла) ваше запрошення приєднатися до Barbershop.", text.text)
     }
 }

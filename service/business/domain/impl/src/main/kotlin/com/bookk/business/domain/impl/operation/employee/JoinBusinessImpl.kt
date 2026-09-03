@@ -2,7 +2,7 @@ package com.bookk.business.domain.impl.operation.employee
 
 import com.bookk.business.domain.api.employee.entity.Employee
 import com.bookk.business.domain.api.employee.entity.EmployeeInvitationStatus
-import com.bookk.business.domain.api.employee.operation.ApproveEmployeeInvitation
+import com.bookk.business.domain.api.employee.operation.JoinBusiness
 import com.bookk.business.domain.datasource.BusinessDataSource
 import com.bookk.business.domain.datasource.EmployeeDataSource
 import com.bookk.business.domain.datasource.EmployeeInvitationDataSource
@@ -17,34 +17,33 @@ import library.schedule.Schedule
 import kotlin.time.Clock
 import kotlin.uuid.Uuid
 
-internal class ApproveEmployeeInvitationImpl(
+internal class JoinBusinessImpl(
     private val invitationDataSource: EmployeeInvitationDataSource,
     private val employeeDataSource: EmployeeDataSource,
     private val businessDataSource: BusinessDataSource,
     private val userClient: UserClient,
     private val transactionManager: TransactionManager,
     private val eventProducer: StandardEventProducer
-) : ApproveEmployeeInvitation {
-    override suspend fun invoke(requestUserId: Uuid, businessId: Uuid, id: Uuid): Result<Employee> =
+) : JoinBusiness {
+    override suspend fun invoke(requestUserId: Uuid, code: String): Result<Employee> =
         transactionManager.transaction {
-            val invitation = invitationDataSource.getInvitation(businessId, id) ?: throw Error.NotFound()
-            val requestUser = userClient.getUserById(requestUserId).getOrThrow()
-            if (invitation.email != requestUser.email) throw Error.OperationNotAllowed()
+            val invitation = invitationDataSource.getInvitationByCode(code) ?: throw Error.NotFound()
             if (invitation.status != EmployeeInvitationStatus.PENDING) {
-                throw ApproveEmployeeInvitation.Error.InvitationAlreadyProcessed()
+                throw JoinBusiness.Error.InvitationAlreadyProcessed()
             }
-            if (employeeDataSource.getEmployeeByUserId(businessId, requestUserId) != null) {
-                throw ApproveEmployeeInvitation.Error.EmployeeExist()
+            if (employeeDataSource.getEmployeeByUserId(invitation.businessId, requestUserId) != null) {
+                throw JoinBusiness.Error.EmployeeExist()
             }
-            if (!invitationDataSource.approveInvitation(id)) {
-                throw ApproveEmployeeInvitation.Error.InvitationAlreadyProcessed()
+            if (!invitationDataSource.redeemInvitation(invitation.id)) {
+                throw JoinBusiness.Error.InvitationAlreadyProcessed()
             }
-            val business = businessDataSource.getBusinessById(businessId) ?: throw Error.NotFound()
+            val requestUser = userClient.getUserById(requestUserId).getOrThrow()
+            val business = businessDataSource.getBusinessById(invitation.businessId) ?: throw Error.NotFound()
 
             val employee = employeeDataSource.createEmployee(
                 Employee(
                     id = Uuid.random(),
-                    businessId = businessId,
+                    businessId = invitation.businessId,
                     name = requestUser.name,
                     lastName = requestUser.lastName,
                     phone = requestUser.phone,
@@ -55,9 +54,9 @@ internal class ApproveEmployeeInvitationImpl(
                     createdAt = Clock.System.now()
                 )
             )
-            businessDataSource.setUserPermissions(requestUserId, businessId, ObjectPermission.READ.int)
+            businessDataSource.setUserPermissions(requestUserId, invitation.businessId, ObjectPermission.READ.int)
             eventProducer.send(
-                BusinessEvent.EmployeeInvitationApproved(
+                BusinessEvent.EmployeeInvitationRedeemed(
                     inviterUserId = invitation.invitedBy,
                     employeeUserId = employee.userId,
                     employeeName = employee.name,

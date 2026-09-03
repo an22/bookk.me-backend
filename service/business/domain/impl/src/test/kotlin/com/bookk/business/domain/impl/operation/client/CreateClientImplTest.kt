@@ -293,6 +293,105 @@ internal class CreateClientImplTest {
     }
 
     @Test
+    fun `should trim padded name, lastName, phone, email and description before persisting`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val businessId = Uuid.random()
+        val client = Client.Detached.stub(
+            name = "  Jane  ",
+            lastName = "  Doe  ",
+            phone = "  654321  ",
+            email = "jane@doe.com",
+            description = "  VIP client  "
+        )
+        val trimmedClient = client.copy(
+            name = "Jane",
+            lastName = "Doe",
+            phone = "654321",
+            email = "jane@doe.com",
+            description = "VIP client"
+        )
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { clientDataSource.getClient(businessId, "  654321  ") } returns null
+            coEvery { clientDataSource.createDetachedClient(businessId, trimmedClient) } returns trimmedClient
+        }
+
+        whenn()
+        val result = fixture.sut(requestUserId, businessId, client)
+
+        then()
+        assertTrue(result.isSuccess)
+        assertEquals("Jane", result.getOrNull()?.name)
+        assertEquals("Doe", result.getOrNull()?.lastName)
+        assertEquals("654321", result.getOrNull()?.phone)
+        assertEquals("jane@doe.com", result.getOrNull()?.email)
+        assertEquals("VIP client", result.getOrNull()?.description)
+        coVerify(exactly = 1) { fixture.clientDataSource.createDetachedClient(businessId, trimmedClient) }
+    }
+
+    @Test
+    fun `should truncate an overly long description before persisting`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val businessId = Uuid.random()
+        val tooLong = "A".repeat(Client.MAX_DESCRIPTION_LENGTH + 10)
+        val truncated = tooLong.take(Client.MAX_DESCRIPTION_LENGTH)
+        val client = Client.Detached.stub(description = tooLong)
+        val trimmedClient = client.copy(description = truncated)
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { clientDataSource.getClient(businessId, client.phone!!) } returns null
+            coEvery { clientDataSource.createDetachedClient(businessId, trimmedClient) } returns trimmedClient
+        }
+
+        whenn()
+        val result = fixture.sut(requestUserId, businessId, client)
+
+        then()
+        assertTrue(result.isSuccess)
+        assertEquals(truncated, result.getOrNull()?.description)
+    }
+
+    @Test
+    fun `should treat a blank phone as absent and not fail contact info check when email is present`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val businessId = Uuid.random()
+        val client = Client.Detached.stub(phone = "   ")
+        val trimmedClient = client.copy(phone = null)
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { clientDataSource.createDetachedClient(businessId, trimmedClient) } returns trimmedClient
+        }
+
+        whenn()
+        val result = fixture.sut(requestUserId, businessId, client)
+
+        then()
+        assertTrue(result.isSuccess)
+        assertEquals(null, result.getOrNull()?.phone)
+        coVerify(exactly = 0) { fixture.clientDataSource.getClient(any(), any()) }
+    }
+
+    @Test
+    fun `should return error when phone and email are blank`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val businessId = Uuid.random()
+        val client = Client.Detached.stub(phone = "   ", email = "   ")
+        fixture.transactionManager.mockTransaction()
+
+        whenn()
+        val result = fixture.sut(requestUserId, businessId, client)
+
+        then()
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is CreateClient.Error.MissingContactInfo)
+        coVerify(exactly = 0) { fixture.clientDataSource.createDetachedClient(any(), any()) }
+    }
+
+    @Test
     fun `should return validation error when email is malformed`() = runUnitTest {
         given()
         val fixture = SutFixture()

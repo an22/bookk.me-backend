@@ -20,11 +20,11 @@ import io.ktor.server.request.receive
 import io.ktor.server.resources.delete
 import io.ktor.server.resources.get
 import io.ktor.server.resources.post
-import io.ktor.server.resources.put
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.application
 import io.ktor.server.routing.openapi.describe
+import io.ktor.server.routing.patch
 import org.koin.ktor.ext.inject
 
 fun Route.clientCrud() {
@@ -114,7 +114,7 @@ fun Route.clientCrud() {
          * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Update client errors<br>BUSINESS_CLIENT_EXISTS (200004) Client with this phone already exists<br>BUSINESS_CLIENT_NAME_VALIDATION_ERROR (200005) Client name, last name, phone or email is invalid<br>BUSINESS_CLIENT_PERSONAL_INFO_NOT_EDITABLE (200026) Personal info of an integrated client cannot be edited, only its description can
          * See: docs/operations/business/update-client.md
          */
-        put<Api.Clients.Id> {
+        patch<Api.Clients.Id> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
             val body = call.receive<ClientUpdateModel>()
             val updateClient by application.inject<UpdateClient>()

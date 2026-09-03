@@ -25,35 +25,40 @@ internal class UpdateClientImpl(
             businessDataSource.getPermission(requestUserId, businessId).assert(ObjectPermission.EDIT)
             val existing = clientDataSource.getClientById(businessId, model.id) ?: throw UpdateClient.Error.NotFound()
 
-            val personalInfoRequested = model.name != null || model.lastName != null || model.phone != null || model.email != null
+            val isNameChange = model.name != null && model.name != existing.name
+            val isLastNameChange = model.lastName != null && model.lastName != existing.lastName
+            val isPhoneChange = model.phone != null && model.phone != existing.phone
+            val isEmailChange = model.email != null && model.email != existing.email
+
+            val personalInfoRequested = isNameChange || isLastNameChange || isPhoneChange || isEmailChange
             if (existing is Client.Integrated && personalInfoRequested) {
                 throw UpdateClient.Error.PersonalInfoNotEditable()
             }
 
-            model.name?.let { name ->
+            val name = model.name?.also { name ->
                 if (!NameValidator.isValid(name, minLength = 0, maxLength = MAX_NAME_LENGTH)) {
                     throw UpdateClient.Error.ClientValidationError()
                 }
             }
-            model.lastName?.let { lastName ->
+            val lastName = model.lastName?.also { lastName ->
                 if (!NameValidator.isValid(lastName, minLength = 0, maxLength = MAX_NAME_LENGTH)) {
                     throw UpdateClient.Error.ClientValidationError()
                 }
             }
-            model.phone?.let { phone ->
+            val phone = model.phone?.takeIf { it.isNotBlank() }?.also { phone ->
                 if (!PhoneValidator.isValid(phone)) throw UpdateClient.Error.ClientValidationError()
                 val conflict = clientDataSource.getClient(businessId, phone)
                 if (conflict != null && conflict.id != model.id) throw UpdateClient.Error.ClientExist()
             }
-            model.email?.let { email ->
+            val email = model.email?.takeIf { it.isNotBlank() }?.also { email ->
                 if (!EmailValidator.isValid(email)) throw UpdateClient.Error.ClientValidationError()
             }
 
             val trimmedModel = model.copy(
-                name = model.name?.trim(),
-                lastName = model.lastName?.trim(),
-                phone = model.phone?.trim(),
-                email = model.email?.trim(),
+                name = name?.trim(),
+                lastName = lastName?.trim(),
+                phone = phone?.trim(),
+                email = email?.trim(),
                 description = model.description?.trim()?.take(Client.MAX_DESCRIPTION_LENGTH)
             )
 

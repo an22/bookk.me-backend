@@ -8,8 +8,8 @@ import kotlin.uuid.Uuid
 data class ClientSnapshot(
     @ProtoNumber(1) val id: Uuid,
     @ProtoNumber(2) val fullName: String,
-    @ProtoNumber(3) val phone: String,
-    @ProtoNumber(4) val email: String
+    @ProtoNumber(3) val phone: String?,
+    @ProtoNumber(4) val email: String?
 ) {
     companion object {
         fun stub() = ClientSnapshot(

@@ -119,8 +119,8 @@ internal class CreateAppointmentRequestImpl(
             client = ClientSnapshot(
                 id = context.client.id,
                 fullName = "${context.client.name} ${context.client.lastName}".trim(),
-                phone = context.client.phone.orEmpty(),
-                email = context.client.email.orEmpty()
+                phone = context.client.phone,
+                email = context.client.email
             ),
             services = expandedServices.map {
                 ServiceSnapshot(id = it.id, name = it.name, groupId = it.group.id, price = it.price, duration = it.duration)

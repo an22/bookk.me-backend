@@ -1,7 +1,7 @@
 package com.bookk.business.domain.impl.operation.client
 
 import com.bookk.business.domain.api.client.operation.DeleteClient
-import com.bookk.business.domain.datasource.BusinessDataSource
+import com.bookk.business.domain.datasource.BusinessPermissionDataSource
 import com.bookk.business.domain.datasource.ClientDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import library.permissions.ObjectPermission
@@ -11,11 +11,11 @@ import kotlin.uuid.Uuid
 internal class DeleteClientImpl(
     private val transactionManager: TransactionManager,
     private val clientDataSource: ClientDataSource,
-    private val businessDataSource: BusinessDataSource
+    private val businessPermissionDataSource: BusinessPermissionDataSource
 ) : DeleteClient {
     override suspend fun invoke(requestUserId: Uuid, businessId: Uuid, id: Uuid): Result<Unit> =
         transactionManager.transaction {
-            businessDataSource.getPermission(requestUserId, businessId).assert(ObjectPermission.EDIT)
+            businessPermissionDataSource.getPermission(requestUserId, businessId).assert(ObjectPermission.EDIT)
             if (!clientDataSource.deleteClient(businessId, id)) {
                 throw DeleteClient.Error.NotFound()
             }

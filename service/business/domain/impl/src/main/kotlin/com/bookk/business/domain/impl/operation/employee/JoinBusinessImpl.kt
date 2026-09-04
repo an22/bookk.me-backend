@@ -4,6 +4,7 @@ import com.bookk.business.domain.api.employee.entity.Employee
 import com.bookk.business.domain.api.employee.entity.EmployeeInvitationStatus
 import com.bookk.business.domain.api.employee.operation.JoinBusiness
 import com.bookk.business.domain.datasource.BusinessDataSource
+import com.bookk.business.domain.datasource.BusinessPermissionDataSource
 import com.bookk.business.domain.datasource.EmployeeDataSource
 import com.bookk.business.domain.datasource.EmployeeInvitationDataSource
 import com.bookk.core.data.eventstreaming.StandardEventProducer
@@ -21,6 +22,7 @@ internal class JoinBusinessImpl(
     private val invitationDataSource: EmployeeInvitationDataSource,
     private val employeeDataSource: EmployeeDataSource,
     private val businessDataSource: BusinessDataSource,
+    private val businessPermissionDataSource: BusinessPermissionDataSource,
     private val userClient: UserClient,
     private val transactionManager: TransactionManager,
     private val eventProducer: StandardEventProducer
@@ -55,7 +57,7 @@ internal class JoinBusinessImpl(
                     createdAt = Clock.System.now()
                 )
             )
-            businessDataSource.setUserPermissions(requestUserId, invitation.businessId, ObjectPermission.READ.int)
+            businessPermissionDataSource.setUserPermissions(requestUserId, invitation.businessId, ObjectPermission.READ.int)
             eventProducer.send(
                 BusinessEvent.EmployeeInvitationRedeemed(
                     inviterUserId = invitation.invitedBy,

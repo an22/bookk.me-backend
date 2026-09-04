@@ -2,7 +2,7 @@ package com.bookk.business.domain.impl.operation.client
 
 import com.bookk.business.domain.api.client.entity.Client
 import com.bookk.business.domain.api.client.entity.toRemote
-import com.bookk.business.domain.datasource.BusinessDataSource
+import com.bookk.business.domain.datasource.BusinessPermissionDataSource
 import com.bookk.business.domain.datasource.ClientDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.datasource.transaction.mockTransaction
@@ -26,16 +26,16 @@ internal class GetClientsImplTest {
 
     private class SutFixture {
         val clientDataSource = mockk<ClientDataSource>()
-        val businessDataSource = mockk<BusinessDataSource>()
+        val businessPermissionDataSource = mockk<BusinessPermissionDataSource>()
         val transactionManager = mockk<TransactionManager>()
-        val sut = GetClientsImpl(clientDataSource, businessDataSource, transactionManager)
+        val sut = GetClientsImpl(clientDataSource, businessPermissionDataSource, transactionManager)
 
         init {
-            coEvery { businessDataSource.getPermission(any(), any()) } returns ObjectPermission.OWNER.int
+            coEvery { businessPermissionDataSource.getPermission(any(), any()) } returns ObjectPermission.OWNER.int
         }
 
         fun grantPermission(permission: ObjectPermission?) {
-            coEvery { businessDataSource.getPermission(any(), any()) } returns permission?.int
+            coEvery { businessPermissionDataSource.getPermission(any(), any()) } returns permission?.int
         }
     }
 
@@ -123,6 +123,6 @@ internal class GetClientsImplTest {
 
         then()
         assertTrue(result.isSuccess)
-        coVerify(exactly = 1) { fixture.businessDataSource.getPermission(requestUserId, businessId) }
+        coVerify(exactly = 1) { fixture.businessPermissionDataSource.getPermission(requestUserId, businessId) }
     }
 }

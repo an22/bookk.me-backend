@@ -4,7 +4,7 @@ import com.bookk.business.domain.api.client.entity.Client
 import com.bookk.business.domain.api.client.entity.ClientRemote
 import com.bookk.business.domain.api.client.entity.toRemote
 import com.bookk.business.domain.api.client.operation.CreateClient
-import com.bookk.business.domain.datasource.BusinessDataSource
+import com.bookk.business.domain.datasource.BusinessPermissionDataSource
 import com.bookk.business.domain.datasource.ClientDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import library.permissions.ObjectPermission
@@ -17,11 +17,11 @@ import kotlin.uuid.Uuid
 internal class CreateClientImpl(
     private val transactionManager: TransactionManager,
     private val clientDataSource: ClientDataSource,
-    private val businessDataSource: BusinessDataSource
+    private val businessPermissionDataSource: BusinessPermissionDataSource
 ) : CreateClient {
     override suspend fun invoke(requestUserId: Uuid, businessId: Uuid, client: Client): Result<ClientRemote> =
         transactionManager.transaction {
-            businessDataSource.getPermission(requestUserId, businessId).assert(ObjectPermission.EDIT)
+            businessPermissionDataSource.getPermission(requestUserId, businessId).assert(ObjectPermission.EDIT)
             if (!NameValidator.isValid(client.name, minLength = 0, maxLength = MAX_NAME_LENGTH)) {
                 throw CreateClient.Error.ClientValidationError()
             }

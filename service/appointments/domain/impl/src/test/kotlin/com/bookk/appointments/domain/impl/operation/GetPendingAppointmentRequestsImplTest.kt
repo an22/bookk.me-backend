@@ -1,8 +1,8 @@
 package com.bookk.appointments.domain.impl.operation
 
 import com.bookk.appointments.domain.api.entity.AppointmentRequest
+import com.bookk.appointments.domain.datasource.AppointmentPermissionDataSource
 import com.bookk.appointments.domain.datasource.AppointmentRequestDataSource
-import com.bookk.appointments.domain.datasource.PermissionsDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.datasource.transaction.mockTransaction
 import com.bookk.core.domain.entity.Error
@@ -22,9 +22,9 @@ internal class GetPendingAppointmentRequestsImplTest {
 
     private class SutFixture {
         val requestsDataSource = mockk<AppointmentRequestDataSource>()
-        val permissionsDataSource = mockk<PermissionsDataSource>()
+        val appointmentPermissionDataSource = mockk<AppointmentPermissionDataSource>()
         val transactionManager = mockk<TransactionManager>()
-        val sut = GetPendingAppointmentRequestsImpl(requestsDataSource, permissionsDataSource, transactionManager)
+        val sut = GetPendingAppointmentRequestsImpl(requestsDataSource, appointmentPermissionDataSource, transactionManager)
     }
 
     @Test
@@ -36,7 +36,7 @@ internal class GetPendingAppointmentRequestsImplTest {
         val requests = listOf(AppointmentRequest.stub(userId = userId, businessId = businessId))
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { permissionsDataSource.getPermissions(userId, businessId) } returns ObjectPermission.READ.int
+            coEvery { appointmentPermissionDataSource.getPermissions(userId, businessId) } returns ObjectPermission.READ.int
             coEvery { requestsDataSource.getPending(businessId) } returns requests
         }
 
@@ -56,7 +56,7 @@ internal class GetPendingAppointmentRequestsImplTest {
         val businessId = Uuid.random()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { permissionsDataSource.getPermissions(userId, businessId) } returns null
+            coEvery { appointmentPermissionDataSource.getPermissions(userId, businessId) } returns null
         }
 
         whenn()
@@ -76,7 +76,7 @@ internal class GetPendingAppointmentRequestsImplTest {
         val exception = RuntimeException("Database error")
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { permissionsDataSource.getPermissions(userId, businessId) } returns ObjectPermission.READ.int
+            coEvery { appointmentPermissionDataSource.getPermissions(userId, businessId) } returns ObjectPermission.READ.int
             coEvery { requestsDataSource.getPending(businessId) } throws exception
         }
 

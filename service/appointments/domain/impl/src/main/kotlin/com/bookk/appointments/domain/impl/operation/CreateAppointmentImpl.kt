@@ -5,10 +5,10 @@ import com.bookk.appointments.domain.api.entity.AppointmentRepresentation
 import com.bookk.appointments.domain.api.entity.AppointmentRequest
 import com.bookk.appointments.domain.api.operation.CreateAppointment
 import com.bookk.appointments.domain.datasource.AppointmentDataSource
+import com.bookk.appointments.domain.datasource.AppointmentPermissionDataSource
 import com.bookk.appointments.domain.datasource.AppointmentRequestDataSource
 import com.bookk.appointments.domain.datasource.AppointmentSettingsDataSource
 import com.bookk.appointments.domain.datasource.AppointmentSubscriptionDataSource
-import com.bookk.appointments.domain.datasource.PermissionsDataSource
 import com.bookk.core.data.eventstreaming.StandardEventProducer
 import com.bookk.core.data.eventstreaming.send
 import com.bookk.core.domain.datasource.transaction.TransactionManager
@@ -27,7 +27,7 @@ internal class CreateAppointmentImpl(
     private val appointmentDataSource: AppointmentDataSource,
     private val requestDataSource: AppointmentRequestDataSource,
     private val settingsDataSource: AppointmentSettingsDataSource,
-    private val permissionsDataSource: PermissionsDataSource,
+    private val appointmentPermissionDataSource: AppointmentPermissionDataSource,
     private val subscriptionDataSource: AppointmentSubscriptionDataSource,
     private val transactionManager: TransactionManager,
     private val eventProducer: StandardEventProducer
@@ -38,7 +38,7 @@ internal class CreateAppointmentImpl(
         appointmentRequestId: Uuid
     ): Result<Appointment> = transactionManager.transaction {
         val request = requestDataSource.get(appointmentRequestId) ?: throw Error.NotFound()
-        permissionsDataSource.getPermissions(userId, request.businessId)
+        appointmentPermissionDataSource.getPermissions(userId, request.businessId)
             .assertOrOwner(ObjectPermission.EDIT, actorId = userId, assigneeId = request.employee.userId)
         createAppointment(request)
     }

@@ -2,9 +2,9 @@ package com.bookk.appointments.domain.impl.operation
 
 import com.bookk.appointments.domain.api.entity.AppointmentSettings
 import com.bookk.appointments.domain.api.operation.EnableAppointmentsForBusiness
+import com.bookk.appointments.domain.datasource.AppointmentPermissionDataSource
 import com.bookk.appointments.domain.datasource.AppointmentSettingsDataSource
 import com.bookk.appointments.domain.datasource.AppointmentSubscriptionDataSource
-import com.bookk.appointments.domain.datasource.PermissionsDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.datasource.transaction.mockTransaction
 import com.bookk.core.domain.entity.Error
@@ -34,14 +34,14 @@ internal class EnableAppointmentsForBusinessImplTest {
     private class SutFixture {
         val subscriptionSource = mockk<AppointmentSubscriptionDataSource>()
         val settingsDataSource = mockk<AppointmentSettingsDataSource>()
-        val permissionsDataSource = mockk<PermissionsDataSource>()
+        val appointmentPermissionDataSource = mockk<AppointmentPermissionDataSource>()
         val businessClient = mockk<BusinessClient>()
         val transactionManager = mockk<TransactionManager>()
 
         val sut = EnableAppointmentsForBusinessImpl(
             subscriptionSource,
             settingsDataSource,
-            permissionsDataSource,
+            appointmentPermissionDataSource,
             businessClient,
             transactionManager
         )
@@ -63,7 +63,7 @@ internal class EnableAppointmentsForBusinessImplTest {
 
     private fun SutFixture.acceptAttach() {
         coEvery { subscriptionSource.attachBusiness(any()) } returns Unit
-        coEvery { permissionsDataSource.setPermissions(testUserId, testBusinessId, ObjectPermission.OWNER.int) } returns Unit
+        coEvery { appointmentPermissionDataSource.setPermissions(testUserId, testBusinessId, ObjectPermission.OWNER.int) } returns Unit
         coEvery { settingsDataSource.create(any()) } returns AppointmentSettings.stub(testBusinessId)
         coEvery { businessClient.getPermission(testUserId, testBusinessId) } returns
             Result.success(ObjectPermission.OWNER)
@@ -85,7 +85,7 @@ internal class EnableAppointmentsForBusinessImplTest {
         then()
         assertTrue(result.isSuccess)
         coVerify(exactly = 1) {
-            fixture.permissionsDataSource.setPermissions(testUserId, testBusinessId, ObjectPermission.OWNER.int)
+            fixture.appointmentPermissionDataSource.setPermissions(testUserId, testBusinessId, ObjectPermission.OWNER.int)
         }
     }
 
@@ -156,7 +156,7 @@ internal class EnableAppointmentsForBusinessImplTest {
         then()
         assertTrue(result.exceptionOrNull() is Error.OperationNotAllowed)
         coVerify(exactly = 0) { fixture.subscriptionSource.attachBusiness(any()) }
-        coVerify(exactly = 0) { fixture.permissionsDataSource.setPermissions(any(), any(), any()) }
+        coVerify(exactly = 0) { fixture.appointmentPermissionDataSource.setPermissions(any(), any(), any()) }
     }
 
     @Test

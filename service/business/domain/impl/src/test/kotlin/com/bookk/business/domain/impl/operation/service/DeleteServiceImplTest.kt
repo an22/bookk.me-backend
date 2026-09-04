@@ -1,6 +1,6 @@
 package com.bookk.business.domain.impl.operation.service
 
-import com.bookk.business.domain.datasource.BusinessDataSource
+import com.bookk.business.domain.datasource.BusinessPermissionDataSource
 import com.bookk.business.domain.datasource.ServiceDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.datasource.transaction.mockTransaction
@@ -21,9 +21,9 @@ internal class DeleteServiceImplTest {
 
     private class SutFixture {
         val serviceDataSource = mockk<ServiceDataSource>(relaxed = true)
-        val businessDataSource = mockk<BusinessDataSource>()
+        val businessPermissionDataSource = mockk<BusinessPermissionDataSource>()
         val transactionManager = mockk<TransactionManager>()
-        val sut = DeleteServiceImpl(serviceDataSource, businessDataSource, transactionManager)
+        val sut = DeleteServiceImpl(serviceDataSource, businessPermissionDataSource, transactionManager)
     }
 
     @Test
@@ -35,7 +35,7 @@ internal class DeleteServiceImplTest {
         val id = Uuid.random()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { businessDataSource.getPermission(userId, businessId) } returns ObjectPermission.EDIT.int
+            coEvery { businessPermissionDataSource.getPermission(userId, businessId) } returns ObjectPermission.EDIT.int
         }
 
         whenn()
@@ -55,7 +55,7 @@ internal class DeleteServiceImplTest {
         val id = Uuid.random()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { businessDataSource.getPermission(userId, businessId) } returns ObjectPermission.READ.int
+            coEvery { businessPermissionDataSource.getPermission(userId, businessId) } returns ObjectPermission.READ.int
         }
 
         whenn()

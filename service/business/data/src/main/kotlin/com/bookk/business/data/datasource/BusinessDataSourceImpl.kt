@@ -3,7 +3,6 @@ package com.bookk.business.data.datasource
 import com.bookk.business.data.orm.entity.BusinessEntity
 import com.bookk.business.data.orm.table.BusinessDashboardTable
 import com.bookk.business.data.orm.table.BusinessDayOffTable
-import com.bookk.business.data.orm.table.BusinessPermissionsTable
 import com.bookk.business.data.orm.table.BusinessTable
 import com.bookk.business.domain.api.business.entity.Business
 import com.bookk.business.domain.api.business.entity.BusinessUpdateModel
@@ -21,7 +20,6 @@ import org.jetbrains.exposed.v1.jdbc.deleteReturning
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.select
-import org.jetbrains.exposed.v1.jdbc.upsert
 import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
@@ -101,26 +99,5 @@ internal class BusinessDataSourceImpl : DataSource(), BusinessDataSource {
                     .and(BusinessDayOffTable.endDate.less(today))
             }
         }
-    }
-
-    override suspend fun getPermission(userId: Uuid, businessId: Uuid): Int? = dbQuery {
-        BusinessPermissionsTable.select(
-            BusinessPermissionsTable.permission
-        )
-            .where { (BusinessPermissionsTable.userId eq userId) and (BusinessPermissionsTable.businessId eq businessId) }
-            .singleOrNull()
-            ?.get(BusinessPermissionsTable.permission)
-    }
-
-    override suspend fun setUserPermissions(userId: Uuid, businessId: Uuid, permission: Int) {
-        BusinessPermissionsTable.upsert {
-            it[this.userId] = userId
-            it[this.businessId] = businessId
-            it[this.permission] = permission
-        }
-    }
-
-    override suspend fun deleteUserPermissions(userId: Uuid) = dbQuery<Unit> {
-        BusinessPermissionsTable.deleteWhere { BusinessPermissionsTable.userId eq userId }
     }
 }

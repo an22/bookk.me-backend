@@ -3,7 +3,7 @@ package com.bookk.appointments.domain.impl.operation
 import com.bookk.appointments.domain.api.entity.Appointment
 import com.bookk.appointments.domain.api.entity.AppointmentPagination
 import com.bookk.appointments.domain.datasource.AppointmentDataSource
-import com.bookk.appointments.domain.datasource.PermissionsDataSource
+import com.bookk.appointments.domain.datasource.AppointmentPermissionDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.datasource.transaction.mockTransaction
 import com.bookk.core.domain.entity.Error
@@ -24,9 +24,9 @@ internal class GetAppointmentHistoryImplTest {
 
     private class SutFixture {
         val dataSource = mockk<AppointmentDataSource>()
-        val permissionsDataSource = mockk<PermissionsDataSource>()
+        val appointmentPermissionDataSource = mockk<AppointmentPermissionDataSource>()
         val transactionManager = mockk<TransactionManager>()
-        val sut = GetAppointmentHistoryImpl(dataSource, permissionsDataSource, transactionManager)
+        val sut = GetAppointmentHistoryImpl(dataSource, appointmentPermissionDataSource, transactionManager)
     }
 
     @Test
@@ -43,7 +43,7 @@ internal class GetAppointmentHistoryImplTest {
 
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { permissionsDataSource.getPermissions(userId, businessId) } returns ObjectPermission.READ.int
+            coEvery { appointmentPermissionDataSource.getPermissions(userId, businessId) } returns ObjectPermission.READ.int
             coEvery { dataSource.getAllPaginated(businessId, 50, 0, null) } returns pagination
         }
 
@@ -69,7 +69,7 @@ internal class GetAppointmentHistoryImplTest {
 
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { permissionsDataSource.getPermissions(userId, businessId) } returns ObjectPermission.READ.int
+            coEvery { appointmentPermissionDataSource.getPermissions(userId, businessId) } returns ObjectPermission.READ.int
             coEvery {
                 dataSource.getAllPaginated(businessId, 50, 0, "John")
             } returns pagination
@@ -98,7 +98,7 @@ internal class GetAppointmentHistoryImplTest {
 
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { permissionsDataSource.getPermissions(userId, businessId) } returns null
+            coEvery { appointmentPermissionDataSource.getPermissions(userId, businessId) } returns null
         }
 
         whenn()
@@ -119,7 +119,7 @@ internal class GetAppointmentHistoryImplTest {
 
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { permissionsDataSource.getPermissions(userId, businessId) } returns ObjectPermission.READ.int
+            coEvery { appointmentPermissionDataSource.getPermissions(userId, businessId) } returns ObjectPermission.READ.int
             coEvery { dataSource.getAllPaginated(businessId, 50, 0, null) } throws exception
         }
 

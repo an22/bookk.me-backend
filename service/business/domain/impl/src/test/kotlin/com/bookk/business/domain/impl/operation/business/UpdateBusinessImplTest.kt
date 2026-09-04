@@ -4,6 +4,7 @@ import com.bookk.business.domain.api.business.entity.Business
 import com.bookk.business.domain.api.business.entity.BusinessUpdateModel
 import com.bookk.business.domain.api.business.operation.UpdateBusiness
 import com.bookk.business.domain.datasource.BusinessDataSource
+import com.bookk.business.domain.datasource.BusinessPermissionDataSource
 import com.bookk.core.data.eventstreaming.StandardEventProducer
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.datasource.transaction.mockTransaction
@@ -38,16 +39,17 @@ internal class UpdateBusinessImplTest {
 
     private class SutFixture {
         val businessDataSource = mockk<BusinessDataSource>(relaxed = true)
+        val businessPermissionDataSource = mockk<BusinessPermissionDataSource>(relaxed = true)
         val transactionManager = mockk<TransactionManager>()
         val eventProducer = mockk<StandardEventProducer>(relaxed = true)
-        val sut = UpdateBusinessImpl(businessDataSource, transactionManager, eventProducer)
+        val sut = UpdateBusinessImpl(businessDataSource, businessPermissionDataSource, transactionManager, eventProducer)
 
         init {
-            coEvery { businessDataSource.getPermission(any(), any()) } returns ObjectPermission.OWNER.int
+            coEvery { businessPermissionDataSource.getPermission(any(), any()) } returns ObjectPermission.OWNER.int
         }
 
         fun grantPermission(permission: ObjectPermission?) {
-            coEvery { businessDataSource.getPermission(any(), any()) } returns permission?.int
+            coEvery { businessPermissionDataSource.getPermission(any(), any()) } returns permission?.int
         }
     }
 
@@ -367,7 +369,7 @@ internal class UpdateBusinessImplTest {
 
         then()
         assertTrue(result.isSuccess)
-        coVerify(exactly = 1) { fixture.businessDataSource.getPermission(requestUserId, businessId) }
+        coVerify(exactly = 1) { fixture.businessPermissionDataSource.getPermission(requestUserId, businessId) }
     }
 
     @Test

@@ -5,7 +5,7 @@ import com.bookk.business.domain.api.client.entity.ClientRemote
 import com.bookk.business.domain.api.client.entity.ClientUpdateModel
 import com.bookk.business.domain.api.client.entity.toRemote
 import com.bookk.business.domain.api.client.operation.UpdateClient
-import com.bookk.business.domain.datasource.BusinessDataSource
+import com.bookk.business.domain.datasource.BusinessPermissionDataSource
 import com.bookk.business.domain.datasource.ClientDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import library.permissions.ObjectPermission
@@ -18,11 +18,11 @@ import kotlin.uuid.Uuid
 internal class UpdateClientImpl(
     private val transactionManager: TransactionManager,
     private val clientDataSource: ClientDataSource,
-    private val businessDataSource: BusinessDataSource
+    private val businessPermissionDataSource: BusinessPermissionDataSource
 ) : UpdateClient {
     override suspend fun invoke(requestUserId: Uuid, businessId: Uuid, model: ClientUpdateModel): Result<ClientRemote> =
         transactionManager.transaction {
-            businessDataSource.getPermission(requestUserId, businessId).assert(ObjectPermission.EDIT)
+            businessPermissionDataSource.getPermission(requestUserId, businessId).assert(ObjectPermission.EDIT)
             val existing = clientDataSource.getClientById(businessId, model.id) ?: throw UpdateClient.Error.NotFound()
 
             val isNameChange = model.name != null && model.name != existing.name

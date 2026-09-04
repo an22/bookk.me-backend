@@ -1,6 +1,6 @@
 package com.bookk.business.domain.impl.operation.business
 
-import com.bookk.business.domain.datasource.BusinessDataSource
+import com.bookk.business.domain.datasource.BusinessPermissionDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.datasource.transaction.mockTransaction
 import com.bookk.core.test.given
@@ -18,9 +18,9 @@ import kotlin.uuid.Uuid
 internal class GetBusinessPermissionImplTest {
 
     private class SutFixture {
-        val businessDataSource = mockk<BusinessDataSource>()
+        val businessPermissionDataSource = mockk<BusinessPermissionDataSource>()
         val transactionManager = mockk<TransactionManager>()
-        val sut = GetBusinessPermissionImpl(businessDataSource, transactionManager)
+        val sut = GetBusinessPermissionImpl(businessPermissionDataSource, transactionManager)
     }
 
     private val userId = Uuid.random()
@@ -32,7 +32,7 @@ internal class GetBusinessPermissionImplTest {
         val fixture = SutFixture()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { businessDataSource.getPermission(userId, businessId) } returns ObjectPermission.OWNER.int
+            coEvery { businessPermissionDataSource.getPermission(userId, businessId) } returns ObjectPermission.OWNER.int
         }
 
         whenn()
@@ -49,7 +49,7 @@ internal class GetBusinessPermissionImplTest {
         val fixture = SutFixture()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { businessDataSource.getPermission(userId, businessId) } returns null
+            coEvery { businessPermissionDataSource.getPermission(userId, businessId) } returns null
         }
 
         whenn()
@@ -66,7 +66,7 @@ internal class GetBusinessPermissionImplTest {
         val fixture = SutFixture()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { businessDataSource.getPermission(userId, businessId) } returns 42
+            coEvery { businessPermissionDataSource.getPermission(userId, businessId) } returns 42
         }
 
         whenn()
@@ -83,7 +83,7 @@ internal class GetBusinessPermissionImplTest {
         val fixture = SutFixture()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { businessDataSource.getPermission(userId, businessId) } throws RuntimeException("db error")
+            coEvery { businessPermissionDataSource.getPermission(userId, businessId) } throws RuntimeException("db error")
         }
 
         whenn()

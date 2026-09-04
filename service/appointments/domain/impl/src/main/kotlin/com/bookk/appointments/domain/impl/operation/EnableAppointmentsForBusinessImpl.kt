@@ -3,9 +3,9 @@ package com.bookk.appointments.domain.impl.operation
 import com.bookk.appointments.domain.api.entity.AppointmentSettings
 import com.bookk.appointments.domain.api.entity.BusinessSnapshot
 import com.bookk.appointments.domain.api.operation.EnableAppointmentsForBusiness
+import com.bookk.appointments.domain.datasource.AppointmentPermissionDataSource
 import com.bookk.appointments.domain.datasource.AppointmentSettingsDataSource
 import com.bookk.appointments.domain.datasource.AppointmentSubscriptionDataSource
-import com.bookk.appointments.domain.datasource.PermissionsDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.entity.onConstraintFailure
 import com.bookk.server.business.client.api.BusinessClient
@@ -16,7 +16,7 @@ import kotlin.uuid.Uuid
 internal class EnableAppointmentsForBusinessImpl(
     private val subscriptionSource: AppointmentSubscriptionDataSource,
     private val settingsDataSource: AppointmentSettingsDataSource,
-    private val permissionsDataSource: PermissionsDataSource,
+    private val appointmentPermissionDataSource: AppointmentPermissionDataSource,
     private val businessClient: BusinessClient,
     private val transactionManager: TransactionManager
 ) : EnableAppointmentsForBusiness {
@@ -35,7 +35,7 @@ internal class EnableAppointmentsForBusinessImpl(
                     schedule = business.schedule
                 )
             )
-            permissionsDataSource.setPermissions(userId, businessId, ObjectPermission.OWNER.int)
+            appointmentPermissionDataSource.setPermissions(userId, businessId, ObjectPermission.OWNER.int)
             settingsDataSource.create(AppointmentSettings(businessId, business.timeZone))
         }.onConstraintFailure {
             throw EnableAppointmentsForBusiness.Error.AlreadyEnabled()

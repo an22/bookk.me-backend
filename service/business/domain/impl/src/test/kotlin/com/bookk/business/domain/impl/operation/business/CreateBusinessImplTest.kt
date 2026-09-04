@@ -4,6 +4,7 @@ import com.bookk.business.domain.api.business.entity.Business
 import com.bookk.business.domain.api.business.entity.BusinessCreateRequest
 import com.bookk.business.domain.api.business.operation.CreateBusiness
 import com.bookk.business.domain.datasource.BusinessDataSource
+import com.bookk.business.domain.datasource.BusinessPermissionDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.datasource.transaction.mockTransaction
 import com.bookk.core.test.given
@@ -23,8 +24,9 @@ internal class CreateBusinessImplTest {
 
     private class SutFixture {
         val businessDataSource = mockk<BusinessDataSource>()
+        val businessPermissionDataSource = mockk<BusinessPermissionDataSource>()
         val transactionManager = mockk<TransactionManager>()
-        val sut = CreateBusinessImpl(businessDataSource, transactionManager)
+        val sut = CreateBusinessImpl(businessDataSource, businessPermissionDataSource, transactionManager)
     }
 
     @Test
@@ -37,7 +39,7 @@ internal class CreateBusinessImplTest {
             transactionManager.mockTransaction()
             coEvery { businessDataSource.isBusinessExist(userId) } returns false
             coEvery { businessDataSource.createBusiness(userId, "Name", "USD", TimeZone.UTC) } returns business
-            coEvery { businessDataSource.setUserPermissions(userId, business.id, ObjectPermission.OWNER.int) } returns Unit
+            coEvery { businessPermissionDataSource.setUserPermissions(userId, business.id, ObjectPermission.OWNER.int) } returns Unit
         }
 
         whenn()

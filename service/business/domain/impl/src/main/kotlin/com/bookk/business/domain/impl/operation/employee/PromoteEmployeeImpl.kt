@@ -2,7 +2,7 @@ package com.bookk.business.domain.impl.operation.employee
 
 import com.bookk.business.domain.api.employee.entity.EmployeeRole
 import com.bookk.business.domain.api.employee.operation.PromoteEmployee
-import com.bookk.business.domain.datasource.BusinessDataSource
+import com.bookk.business.domain.datasource.BusinessPermissionDataSource
 import com.bookk.business.domain.datasource.EmployeeDataSource
 import com.bookk.core.data.eventstreaming.StandardEventProducer
 import com.bookk.core.data.eventstreaming.send
@@ -15,16 +15,16 @@ import kotlin.uuid.Uuid
 
 internal class PromoteEmployeeImpl(
     private val employeeDataSource: EmployeeDataSource,
-    private val businessDataSource: BusinessDataSource,
+    private val businessPermissionDataSource: BusinessPermissionDataSource,
     private val transactionManager: TransactionManager,
     private val eventProducer: StandardEventProducer
 ) : PromoteEmployee {
     override suspend fun invoke(requestUserId: Uuid, businessId: Uuid, employeeId: Uuid, role: EmployeeRole): Result<Unit> =
         transactionManager.transaction {
-            businessDataSource.getPermission(requestUserId, businessId).assert(ObjectPermission.OWNER)
+            businessPermissionDataSource.getPermission(requestUserId, businessId).assert(ObjectPermission.OWNER)
             val employee = employeeDataSource.getEmployee(businessId, employeeId) ?: throw Error.NotFound()
             val permission = role.toPermission().int
-            businessDataSource.setUserPermissions(employee.userId, businessId, permission)
+            businessPermissionDataSource.setUserPermissions(employee.userId, businessId, permission)
             eventProducer.send(
                 BusinessEvent.EmployeePermissionChanged(
                     employeeUserId = employee.userId,

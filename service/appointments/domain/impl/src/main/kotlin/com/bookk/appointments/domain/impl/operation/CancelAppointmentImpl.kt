@@ -5,8 +5,8 @@ import com.bookk.appointments.domain.api.entity.AppointmentCancellation
 import com.bookk.appointments.domain.api.entity.AppointmentStatus
 import com.bookk.appointments.domain.api.operation.CancelAppointment
 import com.bookk.appointments.domain.datasource.AppointmentDataSource
+import com.bookk.appointments.domain.datasource.AppointmentPermissionDataSource
 import com.bookk.appointments.domain.datasource.AppointmentSubscriptionDataSource
-import com.bookk.appointments.domain.datasource.PermissionsDataSource
 import com.bookk.core.data.eventstreaming.StandardEventProducer
 import com.bookk.core.data.eventstreaming.send
 import com.bookk.core.domain.datasource.transaction.TransactionManager
@@ -22,7 +22,7 @@ private val declineAppointmentLogger = LoggerFactory.getLogger(CancelAppointment
 
 internal class CancelAppointmentImpl(
     private val appointmentDataSource: AppointmentDataSource,
-    private val permissionsDataSource: PermissionsDataSource,
+    private val appointmentPermissionDataSource: AppointmentPermissionDataSource,
     private val subscriptionDataSource: AppointmentSubscriptionDataSource,
     private val eventProducer: StandardEventProducer,
     private val transactionManager: TransactionManager
@@ -30,7 +30,7 @@ internal class CancelAppointmentImpl(
 
     override suspend fun invoke(userId: Uuid, cancellation: AppointmentCancellation): Result<Appointment> = transactionManager.transaction {
         val appointment = appointmentDataSource.get(cancellation.id)
-        permissionsDataSource.getPermissions(userId, cancellation.businessId)
+        appointmentPermissionDataSource.getPermissions(userId, cancellation.businessId)
             .assertOrOwner(ObjectPermission.EDIT, actorId = userId, assigneeId = appointment.employee.userId)
         val cancelled = when (appointment.status) {
             AppointmentStatus.COMPLETED -> throw CancelAppointment.Error.AlreadyCompleted()

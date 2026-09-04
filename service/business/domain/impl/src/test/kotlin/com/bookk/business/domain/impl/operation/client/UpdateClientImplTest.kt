@@ -3,7 +3,7 @@ package com.bookk.business.domain.impl.operation.client
 import com.bookk.business.domain.api.client.entity.Client
 import com.bookk.business.domain.api.client.entity.ClientUpdateModel
 import com.bookk.business.domain.api.client.operation.UpdateClient
-import com.bookk.business.domain.datasource.BusinessDataSource
+import com.bookk.business.domain.datasource.BusinessPermissionDataSource
 import com.bookk.business.domain.datasource.ClientDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.datasource.transaction.mockTransaction
@@ -29,16 +29,16 @@ internal class UpdateClientImplTest {
 
     private class SutFixture {
         val clientDataSource = mockk<ClientDataSource>()
-        val businessDataSource = mockk<BusinessDataSource>()
+        val businessPermissionDataSource = mockk<BusinessPermissionDataSource>()
         val transactionManager = mockk<TransactionManager>()
-        val sut = UpdateClientImpl(transactionManager, clientDataSource, businessDataSource)
+        val sut = UpdateClientImpl(transactionManager, clientDataSource, businessPermissionDataSource)
 
         init {
-            coEvery { businessDataSource.getPermission(any(), any()) } returns ObjectPermission.OWNER.int
+            coEvery { businessPermissionDataSource.getPermission(any(), any()) } returns ObjectPermission.OWNER.int
         }
 
         fun grantPermission(permission: ObjectPermission?) {
-            coEvery { businessDataSource.getPermission(any(), any()) } returns permission?.int
+            coEvery { businessPermissionDataSource.getPermission(any(), any()) } returns permission?.int
         }
     }
 
@@ -341,6 +341,6 @@ internal class UpdateClientImplTest {
 
         then()
         assertTrue(result.isSuccess)
-        coVerify(exactly = 1) { fixture.businessDataSource.getPermission(requestUserId, businessId) }
+        coVerify(exactly = 1) { fixture.businessPermissionDataSource.getPermission(requestUserId, businessId) }
     }
 }

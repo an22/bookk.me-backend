@@ -17,11 +17,11 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import kotlin.uuid.Uuid
 
-internal class PermissionsDataSourceImplTest {
+internal class AppointmentPermissionDataSourceImplTest {
 
     private class SutFixture {
         val db = createTestDatabase(AppointmentBusinessTable, WorkingHoursTable, DayOffsTable, UserHasAppointmentPermissions)
-        val sut = PermissionsDataSourceImpl()
+        val sut = AppointmentPermissionDataSourceImpl()
         val subscriptionSut = AppointmentSubscriptionDataSourceImpl()
         lateinit var businessId: Uuid
 

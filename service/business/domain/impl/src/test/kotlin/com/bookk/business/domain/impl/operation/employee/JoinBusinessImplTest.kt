@@ -6,6 +6,7 @@ import com.bookk.business.domain.api.employee.entity.EmployeeInvitation
 import com.bookk.business.domain.api.employee.entity.EmployeeInvitationStatus
 import com.bookk.business.domain.api.employee.operation.JoinBusiness
 import com.bookk.business.domain.datasource.BusinessDataSource
+import com.bookk.business.domain.datasource.BusinessPermissionDataSource
 import com.bookk.business.domain.datasource.EmployeeDataSource
 import com.bookk.business.domain.datasource.EmployeeInvitationDataSource
 import com.bookk.core.data.eventstreaming.StandardEventProducer
@@ -36,6 +37,7 @@ internal class JoinBusinessImplTest {
         val invitationDataSource = mockk<EmployeeInvitationDataSource>()
         val employeeDataSource = mockk<EmployeeDataSource>()
         val businessDataSource = mockk<BusinessDataSource>()
+        val businessPermissionDataSource = mockk<BusinessPermissionDataSource>()
         val userClient = mockk<UserClient>()
         val transactionManager = mockk<TransactionManager>()
         val eventProducer = mockk<StandardEventProducer>(relaxed = true)
@@ -43,6 +45,7 @@ internal class JoinBusinessImplTest {
             invitationDataSource,
             employeeDataSource,
             businessDataSource,
+            businessPermissionDataSource,
             userClient,
             transactionManager,
             eventProducer
@@ -75,7 +78,7 @@ internal class JoinBusinessImplTest {
         coEvery { userClient.getUserById(requestUserId) } returns Result.success(userSnapshot(requestUserId))
         coEvery { businessDataSource.getBusinessById(invitation.businessId) } returns business(invitation.businessId)
         coEvery { employeeDataSource.createEmployee(any()) } returns employee
-        coEvery { businessDataSource.setUserPermissions(requestUserId, invitation.businessId, any()) } returns Unit
+        coEvery { businessPermissionDataSource.setUserPermissions(requestUserId, invitation.businessId, any()) } returns Unit
     }
 
     @Test
@@ -122,7 +125,7 @@ internal class JoinBusinessImplTest {
         then()
         assertTrue(result.isSuccess)
         coVerify(exactly = 1) {
-            fixture.businessDataSource.setUserPermissions(
+            fixture.businessPermissionDataSource.setUserPermissions(
                 requestUserId,
                 invitation.businessId,
                 ObjectPermission.READ.int

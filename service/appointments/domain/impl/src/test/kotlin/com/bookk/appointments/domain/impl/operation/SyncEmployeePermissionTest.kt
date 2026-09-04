@@ -1,7 +1,7 @@
 package com.bookk.appointments.domain.impl.operation
 
+import com.bookk.appointments.domain.datasource.AppointmentPermissionDataSource
 import com.bookk.appointments.domain.datasource.AppointmentSubscriptionDataSource
-import com.bookk.appointments.domain.datasource.PermissionsDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.datasource.transaction.mockTransaction
 import com.bookk.core.test.given
@@ -20,9 +20,9 @@ internal class SyncEmployeePermissionTest {
 
     private class SutFixture {
         val subscriptionDataSource = mockk<AppointmentSubscriptionDataSource>()
-        val permissionsDataSource = mockk<PermissionsDataSource>()
+        val appointmentPermissionDataSource = mockk<AppointmentPermissionDataSource>()
         val transactionManager = mockk<TransactionManager>()
-        val sut = SyncEmployeePermission(subscriptionDataSource, permissionsDataSource, transactionManager)
+        val sut = SyncEmployeePermission(subscriptionDataSource, appointmentPermissionDataSource, transactionManager)
     }
 
     @Test
@@ -34,7 +34,7 @@ internal class SyncEmployeePermissionTest {
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { subscriptionDataSource.isBusinessEnabled(businessId) } returns true
-            coEvery { permissionsDataSource.setPermissions(userId, businessId, ObjectPermission.READ.int) } returns Unit
+            coEvery { appointmentPermissionDataSource.setPermissions(userId, businessId, ObjectPermission.READ.int) } returns Unit
         }
 
         whenn()
@@ -42,7 +42,7 @@ internal class SyncEmployeePermissionTest {
 
         then()
         assertTrue(result.isSuccess)
-        coVerify(exactly = 1) { fixture.permissionsDataSource.setPermissions(userId, businessId, ObjectPermission.READ.int) }
+        coVerify(exactly = 1) { fixture.appointmentPermissionDataSource.setPermissions(userId, businessId, ObjectPermission.READ.int) }
     }
 
     @Test
@@ -61,6 +61,6 @@ internal class SyncEmployeePermissionTest {
 
         then()
         assertTrue(result.isSuccess)
-        coVerify(exactly = 0) { fixture.permissionsDataSource.setPermissions(any(), any(), any()) }
+        coVerify(exactly = 0) { fixture.appointmentPermissionDataSource.setPermissions(any(), any(), any()) }
     }
 }

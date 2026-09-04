@@ -1,6 +1,6 @@
 package com.bookk.business.domain.impl.operation.user
 
-import com.bookk.business.domain.datasource.BusinessDataSource
+import com.bookk.business.domain.datasource.BusinessPermissionDataSource
 import com.bookk.business.domain.datasource.ClientDataSource
 import com.bookk.business.domain.datasource.EmployeeDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
@@ -21,9 +21,9 @@ internal class AnonymizeUserProfileImplTest {
     private class SutFixture {
         val clientDataSource = mockk<ClientDataSource>()
         val employeeDataSource = mockk<EmployeeDataSource>()
-        val businessDataSource = mockk<BusinessDataSource>()
+        val businessPermissionDataSource = mockk<BusinessPermissionDataSource>()
         val transactionManager = mockk<TransactionManager>()
-        val sut = AnonymizeUserProfileImpl(transactionManager, clientDataSource, employeeDataSource, businessDataSource)
+        val sut = AnonymizeUserProfileImpl(transactionManager, clientDataSource, employeeDataSource, businessPermissionDataSource)
     }
 
     @Test
@@ -35,7 +35,7 @@ internal class AnonymizeUserProfileImplTest {
             transactionManager.mockTransaction()
             coEvery { clientDataSource.anonymizeClientsByUserId(userId) } returns 1
             coEvery { employeeDataSource.anonymizeEmployeesByUserId(userId) } returns 1
-            coEvery { businessDataSource.deleteUserPermissions(userId) } returns Unit
+            coEvery { businessPermissionDataSource.deleteUserPermissions(userId) } returns Unit
         }
 
         whenn()
@@ -45,7 +45,7 @@ internal class AnonymizeUserProfileImplTest {
         assertTrue(result.isSuccess)
         coVerify(exactly = 1) { fixture.clientDataSource.anonymizeClientsByUserId(userId) }
         coVerify(exactly = 1) { fixture.employeeDataSource.anonymizeEmployeesByUserId(userId) }
-        coVerify(exactly = 1) { fixture.businessDataSource.deleteUserPermissions(userId) }
+        coVerify(exactly = 1) { fixture.businessPermissionDataSource.deleteUserPermissions(userId) }
     }
 
     @Test
@@ -57,7 +57,7 @@ internal class AnonymizeUserProfileImplTest {
             transactionManager.mockTransaction()
             coEvery { clientDataSource.anonymizeClientsByUserId(userId) } returns 0
             coEvery { employeeDataSource.anonymizeEmployeesByUserId(userId) } returns 0
-            coEvery { businessDataSource.deleteUserPermissions(userId) } returns Unit
+            coEvery { businessPermissionDataSource.deleteUserPermissions(userId) } returns Unit
         }
 
         whenn()
@@ -65,6 +65,6 @@ internal class AnonymizeUserProfileImplTest {
 
         then()
         assertTrue(result.isSuccess)
-        coVerify(exactly = 1) { fixture.businessDataSource.deleteUserPermissions(userId) }
+        coVerify(exactly = 1) { fixture.businessPermissionDataSource.deleteUserPermissions(userId) }
     }
 }

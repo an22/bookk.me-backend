@@ -2,7 +2,7 @@ package com.bookk.business.domain.impl.operation.service
 
 import com.bookk.business.domain.api.service.entity.ServiceGroup
 import com.bookk.business.domain.api.service.operation.CreateServiceGroup
-import com.bookk.business.domain.datasource.BusinessDataSource
+import com.bookk.business.domain.datasource.BusinessPermissionDataSource
 import com.bookk.business.domain.datasource.ServiceDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.datasource.transaction.mockTransaction
@@ -24,9 +24,9 @@ internal class CreateServiceGroupImplTest {
 
     private class SutFixture {
         val serviceDataSource = mockk<ServiceDataSource>()
-        val businessDataSource = mockk<BusinessDataSource>()
+        val businessPermissionDataSource = mockk<BusinessPermissionDataSource>()
         val transactionManager = mockk<TransactionManager>()
-        val sut = CreateServiceGroupImpl(serviceDataSource, businessDataSource, transactionManager)
+        val sut = CreateServiceGroupImpl(serviceDataSource, businessPermissionDataSource, transactionManager)
     }
 
     private fun createTestGroup(name: String = "Group") = ServiceGroup(
@@ -44,7 +44,7 @@ internal class CreateServiceGroupImplTest {
         val group = createTestGroup()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { businessDataSource.getPermission(userId, group.businessId) } returns ObjectPermission.EDIT.int
+            coEvery { businessPermissionDataSource.getPermission(userId, group.businessId) } returns ObjectPermission.EDIT.int
             coEvery { serviceDataSource.createServiceGroup(group) } returns group
         }
 
@@ -79,7 +79,7 @@ internal class CreateServiceGroupImplTest {
         val group = createTestGroup()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { businessDataSource.getPermission(userId, group.businessId) } returns ObjectPermission.EDIT.int
+            coEvery { businessPermissionDataSource.getPermission(userId, group.businessId) } returns ObjectPermission.EDIT.int
             coEvery { serviceDataSource.createServiceGroup(group) } throws Error.UniqueConstraintFailed("", RuntimeException())
         }
 
@@ -99,7 +99,7 @@ internal class CreateServiceGroupImplTest {
         val group = createTestGroup()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { businessDataSource.getPermission(userId, group.businessId) } returns ObjectPermission.READ.int
+            coEvery { businessPermissionDataSource.getPermission(userId, group.businessId) } returns ObjectPermission.READ.int
         }
 
         whenn()

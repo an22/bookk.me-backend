@@ -1,7 +1,7 @@
 package com.bookk.appointments.data.datasource
 
 import com.bookk.appointments.data.orm.table.UserHasAppointmentPermissions
-import com.bookk.appointments.domain.datasource.PermissionsDataSource
+import com.bookk.appointments.domain.datasource.AppointmentPermissionDataSource
 import com.bookk.core.data.DataSource
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
@@ -10,7 +10,7 @@ import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.upsert
 import kotlin.uuid.Uuid
 
-internal class PermissionsDataSourceImpl : DataSource(), PermissionsDataSource {
+internal class AppointmentPermissionDataSourceImpl : DataSource(), AppointmentPermissionDataSource {
 
     override suspend fun setPermissions(
         userId: Uuid,

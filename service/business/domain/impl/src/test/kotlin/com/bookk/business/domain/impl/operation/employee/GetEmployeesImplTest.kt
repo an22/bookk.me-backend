@@ -1,7 +1,7 @@
 package com.bookk.business.domain.impl.operation.employee
 
 import com.bookk.business.domain.api.employee.entity.Employee
-import com.bookk.business.domain.datasource.BusinessDataSource
+import com.bookk.business.domain.datasource.BusinessPermissionDataSource
 import com.bookk.business.domain.datasource.EmployeeDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.datasource.transaction.mockTransaction
@@ -26,16 +26,16 @@ internal class GetEmployeesImplTest {
 
     private class SutFixture {
         val employeeDataSource = mockk<EmployeeDataSource>()
-        val businessDataSource = mockk<BusinessDataSource>()
+        val businessPermissionDataSource = mockk<BusinessPermissionDataSource>()
         val transactionManager = mockk<TransactionManager>()
-        val sut = GetEmployeesImpl(employeeDataSource, businessDataSource, transactionManager)
+        val sut = GetEmployeesImpl(employeeDataSource, businessPermissionDataSource, transactionManager)
 
         init {
-            coEvery { businessDataSource.getPermission(any(), any()) } returns ObjectPermission.OWNER.int
+            coEvery { businessPermissionDataSource.getPermission(any(), any()) } returns ObjectPermission.OWNER.int
         }
 
         fun grantPermission(permission: ObjectPermission?) {
-            coEvery { businessDataSource.getPermission(any(), any()) } returns permission?.int
+            coEvery { businessPermissionDataSource.getPermission(any(), any()) } returns permission?.int
         }
     }
 

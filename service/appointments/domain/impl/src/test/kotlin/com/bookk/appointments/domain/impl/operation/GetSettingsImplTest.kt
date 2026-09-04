@@ -1,8 +1,8 @@
 package com.bookk.appointments.domain.impl.operation
 
 import com.bookk.appointments.domain.api.entity.AppointmentSettings
+import com.bookk.appointments.domain.datasource.AppointmentPermissionDataSource
 import com.bookk.appointments.domain.datasource.AppointmentSettingsDataSource
-import com.bookk.appointments.domain.datasource.PermissionsDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.datasource.transaction.mockTransaction
 import com.bookk.core.domain.entity.Error
@@ -22,7 +22,7 @@ internal class GetSettingsImplTest {
 
     private class SutFixture {
         val settingsSource = mockk<AppointmentSettingsDataSource>()
-        val permissionsSource = mockk<PermissionsDataSource>()
+        val permissionsSource = mockk<AppointmentPermissionDataSource>()
         val transactionManager = mockk<TransactionManager>()
         val sut = GetSettingsImpl(settingsSource, permissionsSource, transactionManager)
     }

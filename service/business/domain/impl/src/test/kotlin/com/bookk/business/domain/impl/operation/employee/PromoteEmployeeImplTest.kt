@@ -2,7 +2,7 @@ package com.bookk.business.domain.impl.operation.employee
 
 import com.bookk.business.domain.api.employee.entity.Employee
 import com.bookk.business.domain.api.employee.entity.EmployeeRole
-import com.bookk.business.domain.datasource.BusinessDataSource
+import com.bookk.business.domain.datasource.BusinessPermissionDataSource
 import com.bookk.business.domain.datasource.EmployeeDataSource
 import com.bookk.core.data.eventstreaming.StandardEventProducer
 import com.bookk.core.domain.datasource.transaction.TransactionManager
@@ -28,18 +28,18 @@ internal class PromoteEmployeeImplTest {
 
     private class SutFixture {
         val employeeDataSource = mockk<EmployeeDataSource>()
-        val businessDataSource = mockk<BusinessDataSource>()
+        val businessPermissionDataSource = mockk<BusinessPermissionDataSource>()
         val transactionManager = mockk<TransactionManager>()
         val eventProducer = mockk<StandardEventProducer>(relaxed = true)
-        val sut = PromoteEmployeeImpl(employeeDataSource, businessDataSource, transactionManager, eventProducer)
+        val sut = PromoteEmployeeImpl(employeeDataSource, businessPermissionDataSource, transactionManager, eventProducer)
 
         init {
-            coEvery { businessDataSource.getPermission(any(), any()) } returns ObjectPermission.OWNER.int
-            coEvery { businessDataSource.setUserPermissions(any(), any(), any()) } returns Unit
+            coEvery { businessPermissionDataSource.getPermission(any(), any()) } returns ObjectPermission.OWNER.int
+            coEvery { businessPermissionDataSource.setUserPermissions(any(), any(), any()) } returns Unit
         }
 
         fun grantPermission(permission: ObjectPermission?) {
-            coEvery { businessDataSource.getPermission(any(), any()) } returns permission?.int
+            coEvery { businessPermissionDataSource.getPermission(any(), any()) } returns permission?.int
         }
     }
 
@@ -57,7 +57,7 @@ internal class PromoteEmployeeImplTest {
         then()
         assertTrue(result.isSuccess)
         coVerify(exactly = 1) {
-            fixture.businessDataSource.setUserPermissions(employee.userId, businessId, ObjectPermission.EDIT.int)
+            fixture.businessPermissionDataSource.setUserPermissions(employee.userId, businessId, ObjectPermission.EDIT.int)
         }
         coVerify(exactly = 1) {
             fixture.eventProducer.send(
@@ -83,7 +83,7 @@ internal class PromoteEmployeeImplTest {
         then()
         assertTrue(result.isSuccess)
         coVerify(exactly = 1) {
-            fixture.businessDataSource.setUserPermissions(employee.userId, businessId, ObjectPermission.READ.int)
+            fixture.businessPermissionDataSource.setUserPermissions(employee.userId, businessId, ObjectPermission.READ.int)
         }
         coVerify(exactly = 1) {
             fixture.eventProducer.send(
@@ -108,7 +108,7 @@ internal class PromoteEmployeeImplTest {
 
         then()
         assertTrue(result.exceptionOrNull() is Error.NotFound)
-        coVerify(exactly = 0) { fixture.businessDataSource.setUserPermissions(any(), any(), any()) }
+        coVerify(exactly = 0) { fixture.businessPermissionDataSource.setUserPermissions(any(), any(), any()) }
     }
 
     @Test
@@ -125,7 +125,7 @@ internal class PromoteEmployeeImplTest {
         then()
         assertTrue(result.exceptionOrNull() is Error.OperationNotAllowed)
         coVerify(exactly = 0) { fixture.employeeDataSource.getEmployee(any(), any()) }
-        coVerify(exactly = 0) { fixture.businessDataSource.setUserPermissions(any(), any(), any()) }
+        coVerify(exactly = 0) { fixture.businessPermissionDataSource.setUserPermissions(any(), any(), any()) }
     }
 
     @Test

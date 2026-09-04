@@ -4,6 +4,7 @@ import com.bookk.business.domain.api.employee.entity.EmployeeInvitation
 import com.bookk.business.domain.api.employee.entity.EmployeeInvitationStatus
 import com.bookk.business.domain.api.employee.operation.CreateEmployeeInvitation
 import com.bookk.business.domain.datasource.BusinessDataSource
+import com.bookk.business.domain.datasource.BusinessPermissionDataSource
 import com.bookk.business.domain.datasource.EmployeeInvitationDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.entity.Error
@@ -15,11 +16,12 @@ import kotlin.uuid.Uuid
 internal class CreateEmployeeInvitationImpl(
     private val invitationDataSource: EmployeeInvitationDataSource,
     private val businessDataSource: BusinessDataSource,
+    private val businessPermissionDataSource: BusinessPermissionDataSource,
     private val transactionManager: TransactionManager
 ) : CreateEmployeeInvitation {
     override suspend fun invoke(requestUserId: Uuid, businessId: Uuid): Result<EmployeeInvitation> {
         return transactionManager.transaction {
-            businessDataSource.getPermission(requestUserId, businessId).assert(ObjectPermission.OWNER)
+            businessPermissionDataSource.getPermission(requestUserId, businessId).assert(ObjectPermission.OWNER)
             businessDataSource.getBusinessById(businessId) ?: throw Error.NotFound()
             createInvitationWithUniqueCode(requestUserId, businessId)
         }

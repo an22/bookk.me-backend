@@ -1,5 +1,6 @@
 package com.bookk.business.domain.impl.operation.client
 
+import com.bookk.business.domain.api.business.entity.BusinessResource
 import com.bookk.business.domain.api.client.entity.Client
 import com.bookk.business.domain.api.client.entity.toRemote
 import com.bookk.business.domain.api.client.operation.CreateClient
@@ -15,7 +16,7 @@ import com.bookk.core.test.whenn
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
-import library.permissions.ObjectPermission
+import library.permissions.ResourcePermission
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -32,11 +33,11 @@ internal class CreateClientImplTest {
         val sut = CreateClientImpl(transactionManager, clientDataSource, businessPermissionDataSource)
 
         init {
-            coEvery { businessPermissionDataSource.getPermission(any(), any()) } returns ObjectPermission.OWNER.int
+            coEvery { businessPermissionDataSource.getPermission(any(), any(), BusinessResource.CLIENTS) } returns ResourcePermission.FULL
         }
 
-        fun grantPermission(permission: ObjectPermission?) {
-            coEvery { businessPermissionDataSource.getPermission(any(), any()) } returns permission?.int
+        fun grantPermission(permission: ResourcePermission) {
+            coEvery { businessPermissionDataSource.getPermission(any(), any(), BusinessResource.CLIENTS) } returns permission
         }
     }
 
@@ -194,7 +195,7 @@ internal class CreateClientImplTest {
         val client = Client.Detached.stub()
         with(fixture) {
             transactionManager.mockTransaction()
-            grantPermission(ObjectPermission.READ)
+            grantPermission(ResourcePermission(view = true))
         }
 
         whenn()
@@ -213,7 +214,7 @@ internal class CreateClientImplTest {
         val client = Client.Detached.stub()
         with(fixture) {
             transactionManager.mockTransaction()
-            grantPermission(null)
+            grantPermission(ResourcePermission.NONE)
         }
 
         whenn()
@@ -241,7 +242,7 @@ internal class CreateClientImplTest {
 
         then()
         assertTrue(result.isSuccess)
-        coVerify(exactly = 1) { fixture.businessPermissionDataSource.getPermission(requestUserId, businessId) }
+        coVerify(exactly = 1) { fixture.businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.CLIENTS) }
     }
 
     @Test

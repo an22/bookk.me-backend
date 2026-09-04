@@ -11,7 +11,7 @@ import com.bookk.core.test.whenn
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
-import library.permissions.ObjectPermission
+import library.permissions.ResourcePermission
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import kotlin.uuid.Uuid
@@ -31,18 +31,19 @@ internal class SyncEmployeePermissionTest {
         val fixture = SutFixture()
         val userId = Uuid.random()
         val businessId = Uuid.random()
+        val permission = ResourcePermission(view = true)
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { subscriptionDataSource.isBusinessEnabled(businessId) } returns true
-            coEvery { appointmentPermissionDataSource.setPermissions(userId, businessId, ObjectPermission.READ.int) } returns Unit
+            coEvery { appointmentPermissionDataSource.setPermission(userId, businessId, permission) } returns Unit
         }
 
         whenn()
-        val result = fixture.sut.invoke(userId, businessId, ObjectPermission.READ.int)
+        val result = fixture.sut.invoke(userId, businessId, permission)
 
         then()
         assertTrue(result.isSuccess)
-        coVerify(exactly = 1) { fixture.appointmentPermissionDataSource.setPermissions(userId, businessId, ObjectPermission.READ.int) }
+        coVerify(exactly = 1) { fixture.appointmentPermissionDataSource.setPermission(userId, businessId, permission) }
     }
 
     @Test
@@ -57,10 +58,10 @@ internal class SyncEmployeePermissionTest {
         }
 
         whenn()
-        val result = fixture.sut.invoke(userId, businessId, ObjectPermission.EDIT.int)
+        val result = fixture.sut.invoke(userId, businessId, ResourcePermission(update = true))
 
         then()
         assertTrue(result.isSuccess)
-        coVerify(exactly = 0) { fixture.appointmentPermissionDataSource.setPermissions(any(), any(), any()) }
+        coVerify(exactly = 0) { fixture.appointmentPermissionDataSource.setPermission(any(), any(), any()) }
     }
 }

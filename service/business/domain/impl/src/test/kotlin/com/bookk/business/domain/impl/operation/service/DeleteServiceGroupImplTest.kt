@@ -1,5 +1,6 @@
 package com.bookk.business.domain.impl.operation.service
 
+import com.bookk.business.domain.api.business.entity.BusinessResource
 import com.bookk.business.domain.datasource.BusinessPermissionDataSource
 import com.bookk.business.domain.datasource.ServiceDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
@@ -12,7 +13,7 @@ import com.bookk.core.test.whenn
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
-import library.permissions.ObjectPermission
+import library.permissions.ResourcePermission
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import kotlin.uuid.Uuid
@@ -35,7 +36,7 @@ internal class DeleteServiceGroupImplTest {
         val id = Uuid.random()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { businessPermissionDataSource.getPermission(userId, businessId) } returns ObjectPermission.EDIT.int
+            coEvery { businessPermissionDataSource.getPermission(userId, businessId, BusinessResource.SERVICES) } returns ResourcePermission(delete = true)
         }
 
         whenn()
@@ -55,7 +56,7 @@ internal class DeleteServiceGroupImplTest {
         val id = Uuid.random()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { businessPermissionDataSource.getPermission(userId, businessId) } returns ObjectPermission.READ.int
+            coEvery { businessPermissionDataSource.getPermission(userId, businessId, BusinessResource.SERVICES) } returns ResourcePermission(view = true)
         }
 
         whenn()

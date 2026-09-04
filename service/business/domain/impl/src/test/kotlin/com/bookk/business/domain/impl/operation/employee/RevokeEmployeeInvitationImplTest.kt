@@ -1,5 +1,6 @@
 package com.bookk.business.domain.impl.operation.employee
 
+import com.bookk.business.domain.api.business.entity.BusinessResource
 import com.bookk.business.domain.api.employee.entity.EmployeeInvitation
 import com.bookk.business.domain.api.employee.entity.EmployeeInvitationStatus
 import com.bookk.business.domain.api.employee.operation.RevokeEmployeeInvitation
@@ -15,7 +16,7 @@ import com.bookk.core.test.whenn
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
-import library.permissions.ObjectPermission
+import library.permissions.ResourcePermission
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import kotlin.uuid.Uuid
@@ -32,11 +33,11 @@ internal class RevokeEmployeeInvitationImplTest {
         val sut = RevokeEmployeeInvitationImpl(invitationDataSource, businessPermissionDataSource, transactionManager)
 
         init {
-            coEvery { businessPermissionDataSource.getPermission(any(), any()) } returns ObjectPermission.OWNER.int
+            coEvery { businessPermissionDataSource.getPermission(any(), any(), BusinessResource.EMPLOYEES) } returns ResourcePermission(update = true)
         }
 
-        fun grantPermission(permission: ObjectPermission?) {
-            coEvery { businessPermissionDataSource.getPermission(any(), any()) } returns permission?.int
+        fun grantPermission(permission: ResourcePermission) {
+            coEvery { businessPermissionDataSource.getPermission(any(), any(), BusinessResource.EMPLOYEES) } returns permission
         }
     }
 
@@ -62,7 +63,7 @@ internal class RevokeEmployeeInvitationImplTest {
         given()
         val fixture = SutFixture()
         fixture.transactionManager.mockTransaction()
-        fixture.grantPermission(ObjectPermission.EDIT)
+        fixture.grantPermission(ResourcePermission(view = true))
         val id = Uuid.random()
 
         whenn()
@@ -79,7 +80,7 @@ internal class RevokeEmployeeInvitationImplTest {
         given()
         val fixture = SutFixture()
         fixture.transactionManager.mockTransaction()
-        fixture.grantPermission(null)
+        fixture.grantPermission(ResourcePermission.NONE)
         val id = Uuid.random()
 
         whenn()

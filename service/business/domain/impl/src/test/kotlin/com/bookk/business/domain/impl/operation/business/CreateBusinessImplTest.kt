@@ -2,6 +2,8 @@ package com.bookk.business.domain.impl.operation.business
 
 import com.bookk.business.domain.api.business.entity.Business
 import com.bookk.business.domain.api.business.entity.BusinessCreateRequest
+import com.bookk.business.domain.api.business.entity.BusinessPermissions
+import com.bookk.business.domain.api.business.entity.BusinessResource
 import com.bookk.business.domain.api.business.operation.CreateBusiness
 import com.bookk.business.domain.datasource.BusinessDataSource
 import com.bookk.business.domain.datasource.BusinessPermissionDataSource
@@ -12,9 +14,10 @@ import com.bookk.core.test.runUnitTest
 import com.bookk.core.test.then
 import com.bookk.core.test.whenn
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.datetime.TimeZone
-import library.permissions.ObjectPermission
+import library.permissions.ResourcePermission
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -39,7 +42,7 @@ internal class CreateBusinessImplTest {
             transactionManager.mockTransaction()
             coEvery { businessDataSource.isBusinessExist(userId) } returns false
             coEvery { businessDataSource.createBusiness(userId, "Name", "USD", TimeZone.UTC) } returns business
-            coEvery { businessPermissionDataSource.setUserPermissions(userId, business.id, ObjectPermission.OWNER.int) } returns Unit
+            coEvery { businessPermissionDataSource.setPermission(userId, business.id, any(), any()) } returns Unit
         }
 
         whenn()
@@ -47,7 +50,12 @@ internal class CreateBusinessImplTest {
 
         then()
         assertTrue(result.isSuccess)
-        assertEquals(business, result.getOrNull())
+        assertEquals(business.copy(permissions = BusinessPermissions.FULL), result.getOrNull())
+        BusinessResource.entries.forEach { resource ->
+            coVerify(exactly = 1) {
+                fixture.businessPermissionDataSource.setPermission(userId, business.id, resource, ResourcePermission.FULL)
+            }
+        }
     }
 
     @Test

@@ -2,8 +2,7 @@
 
 `POST /api/business/{businessId}/employee_invitation` → `CreateEmployeeInvitation`
 
-Only an `OWNER` can invite (stricter than the usual `EDIT` bar elsewhere in
-this service). No employee identity is collected at invite time — the
+Only a caller holding `EMPLOYEES.update` can invite. No employee identity is collected at invite time — the
 operation just mints a short, random invite code the owner shares with a
 future employee out of band (verbally, a QR code, etc). The employee later
 joins the business themselves via [Join business](join-business.md); the
@@ -38,7 +37,7 @@ flowchart TD
     Start([POST /api/business/businessId/employee_invitation]) --> Auth{JWT valid?}
     Auth -- No --> R401([401 Unauthorized])
     Auth -- Yes --> Tx[[Begin transaction]]
-    Tx --> Perm{permission >= OWNER?}
+    Tx --> Perm{caller EMPLOYEES.update?}
     Perm -- No --> R404a([404 Error.OperationNotAllowed])
     Perm -- Yes --> GetBiz[BusinessDataSource.getBusinessById businessId]
     GetBiz -- not found --> R404b([404 Error.NotFound])

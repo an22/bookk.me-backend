@@ -15,7 +15,7 @@ flowchart TD
     PathCheck -- Yes --> Auth{JWT valid?}
     Auth -- No --> R401([401 Unauthorized])
     Auth -- Yes --> Tx[[Begin transaction]]
-    Tx --> Perm{permission >= EDIT?}
+    Tx --> Perm{caller BUSINESS.update?}
     Perm -- No --> R404([404 Error.OperationNotAllowed])
     Perm -- Yes --> ScheduleGiven{body.schedule present?}
     ScheduleGiven -- Yes --> WorkHours{any active day with empty workingTime?}

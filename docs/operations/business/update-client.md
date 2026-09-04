@@ -16,7 +16,7 @@ flowchart TD
     Auth -- Yes --> IdCheck{path id == body id?}
     IdCheck -- No --> R400([400 Invalid request])
     IdCheck -- Yes --> Tx[[Begin transaction]]
-    Tx --> Perm{permission >= EDIT?}
+    Tx --> Perm{caller CLIENTS.update?}
     Perm -- No --> R404a([404 Error.OperationNotAllowed])
     Perm -- Yes --> Fetch[ClientDataSource.getClientById businessId id]
     Fetch --> Found{client found?}

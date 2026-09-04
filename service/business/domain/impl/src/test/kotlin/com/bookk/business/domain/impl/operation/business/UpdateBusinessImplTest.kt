@@ -1,6 +1,7 @@
 package com.bookk.business.domain.impl.operation.business
 
 import com.bookk.business.domain.api.business.entity.Business
+import com.bookk.business.domain.api.business.entity.BusinessResource
 import com.bookk.business.domain.api.business.entity.BusinessUpdateModel
 import com.bookk.business.domain.api.business.operation.UpdateBusiness
 import com.bookk.business.domain.datasource.BusinessDataSource
@@ -22,7 +23,7 @@ import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
-import library.permissions.ObjectPermission
+import library.permissions.ResourcePermission
 import library.schedule.DayOfWeekSchedule
 import library.schedule.DayOffRange
 import library.schedule.Schedule
@@ -45,11 +46,11 @@ internal class UpdateBusinessImplTest {
         val sut = UpdateBusinessImpl(businessDataSource, businessPermissionDataSource, transactionManager, eventProducer)
 
         init {
-            coEvery { businessPermissionDataSource.getPermission(any(), any()) } returns ObjectPermission.OWNER.int
+            coEvery { businessPermissionDataSource.getPermission(any(), any(), BusinessResource.BUSINESS) } returns ResourcePermission.FULL
         }
 
-        fun grantPermission(permission: ObjectPermission?) {
-            coEvery { businessPermissionDataSource.getPermission(any(), any()) } returns permission?.int
+        fun grantPermission(permission: ResourcePermission) {
+            coEvery { businessPermissionDataSource.getPermission(any(), any(), BusinessResource.BUSINESS) } returns permission
         }
     }
 
@@ -314,11 +315,11 @@ internal class UpdateBusinessImplTest {
     }
 
     @Test
-    fun `should return failure when user has no edit permission for the business`() = runUnitTest {
+    fun `should return failure when user has no update permission for the business`() = runUnitTest {
         given()
         val fixture = SutFixture()
         fixture.transactionManager.mockTransaction()
-        fixture.grantPermission(ObjectPermission.READ)
+        fixture.grantPermission(ResourcePermission(view = true))
 
         whenn()
         val result = fixture.sut(requestUserId, updateModel(name = "New Name"))
@@ -332,7 +333,7 @@ internal class UpdateBusinessImplTest {
         given()
         val fixture = SutFixture()
         fixture.transactionManager.mockTransaction()
-        fixture.grantPermission(null)
+        fixture.grantPermission(ResourcePermission.NONE)
 
         whenn()
         val result = fixture.sut(requestUserId, updateModel(name = "New Name"))
@@ -342,11 +343,11 @@ internal class UpdateBusinessImplTest {
     }
 
     @Test
-    fun `should not update business or publish event when user has no edit permission`() = runUnitTest {
+    fun `should not update business or publish event when user has no update permission`() = runUnitTest {
         given()
         val fixture = SutFixture()
         fixture.transactionManager.mockTransaction()
-        fixture.grantPermission(ObjectPermission.READ)
+        fixture.grantPermission(ResourcePermission(view = true))
 
         whenn()
         val result = fixture.sut(requestUserId, updateModel(name = "New Name", schedule = scheduleOf(DayOfWeek.MONDAY)))
@@ -358,7 +359,7 @@ internal class UpdateBusinessImplTest {
     }
 
     @Test
-    fun `should assert edit permission against the business from the update model`() = runUnitTest {
+    fun `should assert update permission against the business from the update model`() = runUnitTest {
         given()
         val fixture = SutFixture()
         fixture.transactionManager.mockTransaction()
@@ -369,7 +370,7 @@ internal class UpdateBusinessImplTest {
 
         then()
         assertTrue(result.isSuccess)
-        coVerify(exactly = 1) { fixture.businessPermissionDataSource.getPermission(requestUserId, businessId) }
+        coVerify(exactly = 1) { fixture.businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.BUSINESS) }
     }
 
     @Test

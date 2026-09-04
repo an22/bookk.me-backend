@@ -12,8 +12,8 @@ erDiagram
     PROFILE ||--o| BUSINESS : "user_id (owner)"
     PROFILE ||--o{ EMPLOYEE : "user_id"
     PROFILE ||--o{ CLIENT : "user_id (nullable)"
-    PROFILE ||--o{ BUSINESS_PERMISSIONS : "user_id"
-    PROFILE ||--o{ USER_HAS_APPOINTMENT_PERMISSIONS : "userId"
+    PROFILE ||--o{ BUSINESS_PERMISSION_GRANTS : "user_id"
+    PROFILE ||--o{ APPOINTMENT_PERMISSION_GRANTS : "userId"
     PROFILE ||--o{ NOTIFICATION_SETTINGS : "user_id"
     PROFILE ||--o{ DEVICE : "user_id"
     AUTHENTICATION ||--o{ DEVICE : "auth_id"
@@ -51,10 +51,10 @@ erDiagram
     SERVICE_GROUP {
         uuid id PK
     }
-    BUSINESS_PERMISSIONS {
+    BUSINESS_PERMISSION_GRANTS {
         uuid id PK
     }
-    USER_HAS_APPOINTMENT_PERMISSIONS {
+    APPOINTMENT_PERMISSION_GRANTS {
         uuid id PK
     }
     NOTIFICATION_SETTINGS {

@@ -6,7 +6,7 @@ import com.bookk.appointments.domain.datasource.AppointmentPermissionDataSource
 import com.bookk.appointments.domain.datasource.AppointmentSettingsDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.entity.Error
-import library.permissions.ObjectPermission
+import library.permissions.PermissionAction
 import library.permissions.assert
 import kotlin.uuid.Uuid
 
@@ -19,7 +19,8 @@ internal class GetSettingsImpl(
         userId: Uuid,
         businessId: Uuid
     ): Result<AppointmentSettings> = transactionManager.transaction {
-        permissionsSource.getPermissions(userId, businessId).assert(ObjectPermission.READ)
-        settingsSource.get(businessId) ?: throw Error.NotFound()
+        val permission = permissionsSource.getPermission(userId, businessId)
+        permission.assert(PermissionAction.VIEW)
+        (settingsSource.get(businessId) ?: throw Error.NotFound()).copy(permissions = permission)
     }
 }

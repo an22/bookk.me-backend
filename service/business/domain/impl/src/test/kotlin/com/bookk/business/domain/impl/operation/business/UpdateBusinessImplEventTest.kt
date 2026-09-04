@@ -1,6 +1,7 @@
 package com.bookk.business.domain.impl.operation.business
 
 import com.bookk.business.domain.api.business.entity.Business
+import com.bookk.business.domain.api.business.entity.BusinessResource
 import com.bookk.business.domain.api.business.entity.BusinessUpdateModel
 import com.bookk.business.domain.datasource.BusinessDataSource
 import com.bookk.business.domain.datasource.BusinessPermissionDataSource
@@ -21,7 +22,7 @@ import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
 import kotlinx.serialization.decodeFromByteArray
-import library.permissions.ObjectPermission
+import library.permissions.ResourcePermission
 import library.schedule.DayOffRange
 import library.schedule.Schedule
 import library.schedule.WorkHour
@@ -53,7 +54,7 @@ internal class UpdateBusinessImplEventTest {
         val sut = UpdateBusinessImpl(businessDataSource, businessPermissionDataSource, transactionManager, eventProducer)
 
         init {
-            coEvery { businessPermissionDataSource.getPermission(any(), any()) } returns ObjectPermission.OWNER.int
+            coEvery { businessPermissionDataSource.getPermission(any(), any(), BusinessResource.BUSINESS) } returns ResourcePermission.FULL
         }
     }
 

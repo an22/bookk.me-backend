@@ -211,7 +211,7 @@ internal class BusinessCrudTest {
         val useCase: GetBusinessById = mockk()
         val business = createTestBusiness()
 
-        coEvery { useCase.invoke(businessId) } returns Result.success(business)
+        coEvery { useCase.invoke(businessId, userId) } returns Result.success(business)
 
         setupApplication(
             extension = {
@@ -297,7 +297,7 @@ internal class BusinessCrudTest {
     fun `should return not found when getting business by id that does not exist`() = routeTest {
         given()
         val useCase: GetBusinessById = mockk()
-        coEvery { useCase.invoke(businessId) } returns Result.failure(GetBusinessById.Error.NotFound())
+        coEvery { useCase.invoke(businessId, userId) } returns Result.failure(GetBusinessById.Error.NotFound())
 
         setupApplication(
             extension = {

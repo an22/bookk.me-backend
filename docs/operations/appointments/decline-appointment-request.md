@@ -5,9 +5,9 @@
 Only a pending request can be declined; the current status is checked
 inside the same locking read (`getForUpdate`-style) that performs the write,
 so a concurrent approval and decline can't both succeed. The request is
-fetched before the permission check so a `READ`-level employee can be let
-through when it's their own — see [Managing your own resource on a `READ`
-grant](../../object-permissions.md#managing-your-own-resource-on-a-read-grant).
+fetched before the permission check so a `view`-only employee can be let
+through when it's their own — see [Managing your own resource on a `view`
+grant](../../object-permissions.md#managing-your-own-resource-on-a-view-grant).
 
 ```mermaid
 flowchart TD
@@ -18,7 +18,7 @@ flowchart TD
     Auth -- Yes --> Tx[[Begin transaction]]
     Tx --> Get[AppointmentRequestDataSource.get cancellation.id]
     Get -- not found --> R404b([404 Error.NotFound])
-    Get -- found --> Perm{permission >= EDIT, or permission >= READ and request.employee.userId == userId?}
+    Get -- found --> Perm{caller update permission, or view permission and request.employee.userId == userId?}
     Perm -- No --> R404a([404 Error.OperationNotAllowed])
     Perm -- Yes --> Status{request.status}
     Status -- APPROVED --> R422a([422 REQUEST_ALREADY_APPROVED 300008])

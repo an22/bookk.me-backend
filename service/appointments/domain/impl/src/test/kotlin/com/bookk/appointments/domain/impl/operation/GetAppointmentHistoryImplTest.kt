@@ -14,7 +14,7 @@ import com.bookk.core.test.then
 import com.bookk.core.test.whenn
 import io.mockk.coEvery
 import io.mockk.mockk
-import library.permissions.ObjectPermission
+import library.permissions.ResourcePermission
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -43,7 +43,7 @@ internal class GetAppointmentHistoryImplTest {
 
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { appointmentPermissionDataSource.getPermissions(userId, businessId) } returns ObjectPermission.READ.int
+            coEvery { appointmentPermissionDataSource.getPermission(userId, businessId) } returns ResourcePermission(view = true)
             coEvery { dataSource.getAllPaginated(businessId, 50, 0, null) } returns pagination
         }
 
@@ -69,7 +69,7 @@ internal class GetAppointmentHistoryImplTest {
 
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { appointmentPermissionDataSource.getPermissions(userId, businessId) } returns ObjectPermission.READ.int
+            coEvery { appointmentPermissionDataSource.getPermission(userId, businessId) } returns ResourcePermission(view = true)
             coEvery {
                 dataSource.getAllPaginated(businessId, 50, 0, "John")
             } returns pagination
@@ -98,7 +98,7 @@ internal class GetAppointmentHistoryImplTest {
 
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { appointmentPermissionDataSource.getPermissions(userId, businessId) } returns null
+            coEvery { appointmentPermissionDataSource.getPermission(userId, businessId) } returns ResourcePermission.NONE
         }
 
         whenn()
@@ -119,7 +119,7 @@ internal class GetAppointmentHistoryImplTest {
 
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { appointmentPermissionDataSource.getPermissions(userId, businessId) } returns ObjectPermission.READ.int
+            coEvery { appointmentPermissionDataSource.getPermission(userId, businessId) } returns ResourcePermission(view = true)
             coEvery { dataSource.getAllPaginated(businessId, 50, 0, null) } throws exception
         }
 

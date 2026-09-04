@@ -7,7 +7,7 @@ import library.schedule.Schedule
 import kotlin.uuid.Uuid
 
 @Serializable
-class Business(
+data class Business(
     @ProtoNumber(1) val id: Uuid,
     @ProtoNumber(2) val name: String,
     @ProtoNumber(3) val description: String,
@@ -16,7 +16,8 @@ class Business(
     @ProtoNumber(6) val location: Location?,
     @ProtoNumber(7) val currencyCode: String,
     @ProtoNumber(8) val socials: List<Social>,
-    @ProtoNumber(9) val schedule: Schedule
+    @ProtoNumber(9) val schedule: Schedule,
+    @ProtoNumber(10) val permissions: BusinessPermissions
 ) {
     @Serializable
     class Location(
@@ -54,7 +55,8 @@ class Business(
             location: Location? = null,
             currencyCode: String = "USD",
             socials: List<Social> = emptyList(),
-            schedule: Schedule = Schedule()
+            schedule: Schedule = Schedule(),
+            permissions: BusinessPermissions = BusinessPermissions.NONE
         ) = Business(
             id = id,
             name = name,
@@ -64,7 +66,8 @@ class Business(
             location = location,
             currencyCode = currencyCode,
             socials = socials,
-            schedule = schedule
+            schedule = schedule,
+            permissions = permissions
         )
     }
 }

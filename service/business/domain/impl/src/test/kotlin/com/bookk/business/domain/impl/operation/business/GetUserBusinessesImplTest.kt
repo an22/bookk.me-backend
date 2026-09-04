@@ -1,8 +1,10 @@
 package com.bookk.business.domain.impl.operation.business
 
 import com.bookk.business.domain.api.business.entity.Business
+import com.bookk.business.domain.api.business.entity.BusinessPermissions
 import com.bookk.business.domain.api.business.entity.UserBusinesses
 import com.bookk.business.domain.datasource.BusinessDataSource
+import com.bookk.business.domain.datasource.BusinessPermissionDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.datasource.transaction.mockTransaction
 import com.bookk.core.test.given
@@ -20,8 +22,9 @@ internal class GetUserBusinessesImplTest {
 
     private class SutFixture {
         val businessDataSource = mockk<BusinessDataSource>()
+        val businessPermissionDataSource = mockk<BusinessPermissionDataSource>()
         val transactionManager = mockk<TransactionManager>()
-        val sut = GetUserBusinessesImpl(businessDataSource, transactionManager)
+        val sut = GetUserBusinessesImpl(businessDataSource, businessPermissionDataSource, transactionManager)
     }
 
     @Test
@@ -29,10 +32,12 @@ internal class GetUserBusinessesImplTest {
         given()
         val fixture = SutFixture()
         val userId = Uuid.random()
-        val userBusinesses = UserBusinesses(Uuid.random(), listOf(Business.stub(name = "Name")))
+        val business = Business.stub(name = "Name")
+        val userBusinesses = UserBusinesses(Uuid.random(), listOf(business))
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { businessDataSource.getUserBusinesses(userId) } returns userBusinesses
+            coEvery { businessPermissionDataSource.getPermissions(userId, business.id) } returns BusinessPermissions.NONE
         }
 
         whenn()

@@ -12,7 +12,7 @@ internal class GetBusinessByIdClientImpl(
     private val httpClient: HttpClient
 ) : GetBusinessById {
 
-    override suspend fun invoke(id: Uuid): Result<Business> = runCatching {
+    override suspend fun invoke(id: Uuid, requestingUserId: Uuid?): Result<Business> = runCatching {
         httpClient.get(BusinessRouting.Api.Internal.Business.Id(id = id)).bodyOrThrow()
     }
 }

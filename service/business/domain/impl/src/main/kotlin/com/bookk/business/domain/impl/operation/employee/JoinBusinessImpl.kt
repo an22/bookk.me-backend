@@ -1,5 +1,6 @@
 package com.bookk.business.domain.impl.operation.employee
 
+import com.bookk.business.domain.api.business.entity.BusinessResource
 import com.bookk.business.domain.api.employee.entity.Employee
 import com.bookk.business.domain.api.employee.entity.EmployeeInvitationStatus
 import com.bookk.business.domain.api.employee.operation.JoinBusiness
@@ -13,7 +14,7 @@ import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.entity.Error
 import com.bookk.server.business.client.api.event.BusinessEvent
 import com.bookk.server.user.client.UserClient
-import library.permissions.ObjectPermission
+import library.permissions.ResourcePermission
 import library.schedule.Schedule
 import kotlin.time.Clock
 import kotlin.uuid.Uuid
@@ -57,7 +58,10 @@ internal class JoinBusinessImpl(
                     createdAt = Clock.System.now()
                 )
             )
-            businessPermissionDataSource.setUserPermissions(requestUserId, invitation.businessId, ObjectPermission.READ.int)
+            val viewOnly = ResourcePermission(view = true)
+            BusinessResource.entries.forEach { resource ->
+                businessPermissionDataSource.setPermission(requestUserId, invitation.businessId, resource, viewOnly)
+            }
             eventProducer.send(
                 BusinessEvent.EmployeeInvitationRedeemed(
                     inviterUserId = invitation.invitedBy,
@@ -68,10 +72,10 @@ internal class JoinBusinessImpl(
                 )
             )
             eventProducer.send(
-                BusinessEvent.EmployeePermissionChanged(
+                BusinessEvent.EmployeePermissionsChanged(
                     employeeUserId = employee.userId,
                     businessId = business.id,
-                    permission = ObjectPermission.READ.int
+                    permissions = businessPermissionDataSource.getPermissions(requestUserId, invitation.businessId)
                 )
             )
             employee

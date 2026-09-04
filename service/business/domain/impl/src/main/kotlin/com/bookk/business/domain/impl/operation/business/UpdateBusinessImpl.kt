@@ -1,6 +1,7 @@
 package com.bookk.business.domain.impl.operation.business
 
 import com.bookk.business.domain.api.business.entity.Business
+import com.bookk.business.domain.api.business.entity.BusinessResource
 import com.bookk.business.domain.api.business.entity.BusinessUpdateModel
 import com.bookk.business.domain.api.business.operation.UpdateBusiness
 import com.bookk.business.domain.datasource.BusinessDataSource
@@ -10,7 +11,7 @@ import com.bookk.core.data.eventstreaming.send
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.server.business.client.api.BusinessDTO
 import com.bookk.server.business.client.api.event.BusinessEvent
-import library.permissions.ObjectPermission
+import library.permissions.PermissionAction
 import library.permissions.assert
 import kotlin.time.Clock
 import kotlin.uuid.Uuid
@@ -23,7 +24,8 @@ internal class UpdateBusinessImpl(
 ) : UpdateBusiness {
     override suspend fun invoke(requestUserId: Uuid, businessUpdateModel: BusinessUpdateModel): Result<Unit> =
         transactionManager.transaction {
-            businessPermissionDataSource.getPermission(requestUserId, businessUpdateModel.id).assert(ObjectPermission.EDIT)
+            businessPermissionDataSource.getPermission(requestUserId, businessUpdateModel.id, BusinessResource.BUSINESS)
+                .assert(PermissionAction.UPDATE)
             businessUpdateModel.schedule?.let { schedule ->
                 if (schedule.days.values.any { it.isActive && it.workingTime.isEmpty() }) {
                     throw UpdateBusiness.Error.ActiveDayWithoutWorkHours()

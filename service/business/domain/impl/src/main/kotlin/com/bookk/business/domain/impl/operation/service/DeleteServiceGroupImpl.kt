@@ -1,10 +1,11 @@
 package com.bookk.business.domain.impl.operation.service
 
+import com.bookk.business.domain.api.business.entity.BusinessResource
 import com.bookk.business.domain.api.service.operation.DeleteServiceGroup
 import com.bookk.business.domain.datasource.BusinessPermissionDataSource
 import com.bookk.business.domain.datasource.ServiceDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
-import library.permissions.ObjectPermission
+import library.permissions.PermissionAction
 import library.permissions.assert
 import kotlin.uuid.Uuid
 
@@ -16,7 +17,8 @@ internal class DeleteServiceGroupImpl(
 
     override suspend fun invoke(requestUserId: Uuid, businessId: Uuid, id: Uuid): Result<Unit> {
         return transactionManager.transaction {
-            businessPermissionDataSource.getPermission(requestUserId, businessId).assert(ObjectPermission.EDIT)
+            businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.SERVICES)
+                .assert(PermissionAction.DELETE)
             dataSource.deleteServiceGroup(id)
         }
     }

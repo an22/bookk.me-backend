@@ -6,7 +6,7 @@ import com.bookk.appointments.domain.api.operation.EditSettings
 import com.bookk.appointments.domain.datasource.AppointmentPermissionDataSource
 import com.bookk.appointments.domain.datasource.AppointmentSettingsDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
-import library.permissions.ObjectPermission
+import library.permissions.PermissionAction
 import library.permissions.assert
 import kotlin.uuid.Uuid
 
@@ -19,7 +19,8 @@ internal class EditSettingsImpl(
         userId: Uuid,
         update: AppointmentSettingsUpdate
     ): Result<AppointmentSettings> = transactionManager.transaction {
-        permissionsSource.getPermissions(userId, update.businessId).assert(ObjectPermission.EDIT)
-        settingsSource.update(update)
+        val permission = permissionsSource.getPermission(userId, update.businessId)
+        permission.assert(PermissionAction.UPDATE)
+        settingsSource.update(update).copy(permissions = permission)
     }
 }

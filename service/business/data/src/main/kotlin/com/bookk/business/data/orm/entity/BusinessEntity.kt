@@ -4,6 +4,7 @@ import com.bookk.business.data.orm.table.BusinessDayOffTable
 import com.bookk.business.data.orm.table.BusinessTable
 import com.bookk.business.data.orm.table.BusinessWorkingHoursTable
 import com.bookk.business.domain.api.business.entity.Business
+import com.bookk.business.domain.api.business.entity.BusinessPermissions
 import com.bookk.business.domain.api.business.entity.BusinessUpdateModel
 import com.bookk.core.data.DecoratorUuidEntityClass
 import kotlinx.datetime.TimeZone
@@ -56,7 +57,8 @@ internal class BusinessEntity(id: EntityID<Uuid>) : UuidEntity(id) {
             Business.Social(Business.SocialKind.TELEGRAM, telegram.orEmpty()),
             Business.Social(Business.SocialKind.WHATSAPP, whatsapp.orEmpty()),
             Business.Social(Business.SocialKind.VIBER, viber.orEmpty())
-        )
+        ),
+        permissions = BusinessPermissions.NONE
     )
 
     private fun replaceSchedule(schedule: Schedule) {

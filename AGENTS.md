@@ -31,7 +31,7 @@ New gradle modules must be registered in `settings.gradle.kts` (one `include` pe
 - Error codes live in `domain/api/.../<Svc>ErrorCodes` as `BASE + n`. Blocks: auth=0, user=100000, business=200000, appointments=300000. Next service takes the next 100000 block.
 - Generic infrastructure errors: `com.bookk.core.domain.entity.Error` (`NotFound`, `OperationNotAllowed`, …).
 - `call.respondWith(result)` (core/service) maps: success Unit→204, success T→200, `BusinessError`→its statusCode + `SimpleServerError(errorCode, message)`, `Error.NotFound`/`Error.OperationNotAllowed`→**404** (intentional: permission failures do NOT return 403), anything else→500 (logged).
-- Permissions: `permissionsDataSource.getPermissions(userId, businessId).assert(ObjectPermission.EDIT)` (library/permissions) — throws `Error.OperationNotAllowed`.
+- Permissions: fine-grained per-resource grants (`library.permissions.ResourcePermission(view, update, delete)`, three independent booleans, no ranking between them) — `businessPermissionDataSource.getPermission(userId, businessId, BusinessResource.CLIENTS).assert(PermissionAction.UPDATE)` (business) or `appointmentPermissionDataSource.getPermission(userId, businessId).assert(PermissionAction.VIEW)` (appointments, single implicit resource) — throws `Error.OperationNotAllowed`. A caller acting on their own assigned resource (e.g. an employee's own appointment) can pass an `update`/`delete` check on a `view`-only grant via `.assertOrSelf(action, actorId, assigneeId)`. See `docs/object-permissions.md` for the full model, including how a `Business`/`AppointmentSettings` entity gets the requesting user's grants attached (`.copy(permissions = ...)`, computed per request, never persisted on the row).
 - Name/email/phone format checks: `library.validation.{NameValidator,EmailValidator,PhoneValidator}.isValid(value, ...)` (library/validation, plain `bookk.domain.api` module, no domain dependency) — pure `Boolean` predicates, each with a default `maxLength`/`minLength` you can override per call site; the caller still owns throwing its own `*ValidationError`. Reuse these instead of hand-rolling a regex/length check in a new operation.
 - Wire format is ProtoBuf (`application/x-protobuf`) for all bodies/responses. **A nullable collection (`List<T>?`, `Map<K, V>?`) cannot be serialized when null** — kotlinx throws `'null' is not supported as the value of collection types in ProtoBuf`. For an optional group of fields in a partial-update DTO, wrap them in a nullable `@Serializable` holder class (a nullable message is fine) instead of making each list nullable — see `BusinessUpdateModel.schedule: Schedule?`. **A nullable property must not also have a default** — the serializer runs with `encodeDefaults = true`, and encoding a defaulted null throws `'null' is not supported for optional properties in ProtoBuf` as soon as a caller omits it. Give every nullable field on a partial-update DTO no default at all and pass them explicitly (`BusinessUpdateModel`, `UserEditModel`).
 - Entities: `@Serializable data class` in `domain/api/.../entity` with a `companion object { fun stub(...) }` factory (defaulted params, `Uuid.random()`, `Instant.fromEpochMilliseconds(0)`) — add `stub()` to every new entity; tests rely on it.
@@ -61,13 +61,13 @@ interface DoThing {
 ```kotlin
 internal class DoThingImpl(
     private val thingDataSource: ThingDataSource,
-    private val permissionsDataSource: PermissionsDataSource,
+    private val businessPermissionDataSource: BusinessPermissionDataSource,
     private val transactionManager: TransactionManager,
     private val eventProducer: StandardEventProducer, // only if events sent
 ) : DoThing {
     override suspend fun invoke(userId: Uuid, ...): Result<Thing> = transactionManager.transaction {
         val thing = thingDataSource.get(id) ?: throw Error.NotFound()
-        permissionsDataSource.getPermissions(userId, businessId).assert(ObjectPermission.EDIT)
+        businessPermissionDataSource.getPermission(userId, businessId, BusinessResource.THINGS).assert(PermissionAction.UPDATE)
         if (conflict) throw DoThing.Error.ThingExists()
         thingDataSource.create(...) // also { eventProducer.send(SvcEvent.X(...)) } if needed
     }
@@ -199,9 +199,9 @@ internal class DoThingImplTest {
 
     private class SutFixture {
         val thingDataSource = mockk<ThingDataSource>()
-        val permissionsDataSource = mockk<PermissionsDataSource>()
+        val businessPermissionDataSource = mockk<BusinessPermissionDataSource>()
         val transactionManager = mockk<TransactionManager>()
-        val sut = DoThingImpl(thingDataSource, permissionsDataSource, transactionManager)
+        val sut = DoThingImpl(thingDataSource, businessPermissionDataSource, transactionManager)
     }
 
     @Test
@@ -211,7 +211,7 @@ internal class DoThingImplTest {
         val thing = Thing.stub(userId = userId)
         val fixture = SutFixture()
         with(fixture) {
-            coEvery { permissionsDataSource.getPermissions(userId, thing.businessId) } returns ObjectPermission.EDIT.int
+            coEvery { businessPermissionDataSource.getPermission(userId, thing.businessId, BusinessResource.THINGS) } returns ResourcePermission(update = true)
             coEvery { thingDataSource.create(any()) } returns thing
             transactionManager.mockTransaction() // testFixtures(projects.core.domain.datasource)
         }
@@ -225,7 +225,7 @@ internal class DoThingImplTest {
     }
 }
 ```
-Permission-denied case: stub `getPermissions` to return `ObjectPermission.READ.int`, assert `result.exceptionOrNull() is Error.OperationNotAllowed`.
+Permission-denied case: stub `getPermission` to return `ResourcePermission(view = true)` (or `ResourcePermission.NONE` for "no grant at all"), assert `result.exceptionOrNull() is Error.OperationNotAllowed`.
 
 ### Route (microservice) test template
 

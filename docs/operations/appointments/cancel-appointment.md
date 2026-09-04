@@ -4,10 +4,10 @@
 
 Only a scheduled appointment can be cancelled; the status switch and the
 write both read the same fetched row within the transaction. The
-appointment is fetched before the permission check so a `READ`-level
+appointment is fetched before the permission check so a `view`-only
 employee can be let through when it's their own — see [Managing your own
-resource on a `READ`
-grant](../../object-permissions.md#managing-your-own-resource-on-a-read-grant).
+resource on a `view`
+grant](../../object-permissions.md#managing-your-own-resource-on-a-view-grant).
 
 ```mermaid
 flowchart TD
@@ -17,7 +17,7 @@ flowchart TD
     Auth -- No --> R401([401 Unauthorized])
     Auth -- Yes --> Tx[[Begin transaction]]
     Tx --> Get[AppointmentDataSource.get cancellation.id]
-    Get --> Perm{permission >= EDIT, or permission >= READ and appointment.employee.userId == userId?}
+    Get --> Perm{caller update permission, or view permission and appointment.employee.userId == userId?}
     Perm -- No --> R404a([404 Error.OperationNotAllowed])
     Perm -- Yes --> Status{appointment.status}
     Status -- COMPLETED --> R422a([422 ALREADY_COMPLETED 300006])

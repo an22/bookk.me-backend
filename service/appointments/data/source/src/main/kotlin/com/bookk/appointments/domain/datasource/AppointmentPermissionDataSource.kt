@@ -1,9 +1,10 @@
 package com.bookk.appointments.domain.datasource
 
+import library.permissions.ResourcePermission
 import kotlin.uuid.Uuid
 
 interface AppointmentPermissionDataSource {
-    suspend fun setPermissions(userId: Uuid, businessId: Uuid, permissions: Int)
-    suspend fun getPermissions(userId: Uuid, businessId: Uuid): Int?
+    suspend fun setPermission(userId: Uuid, businessId: Uuid, permission: ResourcePermission)
+    suspend fun getPermission(userId: Uuid, businessId: Uuid): ResourcePermission
     suspend fun deleteForUser(userId: Uuid)
 }

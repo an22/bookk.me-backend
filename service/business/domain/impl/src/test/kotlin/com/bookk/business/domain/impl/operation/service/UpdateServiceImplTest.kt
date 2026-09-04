@@ -1,5 +1,6 @@
 package com.bookk.business.domain.impl.operation.service
 
+import com.bookk.business.domain.api.business.entity.BusinessResource
 import com.bookk.business.domain.api.service.entity.Service
 import com.bookk.business.domain.api.service.entity.ServiceGroup
 import com.bookk.business.domain.api.service.operation.CreateService
@@ -15,7 +16,7 @@ import com.bookk.core.test.then
 import com.bookk.core.test.whenn
 import io.mockk.coEvery
 import io.mockk.mockk
-import library.permissions.ObjectPermission
+import library.permissions.ResourcePermission
 import org.joda.money.Money
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -52,7 +53,7 @@ internal class UpdateServiceImplTest {
         val service = createTestService()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { businessPermissionDataSource.getPermission(userId, service.businessId) } returns ObjectPermission.EDIT.int
+            coEvery { businessPermissionDataSource.getPermission(userId, service.businessId, BusinessResource.SERVICES) } returns ResourcePermission(update = true)
             coEvery { serviceDataSource.editService(service) } returns service
         }
 
@@ -87,7 +88,7 @@ internal class UpdateServiceImplTest {
         val service = createTestService()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { businessPermissionDataSource.getPermission(userId, service.businessId) } returns ObjectPermission.READ.int
+            coEvery { businessPermissionDataSource.getPermission(userId, service.businessId, BusinessResource.SERVICES) } returns ResourcePermission(view = true)
         }
 
         whenn()
@@ -106,7 +107,7 @@ internal class UpdateServiceImplTest {
         val service = createTestService()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { businessPermissionDataSource.getPermission(userId, service.businessId) } returns ObjectPermission.EDIT.int
+            coEvery { businessPermissionDataSource.getPermission(userId, service.businessId, BusinessResource.SERVICES) } returns ResourcePermission(update = true)
             coEvery { serviceDataSource.editService(service) } throws Error.UniqueConstraintFailed("", RuntimeException())
         }
 

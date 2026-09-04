@@ -1,8 +1,8 @@
 package com.bookk.appointments.data.datasource
 
 import com.bookk.appointments.data.orm.table.AppointmentBusinessTable
+import com.bookk.appointments.data.orm.table.AppointmentPermissionGrantsTable
 import com.bookk.appointments.data.orm.table.DayOffsTable
-import com.bookk.appointments.data.orm.table.UserHasAppointmentPermissions
 import com.bookk.appointments.data.orm.table.WorkingHoursTable
 import com.bookk.appointments.domain.api.entity.BusinessSnapshot
 import com.bookk.core.data.test.createTestDatabase
@@ -10,9 +10,9 @@ import com.bookk.core.test.given
 import com.bookk.core.test.runUnitTest
 import com.bookk.core.test.then
 import com.bookk.core.test.whenn
+import library.permissions.ResourcePermission
 import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import kotlin.uuid.Uuid
@@ -20,7 +20,7 @@ import kotlin.uuid.Uuid
 internal class AppointmentPermissionDataSourceImplTest {
 
     private class SutFixture {
-        val db = createTestDatabase(AppointmentBusinessTable, WorkingHoursTable, DayOffsTable, UserHasAppointmentPermissions)
+        val db = createTestDatabase(AppointmentBusinessTable, WorkingHoursTable, DayOffsTable, AppointmentPermissionGrantsTable)
         val sut = AppointmentPermissionDataSourceImpl()
         val subscriptionSut = AppointmentSubscriptionDataSourceImpl()
         lateinit var businessId: Uuid
@@ -33,16 +33,16 @@ internal class AppointmentPermissionDataSourceImplTest {
     }
 
     @Test
-    fun `should return null when permissions not set`() = runUnitTest {
+    fun `should return none permission when not set`() = runUnitTest {
         given()
         val fixture = SutFixture()
         fixture.setup()
 
         whenn()
-        val permissions = suspendTransaction { fixture.sut.getPermissions(Uuid.random(), fixture.businessId) }
+        val permission = suspendTransaction { fixture.sut.getPermission(Uuid.random(), fixture.businessId) }
 
         then()
-        assertNull(permissions)
+        assertEquals(ResourcePermission.NONE, permission)
     }
 
     @Test
@@ -51,13 +51,14 @@ internal class AppointmentPermissionDataSourceImplTest {
         val fixture = SutFixture()
         fixture.setup()
         val userId = Uuid.random()
+        val permission = ResourcePermission(view = true, update = true)
 
         whenn()
-        suspendTransaction { fixture.sut.setPermissions(userId, fixture.businessId, 1) }
-        val permissions = suspendTransaction { fixture.sut.getPermissions(userId, fixture.businessId) }
+        suspendTransaction { fixture.sut.setPermission(userId, fixture.businessId, permission) }
+        val stored = suspendTransaction { fixture.sut.getPermission(userId, fixture.businessId) }
 
         then()
-        assertEquals(1, permissions)
+        assertEquals(permission, stored)
     }
 
     @Test
@@ -66,14 +67,14 @@ internal class AppointmentPermissionDataSourceImplTest {
         val fixture = SutFixture()
         fixture.setup()
         val userId = Uuid.random()
-        suspendTransaction { fixture.sut.setPermissions(userId, fixture.businessId, 1) }
+        suspendTransaction { fixture.sut.setPermission(userId, fixture.businessId, ResourcePermission(view = true)) }
 
         whenn()
-        suspendTransaction { fixture.sut.setPermissions(userId, fixture.businessId, 2) }
-        val permissions = suspendTransaction { fixture.sut.getPermissions(userId, fixture.businessId) }
+        suspendTransaction { fixture.sut.setPermission(userId, fixture.businessId, ResourcePermission.FULL) }
+        val stored = suspendTransaction { fixture.sut.getPermission(userId, fixture.businessId) }
 
         then()
-        assertEquals(2, permissions)
+        assertEquals(ResourcePermission.FULL, stored)
     }
 
     @Test
@@ -82,14 +83,14 @@ internal class AppointmentPermissionDataSourceImplTest {
         val fixture = SutFixture()
         fixture.setup()
         val userId = Uuid.random()
-        suspendTransaction { fixture.sut.setPermissions(userId, fixture.businessId, 7) }
+        suspendTransaction { fixture.sut.setPermission(userId, fixture.businessId, ResourcePermission.FULL) }
 
         whenn()
         suspendTransaction { fixture.sut.deleteForUser(userId) }
-        val permissions = suspendTransaction { fixture.sut.getPermissions(userId, fixture.businessId) }
+        val permission = suspendTransaction { fixture.sut.getPermission(userId, fixture.businessId) }
 
         then()
-        assertNull(permissions)
+        assertEquals(ResourcePermission.NONE, permission)
     }
 
     @Test

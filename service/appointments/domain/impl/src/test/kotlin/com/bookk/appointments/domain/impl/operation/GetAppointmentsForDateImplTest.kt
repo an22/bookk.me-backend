@@ -16,7 +16,7 @@ import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.atStartOfDayIn
-import library.permissions.ObjectPermission
+import library.permissions.ResourcePermission
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -47,7 +47,7 @@ internal class GetAppointmentsForDateImplTest {
 
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { appointmentPermissionDataSource.getPermissions(userId, businessId) } returns ObjectPermission.READ.int
+            coEvery { appointmentPermissionDataSource.getPermission(userId, businessId) } returns ResourcePermission(view = true)
             coEvery { settingsDataSource.get(businessId) } returns settings
             coEvery { appointmentDataSource.getAllForDate(businessId, expectedRange) } returns appointments
         }
@@ -70,7 +70,7 @@ internal class GetAppointmentsForDateImplTest {
 
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { appointmentPermissionDataSource.getPermissions(userId, businessId) } returns null
+            coEvery { appointmentPermissionDataSource.getPermission(userId, businessId) } returns ResourcePermission.NONE
         }
 
         whenn()
@@ -91,7 +91,7 @@ internal class GetAppointmentsForDateImplTest {
 
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { appointmentPermissionDataSource.getPermissions(userId, businessId) } returns ObjectPermission.READ.int
+            coEvery { appointmentPermissionDataSource.getPermission(userId, businessId) } returns ResourcePermission(view = true)
             coEvery { settingsDataSource.get(businessId) } returns null
         }
 
@@ -117,7 +117,7 @@ internal class GetAppointmentsForDateImplTest {
 
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { appointmentPermissionDataSource.getPermissions(userId, businessId) } returns ObjectPermission.READ.int
+            coEvery { appointmentPermissionDataSource.getPermission(userId, businessId) } returns ResourcePermission(view = true)
             coEvery { settingsDataSource.get(businessId) } returns settings
             coEvery { appointmentDataSource.getAllForDate(businessId, expectedRange) } throws exception
         }

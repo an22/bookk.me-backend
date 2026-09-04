@@ -1,8 +1,10 @@
 package com.bookk.business.domain.impl.operation.business
 
 import com.bookk.business.domain.api.business.entity.Business
+import com.bookk.business.domain.api.business.entity.BusinessPermissions
 import com.bookk.business.domain.api.business.operation.GetDashboardBusiness
 import com.bookk.business.domain.datasource.BusinessDataSource
+import com.bookk.business.domain.datasource.BusinessPermissionDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.datasource.transaction.mockTransaction
 import com.bookk.core.test.given
@@ -20,8 +22,9 @@ internal class GetDashboardBusinessImplTest {
 
     private class SutFixture {
         val businessDataSource = mockk<BusinessDataSource>()
+        val businessPermissionDataSource = mockk<BusinessPermissionDataSource>()
         val transactionManager = mockk<TransactionManager>()
-        val sut = GetDashboardBusinessImpl(businessDataSource, transactionManager)
+        val sut = GetDashboardBusinessImpl(businessDataSource, businessPermissionDataSource, transactionManager)
     }
 
     @Test
@@ -33,6 +36,7 @@ internal class GetDashboardBusinessImplTest {
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { businessDataSource.getDashboardBusiness(userId) } returns business
+            coEvery { businessPermissionDataSource.getPermissions(userId, business.id) } returns BusinessPermissions.NONE
         }
 
         whenn()

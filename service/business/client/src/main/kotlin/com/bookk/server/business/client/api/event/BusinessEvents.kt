@@ -1,5 +1,6 @@
 package com.bookk.server.business.client.api.event
 
+import com.bookk.business.domain.api.business.entity.BusinessPermissions
 import com.bookk.core.data.eventstreaming.EventStreaming
 import com.bookk.server.business.client.api.BusinessDTO
 import kotlinx.serialization.Serializable
@@ -52,17 +53,17 @@ interface BusinessEvent : EventStreaming.Event<String> {
     }
 
     @Serializable
-    data class EmployeePermissionChanged(
+    data class EmployeePermissionsChanged(
         val employeeUserId: Uuid,
         val businessId: Uuid,
-        val permission: Int,
+        val permissions: BusinessPermissions,
         override val idempotencyKey: String = Uuid.random().toString()
     ) : BusinessEvent {
         override val topic: String = TOPIC
         override val partitionKey: String get() = businessId.toString()
 
         companion object {
-            const val TOPIC = "business.employee_permission_changed"
+            const val TOPIC = "business.employee_permissions_changed"
         }
     }
 }

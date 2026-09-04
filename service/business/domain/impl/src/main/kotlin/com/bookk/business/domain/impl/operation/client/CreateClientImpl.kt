@@ -1,5 +1,6 @@
 package com.bookk.business.domain.impl.operation.client
 
+import com.bookk.business.domain.api.business.entity.BusinessResource
 import com.bookk.business.domain.api.client.entity.Client
 import com.bookk.business.domain.api.client.entity.ClientRemote
 import com.bookk.business.domain.api.client.entity.toRemote
@@ -7,7 +8,7 @@ import com.bookk.business.domain.api.client.operation.CreateClient
 import com.bookk.business.domain.datasource.BusinessPermissionDataSource
 import com.bookk.business.domain.datasource.ClientDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
-import library.permissions.ObjectPermission
+import library.permissions.PermissionAction
 import library.permissions.assert
 import library.validation.EmailValidator
 import library.validation.NameValidator
@@ -21,7 +22,8 @@ internal class CreateClientImpl(
 ) : CreateClient {
     override suspend fun invoke(requestUserId: Uuid, businessId: Uuid, client: Client): Result<ClientRemote> =
         transactionManager.transaction {
-            businessPermissionDataSource.getPermission(requestUserId, businessId).assert(ObjectPermission.EDIT)
+            businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.CLIENTS)
+                .assert(PermissionAction.UPDATE)
             if (!NameValidator.isValid(client.name, minLength = 0, maxLength = MAX_NAME_LENGTH)) {
                 throw CreateClient.Error.ClientValidationError()
             }

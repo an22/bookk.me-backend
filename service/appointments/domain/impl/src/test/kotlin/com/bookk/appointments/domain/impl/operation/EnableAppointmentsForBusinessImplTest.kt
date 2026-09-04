@@ -5,6 +5,7 @@ import com.bookk.appointments.domain.api.operation.EnableAppointmentsForBusiness
 import com.bookk.appointments.domain.datasource.AppointmentPermissionDataSource
 import com.bookk.appointments.domain.datasource.AppointmentSettingsDataSource
 import com.bookk.appointments.domain.datasource.AppointmentSubscriptionDataSource
+import com.bookk.business.domain.api.business.entity.BusinessResource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.datasource.transaction.mockTransaction
 import com.bookk.core.domain.entity.Error
@@ -21,7 +22,7 @@ import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
-import library.permissions.ObjectPermission
+import library.permissions.ResourcePermission
 import library.schedule.DayOffRange
 import library.schedule.Schedule
 import library.schedule.WorkHour
@@ -63,10 +64,10 @@ internal class EnableAppointmentsForBusinessImplTest {
 
     private fun SutFixture.acceptAttach() {
         coEvery { subscriptionSource.attachBusiness(any()) } returns Unit
-        coEvery { appointmentPermissionDataSource.setPermissions(testUserId, testBusinessId, ObjectPermission.OWNER.int) } returns Unit
+        coEvery { appointmentPermissionDataSource.setPermission(testUserId, testBusinessId, ResourcePermission.FULL) } returns Unit
         coEvery { settingsDataSource.create(any()) } returns AppointmentSettings.stub(testBusinessId)
-        coEvery { businessClient.getPermission(testUserId, testBusinessId) } returns
-            Result.success(ObjectPermission.OWNER)
+        coEvery { businessClient.getPermission(testUserId, testBusinessId, BusinessResource.BUSINESS) } returns
+            Result.success(ResourcePermission.FULL)
     }
 
     @Test
@@ -85,7 +86,7 @@ internal class EnableAppointmentsForBusinessImplTest {
         then()
         assertTrue(result.isSuccess)
         coVerify(exactly = 1) {
-            fixture.appointmentPermissionDataSource.setPermissions(testUserId, testBusinessId, ObjectPermission.OWNER.int)
+            fixture.appointmentPermissionDataSource.setPermission(testUserId, testBusinessId, ResourcePermission.FULL)
         }
     }
 
@@ -125,8 +126,8 @@ internal class EnableAppointmentsForBusinessImplTest {
         val fixture = SutFixture()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { businessClient.getPermission(testUserId, testBusinessId) } returns
-                Result.success(ObjectPermission.OWNER)
+            coEvery { businessClient.getPermission(testUserId, testBusinessId, BusinessResource.BUSINESS) } returns
+                Result.success(ResourcePermission.FULL)
             coEvery { businessClient.getBusinessById(testBusinessId) } returns Result.failure(Error.NotFound())
         }
 
@@ -140,13 +141,13 @@ internal class EnableAppointmentsForBusinessImplTest {
     }
 
     @Test
-    fun `should return failure when caller does not own the business`() = runUnitTest {
+    fun `should return failure when caller does not have full control of the business`() = runUnitTest {
         given()
         val fixture = SutFixture()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { businessClient.getPermission(testUserId, testBusinessId) } returns
-                Result.success(ObjectPermission.EDIT)
+            coEvery { businessClient.getPermission(testUserId, testBusinessId, BusinessResource.BUSINESS) } returns
+                Result.success(ResourcePermission(view = true, update = true))
             coEvery { businessClient.getBusinessById(testBusinessId) } returns Result.success(businessDto())
         }
 
@@ -156,7 +157,7 @@ internal class EnableAppointmentsForBusinessImplTest {
         then()
         assertTrue(result.exceptionOrNull() is Error.OperationNotAllowed)
         coVerify(exactly = 0) { fixture.subscriptionSource.attachBusiness(any()) }
-        coVerify(exactly = 0) { fixture.appointmentPermissionDataSource.setPermissions(any(), any(), any()) }
+        coVerify(exactly = 0) { fixture.appointmentPermissionDataSource.setPermission(any(), any(), any()) }
     }
 
     @Test
@@ -165,7 +166,8 @@ internal class EnableAppointmentsForBusinessImplTest {
         val fixture = SutFixture()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { businessClient.getPermission(testUserId, testBusinessId) } returns Result.success(ObjectPermission.NONE)
+            coEvery { businessClient.getPermission(testUserId, testBusinessId, BusinessResource.BUSINESS) } returns
+                Result.success(ResourcePermission.NONE)
             coEvery { businessClient.getBusinessById(testBusinessId) } returns Result.success(businessDto())
         }
 
@@ -183,8 +185,8 @@ internal class EnableAppointmentsForBusinessImplTest {
         val fixture = SutFixture()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { businessClient.getPermission(testUserId, testBusinessId) } returns
-                Result.success(ObjectPermission.OWNER)
+            coEvery { businessClient.getPermission(testUserId, testBusinessId, BusinessResource.BUSINESS) } returns
+                Result.success(ResourcePermission.FULL)
             coEvery { businessClient.getBusinessById(testBusinessId) } returns Result.success(businessDto())
             coEvery { subscriptionSource.attachBusiness(any()) } throws
                 Error.UniqueConstraintFailed("business already attached", RuntimeException())

@@ -82,9 +82,10 @@ fun Route.businessCrud() {
          * Response: 200 application/x-protobuf [com.bookk.business.domain.api.business.entity.Business] Business info
          */
         get<Api.Business.Id> { path ->
+            val principal = requireNotNull(call.principal<AppPrincipal>())
             val getBusinessById by application.inject<GetBusinessById>()
 
-            call.respondWith(getBusinessById(id = path.id))
+            call.respondWith(getBusinessById(id = path.id, requestingUserId = principal.userId))
         }
     }
 }

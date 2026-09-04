@@ -13,8 +13,8 @@ import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.entity.Error
 import com.bookk.library.serializer.moneyFormatter
 import com.bookk.server.appointments.client.api.event.AppointmentEvent
-import library.permissions.ObjectPermission
-import library.permissions.assertOrOwner
+import library.permissions.PermissionAction
+import library.permissions.assertOrSelf
 import org.slf4j.LoggerFactory
 import kotlin.uuid.Uuid
 
@@ -30,8 +30,8 @@ internal class CancelAppointmentImpl(
 
     override suspend fun invoke(userId: Uuid, cancellation: AppointmentCancellation): Result<Appointment> = transactionManager.transaction {
         val appointment = appointmentDataSource.get(cancellation.id)
-        appointmentPermissionDataSource.getPermissions(userId, cancellation.businessId)
-            .assertOrOwner(ObjectPermission.EDIT, actorId = userId, assigneeId = appointment.employee.userId)
+        appointmentPermissionDataSource.getPermission(userId, cancellation.businessId)
+            .assertOrSelf(PermissionAction.UPDATE, actorId = userId, assigneeId = appointment.employee.userId)
         val cancelled = when (appointment.status) {
             AppointmentStatus.COMPLETED -> throw CancelAppointment.Error.AlreadyCompleted()
             AppointmentStatus.CANCELLED -> throw CancelAppointment.Error.AlreadyCancelled()

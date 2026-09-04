@@ -14,7 +14,7 @@ import com.bookk.core.test.whenn
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
-import library.permissions.ObjectPermission
+import library.permissions.ResourcePermission
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -35,11 +35,12 @@ internal class EditSettingsImplTest {
         val fixture = SutFixture()
         val userId = Uuid.random()
         val businessId = Uuid.random()
+        val permission = ResourcePermission(update = true)
         val update = AppointmentSettingsUpdate.stub(businessId = businessId, inBetweenBreakInMinutes = 20)
         val settings = AppointmentSettings.stub(businessId = businessId)
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { permissionsSource.getPermissions(userId, businessId) } returns ObjectPermission.EDIT.int
+            coEvery { permissionsSource.getPermission(userId, businessId) } returns permission
             coEvery { settingsSource.update(update) } returns settings
         }
 
@@ -48,7 +49,7 @@ internal class EditSettingsImplTest {
 
         then()
         assertTrue(result.isSuccess)
-        assertEquals(settings, result.getOrNull())
+        assertEquals(settings.copy(permissions = permission), result.getOrNull())
     }
 
     @Test
@@ -60,7 +61,7 @@ internal class EditSettingsImplTest {
         val update = AppointmentSettingsUpdate.stub(businessId = businessId)
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { permissionsSource.getPermissions(userId, businessId) } returns ObjectPermission.READ.int
+            coEvery { permissionsSource.getPermission(userId, businessId) } returns ResourcePermission(view = true)
         }
 
         whenn()
@@ -81,7 +82,7 @@ internal class EditSettingsImplTest {
         val update = AppointmentSettingsUpdate.stub(businessId = businessId)
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { permissionsSource.getPermissions(userId, businessId) } returns ObjectPermission.EDIT.int
+            coEvery { permissionsSource.getPermission(userId, businessId) } returns ResourcePermission(update = true)
             coEvery { settingsSource.update(update) } answers { throw IllegalStateException() }
         }
 

@@ -8,7 +8,6 @@ import com.bookk.core.test.whenn
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
-import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.atTime
 import kotlinx.datetime.toInstant
@@ -22,31 +21,19 @@ import kotlin.uuid.Uuid
 
 internal class AppointmentSettingsTest {
 
-    private fun settingsWithDayOffs(dayOffs: List<DayOffRange>) = AppointmentSettings(
-        id = Uuid.random(),
-        businessId = Uuid.random(),
-        timeZone = TimeZone.of("UTC"),
+    private fun settingsWithDayOffs(dayOffs: List<DayOffRange>) = AppointmentSettings.stub(businessId = Uuid.random()).copy(
         schedule = Schedule(
             workingDays = listOf(DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY, DayOfWeek.THURSDAY, DayOfWeek.FRIDAY),
             workingHours = mapOf(),
             dayOffs = dayOffs
-        ),
-        automaticApproval = false,
-        inBetweenBreakInMinutes = 10,
-        appointmentNote = ""
+        )
     )
 
-    private fun settingsWithWorkingHours(workingHours: List<WorkHour>) = AppointmentSettings(
-        id = Uuid.random(),
-        businessId = Uuid.random(),
-        timeZone = TimeZone.of("UTC"),
+    private fun settingsWithWorkingHours(workingHours: List<WorkHour>) = AppointmentSettings.stub(businessId = Uuid.random()).copy(
         schedule = Schedule(
             workingDays = listOf(DayOfWeek.MONDAY),
             workingHours = mapOf(DayOfWeek.MONDAY to workingHours)
-        ),
-        automaticApproval = false,
-        inBetweenBreakInMinutes = 10,
-        appointmentNote = ""
+        )
     )
 
     @Test

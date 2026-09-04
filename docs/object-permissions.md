@@ -1,213 +1,185 @@
-# Object permissions
+# Resource permissions
 
-Every business-scoped operation checks a caller's permission level for a
-given `businessId` before doing anything else. The level lives in
+Every business-scoped operation checks a caller's grant for a specific
+**resource** before doing anything else. The grant is a set of three
+independent booleans — `view` / `update` / `delete` — defined once in
 `library/permissions`
-(`library/permissions/src/main/kotlin/library/permissions/ObjectPermission.kt`)
-and is a single ranked enum shared by every microservice — each service
-keeps its own copy of the grant (see [Storage](#storage) below), but the
-levels and their meaning are the same everywhere.
+(`library/permissions/src/main/kotlin/library/permissions/ResourcePermission.kt`)
+and shared by every microservice. Unlike the old single ranked level this
+replaces, each action is granted independently: an employee can hold
+`update` on `CLIENTS` without holding `view` on `EMPLOYEES`, or `view` +
+`update` without `delete` on the same resource.
 
 ```kotlin
-enum class ObjectPermission(val int: Int) {
-    NONE(0),
-    READ(1),
-    EDIT(2),
-    OWNER(100);
+enum class PermissionAction { VIEW, UPDATE, DELETE }
+
+data class ResourcePermission(
+    val view: Boolean = false,
+    val update: Boolean = false,
+    val delete: Boolean = false
+) {
+    fun grants(action: PermissionAction): Boolean
+    fun covers(other: ResourcePermission): Boolean   // true if every bit `other` has, this also has
+    companion object { val NONE; val FULL }
 }
 ```
 
 ## How a check works
 
-An operation calls `.assert(ObjectPermission.X)` on the caller's stored
-grant (an `Int?` or `ObjectPermission?`, both extension functions in the
-same file):
+An operation calls `.assert(PermissionAction.X)` on the caller's stored
+grant for the resource in question:
 
 ```kotlin
-permissionsDataSource.getPermissions(userId, businessId).assert(ObjectPermission.EDIT)
+businessPermissionDataSource.getPermission(userId, businessId, BusinessResource.CLIENTS)
+    .assert(PermissionAction.UPDATE)
 ```
 
-`assert` is a **minimum-level** check: it throws
-`com.bookk.core.domain.entity.Error.OperationNotAllowed` unless the stored
-grant's `int` is `>=` the requested level's `int` — a missing grant (`null`)
-always fails. Because levels are ranked by `int` rather than compared by
-equality, a higher level automatically satisfies any check for a lower one:
-`OWNER` (100) passes an `EDIT` (2) or `READ` (1) check, `EDIT` passes a
-`READ` check, and so on. There is no independent "read-only" vs
-"write-only" axis — permissions form a single ladder.
+`assert` throws `com.bookk.core.domain.entity.Error.OperationNotAllowed`
+unless the stored grant has that specific bit set — a missing grant row
+resolves to `ResourcePermission.NONE` (every bit `false`), so it always
+fails. There is no ranking between actions: holding `delete` does not imply
+`update` or `view` — each is granted explicitly, on purpose, per resource.
 
-### Managing your own resource on a `READ` grant
+### Managing your own resource on a `view` grant
 
-A second overload, `Int?.assert(permission, actorId, assigneeId)`, lets a
-`READ`-level caller pass an `EDIT`-level check when the resource being
-mutated is assigned to them: it passes when the grant already meets
-`permission`, **or** when the grant is at least `READ` and `actorId ==
-assigneeId`. Appointments uses this for an employee acting on their own
-appointment/request — `CreateAppointmentImpl`, `UpdateAppointmentImpl`,
-`CancelAppointmentImpl`, `CreateAppointmentRequestImpl`, and
+A second extension, `ResourcePermission?.assertOrSelf(action, actorId,
+assigneeId)`, lets a caller who only holds `view` pass an `update` check
+when the resource being mutated is assigned to them: it passes when the
+grant already grants `action`, **or** when the grant has `view = true` and
+`actorId == assigneeId`. Appointments uses this for an employee acting on
+their own appointment/request — `CreateAppointmentImpl`,
+`UpdateAppointmentImpl`, `CancelAppointmentImpl`, and
 `DeclineAppointmentRequestImpl` all pass the caller's `userId` as `actorId`
-and the appointment/request's `employee.userId` as `assigneeId`. An `EDIT`/
-`OWNER` holder (a manager or the business owner) is unaffected — they can
-still act on anyone's appointment. A `READ` holder acting on an appointment
-assigned to a different employee still gets `OperationNotAllowed`.
+and the appointment/request's `employee.userId` as `assigneeId`
+(`CreateAppointmentRequestImpl`, the client-facing booking entry point, has
+no permission gate at all — see its KDoc). A caller who holds `update`
+directly is unaffected — they can still act on anyone's appointment. A
+`view`-only holder acting on an appointment assigned to a different
+employee still gets `OperationNotAllowed`.
 
 `OperationNotAllowed` is a generic infrastructure error, not a
 `BusinessError`, so `call.respondWith(result)` maps it to **HTTP 404**, not
 403 — a permission failure looks identical to the object simply not
 existing (see `core/service`'s `respondWith`).
 
-## The levels
+## Resources
 
-Each level below lists **only** the operations that require exactly that
-minimum — because `.assert()` is a minimum-level check, every level also
-grants everything listed under the levels above it (`EDIT` can do
-everything `READ` can; `OWNER` can do everything `EDIT` and `READ` can).
-
-### `NONE` (0)
-
-No grant at all. This is what `ObjectPermission.of(null)` resolves to and
-what an `.assert()` check fails against — it is never assigned to a user on
-purpose, it is the absence of a row. No operation is allowed.
-
-### `READ` (1)
-
-Can view the business's data but not change it.
-
-- **Appointments**
-  - Get appointment settings (`GetSettingsImpl`)
-  - Get appointment history (`GetAppointmentHistoryImpl`)
-  - Get appointments for a date (`GetAppointmentsForDataImpl`)
-  - Get appointment requests (`GetAppointmentRequestsImpl`)
-  - List pending appointment requests (`GetPendingAppointmentRequestsImpl`)
-  - Check whether appointments are enabled for the business
-    (`IsAppointmentsEnabledImpl`)
-  - Create/update/cancel/decline an appointment or appointment request
-    **assigned to themselves** (`CreateAppointmentImpl`,
-    `UpdateAppointmentImpl`, `CancelAppointmentImpl`,
-    `CreateAppointmentRequestImpl`, `DeclineAppointmentRequestImpl`) — see
-    [Managing your own resource on a `READ`
-    grant](#managing-your-own-resource-on-a-read-grant)
-- **Business**
-  - List clients (`GetClientsImpl`)
-
-This is also the level granted automatically to an **employee** once their
-they join the business (`JoinBusinessImpl`) or when an owner
-demotes/sets them to the `Employee` role via the promote-employee route
-(see [Roles](#roles-employee--manager) below).
-
-### `EDIT` (2)
-
-Can create, update, or cancel/delete the business's data, in addition to
-everything `READ` allows.
-
-- **Appointments**
-  - Create, update/reschedule, cancel, or decline **any** employee's
-    appointment or appointment request (`CreateAppointmentImpl`,
-    `UpdateAppointmentImpl`, `CancelAppointmentImpl`,
-    `CreateAppointmentRequestImpl`, `DeclineAppointmentRequestImpl`) — a
-    `READ` holder can already do this for their own, see
-    [above](#read-1)
-  - Edit appointment settings (`EditSettingsImpl`)
-- **Business**
-  - Update the business profile (`UpdateBusinessImpl`)
-  - Create/update/delete a service (`CreateServiceImpl`,
-    `UpdateServiceImpl`, `DeleteServiceImpl`)
-  - Create/delete a service group (`CreateServiceGroupImpl`,
-    `DeleteServiceGroupImpl`)
-  - Create/delete a client (`CreateClientImpl`, `DeleteClientImpl`)
-  - Update an employee's own record — profile, schedule, provided services
-    (`UpdateEmployeeImpl`)
-
-This is the level granted when an owner sets an employee to the `Manager`
-role via the promote-employee route (see
-[Roles](#roles-employee--manager)).
-
-### `OWNER` (100)
-
-Full control, including operations that affect who else has access or that
-initialize a business's presence in a service.
-
-- **Business**
-  - Create an employee invitation (`CreateEmployeeInvitationImpl`) — only
-    the owner can invite new employees
-  - Promote an employee to `Employee` or `Manager` (`PromoteEmployeeImpl`,
-    see [Roles](#roles-employee--manager)) — only the owner can change
-    another user's permission level
-- **Appointments**
-  - Enable the appointments module for a business
-    (`EnableAppointmentsForBusinessImpl`)
-
-`OWNER`'s value (100) is set far above `EDIT`/`READ` deliberately, leaving
-room to insert intermediate levels (e.g. a future `MANAGE`) between `EDIT`
-and `OWNER` later without renumbering the existing ones.
-
-## Roles: Employee / Manager
-
-The permission levels above are the raw `ObjectPermission` ladder used
-internally by every service. The business service's HTTP API does not
-expose `READ`/`EDIT`/`OWNER` directly to callers changing another user's
-access — instead `POST /api/business/{businessId}/employee/{id}/promote`
-takes a named `role`, defined in
-`com.bookk.business.domain.api.employee.entity.EmployeeRole`:
-
-| Role | Maps to | Can do |
-|---|---|---|
-| `EMPLOYEE` | `ObjectPermission.READ` | Everything under [`READ`](#read-1) |
-| `MANAGER` | `ObjectPermission.EDIT` | Everything under [`READ`](#read-1) and [`EDIT`](#edit-2) |
-
-`EmployeeRole.toPermission()` performs the mapping; the route (`Employee.kt`
-→ `employeeCrud()`) requires the caller to hold `OWNER` on the business,
-looks up the target `Employee` by `id` to resolve their `userId`, then
-calls `businessDataSource.setUserPermissions(employee.userId, businessId,
-role.toPermission().int)`. There is no `OWNER`-level role exposed through
-this route — ownership is only ever granted at business creation (see
-below) and cannot be promoted to.
-
-## How grants are created
-
-| Grant | Where | Level |
-|---|---|---|
-| Business creator | `CreateBusinessImpl` → `businessDataSource.setUserPermissions(userId, businessId, ObjectPermission.OWNER.int)` | `OWNER` |
-| Employee who joined | `JoinBusinessImpl` → `businessDataSource.setUserPermissions(requestUserId, businessId, ObjectPermission.READ.int)` | `READ` |
-| Employee promoted/demoted by the owner | `PromoteEmployeeImpl` → `businessDataSource.setUserPermissions(employee.userId, businessId, role.toPermission().int)` | `READ` or `EDIT`, per the request's `role` |
-
-The first two rows only ever create a grant once, for a specific user; the
-promote route is the only operation that changes an **existing** grant, and
-only ever between `READ` and `EDIT` — it cannot grant or revoke `OWNER`.
-
-Both of the latter two rows also publish `BusinessEvent.EmployeePermissionChanged`
-(`employeeUserId`, `businessId`, `permission`), which the appointments
-service consumes to keep its own copy of the grant in sync — see
+The business service defines five resources in
+`com.bookk.business.domain.api.business.entity.BusinessResource`:
+`BUSINESS`, `EMPLOYEES`, `CLIENTS`, `SERVICES`, `APPOINTMENTS`. A grant is
+always scoped to exactly one `(userId, businessId, resource)` triple.
+`APPOINTMENTS` is owned and assigned here too (an employee's appointment
+access is managed from the business service's employee screen), but it is
+enforced by the appointments service against its own local copy — see
 [Storage](#storage).
+
+The appointments service has a single implicit resource (its own
+"appointments" grant, covering both settings and appointment records) and
+so does not need its own `Resource` enum — `AppointmentPermissionDataSource`
+is keyed by `(userId, businessId)` alone.
+
+| Resource | Action | Required by |
+|---|---|---|
+| `BUSINESS` | `update` | Update the business profile (`UpdateBusinessImpl`) |
+| `BUSINESS` | full control (`covers(FULL)`) | Enable the appointments module for a business, checked cross-service (`EnableAppointmentsForBusinessImpl`) |
+| `EMPLOYEES` | `view` | List employees (`GetEmployeesImpl`), read an employee's permissions (`GetEmployeePermissionsImpl`) |
+| `EMPLOYEES` | `update` | Update an employee's own record (`UpdateEmployeeImpl`), create/revoke an employee invitation (`CreateEmployeeInvitationImpl`, `RevokeEmployeeInvitationImpl`), grant or revoke another resource's permission for an employee (`SetEmployeePermissionImpl`) |
+| `CLIENTS` | `view` | List clients (`GetClientsImpl`) |
+| `CLIENTS` | `update` | Create/update a client (`CreateClientImpl`, `UpdateClientImpl`) |
+| `CLIENTS` | `delete` | Delete a client (`DeleteClientImpl`) |
+| `SERVICES` | `update` | Create/update a service or service group (`CreateServiceImpl`, `UpdateServiceImpl`, `CreateServiceGroupImpl`) |
+| `SERVICES` | `delete` | Delete a service or service group (`DeleteServiceImpl`, `DeleteServiceGroupImpl`) |
+| appointments (local) | `view` | Get appointment settings/history/requests, check whether appointments are enabled (`GetSettingsImpl`, `GetAppointmentHistoryImpl`, `GetAppointmentsForDataImpl`, `GetAppointmentRequestsImpl`, `GetPendingAppointmentRequestsImpl`, `IsAppointmentsEnabledImpl`) |
+| appointments (local) | `update` | Edit appointment settings, create/update/cancel/decline **any** employee's appointment (`EditSettingsImpl`, `CreateAppointmentImpl`, `UpdateAppointmentImpl`, `CancelAppointmentImpl`, `DeclineAppointmentRequestImpl`) — an employee with only `view` can still do this for their own, see [above](#managing-your-own-resource-on-a-view-grant) |
+
+## Granting and revoking permissions
+
+There is no fixed role (the old `EMPLOYEE`/`MANAGER` split is gone).
+Instead, an owner (or anyone holding `EMPLOYEES.update`) grants or revokes
+one resource's `view`/`update`/`delete` bits for one employee at a time:
+
+```
+PUT /api/business/{businessId}/employee/{id}/permissions/{resource}
+Body: library.permissions.ResourcePermission
+```
+
+`SetEmployeePermissionImpl` requires the caller to hold `EMPLOYEES.update`,
+looks up the target employee, and additionally requires the caller's own
+grant on the **target resource** to `.covers()` the permission being handed
+out — you cannot grant delegate access you don't hold yourself
+(`SetEmployeePermission.Error.InsufficientGrant`, 422). A companion read
+endpoint, `GET /api/business/{businessId}/employee/{id}/permissions`
+(`GetEmployeePermissionsImpl`, requires `EMPLOYEES.view`), returns the
+employee's current grants across all five resources as
+`BusinessPermissions`, letting a management UI pre-fill toggles.
+
+| Grant | Where | Result |
+|---|---|---|
+| Business creator | `CreateBusinessImpl` | `ResourcePermission.FULL` on all five resources |
+| Employee who joined | `JoinBusinessImpl` | `view = true` (nothing else) on all five resources — customizable afterward via `SetEmployeePermission` |
+| Employee's permission changed by an authorized caller | `SetEmployeePermissionImpl` | Whatever `ResourcePermission` was requested, for the one resource specified |
+
+Every row above that changes an **existing** employee's grants (join, or an
+explicit set) publishes `BusinessEvent.EmployeePermissionsChanged`
+(`employeeUserId`, `businessId`, `permissions: BusinessPermissions` — the
+employee's full, current grant set across all five resources, not just the
+one that changed), which the appointments service consumes to keep its own
+local copy of the `APPOINTMENTS` grant in sync — see
+[Storage](#storage).
+
+## Cross-service checks
+
+A service that needs to check another business's grant without fetching
+the whole `Business` entity calls the internal, lean endpoint:
+
+```
+GET /api/internal/business/{id}/permissions/{userId}/{resource}
+Response: library.permissions.ResourcePermission
+```
+
+backed by `GetBusinessPermissionImpl` and exposed to other services through
+`BusinessClient.getPermission(userId, businessId, resource)`. This is how
+`EnableAppointmentsForBusinessImpl` checks whether the caller has full
+control (`covers(ResourcePermission.FULL)`) of `BusinessResource.BUSINESS`
+before turning the appointments module on for a business — the
+fine-grained equivalent of the old "must be `OWNER`" gate.
 
 ## Storage
 
 This is a modular monolith: each microservice persists its own copy of the
-grant rather than sharing one table across services.
+grants it needs rather than sharing one table across services.
 
-- **Business service** owns the source-of-truth grant, in
-  `BusinessPermissionsTable` (`BusinessDataSource.getPermission` /
-  `.setUserPermissions`), keyed by `(userId, businessId)`.
+- **Business service** owns the source-of-truth grants, in
+  `business_permission_grants` (`BusinessPermissionDataSourceImpl`), one row
+  per `(userId, businessId, resource)`, with `can_view`/`can_update`/
+  `can_delete` boolean columns. `getPermissions(userId, businessId)`
+  aggregates all five rows into one `BusinessPermissions`; missing rows
+  default to `ResourcePermission.NONE`. This is also what gets embedded in
+  the `Business` entity as `Business.permissions` — `GetBusinessById`,
+  `GetDashboardBusiness`, and `GetUserBusinesses` all attach the requesting
+  user's grants onto the business (or businesses) they return, computed
+  per request rather than stored on the business row itself.
 - **Appointments service** keeps its own local copy in
-  `UserHasAppointmentPermissions` (`PermissionsDataSource`), both written via
-  the same `PermissionsDataSource.setPermissions` (an upsert, keyed by
-  `(userId, businessId)`). The business owner's row is written once, when
-  the business enables appointments (called from
-  `EnableAppointmentsForBusinessImpl` with the caller's permission level
-  fetched cross-service via `BusinessClient.getPermission`). An employee's
-  row is written/overwritten by `SyncEmployeePermission`, called from
+  `appointment_permission_grants` (`AppointmentPermissionDataSourceImpl`),
+  one row per `(userId, businessId)` with the same three boolean columns —
+  a single implicit resource, no `resource` column needed. This is embedded
+  in `AppointmentSettings.permissions`, attached by `GetSettingsImpl` and
+  `EditSettingsImpl` the same way `Business.permissions` is. The business
+  owner's row is written once, when the business enables appointments
+  (`EnableAppointmentsForBusinessImpl`, seeded with `ResourcePermission.FULL`
+  after the cross-service check above succeeds). An employee's row is
+  written/overwritten by `SyncEmployeePermission`, called from
   `AppointmentEventHandler` in reaction to
-  `BusinessEvent.EmployeePermissionChanged` (fired by
-  `JoinBusinessImpl` and `PromoteEmployeeImpl` — see [How
-  grants are created](#how-grants-are-created)), and is a no-op if
-  the business hasn't enabled appointments yet
+  `BusinessEvent.EmployeePermissionsChanged` (reading just the `appointments`
+  field off the published `BusinessPermissions`), and is a no-op if the
+  business hasn't enabled appointments yet
   (`AppointmentSubscriptionDataSource.isBusinessEnabled`) — an employee
   granted or promoted before their business turns appointments on gets no
-  row until their permission changes again after that point. See
-  [React to an employee permission
-  change](operations/appointments/on-employee-permission-changed.md) for
+  row until their permissions change again after that point. See
+  [React to an employee permissions
+  change](operations/appointments/on-employee-permissions-changed.md) for
   the full flow.
 
-Both stores use the same `Int` encoding (`ObjectPermission.int`), so
-`ObjectPermission.of(value)` and `.assert(...)` behave identically
+Both stores use the same three-boolean shape, so `ResourcePermission`,
+`.assert(...)`, `.assertOrSelf(...)`, and `.covers(...)` behave identically
 regardless of which service's table backs the check.

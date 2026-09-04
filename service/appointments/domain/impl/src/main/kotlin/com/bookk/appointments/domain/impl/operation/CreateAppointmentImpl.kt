@@ -15,8 +15,8 @@ import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.entity.Error
 import com.bookk.library.serializer.moneyFormatter
 import com.bookk.server.appointments.client.api.event.AppointmentEvent
-import library.permissions.ObjectPermission
-import library.permissions.assertOrOwner
+import library.permissions.PermissionAction
+import library.permissions.assertOrSelf
 import org.slf4j.LoggerFactory
 import kotlin.time.Clock
 import kotlin.uuid.Uuid
@@ -38,8 +38,8 @@ internal class CreateAppointmentImpl(
         appointmentRequestId: Uuid
     ): Result<Appointment> = transactionManager.transaction {
         val request = requestDataSource.get(appointmentRequestId) ?: throw Error.NotFound()
-        appointmentPermissionDataSource.getPermissions(userId, request.businessId)
-            .assertOrOwner(ObjectPermission.EDIT, actorId = userId, assigneeId = request.employee.userId)
+        appointmentPermissionDataSource.getPermission(userId, request.businessId)
+            .assertOrSelf(PermissionAction.UPDATE, actorId = userId, assigneeId = request.employee.userId)
         createAppointment(request)
     }
 

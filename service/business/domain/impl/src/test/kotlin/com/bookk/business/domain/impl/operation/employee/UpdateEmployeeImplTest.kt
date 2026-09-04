@@ -1,5 +1,6 @@
 package com.bookk.business.domain.impl.operation.employee
 
+import com.bookk.business.domain.api.business.entity.BusinessResource
 import com.bookk.business.domain.api.employee.entity.Employee
 import com.bookk.business.domain.api.employee.operation.UpdateEmployee
 import com.bookk.business.domain.datasource.BusinessPermissionDataSource
@@ -17,7 +18,7 @@ import io.mockk.mockk
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
-import library.permissions.ObjectPermission
+import library.permissions.ResourcePermission
 import library.schedule.DayOffRange
 import library.schedule.Schedule
 import library.schedule.WorkHour
@@ -37,11 +38,11 @@ internal class UpdateEmployeeImplTest {
         val sut = UpdateEmployeeImpl(employeeDataSource, businessPermissionDataSource, transactionManager)
 
         init {
-            coEvery { businessPermissionDataSource.getPermission(any(), any()) } returns ObjectPermission.EDIT.int
+            coEvery { businessPermissionDataSource.getPermission(any(), any(), BusinessResource.EMPLOYEES) } returns ResourcePermission(update = true)
         }
 
-        fun grantPermission(permission: ObjectPermission?) {
-            coEvery { businessPermissionDataSource.getPermission(any(), any()) } returns permission?.int
+        fun grantPermission(permission: ResourcePermission) {
+            coEvery { businessPermissionDataSource.getPermission(any(), any(), BusinessResource.EMPLOYEES) } returns permission
         }
     }
 
@@ -195,7 +196,7 @@ internal class UpdateEmployeeImplTest {
         given()
         val fixture = SutFixture()
         fixture.transactionManager.mockTransaction()
-        fixture.grantPermission(ObjectPermission.READ)
+        fixture.grantPermission(ResourcePermission(view = true))
         val employee = Employee.stub()
 
         whenn()
@@ -211,7 +212,7 @@ internal class UpdateEmployeeImplTest {
         given()
         val fixture = SutFixture()
         fixture.transactionManager.mockTransaction()
-        fixture.grantPermission(null)
+        fixture.grantPermission(ResourcePermission.NONE)
         val employee = Employee.stub()
 
         whenn()
@@ -235,6 +236,6 @@ internal class UpdateEmployeeImplTest {
 
         then()
         assertTrue(result.isSuccess)
-        coVerify(exactly = 1) { fixture.businessPermissionDataSource.getPermission(requestUserId, businessId) }
+        coVerify(exactly = 1) { fixture.businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) }
     }
 }

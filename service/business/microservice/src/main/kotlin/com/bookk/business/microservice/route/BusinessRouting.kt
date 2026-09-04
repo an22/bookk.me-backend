@@ -1,5 +1,6 @@
 package com.bookk.business.microservice.route
 
+import com.bookk.business.domain.api.business.entity.BusinessResource
 import io.ktor.resources.Resource
 import kotlin.uuid.Uuid
 
@@ -13,8 +14,8 @@ object BusinessRouting {
             class Business(val parent: Internal = Internal()) {
                 @Resource("/{id}")
                 class Id(val parent: Business = Business(), val id: Uuid) {
-                    @Resource("/permissions/{userId}")
-                    class Permissions(val parent: Id, val userId: Uuid)
+                    @Resource("/permissions/{userId}/{resource}")
+                    class Permissions(val parent: Id, val userId: Uuid, val resource: BusinessResource)
 
                     @Resource("/appointment-booking-context")
                     class AppointmentBookingContext(val parent: Id)
@@ -59,10 +60,13 @@ object BusinessRouting {
         @Resource("/business/{businessId}/employee")
         class Employee(val parent: Api = Api(), val businessId: Uuid) {
             @Resource("/{id}")
-            class Id(val parent: Employee, val id: Uuid)
+            class Id(val parent: Employee, val id: Uuid) {
+                @Resource("/permissions")
+                class Permissions(val parent: Id)
 
-            @Resource("/{id}/promote")
-            class Promote(val parent: Employee, val id: Uuid)
+                @Resource("/permissions/{resource}")
+                class Permission(val parent: Id, val resource: BusinessResource)
+            }
         }
 
         @Resource("/business/{businessId}/service_group")

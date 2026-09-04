@@ -1,6 +1,7 @@
 package com.bookk.business.domain.impl.operation.employee
 
 import com.bookk.business.domain.api.business.entity.Business
+import com.bookk.business.domain.api.business.entity.BusinessResource
 import com.bookk.business.domain.api.employee.entity.EmployeeInvitation
 import com.bookk.business.domain.api.employee.entity.EmployeeInvitationStatus
 import com.bookk.business.domain.datasource.BusinessDataSource
@@ -18,7 +19,7 @@ import io.mockk.coVerify
 import io.mockk.mockk
 import io.mockk.slot
 import kotlinx.datetime.TimeZone
-import library.permissions.ObjectPermission
+import library.permissions.ResourcePermission
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -54,7 +55,7 @@ internal class CreateEmployeeInvitationImplTest {
         val persisted = slot<EmployeeInvitation>()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId) } returns ObjectPermission.OWNER.int
+            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(update = true)
             coEvery { businessDataSource.getBusinessById(businessId) } returns business(businessId)
             coEvery { invitationDataSource.createInvitation(capture(persisted)) } answers { persisted.captured }
         }
@@ -80,7 +81,7 @@ internal class CreateEmployeeInvitationImplTest {
         val persisted = slot<EmployeeInvitation>()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId) } returns ObjectPermission.OWNER.int
+            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(update = true)
             coEvery { businessDataSource.getBusinessById(businessId) } returns business(businessId)
             coEvery { invitationDataSource.createInvitation(capture(persisted)) } answers { persisted.captured }
         }
@@ -105,7 +106,7 @@ internal class CreateEmployeeInvitationImplTest {
         val invitations = mutableListOf<EmployeeInvitation>()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId) } returns ObjectPermission.OWNER.int
+            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(update = true)
             coEvery { businessDataSource.getBusinessById(businessId) } returns business(businessId)
             coEvery { invitationDataSource.createInvitation(any()) } answers {
                 val invitation = firstArg<EmployeeInvitation>()
@@ -132,7 +133,7 @@ internal class CreateEmployeeInvitationImplTest {
         val businessId = Uuid.random()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId) } returns ObjectPermission.OWNER.int
+            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(update = true)
             coEvery { businessDataSource.getBusinessById(businessId) } returns business(businessId)
             coEvery {
                 invitationDataSource.createInvitation(any())
@@ -155,7 +156,7 @@ internal class CreateEmployeeInvitationImplTest {
         val businessId = Uuid.random()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId) } returns ObjectPermission.READ.int
+            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(view = true)
         }
 
         whenn()
@@ -175,7 +176,7 @@ internal class CreateEmployeeInvitationImplTest {
         val businessId = Uuid.random()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId) } returns ObjectPermission.OWNER.int
+            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(update = true)
             coEvery { businessDataSource.getBusinessById(businessId) } returns null
         }
 

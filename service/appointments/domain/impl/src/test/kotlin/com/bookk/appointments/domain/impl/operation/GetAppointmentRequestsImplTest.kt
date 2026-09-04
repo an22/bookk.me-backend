@@ -16,7 +16,7 @@ import com.bookk.core.test.then
 import com.bookk.core.test.whenn
 import io.mockk.coEvery
 import io.mockk.mockk
-import library.permissions.ObjectPermission
+import library.permissions.ResourcePermission
 import org.joda.money.CurrencyUnit
 import org.joda.money.Money
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -58,7 +58,7 @@ internal class GetAppointmentRequestsImplTest {
 
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { appointmentPermissionDataSource.getPermissions(userId, businessId) } returns ObjectPermission.READ.int
+            coEvery { appointmentPermissionDataSource.getPermission(userId, businessId) } returns ResourcePermission(view = true)
             coEvery { requestsDataSource.getAll(businessId) } returns requests
         }
 
@@ -78,7 +78,7 @@ internal class GetAppointmentRequestsImplTest {
         val businessId = Uuid.random()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { appointmentPermissionDataSource.getPermissions(userId, businessId) } returns null
+            coEvery { appointmentPermissionDataSource.getPermission(userId, businessId) } returns ResourcePermission.NONE
         }
 
         whenn()
@@ -98,7 +98,7 @@ internal class GetAppointmentRequestsImplTest {
         val exception = RuntimeException("Database error")
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { appointmentPermissionDataSource.getPermissions(userId, businessId) } returns ObjectPermission.READ.int
+            coEvery { appointmentPermissionDataSource.getPermission(userId, businessId) } returns ResourcePermission(view = true)
             coEvery { requestsDataSource.getAll(businessId) } throws exception
         }
 

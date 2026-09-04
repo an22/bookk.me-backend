@@ -22,7 +22,7 @@ import io.mockk.coVerify
 import io.mockk.mockk
 import io.mockk.slot
 import kotlinx.datetime.TimeZone
-import library.permissions.ObjectPermission
+import library.permissions.ResourcePermission
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -62,7 +62,7 @@ internal class DeclineAppointmentRequestImplTest {
         val request = AppointmentRequest.stub(id = testCancellation.id, businessId = testBusinessId)
             .copy(status = AppointmentRequestStatus.PENDING)
 
-        coEvery { fixture.appointmentPermissionDataSource.getPermissions(testUserId, testBusinessId) } returns ObjectPermission.EDIT.int
+        coEvery { fixture.appointmentPermissionDataSource.getPermission(testUserId, testBusinessId) } returns ResourcePermission(update = true)
         coEvery { fixture.requestDataSource.get(testCancellation.id) } returns request
         coEvery { fixture.requestDataSource.decline(testCancellation.id, testCancellation.reason) } returns request.copy(status = AppointmentRequestStatus.DECLINED)
         coEvery { fixture.subscriptionDataSource.getBusinessSnapshot(testBusinessId) } returns mockk(relaxed = true)
@@ -82,7 +82,7 @@ internal class DeclineAppointmentRequestImplTest {
         val request = AppointmentRequest.stub(id = testCancellation.id, businessId = testBusinessId)
             .copy(status = AppointmentRequestStatus.PENDING)
 
-        coEvery { fixture.appointmentPermissionDataSource.getPermissions(testUserId, testBusinessId) } returns ObjectPermission.READ.int
+        coEvery { fixture.appointmentPermissionDataSource.getPermission(testUserId, testBusinessId) } returns ResourcePermission(view = true)
         coEvery { fixture.requestDataSource.get(testCancellation.id) } returns request
 
         whenn()
@@ -101,7 +101,7 @@ internal class DeclineAppointmentRequestImplTest {
         val request = AppointmentRequest.stub(id = testCancellation.id, businessId = testBusinessId)
             .copy(status = AppointmentRequestStatus.PENDING, employee = EmployeeSnapshot.stub(userId = testUserId))
 
-        coEvery { fixture.appointmentPermissionDataSource.getPermissions(testUserId, testBusinessId) } returns ObjectPermission.READ.int
+        coEvery { fixture.appointmentPermissionDataSource.getPermission(testUserId, testBusinessId) } returns ResourcePermission(view = true)
         coEvery { fixture.requestDataSource.get(testCancellation.id) } returns request
         coEvery { fixture.requestDataSource.decline(testCancellation.id, testCancellation.reason) } returns request.copy(status = AppointmentRequestStatus.DECLINED)
         coEvery { fixture.subscriptionDataSource.getBusinessSnapshot(testBusinessId) } returns mockk(relaxed = true)
@@ -121,7 +121,7 @@ internal class DeclineAppointmentRequestImplTest {
         val request = AppointmentRequest.stub(id = testCancellation.id, businessId = testBusinessId)
             .copy(status = AppointmentRequestStatus.DECLINED)
 
-        coEvery { fixture.appointmentPermissionDataSource.getPermissions(testUserId, testBusinessId) } returns ObjectPermission.EDIT.int
+        coEvery { fixture.appointmentPermissionDataSource.getPermission(testUserId, testBusinessId) } returns ResourcePermission(update = true)
         coEvery { fixture.requestDataSource.get(testCancellation.id) } returns request
 
         whenn()
@@ -140,7 +140,7 @@ internal class DeclineAppointmentRequestImplTest {
         val request = AppointmentRequest.stub(id = testCancellation.id, businessId = testBusinessId)
             .copy(status = AppointmentRequestStatus.APPROVED)
 
-        coEvery { fixture.appointmentPermissionDataSource.getPermissions(testUserId, testBusinessId) } returns ObjectPermission.EDIT.int
+        coEvery { fixture.appointmentPermissionDataSource.getPermission(testUserId, testBusinessId) } returns ResourcePermission(update = true)
         coEvery { fixture.requestDataSource.get(testCancellation.id) } returns request
 
         whenn()
@@ -159,7 +159,7 @@ internal class DeclineAppointmentRequestImplTest {
         val request = AppointmentRequest.stub(id = testCancellation.id, businessId = testBusinessId)
             .copy(status = AppointmentRequestStatus.PENDING)
 
-        coEvery { fixture.appointmentPermissionDataSource.getPermissions(testUserId, testBusinessId) } returns ObjectPermission.EDIT.int
+        coEvery { fixture.appointmentPermissionDataSource.getPermission(testUserId, testBusinessId) } returns ResourcePermission(update = true)
         coEvery { fixture.requestDataSource.get(testCancellation.id) } returns request
         coEvery { fixture.requestDataSource.decline(testCancellation.id, testCancellation.reason) } returns request.copy(status = AppointmentRequestStatus.DECLINED)
         coEvery { fixture.subscriptionDataSource.getBusinessSnapshot(testBusinessId) } returns mockk(relaxed = true)
@@ -181,7 +181,7 @@ internal class DeclineAppointmentRequestImplTest {
         val businessSnapshot = BusinessSnapshot.stub().copy(timeZone = TimeZone.of("Europe/Kyiv"))
         val eventSlot = slot<AppointmentEvent.RequestRejected>()
 
-        coEvery { fixture.appointmentPermissionDataSource.getPermissions(testUserId, testBusinessId) } returns ObjectPermission.EDIT.int
+        coEvery { fixture.appointmentPermissionDataSource.getPermission(testUserId, testBusinessId) } returns ResourcePermission(update = true)
         coEvery { fixture.requestDataSource.get(testCancellation.id) } returns request
         coEvery { fixture.requestDataSource.decline(testCancellation.id, testCancellation.reason) } returns request.copy(status = AppointmentRequestStatus.DECLINED)
         coEvery { fixture.subscriptionDataSource.getBusinessSnapshot(testBusinessId) } returns businessSnapshot

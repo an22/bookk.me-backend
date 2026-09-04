@@ -29,8 +29,8 @@ internal class AppointmentEventHandler(
             .registerResultReceiver(AuthEvent.UserDeleted.TOPIC) { event: AuthEvent.UserDeleted ->
                 deleteUserAppointmentData(event.userId)
             }
-            .registerResultReceiver(BusinessEvent.EmployeePermissionChanged.TOPIC) { event: BusinessEvent.EmployeePermissionChanged ->
-                syncEmployeePermission(event.employeeUserId, event.businessId, event.permission)
+            .registerResultReceiver(BusinessEvent.EmployeePermissionsChanged.TOPIC) { event: BusinessEvent.EmployeePermissionsChanged ->
+                syncEmployeePermission(event.employeeUserId, event.businessId, event.permissions.appointments)
             }
             .start(scope)
     }

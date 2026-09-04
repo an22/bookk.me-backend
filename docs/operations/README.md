@@ -45,7 +45,7 @@ Reactions to cross-service events:
 | `BusinessEvent.Deleted` | [React to business deletion](appointments/on-business-deleted.md) |
 | `BusinessEvent.Updated` | [React to business update](appointments/on-business-updated.md) |
 | `AuthEvent.UserDeleted` | [React to user deletion](appointments/on-user-deleted.md) |
-| `BusinessEvent.EmployeePermissionChanged` | [React to an employee permission change](appointments/on-employee-permission-changed.md) |
+| `BusinessEvent.EmployeePermissionsChanged` | [React to an employee permissions change](appointments/on-employee-permissions-changed.md) |
 
 ## Authorization service
 
@@ -70,7 +70,7 @@ Reactions to cross-service events:
 | `DELETE /api/business/{businessId}/clients/{id}` | [Delete client](business/delete-client.md) |
 | `PUT /api/business/{businessId}/clients/{id}` | [Update client](business/update-client.md) |
 | `PUT /api/business/{businessId}/employee/{id}` | [Update employee](business/update-employee.md) |
-| `POST /api/business/{businessId}/employee/{id}/promote` | [Promote employee](business/promote-employee.md) |
+| `PUT /api/business/{businessId}/employee/{id}/permissions/{resource}` | [Set employee permission](business/set-employee-permission.md) |
 | `POST /api/business/{businessId}/employee_invitation` | [Invite employee](business/create-employee-invitation.md) |
 | `POST /api/employee_invitation/redeem` | [Join business](business/join-business.md) |
 | `POST /api/business/{businessId}/employee_invitation/{id}/revoke` | [Revoke employee invitation](business/revoke-employee-invitation.md) |
@@ -140,7 +140,7 @@ order.
 | `BusinessEvent.Updated` | [Update business](business/update-business.md) | [appointments](appointments/on-business-updated.md) |
 | `BusinessEvent.Deleted` | [React to user deletion (business)](business/on-user-deleted.md) | [appointments](appointments/on-business-deleted.md) |
 | `BusinessEvent.EmployeeInvitationRedeemed` | [Join business](business/join-business.md) | [notifications](notifications/on-employee-invitation-redeemed.md) |
-| `BusinessEvent.EmployeePermissionChanged` | [Join business](business/join-business.md), [Promote employee](business/promote-employee.md) | [appointments](appointments/on-employee-permission-changed.md) |
+| `BusinessEvent.EmployeePermissionsChanged` | [Join business](business/join-business.md), [Set employee permission](business/set-employee-permission.md) | [appointments](appointments/on-employee-permissions-changed.md) |
 | `UserEvent.Updated` | [Update user](user/update-user.md) | [business](business/on-user-updated.md), [notifications](notifications/on-user-updated.md) |
 | `AppointmentEvent.RequestCreated` | [Create appointment request](appointments/create-appointment-request.md) | [notifications](notifications/on-appointment-request-created.md) |
 | `AppointmentEvent.RequestApproved` | [Create appointment from a pending request](appointments/create-appointment-from-request.md), [Create appointment request](appointments/create-appointment-request.md) (auto-approval) | [notifications](notifications/on-appointment-request-approved.md) |

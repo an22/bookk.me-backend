@@ -1,8 +1,9 @@
 package com.bookk.appointments.data.datasource
 
-import com.bookk.appointments.data.orm.table.UserHasAppointmentPermissions
+import com.bookk.appointments.data.orm.table.AppointmentPermissionGrantsTable
 import com.bookk.appointments.domain.datasource.AppointmentPermissionDataSource
 import com.bookk.core.data.DataSource
+import library.permissions.ResourcePermission
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
@@ -12,29 +13,37 @@ import kotlin.uuid.Uuid
 
 internal class AppointmentPermissionDataSourceImpl : DataSource(), AppointmentPermissionDataSource {
 
-    override suspend fun setPermissions(
+    override suspend fun setPermission(
         userId: Uuid,
         businessId: Uuid,
-        permissions: Int
+        permission: ResourcePermission
     ) {
         dbQuery {
-            UserHasAppointmentPermissions.upsert {
+            AppointmentPermissionGrantsTable.upsert {
                 it[this.userId] = userId
                 it[this.businessId] = businessId
-                it[this.permission] = permissions
+                it[this.canView] = permission.view
+                it[this.canUpdate] = permission.update
+                it[this.canDelete] = permission.delete
             }
         }
     }
 
-    override suspend fun getPermissions(userId: Uuid, businessId: Uuid): Int? {
-        return dbQuery {
-            UserHasAppointmentPermissions.select(UserHasAppointmentPermissions.permission)
-                .where { (UserHasAppointmentPermissions.userId eq userId) and (UserHasAppointmentPermissions.businessId eq businessId) }
-                .singleOrNull()?.let { it[UserHasAppointmentPermissions.permission] }
-        }
+    override suspend fun getPermission(userId: Uuid, businessId: Uuid): ResourcePermission = dbQuery {
+        AppointmentPermissionGrantsTable
+            .select(AppointmentPermissionGrantsTable.canView, AppointmentPermissionGrantsTable.canUpdate, AppointmentPermissionGrantsTable.canDelete)
+            .where { (AppointmentPermissionGrantsTable.userId eq userId) and (AppointmentPermissionGrantsTable.businessId eq businessId) }
+            .singleOrNull()
+            ?.let {
+                ResourcePermission(
+                    view = it[AppointmentPermissionGrantsTable.canView],
+                    update = it[AppointmentPermissionGrantsTable.canUpdate],
+                    delete = it[AppointmentPermissionGrantsTable.canDelete]
+                )
+            } ?: ResourcePermission.NONE
     }
 
     override suspend fun deleteForUser(userId: Uuid) = dbQuery<Unit> {
-        UserHasAppointmentPermissions.deleteWhere { UserHasAppointmentPermissions.userId eq userId }
+        AppointmentPermissionGrantsTable.deleteWhere { AppointmentPermissionGrantsTable.userId eq userId }
     }
 }

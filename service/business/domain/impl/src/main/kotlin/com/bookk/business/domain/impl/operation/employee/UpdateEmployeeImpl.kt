@@ -1,11 +1,12 @@
 package com.bookk.business.domain.impl.operation.employee
 
+import com.bookk.business.domain.api.business.entity.BusinessResource
 import com.bookk.business.domain.api.employee.entity.Employee
 import com.bookk.business.domain.api.employee.operation.UpdateEmployee
 import com.bookk.business.domain.datasource.BusinessPermissionDataSource
 import com.bookk.business.domain.datasource.EmployeeDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
-import library.permissions.ObjectPermission
+import library.permissions.PermissionAction
 import library.permissions.assert
 import library.validation.EmailValidator
 import library.validation.NameValidator
@@ -19,7 +20,8 @@ internal class UpdateEmployeeImpl(
 ) : UpdateEmployee {
     override suspend fun invoke(requestUserId: Uuid, employee: Employee): Result<Employee> =
         transactionManager.transaction {
-            businessPermissionDataSource.getPermission(requestUserId, employee.businessId).assert(ObjectPermission.EDIT)
+            businessPermissionDataSource.getPermission(requestUserId, employee.businessId, BusinessResource.EMPLOYEES)
+                .assert(PermissionAction.UPDATE)
             if (!NameValidator.isValid(employee.name) || !NameValidator.isValid(employee.lastName)) {
                 throw UpdateEmployee.Error.ValidationError()
             }

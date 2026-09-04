@@ -1,5 +1,6 @@
 package com.bookk.business.domain.impl.operation.client
 
+import com.bookk.business.domain.api.business.entity.BusinessResource
 import com.bookk.business.domain.api.client.entity.Client
 import com.bookk.business.domain.api.client.entity.ClientRemote
 import com.bookk.business.domain.api.client.entity.ClientUpdateModel
@@ -8,7 +9,7 @@ import com.bookk.business.domain.api.client.operation.UpdateClient
 import com.bookk.business.domain.datasource.BusinessPermissionDataSource
 import com.bookk.business.domain.datasource.ClientDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
-import library.permissions.ObjectPermission
+import library.permissions.PermissionAction
 import library.permissions.assert
 import library.validation.EmailValidator
 import library.validation.NameValidator
@@ -22,7 +23,8 @@ internal class UpdateClientImpl(
 ) : UpdateClient {
     override suspend fun invoke(requestUserId: Uuid, businessId: Uuid, model: ClientUpdateModel): Result<ClientRemote> =
         transactionManager.transaction {
-            businessPermissionDataSource.getPermission(requestUserId, businessId).assert(ObjectPermission.EDIT)
+            businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.CLIENTS)
+                .assert(PermissionAction.UPDATE)
             val existing = clientDataSource.getClientById(businessId, model.id) ?: throw UpdateClient.Error.NotFound()
 
             val isNameChange = model.name != null && model.name != existing.name

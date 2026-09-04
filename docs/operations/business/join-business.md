@@ -5,8 +5,11 @@
 Any authenticated user can join a business by submitting the invite code
 shared with them by the business owner — there is no per-user targeting,
 whoever holds a `PENDING` code can join. Joining creates the `Employee`
-row for the calling user and grants baseline `READ` permission on the
-business. `JoinBusinessImpl` (not the datasource — see below) hashes the
+row for the calling user and grants baseline view-only access
+(`view = true`, nothing else) on every `BusinessResource` — customizable
+afterward by an owner via [Set employee
+permission](set-employee-permission.md). `JoinBusinessImpl` (not the
+datasource — see below) hashes the
 submitted plaintext code (SHA-256, `EmployeeInvitationCode.hash`) and
 looks it up via `EmployeeInvitationDataSource.getInvitationByCodeHash` —
 the datasource only ever sees the hash, never the plaintext, see [Invite
@@ -39,13 +42,13 @@ flowchart TD
     GetUser -- ok --> GetBiz[BusinessDataSource.getBusinessById businessId]
     GetBiz -- not found --> R404b([404 Error.NotFound])
     GetBiz -- found --> CreateEmployee[EmployeeDataSource.createEmployee from requestUser]
-    CreateEmployee --> SetPerm[BusinessDataSource.setUserPermissions requestUserId businessId READ]
+    CreateEmployee --> SetPerm[BusinessPermissionDataSource.setPermission requestUserId businessId resource view=true, for every BusinessResource]
     SetPerm --> Event[eventProducer.send BusinessEvent.EmployeeInvitationRedeemed]
-    Event --> PermEvent[eventProducer.send BusinessEvent.EmployeePermissionChanged READ]
+    Event --> PermEvent[eventProducer.send BusinessEvent.EmployeePermissionsChanged]
     PermEvent --> R200([200 Created Employee])
 ```
 
 **Consumed by:** `BusinessEvent.EmployeeInvitationRedeemed` → [notifications:
 notify the inviter](../notifications/on-employee-invitation-redeemed.md).
-`BusinessEvent.EmployeePermissionChanged` → [appointments: sync employee
-permission](../appointments/on-employee-permission-changed.md).
+`BusinessEvent.EmployeePermissionsChanged` → [appointments: sync employee
+permissions](../appointments/on-employee-permissions-changed.md).

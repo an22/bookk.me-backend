@@ -12,7 +12,7 @@ import com.bookk.core.test.then
 import com.bookk.core.test.whenn
 import io.mockk.coEvery
 import io.mockk.mockk
-import library.permissions.ObjectPermission
+import library.permissions.ResourcePermission
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -36,7 +36,7 @@ internal class GetPendingAppointmentRequestsImplTest {
         val requests = listOf(AppointmentRequest.stub(userId = userId, businessId = businessId))
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { appointmentPermissionDataSource.getPermissions(userId, businessId) } returns ObjectPermission.READ.int
+            coEvery { appointmentPermissionDataSource.getPermission(userId, businessId) } returns ResourcePermission(view = true)
             coEvery { requestsDataSource.getPending(businessId) } returns requests
         }
 
@@ -56,7 +56,7 @@ internal class GetPendingAppointmentRequestsImplTest {
         val businessId = Uuid.random()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { appointmentPermissionDataSource.getPermissions(userId, businessId) } returns null
+            coEvery { appointmentPermissionDataSource.getPermission(userId, businessId) } returns ResourcePermission.NONE
         }
 
         whenn()
@@ -76,7 +76,7 @@ internal class GetPendingAppointmentRequestsImplTest {
         val exception = RuntimeException("Database error")
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { appointmentPermissionDataSource.getPermissions(userId, businessId) } returns ObjectPermission.READ.int
+            coEvery { appointmentPermissionDataSource.getPermission(userId, businessId) } returns ResourcePermission(view = true)
             coEvery { requestsDataSource.getPending(businessId) } throws exception
         }
 

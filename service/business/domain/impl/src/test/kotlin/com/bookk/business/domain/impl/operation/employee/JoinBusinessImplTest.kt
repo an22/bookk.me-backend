@@ -1,6 +1,8 @@
 package com.bookk.business.domain.impl.operation.employee
 
 import com.bookk.business.domain.api.business.entity.Business
+import com.bookk.business.domain.api.business.entity.BusinessPermissions
+import com.bookk.business.domain.api.business.entity.BusinessResource
 import com.bookk.business.domain.api.employee.entity.Employee
 import com.bookk.business.domain.api.employee.entity.EmployeeInvitation
 import com.bookk.business.domain.api.employee.entity.EmployeeInvitationStatus
@@ -25,7 +27,7 @@ import io.mockk.coVerify
 import io.mockk.mockk
 import io.mockk.slot
 import kotlinx.datetime.TimeZone
-import library.permissions.ObjectPermission
+import library.permissions.ResourcePermission
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -78,8 +80,17 @@ internal class JoinBusinessImplTest {
         coEvery { userClient.getUserById(requestUserId) } returns Result.success(userSnapshot(requestUserId))
         coEvery { businessDataSource.getBusinessById(invitation.businessId) } returns business(invitation.businessId)
         coEvery { employeeDataSource.createEmployee(any()) } returns employee
-        coEvery { businessPermissionDataSource.setUserPermissions(requestUserId, invitation.businessId, any()) } returns Unit
+        coEvery { businessPermissionDataSource.setPermission(requestUserId, invitation.businessId, any(), any()) } returns Unit
+        coEvery { businessPermissionDataSource.getPermissions(requestUserId, invitation.businessId) } returns viewOnlyPermissions
     }
+
+    private val viewOnlyPermissions = BusinessPermissions(
+        business = ResourcePermission(view = true),
+        employees = ResourcePermission(view = true),
+        clients = ResourcePermission(view = true),
+        services = ResourcePermission(view = true),
+        appointments = ResourcePermission(view = true)
+    )
 
     @Test
     fun `should create employee from invitation when redeemed with a valid code`() = runUnitTest {
@@ -111,7 +122,7 @@ internal class JoinBusinessImplTest {
     }
 
     @Test
-    fun `should grant read permission to the new employee`() = runUnitTest {
+    fun `should grant view-only permission on every resource to the new employee`() = runUnitTest {
         given()
         val fixture = SutFixture()
         val requestUserId = Uuid.random()
@@ -124,12 +135,15 @@ internal class JoinBusinessImplTest {
 
         then()
         assertTrue(result.isSuccess)
-        coVerify(exactly = 1) {
-            fixture.businessPermissionDataSource.setUserPermissions(
-                requestUserId,
-                invitation.businessId,
-                ObjectPermission.READ.int
-            )
+        BusinessResource.entries.forEach { resource ->
+            coVerify(exactly = 1) {
+                fixture.businessPermissionDataSource.setPermission(
+                    requestUserId,
+                    invitation.businessId,
+                    resource,
+                    ResourcePermission(view = true)
+                )
+            }
         }
     }
 
@@ -171,17 +185,17 @@ internal class JoinBusinessImplTest {
     }
 
     @Test
-    fun `should publish permission changed event granting read to the appointments service`() = runUnitTest {
+    fun `should publish permissions changed event with the view-only grant for the appointments service`() = runUnitTest {
         given()
         val fixture = SutFixture()
         val requestUserId = Uuid.random()
         val invitation = EmployeeInvitation.stub()
         val employee = Employee.stub(businessId = invitation.businessId, userId = requestUserId)
-        val event = slot<BusinessEvent.EmployeePermissionChanged>()
+        val event = slot<BusinessEvent.EmployeePermissionsChanged>()
         with(fixture) {
             stubHappyPath(requestUserId, invitation, employee)
             coEvery {
-                eventProducer.send(any(BusinessEvent.EmployeePermissionChanged::class), any())
+                eventProducer.send(any(BusinessEvent.EmployeePermissionsChanged::class), any())
             } answers { event.captured = firstArg() }
         }
 
@@ -191,11 +205,11 @@ internal class JoinBusinessImplTest {
         then()
         assertTrue(result.isSuccess)
         coVerify(exactly = 1) {
-            fixture.eventProducer.send(any(BusinessEvent.EmployeePermissionChanged::class), any())
+            fixture.eventProducer.send(any(BusinessEvent.EmployeePermissionsChanged::class), any())
         }
         assertEquals(requestUserId, event.captured.employeeUserId)
         assertEquals(invitation.businessId, event.captured.businessId)
-        assertEquals(ObjectPermission.READ.int, event.captured.permission)
+        assertEquals(ResourcePermission(view = true), event.captured.permissions.appointments)
     }
 
     @Test

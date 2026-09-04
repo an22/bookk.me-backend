@@ -22,7 +22,7 @@ flowchart TD
     Loop --> Anonymize[AnonymizeUserProfile userId]
     Anonymize --> AnonClients[ClientDataSource.anonymizeClientsByUserId userId]
     AnonClients --> AnonEmployees[EmployeeDataSource.anonymizeEmployeesByUserId userId]
-    AnonEmployees --> DelPerm[BusinessDataSource.deleteUserPermissions userId]
+    AnonEmployees --> DelPerm[BusinessPermissionDataSource.deleteUserPermissions userId]
     DelPerm -- throws --> Dlt
     DelPerm -- ok --> Ack([Marked processed])
 ```

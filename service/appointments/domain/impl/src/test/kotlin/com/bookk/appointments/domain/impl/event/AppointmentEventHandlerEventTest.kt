@@ -4,6 +4,7 @@ import com.bookk.appointments.domain.api.operation.DeleteModule
 import com.bookk.appointments.domain.api.operation.DeleteUserAppointmentData
 import com.bookk.appointments.domain.impl.operation.SyncEmployeePermission
 import com.bookk.appointments.domain.impl.operation.UpdateBusinessInformation
+import com.bookk.business.domain.api.business.entity.BusinessPermissions
 import com.bookk.core.data.eventstreaming.impl.kafka.KafkaEventConsumer
 import com.bookk.core.data.eventstreaming.impl.kafka.KafkaEventProducer
 import com.bookk.core.data.eventstreaming.impl.kafka.KafkaTestBroker
@@ -29,6 +30,7 @@ import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
+import library.permissions.ResourcePermission
 import library.schedule.DayOffRange
 import library.schedule.Schedule
 import library.schedule.WorkHour
@@ -49,7 +51,7 @@ internal class AppointmentEventHandlerEventTest {
             KafkaTestBroker.createTopic(BusinessEvent.Updated.TOPIC, partitions = 3)
             KafkaTestBroker.createTopic(BusinessEvent.Deleted.TOPIC, partitions = 3)
             KafkaTestBroker.createTopic(AuthEvent.UserDeleted.TOPIC, partitions = 3)
-            KafkaTestBroker.createTopic(BusinessEvent.EmployeePermissionChanged.TOPIC, partitions = 3)
+            KafkaTestBroker.createTopic(BusinessEvent.EmployeePermissionsChanged.TOPIC, partitions = 3)
         }
     }
 
@@ -195,20 +197,21 @@ internal class AppointmentEventHandlerEventTest {
         val fixture = SutFixture()
         val employeeUserId = Uuid.random()
         val businessId = Uuid.random()
+        val permissions = BusinessPermissions.stub(appointments = ResourcePermission(view = true))
         val arrived = CountDownLatch(1)
         coEvery {
-            fixture.syncEmployeePermission(employeeUserId, businessId, 1)
+            fixture.syncEmployeePermission(employeeUserId, businessId, permissions.appointments)
         } answers { arrived.countDown(); Result.success(Unit) }
 
         whenn()
         withContext(Dispatchers.IO) {
             fixture.start()
-            producer().send(BusinessEvent.EmployeePermissionChanged(employeeUserId, businessId, 1))
+            producer().send(BusinessEvent.EmployeePermissionsChanged(employeeUserId, businessId, permissions))
             arrived.await(20, TimeUnit.SECONDS)
         }
         fixture.stop()
 
         then()
-        coVerify(exactly = 1) { fixture.syncEmployeePermission(employeeUserId, businessId, 1) }
+        coVerify(exactly = 1) { fixture.syncEmployeePermission(employeeUserId, businessId, permissions.appointments) }
     }
 }

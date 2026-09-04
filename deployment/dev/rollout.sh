@@ -21,4 +21,4 @@ docker context use default || exit
 cd deployment/dev || exit
 docker compose -f microservices-compose.yml up -d
 docker container prune -f
-docker image prune -a -f
+docker image prune -f

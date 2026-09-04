@@ -3,6 +3,7 @@ package com.bookk.appointments.domain.impl.operation
 import com.bookk.appointments.domain.datasource.AppointmentPermissionDataSource
 import com.bookk.appointments.domain.datasource.AppointmentSubscriptionDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
+import library.permissions.ResourcePermission
 import kotlin.uuid.Uuid
 
 internal class SyncEmployeePermission(
@@ -14,10 +15,10 @@ internal class SyncEmployeePermission(
     suspend operator fun invoke(
         userId: Uuid,
         businessId: Uuid,
-        permission: Int
+        permission: ResourcePermission
     ) = transactionManager.transaction {
         if (subscriptionDataSource.isBusinessEnabled(businessId)) {
-            appointmentPermissionDataSource.setPermissions(userId, businessId, permission)
+            appointmentPermissionDataSource.setPermission(userId, businessId, permission)
         }
     }
 }

@@ -1,9 +1,9 @@
 package com.bookk.business.microservice.route.api
 
 import com.bookk.business.domain.api.employee.entity.Employee
-import com.bookk.business.domain.api.employee.entity.EmployeeRole
+import com.bookk.business.domain.api.employee.operation.GetEmployeePermissions
 import com.bookk.business.domain.api.employee.operation.GetEmployees
-import com.bookk.business.domain.api.employee.operation.PromoteEmployee
+import com.bookk.business.domain.api.employee.operation.SetEmployeePermission
 import com.bookk.business.domain.api.employee.operation.UpdateEmployee
 import com.bookk.business.microservice.route.BusinessRouting.Api
 import com.bookk.core.service.enity.respondWith
@@ -15,26 +15,19 @@ import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.principal
 import io.ktor.server.request.receive
 import io.ktor.server.resources.get
-import io.ktor.server.resources.post
 import io.ktor.server.resources.put
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.application
 import io.ktor.server.routing.openapi.describe
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.protobuf.ProtoNumber
+import library.permissions.ResourcePermission
 import org.koin.ktor.ext.inject
-
-@Serializable
-internal class PromoteEmployeeRequest(
-    @ProtoNumber(1) val role: EmployeeRole
-)
 
 fun Route.employeeCrud() {
     authenticate {
         /**
          * Summary: Get employees
-         * Description: Returns all employees of the business; only the business owner can list employees
+         * Description: Returns all employees of the business; only users who can view the employees resource may list them
          * Tag: employee
          * Security: jwt
          */
@@ -79,26 +72,49 @@ fun Route.employeeCrud() {
         }
 
         /**
-         * Summary: Promote employee
-         * Description: Changes an employee's permission level to Employee (read-only) or Manager (edit)
+         * Summary: Get employee permissions
+         * Description: Returns the employee's current view/update/delete grants for every business resource
          * Tag: employee
          * Security: jwt
-         * Body: application/x-protobuf [com.bookk.business.microservice.route.api.PromoteEmployeeRequest]
-         * Response: 204 application/x-protobuf Employee promoted
-         * Response: 404 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Employee is not found or the caller has no rights to promote employees
-         * See: docs/operations/business/promote-employee.md
+         * Response: 200 application/x-protobuf [com.bookk.business.domain.api.business.entity.BusinessPermissions] Employee permissions
+         * Response: 404 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Employee is not found or the caller has no rights to view permissions
          */
-        post<Api.Employee.Promote> {
+        get<Api.Employee.Id.Permissions> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
-            val body = call.receive<PromoteEmployeeRequest>()
-            val promoteEmployee by application.inject<PromoteEmployee>()
+            val getEmployeePermissions by application.inject<GetEmployeePermissions>()
 
             call.respondWith(
-                promoteEmployee(
+                getEmployeePermissions(
                     requestUserId = principal.userId,
-                    businessId = it.parent.businessId,
-                    employeeId = it.id,
-                    role = body.role
+                    businessId = it.parent.parent.businessId,
+                    employeeId = it.parent.id
+                )
+            )
+        }
+
+        /**
+         * Summary: Set employee permission
+         * Description: Grants or revokes view/update/delete access to one business resource for an employee. The caller cannot grant a level of access they do not themselves hold
+         * Tag: employee
+         * Security: jwt
+         * Body: application/x-protobuf [library.permissions.ResourcePermission]
+         * Response: 200 application/x-protobuf [com.bookk.business.domain.api.business.entity.BusinessPermissions] Employee's updated permissions
+         * Response: 404 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Employee is not found or the caller has no rights to manage permissions
+         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Set employee permission errors<br>BUSINESS_INSUFFICIENT_GRANT_PERMISSION (200027) Cannot grant a permission level you do not hold
+         * See: docs/operations/business/set-employee-permission.md
+         */
+        put<Api.Employee.Id.Permission> {
+            val principal = requireNotNull(call.principal<AppPrincipal>())
+            val body = call.receive<ResourcePermission>()
+            val setEmployeePermission by application.inject<SetEmployeePermission>()
+
+            call.respondWith(
+                setEmployeePermission(
+                    requestUserId = principal.userId,
+                    businessId = it.parent.parent.businessId,
+                    employeeId = it.parent.id,
+                    resource = it.resource,
+                    permission = body
                 )
             )
         }

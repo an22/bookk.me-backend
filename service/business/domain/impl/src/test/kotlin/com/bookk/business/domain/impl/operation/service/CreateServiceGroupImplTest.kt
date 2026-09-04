@@ -1,5 +1,6 @@
 package com.bookk.business.domain.impl.operation.service
 
+import com.bookk.business.domain.api.business.entity.BusinessResource
 import com.bookk.business.domain.api.service.entity.ServiceGroup
 import com.bookk.business.domain.api.service.operation.CreateServiceGroup
 import com.bookk.business.domain.datasource.BusinessPermissionDataSource
@@ -13,7 +14,7 @@ import com.bookk.core.test.then
 import com.bookk.core.test.whenn
 import io.mockk.coEvery
 import io.mockk.mockk
-import library.permissions.ObjectPermission
+import library.permissions.ResourcePermission
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -44,7 +45,7 @@ internal class CreateServiceGroupImplTest {
         val group = createTestGroup()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { businessPermissionDataSource.getPermission(userId, group.businessId) } returns ObjectPermission.EDIT.int
+            coEvery { businessPermissionDataSource.getPermission(userId, group.businessId, BusinessResource.SERVICES) } returns ResourcePermission(update = true)
             coEvery { serviceDataSource.createServiceGroup(group) } returns group
         }
 
@@ -79,7 +80,7 @@ internal class CreateServiceGroupImplTest {
         val group = createTestGroup()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { businessPermissionDataSource.getPermission(userId, group.businessId) } returns ObjectPermission.EDIT.int
+            coEvery { businessPermissionDataSource.getPermission(userId, group.businessId, BusinessResource.SERVICES) } returns ResourcePermission(update = true)
             coEvery { serviceDataSource.createServiceGroup(group) } throws Error.UniqueConstraintFailed("", RuntimeException())
         }
 
@@ -99,7 +100,7 @@ internal class CreateServiceGroupImplTest {
         val group = createTestGroup()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { businessPermissionDataSource.getPermission(userId, group.businessId) } returns ObjectPermission.READ.int
+            coEvery { businessPermissionDataSource.getPermission(userId, group.businessId, BusinessResource.SERVICES) } returns ResourcePermission(view = true)
         }
 
         whenn()

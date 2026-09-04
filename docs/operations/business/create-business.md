@@ -16,7 +16,7 @@ flowchart TD
     Tx --> Exists{businessDataSource.isBusinessExist userId?}
     Exists -- Yes --> R422b([422 BUSINESS_ALREADY_EXIST 200001])
     Exists -- No --> Create[BusinessDataSource.createBusiness userId name currencyCode timeZone]
-    Create --> SetPerm[BusinessDataSource.setUserPermissions userId business.id OWNER]
+    Create --> SetPerm[BusinessPermissionDataSource.setPermission userId business.id resource FULL, for every BusinessResource]
     SetPerm --> Constraint{Unique constraint violated?}
     Constraint -- Yes --> R422b
     Constraint -- No --> R200([200 Created Business])

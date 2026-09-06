@@ -1,6 +1,6 @@
 # Join business
 
-`POST /api/employee_invitation/redeem` → `JoinBusiness`
+`POST /api/business/employee_invitation/redeem` → `JoinBusiness`
 
 Any authenticated user can join a business by submitting the invite code
 shared with them by the business owner — there is no per-user targeting,
@@ -25,7 +25,7 @@ loser's `redeemInvitation` call matches zero rows.
 
 ```mermaid
 flowchart TD
-    Start([POST /api/employee_invitation/redeem]) --> Auth{JWT valid?}
+    Start([POST /api/business/employee_invitation/redeem]) --> Auth{JWT valid?}
     Auth -- No --> R401([401 Unauthorized])
     Auth -- Yes --> Tx[[Begin transaction]]
     Tx --> HashCode[EmployeeInvitationCode.hash the submitted code]

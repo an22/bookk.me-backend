@@ -5,6 +5,7 @@ import com.bookk.business.domain.api.business.entity.BusinessUpdateModel
 import com.bookk.business.domain.api.business.operation.CreateBusiness
 import com.bookk.business.domain.api.business.operation.GetBusinessById
 import com.bookk.business.domain.api.business.operation.GetUserBusinesses
+import com.bookk.business.domain.api.business.operation.SetDashboardBusiness
 import com.bookk.business.domain.api.business.operation.UpdateBusiness
 import com.bookk.business.microservice.route.BusinessRouting.Api
 import com.bookk.core.service.enity.respondWith
@@ -86,6 +87,21 @@ fun Route.businessCrud() {
             val getBusinessById by application.inject<GetBusinessById>()
 
             call.respondWith(getBusinessById(id = path.id, requestingUserId = principal.userId))
+        }
+        /**
+         * Summary: Set dashboard business
+         * Description: Select which of the caller's businesses is displayed as the dashboard business
+         * Tag: business
+         * Security: jwt
+         * Response: 204 application/x-protobuf No content
+         * Response: 404 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] User is not allowed to select this business as their dashboard business
+         * See: docs/operations/business/set-dashboard-business.md
+         */
+        put<Api.Business.Id.Dashboard> { path ->
+            val principal = requireNotNull(call.principal<AppPrincipal>())
+            val setDashboardBusiness by application.inject<SetDashboardBusiness>()
+
+            call.respondWith(setDashboardBusiness(userId = principal.userId, businessId = path.parent.id))
         }
     }
 }

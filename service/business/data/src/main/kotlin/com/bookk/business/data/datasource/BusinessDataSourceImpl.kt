@@ -4,6 +4,7 @@ import com.bookk.business.data.orm.entity.BusinessEntity
 import com.bookk.business.data.orm.table.BusinessDashboardTable
 import com.bookk.business.data.orm.table.BusinessDayOffTable
 import com.bookk.business.data.orm.table.BusinessTable
+import com.bookk.business.data.orm.table.EmployeeTable
 import com.bookk.business.domain.api.business.entity.Business
 import com.bookk.business.domain.api.business.entity.BusinessUpdateModel
 import com.bookk.business.domain.api.business.entity.UserBusinesses
@@ -16,10 +17,12 @@ import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.inList
 import org.jetbrains.exposed.v1.core.less
+import org.jetbrains.exposed.v1.core.or
 import org.jetbrains.exposed.v1.jdbc.deleteReturning
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.upsert
 import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
@@ -67,6 +70,14 @@ internal class BusinessDataSourceImpl : DataSource(), BusinessDataSource {
         businessId?.let { BusinessEntity.findById(it)?.toDomain() }
     }
 
+    override suspend fun setDashboardBusiness(userId: Uuid, businessId: Uuid): Unit = dbQuery {
+        BusinessDashboardTable.upsert {
+            it[this.userId] = userId
+            it[this.businessId] = businessId
+            it[this.updatedAt] = Clock.System.now()
+        }
+    }
+
     override suspend fun getUserBusinesses(userId: Uuid): UserBusinesses = dbQuery {
         val dashboardId = BusinessDashboardTable
             .select(BusinessDashboardTable.businessId)
@@ -74,8 +85,12 @@ internal class BusinessDataSourceImpl : DataSource(), BusinessDataSource {
             .singleOrNull()
             ?.getOrNull(BusinessDashboardTable.businessId)
             ?.value
+        val employeeBusinessIds = EmployeeTable
+            .select(EmployeeTable.businessId)
+            .where { EmployeeTable.userId eq userId }
+            .map { it[EmployeeTable.businessId].value }
         val businesses = BusinessEntity
-            .find { BusinessTable.userId eq userId }
+            .find { (BusinessTable.userId eq userId) or (BusinessTable.id inList employeeBusinessIds) }
             .map { it.toDomain() }
         UserBusinesses(
             dashboardId = dashboardId,

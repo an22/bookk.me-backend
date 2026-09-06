@@ -4,7 +4,12 @@ import com.bookk.business.data.orm.table.BusinessDashboardTable
 import com.bookk.business.data.orm.table.BusinessDayOffTable
 import com.bookk.business.data.orm.table.BusinessTable
 import com.bookk.business.data.orm.table.BusinessWorkingHoursTable
+import com.bookk.business.data.orm.table.EmployeeCanProvideServiceTable
+import com.bookk.business.data.orm.table.EmployeeDayOffTable
+import com.bookk.business.data.orm.table.EmployeeTable
+import com.bookk.business.data.orm.table.EmployeeWorkingHoursTable
 import com.bookk.business.domain.api.business.entity.BusinessUpdateModel
+import com.bookk.business.domain.api.employee.entity.Employee
 import com.bookk.core.data.test.createTestDatabase
 import com.bookk.core.test.given
 import com.bookk.core.test.runUnitTest
@@ -22,6 +27,7 @@ import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -37,9 +43,14 @@ internal class BusinessDataSourceImplTest {
             BusinessTable,
             BusinessDashboardTable,
             BusinessWorkingHoursTable,
-            BusinessDayOffTable
+            BusinessDayOffTable,
+            EmployeeTable,
+            EmployeeCanProvideServiceTable,
+            EmployeeWorkingHoursTable,
+            EmployeeDayOffTable
         )
         val sut = BusinessDataSourceImpl()
+        val employeeSut = EmployeeDataSourceImpl()
     }
 
     private fun updateModel(
@@ -273,6 +284,24 @@ internal class BusinessDataSourceImplTest {
     }
 
     @Test
+    fun `should set the dashboard business for a user`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+        val created = suspendTransaction { fixture.sut.createBusiness(userId, "Salon", "USD", TimeZone.UTC) }
+        val otherBusiness = suspendTransaction { fixture.sut.createBusiness(Uuid.random(), "Other Salon", "USD", TimeZone.UTC) }
+
+        whenn()
+        suspendTransaction { fixture.sut.setDashboardBusiness(userId, otherBusiness.id) }
+        val dashboard = suspendTransaction { fixture.sut.getDashboardBusiness(userId) }
+
+        then()
+        assertNotNull(dashboard)
+        assertEquals(otherBusiness.id, dashboard!!.id)
+        assertNotEquals(created.id, dashboard.id)
+    }
+
+    @Test
     fun `should get user businesses with dashboard id`() = runUnitTest {
         given()
         val fixture = SutFixture()
@@ -285,6 +314,37 @@ internal class BusinessDataSourceImplTest {
         then()
         assertEquals(1, result.businesses.size)
         assertEquals(created.id, result.dashboardId)
+    }
+
+    @Test
+    fun `should include businesses where user is an employee`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+        val ownBusiness = suspendTransaction { fixture.sut.createBusiness(userId, "Own Salon", "USD", TimeZone.UTC) }
+        val otherBusiness = suspendTransaction { fixture.sut.createBusiness(Uuid.random(), "Other Salon", "USD", TimeZone.UTC) }
+        suspendTransaction { fixture.employeeSut.createEmployee(Employee.stub(businessId = otherBusiness.id, userId = userId)) }
+
+        whenn()
+        val result = suspendTransaction { fixture.sut.getUserBusinesses(userId) }
+
+        then()
+        assertEquals(setOf(ownBusiness.id, otherBusiness.id), result.businesses.map { it.id }.toSet())
+    }
+
+    @Test
+    fun `should not duplicate a business the user both owns and is employed at`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+        val business = suspendTransaction { fixture.sut.createBusiness(userId, "Own Salon", "USD", TimeZone.UTC) }
+        suspendTransaction { fixture.employeeSut.createEmployee(Employee.stub(businessId = business.id, userId = userId)) }
+
+        whenn()
+        val result = suspendTransaction { fixture.sut.getUserBusinesses(userId) }
+
+        then()
+        assertEquals(listOf(business.id), result.businesses.map { it.id })
     }
 
     // deleteUserBusinesses uses deleteReturning which is not supported by Exposed's H2 dialect

@@ -30,7 +30,10 @@ object BusinessRouting {
             class HealthCheck(val parent: Business = Business())
 
             @Resource("/{id}")
-            class Id(val parent: Business = Business(), val id: Uuid)
+            class Id(val parent: Business = Business(), val id: Uuid) {
+                @Resource("/dashboard")
+                class Dashboard(val parent: Id)
+            }
         }
 
         @Resource("/business/{businessId}/clients")
@@ -54,7 +57,7 @@ object BusinessRouting {
             class Revoke(val parent: EmployeeInvitation, val id: Uuid)
         }
 
-        @Resource("/employee_invitation/redeem")
+        @Resource("/business/employee_invitation/redeem")
         class RedeemEmployeeInvitation(val parent: Api = Api())
 
         @Resource("/business/{businessId}/employee")

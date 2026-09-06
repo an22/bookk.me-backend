@@ -66,13 +66,14 @@ Reactions to cross-service events:
 |---|---|
 | `POST /api/business` | [Create business](business/create-business.md) |
 | `PUT /api/business/{id}` | [Update business](business/update-business.md) |
+| `PUT /api/business/{id}/dashboard` | [Set dashboard business](business/set-dashboard-business.md) |
 | `POST /api/business/{businessId}/clients` | [Create client](business/create-client.md) |
 | `DELETE /api/business/{businessId}/clients/{id}` | [Delete client](business/delete-client.md) |
 | `PUT /api/business/{businessId}/clients/{id}` | [Update client](business/update-client.md) |
 | `PUT /api/business/{businessId}/employee/{id}` | [Update employee](business/update-employee.md) |
 | `PUT /api/business/{businessId}/employee/{id}/permissions/{resource}` | [Set employee permission](business/set-employee-permission.md) |
 | `POST /api/business/{businessId}/employee_invitation` | [Invite employee](business/create-employee-invitation.md) |
-| `POST /api/employee_invitation/redeem` | [Join business](business/join-business.md) |
+| `POST /api/business/employee_invitation/redeem` | [Join business](business/join-business.md) |
 | `POST /api/business/{businessId}/employee_invitation/{id}/revoke` | [Revoke employee invitation](business/revoke-employee-invitation.md) |
 | `POST /api/business/{businessId}/service` | [Create service](business/create-service.md) |
 | `PUT /api/business/{businessId}/service/{id}` | [Update service](business/update-service.md) |

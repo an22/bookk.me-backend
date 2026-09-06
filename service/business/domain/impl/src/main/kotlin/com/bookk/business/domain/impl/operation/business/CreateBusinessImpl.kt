@@ -5,16 +5,23 @@ import com.bookk.business.domain.api.business.entity.BusinessCreateRequest
 import com.bookk.business.domain.api.business.entity.BusinessPermissions
 import com.bookk.business.domain.api.business.entity.BusinessResource
 import com.bookk.business.domain.api.business.operation.CreateBusiness
+import com.bookk.business.domain.api.employee.entity.Employee
 import com.bookk.business.domain.datasource.BusinessDataSource
 import com.bookk.business.domain.datasource.BusinessPermissionDataSource
+import com.bookk.business.domain.datasource.EmployeeDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
+import com.bookk.server.user.client.UserClient
 import library.permissions.ResourcePermission
+import library.schedule.Schedule
 import library.validation.NameValidator
+import kotlin.time.Clock
 import kotlin.uuid.Uuid
 
 internal class CreateBusinessImpl(
     private val businessDataSource: BusinessDataSource,
     private val businessPermissionDataSource: BusinessPermissionDataSource,
+    private val employeeDataSource: EmployeeDataSource,
+    private val userClient: UserClient,
     private val transactionManager: TransactionManager
 ) : CreateBusiness {
     override suspend fun invoke(
@@ -29,6 +36,21 @@ internal class CreateBusinessImpl(
         BusinessResource.entries.forEach { resource ->
             businessPermissionDataSource.setPermission(userId, business.id, resource, ResourcePermission.FULL)
         }
+        val owner = userClient.getUserById(userId).getOrThrow()
+        employeeDataSource.createEmployee(
+            Employee(
+                id = Uuid.random(),
+                businessId = business.id,
+                name = owner.name,
+                lastName = owner.lastName,
+                phone = owner.phone,
+                email = owner.email,
+                userId = userId,
+                services = emptyList(),
+                schedule = Schedule.empty(),
+                createdAt = Clock.System.now()
+            )
+        )
         business.copy(permissions = BusinessPermissions.FULL)
     }
 }

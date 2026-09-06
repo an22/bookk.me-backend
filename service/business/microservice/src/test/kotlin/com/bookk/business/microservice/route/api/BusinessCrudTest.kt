@@ -7,6 +7,7 @@ import com.bookk.business.domain.api.business.entity.UserBusinesses
 import com.bookk.business.domain.api.business.operation.CreateBusiness
 import com.bookk.business.domain.api.business.operation.GetBusinessById
 import com.bookk.business.domain.api.business.operation.GetUserBusinesses
+import com.bookk.business.domain.api.business.operation.SetDashboardBusiness
 import com.bookk.business.domain.api.business.operation.UpdateBusiness
 import com.bookk.business.domain.api.error.BusinessErrorCodes
 import com.bookk.business.microservice.route.BusinessRouting
@@ -626,6 +627,77 @@ internal class BusinessCrudTest {
         val response = client.put(BusinessRouting.Api.Business.Id(id = businessId)) {
             setBody(updateModel())
         }
+
+        then()
+        assertEquals(HttpStatusCode.Unauthorized, response.status)
+    }
+
+    @Test
+    fun `should set dashboard business`() = routeTest {
+        given()
+        val useCase: SetDashboardBusiness = mockk()
+        coEvery { useCase.invoke(userId, businessId) } returns Result.success(Unit)
+
+        setupApplication(
+            extension = {
+                install(Authentication) {
+                    provider {
+                        authenticate { it.principal(AppPrincipal(Uuid.random(), userId, Uuid.random())) }
+                    }
+                }
+            },
+            diModule = module { single { useCase } },
+            routeUnderTest = { businessCrud() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.put(BusinessRouting.Api.Business.Id.Dashboard(parent = BusinessRouting.Api.Business.Id(id = businessId)))
+
+        then()
+        assertEquals(HttpStatusCode.NoContent, response.status)
+    }
+
+    @Test
+    fun `should return not found when user is not allowed to select the business as dashboard business`() = routeTest {
+        given()
+        val useCase: SetDashboardBusiness = mockk()
+        coEvery { useCase.invoke(userId, businessId) } returns Result.failure(Error.OperationNotAllowed())
+
+        setupApplication(
+            extension = {
+                install(Authentication) {
+                    provider {
+                        authenticate { it.principal(AppPrincipal(Uuid.random(), userId, Uuid.random())) }
+                    }
+                }
+            },
+            diModule = module { single { useCase } },
+            routeUnderTest = { businessCrud() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.put(BusinessRouting.Api.Business.Id.Dashboard(parent = BusinessRouting.Api.Business.Id(id = businessId)))
+
+        then()
+        assertEquals(HttpStatusCode.NotFound, response.status)
+    }
+
+    @Test
+    fun `should return unauthorized when setting dashboard business without authentication`() = routeTest {
+        given()
+        val useCase: SetDashboardBusiness = mockk()
+
+        setupApplication(
+            extension = { install(Authentication) { bearer { authenticate { null } } } },
+            diModule = module { single { useCase } },
+            routeUnderTest = { businessCrud() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.put(BusinessRouting.Api.Business.Id.Dashboard(parent = BusinessRouting.Api.Business.Id(id = businessId)))
 
         then()
         assertEquals(HttpStatusCode.Unauthorized, response.status)

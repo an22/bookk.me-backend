@@ -12,6 +12,7 @@ import com.bookk.business.domain.api.business.operation.SetDashboardBusiness
 import com.bookk.business.domain.api.business.operation.UpdateBusiness
 import com.bookk.business.domain.api.client.operation.CreateClient
 import com.bookk.business.domain.api.client.operation.DeleteClient
+import com.bookk.business.domain.api.client.operation.GetClientBusinessIds
 import com.bookk.business.domain.api.client.operation.GetClients
 import com.bookk.business.domain.api.client.operation.UpdateClient
 import com.bookk.business.domain.api.employee.operation.CreateEmployeeInvitation
@@ -46,6 +47,7 @@ import com.bookk.business.domain.impl.operation.business.SetDashboardBusinessImp
 import com.bookk.business.domain.impl.operation.business.UpdateBusinessImpl
 import com.bookk.business.domain.impl.operation.client.CreateClientImpl
 import com.bookk.business.domain.impl.operation.client.DeleteClientImpl
+import com.bookk.business.domain.impl.operation.client.GetClientBusinessIdsImpl
 import com.bookk.business.domain.impl.operation.client.GetClientsImpl
 import com.bookk.business.domain.impl.operation.client.UpdateClientImpl
 import com.bookk.business.domain.impl.operation.employee.CreateEmployeeInvitationImpl
@@ -89,6 +91,7 @@ fun businessDomainModule() = module {
     factoryOf(::BusinessEventHandlerImpl) bind EventHandler::class
     singleOf(::CreateClientImpl) bind CreateClient::class
     singleOf(::GetClientsImpl) bind GetClients::class
+    singleOf(::GetClientBusinessIdsImpl) bind GetClientBusinessIds::class
     singleOf(::DeleteClientImpl) bind DeleteClient::class
     singleOf(::UpdateClientImpl) bind UpdateClient::class
     singleOf(::SyncUserProfileImpl) bind SyncUserProfile::class

@@ -24,4 +24,5 @@ interface ClientDataSource {
         updatedAt: Instant
     ): Int
     suspend fun anonymizeClientsByUserId(userId: Uuid): Int
+    suspend fun getBusinessIdsByUserId(userId: Uuid): List<Uuid>
 }

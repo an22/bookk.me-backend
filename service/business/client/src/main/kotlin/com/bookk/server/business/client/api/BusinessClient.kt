@@ -14,4 +14,5 @@ interface BusinessClient {
         userId: Uuid,
         serviceIds: List<Uuid>
     ): Result<AppointmentBookingContext>
+    suspend fun getClientBusinessIds(userId: Uuid): Result<List<Uuid>>
 }

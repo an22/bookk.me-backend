@@ -14,7 +14,7 @@ internal class IsAppointmentsEnabledImpl(
     private val appointmentPermissionDataSource: AppointmentPermissionDataSource,
     private val transactionManager: TransactionManager
 ) : IsAppointmentsEnabled {
-    override suspend fun invoke(userId: Uuid, businessId: Uuid): Result<Boolean> = transactionManager.transaction{
+    override suspend fun invoke(userId: Uuid, businessId: Uuid): Result<Boolean> = transactionManager.transaction {
         appointmentPermissionDataSource.getPermission(userId, businessId).assert(PermissionAction.VIEW)
         subscriptionDataSource.isBusinessEnabled(businessId)
     }.onPermissionsMissingReturn { false }

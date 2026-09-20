@@ -5,6 +5,7 @@ import com.bookk.business.domain.api.appointment.operation.GetAppointmentBooking
 import com.bookk.business.domain.api.business.entity.BusinessResource
 import com.bookk.business.domain.api.business.operation.GetBusinessById
 import com.bookk.business.domain.api.business.operation.GetBusinessPermission
+import com.bookk.business.domain.api.client.operation.GetClientBusinessIds
 import com.bookk.server.business.client.api.BusinessClient
 import com.bookk.server.business.client.api.BusinessDTO
 import library.permissions.ResourcePermission
@@ -13,7 +14,8 @@ import kotlin.uuid.Uuid
 internal class BusinessClientImpl(
     private val getBusinessById: GetBusinessById,
     private val getBusinessPermission: GetBusinessPermission,
-    private val getAppointmentBookingContext: GetAppointmentBookingContext
+    private val getAppointmentBookingContext: GetAppointmentBookingContext,
+    private val getClientBusinessIds: GetClientBusinessIds
 ) : BusinessClient {
     override suspend fun getBusinessById(id: Uuid): Result<BusinessDTO> {
         return getBusinessById.invoke(id).map(BusinessDTO::from)
@@ -30,5 +32,9 @@ internal class BusinessClientImpl(
         serviceIds: List<Uuid>
     ): Result<AppointmentBookingContext> {
         return getAppointmentBookingContext.invoke(businessId, employeeId, userId, serviceIds)
+    }
+
+    override suspend fun getClientBusinessIds(userId: Uuid): Result<List<Uuid>> {
+        return getClientBusinessIds.invoke(userId)
     }
 }

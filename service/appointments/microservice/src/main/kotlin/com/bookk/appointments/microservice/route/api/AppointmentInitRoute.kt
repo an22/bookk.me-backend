@@ -1,16 +1,22 @@
 package com.bookk.appointments.microservice.route.api
 
+import com.bookk.appointments.domain.api.entity.BusinessAppointmentsEnabled
 import com.bookk.appointments.domain.api.operation.EnableAppointmentsForBusiness
+import com.bookk.appointments.domain.api.operation.GetClientBusinessesAppointmentsStatus
 import com.bookk.appointments.domain.api.operation.IsAppointmentsEnabled
 import com.bookk.appointments.microservice.route.AppointmentsRouting.Api
 import com.bookk.core.service.enity.respondWith
 import com.bookk.server.auth.client.AppPrincipal
+import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
+import io.ktor.openapi.jsonSchema
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.principal
 import io.ktor.server.resources.get
 import io.ktor.server.resources.post
 import io.ktor.server.routing.Routing
 import io.ktor.server.routing.application
+import io.ktor.server.routing.openapi.describe
 import org.koin.ktor.ext.inject
 
 fun Routing.appointmentInit() {
@@ -54,6 +60,27 @@ fun Routing.appointmentInit() {
                     businessId = it.businessId
                 )
             )
+        }
+
+        /**
+         * Summary: Check appointments enabled for client businesses
+         * Description: Appointment-enabled status for every business the calling user has a client relationship with
+         * Tag: appointment
+         * Security: jwt
+         */
+        get<Api.Appointment.EnabledForClientBusinesses> {
+            val principal = requireNotNull(call.principal<AppPrincipal>())
+            val getClientBusinessesAppointmentsStatus by application.inject<GetClientBusinessesAppointmentsStatus>()
+
+            call.respondWith(getClientBusinessesAppointmentsStatus(userId = principal.userId))
+        }.describe {
+            responses {
+                response(HttpStatusCode.OK.value) {
+                    schema = jsonSchema<List<BusinessAppointmentsEnabled>>()
+                    description = "Appointment-enabled status for each business the user has a client relation to"
+                    ContentType.Application.ProtoBuf()
+                }
+            }
         }
     }
 }

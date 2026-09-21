@@ -1,7 +1,8 @@
 package com.bookk.business.domain.impl.operation.client
 
+import com.bookk.business.domain.api.business.entity.BusinessResource
 import com.bookk.business.domain.api.client.operation.DeleteClient
-import com.bookk.business.domain.datasource.BusinessDataSource
+import com.bookk.business.domain.datasource.BusinessPermissionDataSource
 import com.bookk.business.domain.datasource.ClientDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.datasource.transaction.mockTransaction
@@ -13,7 +14,7 @@ import com.bookk.core.test.whenn
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
-import library.permissions.ObjectPermission
+import library.permissions.ResourcePermission
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import kotlin.uuid.Uuid
@@ -24,16 +25,16 @@ internal class DeleteClientImplTest {
 
     private class SutFixture {
         val clientDataSource = mockk<ClientDataSource>()
-        val businessDataSource = mockk<BusinessDataSource>()
+        val businessPermissionDataSource = mockk<BusinessPermissionDataSource>()
         val transactionManager = mockk<TransactionManager>()
-        val sut = DeleteClientImpl(transactionManager, clientDataSource, businessDataSource)
+        val sut = DeleteClientImpl(transactionManager, clientDataSource, businessPermissionDataSource)
 
         init {
-            coEvery { businessDataSource.getPermission(any(), any()) } returns ObjectPermission.OWNER.int
+            coEvery { businessPermissionDataSource.getPermission(any(), any(), BusinessResource.CLIENTS) } returns ResourcePermission.FULL
         }
 
-        fun grantPermission(permission: ObjectPermission?) {
-            coEvery { businessDataSource.getPermission(any(), any()) } returns permission?.int
+        fun grantPermission(permission: ResourcePermission) {
+            coEvery { businessPermissionDataSource.getPermission(any(), any(), BusinessResource.CLIENTS) } returns permission
         }
     }
 
@@ -82,7 +83,7 @@ internal class DeleteClientImplTest {
         val id = Uuid.random()
         with(fixture) {
             transactionManager.mockTransaction()
-            grantPermission(ObjectPermission.READ)
+            grantPermission(ResourcePermission(view = true))
         }
 
         whenn()
@@ -101,7 +102,7 @@ internal class DeleteClientImplTest {
         val id = Uuid.random()
         with(fixture) {
             transactionManager.mockTransaction()
-            grantPermission(null)
+            grantPermission(ResourcePermission.NONE)
         }
 
         whenn()
@@ -128,6 +129,6 @@ internal class DeleteClientImplTest {
 
         then()
         assertTrue(result.isSuccess)
-        coVerify(exactly = 1) { fixture.businessDataSource.getPermission(requestUserId, businessId) }
+        coVerify(exactly = 1) { fixture.businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.CLIENTS) }
     }
 }

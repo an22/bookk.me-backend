@@ -1,8 +1,8 @@
 package com.bookk.appointments.domain.impl.operation
 
 import com.bookk.appointments.domain.datasource.AppointmentDataSource
+import com.bookk.appointments.domain.datasource.AppointmentPermissionDataSource
 import com.bookk.appointments.domain.datasource.AppointmentRequestDataSource
-import com.bookk.appointments.domain.datasource.PermissionsDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.datasource.transaction.mockTransaction
 import com.bookk.core.test.given
@@ -21,9 +21,9 @@ internal class DeleteUserAppointmentDataImplTest {
     private class SutFixture {
         val appointmentDataSource = mockk<AppointmentDataSource>()
         val requestDataSource = mockk<AppointmentRequestDataSource>()
-        val permissionsDataSource = mockk<PermissionsDataSource>()
+        val appointmentPermissionDataSource = mockk<AppointmentPermissionDataSource>()
         val transactionManager = mockk<TransactionManager>()
-        val sut = DeleteUserAppointmentDataImpl(appointmentDataSource, requestDataSource, permissionsDataSource, transactionManager)
+        val sut = DeleteUserAppointmentDataImpl(appointmentDataSource, requestDataSource, appointmentPermissionDataSource, transactionManager)
     }
 
     @Test
@@ -35,7 +35,7 @@ internal class DeleteUserAppointmentDataImplTest {
             transactionManager.mockTransaction()
             coEvery { appointmentDataSource.anonymizeForUser(userId) } returns Unit
             coEvery { requestDataSource.deleteForUser(userId) } returns Unit
-            coEvery { permissionsDataSource.deleteForUser(userId) } returns Unit
+            coEvery { appointmentPermissionDataSource.deleteForUser(userId) } returns Unit
         }
 
         whenn()
@@ -45,6 +45,6 @@ internal class DeleteUserAppointmentDataImplTest {
         assertTrue(result.isSuccess)
         coVerify(exactly = 1) { fixture.appointmentDataSource.anonymizeForUser(userId) }
         coVerify(exactly = 1) { fixture.requestDataSource.deleteForUser(userId) }
-        coVerify(exactly = 1) { fixture.permissionsDataSource.deleteForUser(userId) }
+        coVerify(exactly = 1) { fixture.appointmentPermissionDataSource.deleteForUser(userId) }
     }
 }

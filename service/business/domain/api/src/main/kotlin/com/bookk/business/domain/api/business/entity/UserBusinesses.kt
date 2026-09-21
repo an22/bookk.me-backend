@@ -5,7 +5,7 @@ import kotlinx.serialization.protobuf.ProtoNumber
 import kotlin.uuid.Uuid
 
 @Serializable
-class UserBusinesses(
+data class UserBusinesses(
     @ProtoNumber(1) val dashboardId: Uuid?,
     @ProtoNumber(2) val businesses: List<Business>
 )

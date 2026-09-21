@@ -5,6 +5,7 @@ import com.bookk.appointments.domain.api.entity.AppointmentSettings
 import com.bookk.appointments.domain.api.entity.AppointmentSettingsUpdate
 import com.bookk.core.data.DecoratorUuidEntityClass
 import kotlinx.datetime.TimeZone
+import library.permissions.ResourcePermission
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.dao.UuidEntity
@@ -27,6 +28,7 @@ internal class SettingsEntity(id: EntityID<Uuid>) : UuidEntity(id) {
         automaticApproval = automaticApproval,
         inBetweenBreakInMinutes = inBetweenBreakInMinutes,
         appointmentNote = appointmentNote,
+        permissions = ResourcePermission.NONE
     )
 
     companion object : DecoratorUuidEntityClass<SettingsEntity>(SettingsTable) {

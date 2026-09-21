@@ -2,7 +2,7 @@ package com.bookk.business.data.datasource
 
 import com.bookk.business.data.orm.table.BusinessDashboardTable
 import com.bookk.business.data.orm.table.BusinessDayOffTable
-import com.bookk.business.data.orm.table.BusinessPermissionsTable
+import com.bookk.business.data.orm.table.BusinessPermissionGrantsTable
 import com.bookk.business.data.orm.table.BusinessTable
 import com.bookk.business.data.orm.table.BusinessWorkingHoursTable
 import com.bookk.business.data.orm.table.EmployeeCanProvideServiceTable
@@ -41,7 +41,7 @@ internal class EmployeeDataSourceImplTest {
 
     private class SutFixture {
         val db = createTestDatabase(
-            BusinessTable, BusinessDashboardTable, BusinessPermissionsTable, BusinessWorkingHoursTable, BusinessDayOffTable,
+            BusinessTable, BusinessDashboardTable, BusinessPermissionGrantsTable, BusinessWorkingHoursTable, BusinessDayOffTable,
             ServiceGroupTable, ServiceTable, EmployeeTable, EmployeeCanProvideServiceTable,
             EmployeeWorkingHoursTable, EmployeeDayOffTable
         )
@@ -463,41 +463,6 @@ internal class EmployeeDataSourceImplTest {
 
         then()
         assertNull(otherUser)
-        assertNull(otherBusiness)
-    }
-
-    @Test
-    fun `should return employee by email`() = runUnitTest {
-        given()
-        val fixture = SutFixture()
-        fixture.setup()
-        val created = suspendTransaction {
-            fixture.sut.createEmployee(Employee.stub(businessId = fixture.businessId, email = "alice@test.com"))
-        }
-
-        whenn()
-        val found = suspendTransaction { fixture.sut.getEmployeeByEmail(fixture.businessId, "alice@test.com") }
-
-        then()
-        assertNotNull(found)
-        assertEquals(created.id, found?.id)
-    }
-
-    @Test
-    fun `should return null when email does not belong to an employee of the business`() = runUnitTest {
-        given()
-        val fixture = SutFixture()
-        fixture.setup()
-        suspendTransaction {
-            fixture.sut.createEmployee(Employee.stub(businessId = fixture.businessId, email = "alice@test.com"))
-        }
-
-        whenn()
-        val otherEmail = suspendTransaction { fixture.sut.getEmployeeByEmail(fixture.businessId, "bob@test.com") }
-        val otherBusiness = suspendTransaction { fixture.sut.getEmployeeByEmail(Uuid.random(), "alice@test.com") }
-
-        then()
-        assertNull(otherEmail)
         assertNull(otherBusiness)
     }
 

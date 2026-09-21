@@ -1,7 +1,8 @@
 package com.bookk.business.domain.impl.operation.employee
 
+import com.bookk.business.domain.api.business.entity.BusinessResource
 import com.bookk.business.domain.api.employee.entity.Employee
-import com.bookk.business.domain.datasource.BusinessDataSource
+import com.bookk.business.domain.datasource.BusinessPermissionDataSource
 import com.bookk.business.domain.datasource.EmployeeDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.datasource.transaction.mockTransaction
@@ -13,7 +14,7 @@ import com.bookk.core.test.whenn
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
-import library.permissions.ObjectPermission
+import library.permissions.ResourcePermission
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -26,21 +27,21 @@ internal class GetEmployeesImplTest {
 
     private class SutFixture {
         val employeeDataSource = mockk<EmployeeDataSource>()
-        val businessDataSource = mockk<BusinessDataSource>()
+        val businessPermissionDataSource = mockk<BusinessPermissionDataSource>()
         val transactionManager = mockk<TransactionManager>()
-        val sut = GetEmployeesImpl(employeeDataSource, businessDataSource, transactionManager)
+        val sut = GetEmployeesImpl(employeeDataSource, businessPermissionDataSource, transactionManager)
 
         init {
-            coEvery { businessDataSource.getPermission(any(), any()) } returns ObjectPermission.OWNER.int
+            coEvery { businessPermissionDataSource.getPermission(any(), any(), BusinessResource.EMPLOYEES) } returns ResourcePermission.FULL
         }
 
-        fun grantPermission(permission: ObjectPermission?) {
-            coEvery { businessDataSource.getPermission(any(), any()) } returns permission?.int
+        fun grantPermission(permission: ResourcePermission) {
+            coEvery { businessPermissionDataSource.getPermission(any(), any(), BusinessResource.EMPLOYEES) } returns permission
         }
     }
 
     @Test
-    fun `should return employees for the business when caller is owner`() = runUnitTest {
+    fun `should return employees for the business when caller can view employees`() = runUnitTest {
         given()
         val fixture = SutFixture()
         fixture.transactionManager.mockTransaction()
@@ -56,11 +57,11 @@ internal class GetEmployeesImplTest {
     }
 
     @Test
-    fun `should return failure when caller has edit permission but is not the owner`() = runUnitTest {
+    fun `should return failure when caller has other permissions but cannot view employees`() = runUnitTest {
         given()
         val fixture = SutFixture()
         fixture.transactionManager.mockTransaction()
-        fixture.grantPermission(ObjectPermission.EDIT)
+        fixture.grantPermission(ResourcePermission(update = true, delete = true))
 
         whenn()
         val result = fixture.sut(userId, businessId)
@@ -75,7 +76,7 @@ internal class GetEmployeesImplTest {
         given()
         val fixture = SutFixture()
         fixture.transactionManager.mockTransaction()
-        fixture.grantPermission(null)
+        fixture.grantPermission(ResourcePermission.NONE)
 
         whenn()
         val result = fixture.sut(userId, businessId)

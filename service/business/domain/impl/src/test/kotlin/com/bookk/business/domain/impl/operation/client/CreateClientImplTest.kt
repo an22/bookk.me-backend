@@ -1,9 +1,10 @@
 package com.bookk.business.domain.impl.operation.client
 
+import com.bookk.business.domain.api.business.entity.BusinessResource
 import com.bookk.business.domain.api.client.entity.Client
 import com.bookk.business.domain.api.client.entity.toRemote
 import com.bookk.business.domain.api.client.operation.CreateClient
-import com.bookk.business.domain.datasource.BusinessDataSource
+import com.bookk.business.domain.datasource.BusinessPermissionDataSource
 import com.bookk.business.domain.datasource.ClientDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.datasource.transaction.mockTransaction
@@ -15,7 +16,7 @@ import com.bookk.core.test.whenn
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
-import library.permissions.ObjectPermission
+import library.permissions.ResourcePermission
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -27,16 +28,16 @@ internal class CreateClientImplTest {
 
     private class SutFixture {
         val clientDataSource = mockk<ClientDataSource>()
-        val businessDataSource = mockk<BusinessDataSource>()
+        val businessPermissionDataSource = mockk<BusinessPermissionDataSource>()
         val transactionManager = mockk<TransactionManager>()
-        val sut = CreateClientImpl(transactionManager, clientDataSource, businessDataSource)
+        val sut = CreateClientImpl(transactionManager, clientDataSource, businessPermissionDataSource)
 
         init {
-            coEvery { businessDataSource.getPermission(any(), any()) } returns ObjectPermission.OWNER.int
+            coEvery { businessPermissionDataSource.getPermission(any(), any(), BusinessResource.CLIENTS) } returns ResourcePermission.FULL
         }
 
-        fun grantPermission(permission: ObjectPermission?) {
-            coEvery { businessDataSource.getPermission(any(), any()) } returns permission?.int
+        fun grantPermission(permission: ResourcePermission) {
+            coEvery { businessPermissionDataSource.getPermission(any(), any(), BusinessResource.CLIENTS) } returns permission
         }
     }
 
@@ -194,7 +195,7 @@ internal class CreateClientImplTest {
         val client = Client.Detached.stub()
         with(fixture) {
             transactionManager.mockTransaction()
-            grantPermission(ObjectPermission.READ)
+            grantPermission(ResourcePermission(view = true))
         }
 
         whenn()
@@ -213,7 +214,7 @@ internal class CreateClientImplTest {
         val client = Client.Detached.stub()
         with(fixture) {
             transactionManager.mockTransaction()
-            grantPermission(null)
+            grantPermission(ResourcePermission.NONE)
         }
 
         whenn()
@@ -241,7 +242,7 @@ internal class CreateClientImplTest {
 
         then()
         assertTrue(result.isSuccess)
-        coVerify(exactly = 1) { fixture.businessDataSource.getPermission(requestUserId, businessId) }
+        coVerify(exactly = 1) { fixture.businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.CLIENTS) }
     }
 
     @Test
@@ -290,6 +291,105 @@ internal class CreateClientImplTest {
         then()
         assertTrue(result.isFailure)
         assertTrue(result.exceptionOrNull() is CreateClient.Error.ClientValidationError)
+    }
+
+    @Test
+    fun `should trim padded name, lastName, phone, email and description before persisting`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val businessId = Uuid.random()
+        val client = Client.Detached.stub(
+            name = "  Jane  ",
+            lastName = "  Doe  ",
+            phone = "  654321  ",
+            email = "jane@doe.com",
+            description = "  VIP client  "
+        )
+        val trimmedClient = client.copy(
+            name = "Jane",
+            lastName = "Doe",
+            phone = "654321",
+            email = "jane@doe.com",
+            description = "VIP client"
+        )
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { clientDataSource.getClient(businessId, "  654321  ") } returns null
+            coEvery { clientDataSource.createDetachedClient(businessId, trimmedClient) } returns trimmedClient
+        }
+
+        whenn()
+        val result = fixture.sut(requestUserId, businessId, client)
+
+        then()
+        assertTrue(result.isSuccess)
+        assertEquals("Jane", result.getOrNull()?.name)
+        assertEquals("Doe", result.getOrNull()?.lastName)
+        assertEquals("654321", result.getOrNull()?.phone)
+        assertEquals("jane@doe.com", result.getOrNull()?.email)
+        assertEquals("VIP client", result.getOrNull()?.description)
+        coVerify(exactly = 1) { fixture.clientDataSource.createDetachedClient(businessId, trimmedClient) }
+    }
+
+    @Test
+    fun `should truncate an overly long description before persisting`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val businessId = Uuid.random()
+        val tooLong = "A".repeat(Client.MAX_DESCRIPTION_LENGTH + 10)
+        val truncated = tooLong.take(Client.MAX_DESCRIPTION_LENGTH)
+        val client = Client.Detached.stub(description = tooLong)
+        val trimmedClient = client.copy(description = truncated)
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { clientDataSource.getClient(businessId, client.phone!!) } returns null
+            coEvery { clientDataSource.createDetachedClient(businessId, trimmedClient) } returns trimmedClient
+        }
+
+        whenn()
+        val result = fixture.sut(requestUserId, businessId, client)
+
+        then()
+        assertTrue(result.isSuccess)
+        assertEquals(truncated, result.getOrNull()?.description)
+    }
+
+    @Test
+    fun `should treat a blank phone as absent and not fail contact info check when email is present`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val businessId = Uuid.random()
+        val client = Client.Detached.stub(phone = "   ")
+        val trimmedClient = client.copy(phone = null)
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { clientDataSource.createDetachedClient(businessId, trimmedClient) } returns trimmedClient
+        }
+
+        whenn()
+        val result = fixture.sut(requestUserId, businessId, client)
+
+        then()
+        assertTrue(result.isSuccess)
+        assertEquals(null, result.getOrNull()?.phone)
+        coVerify(exactly = 0) { fixture.clientDataSource.getClient(any(), any()) }
+    }
+
+    @Test
+    fun `should return error when phone and email are blank`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val businessId = Uuid.random()
+        val client = Client.Detached.stub(phone = "   ", email = "   ")
+        fixture.transactionManager.mockTransaction()
+
+        whenn()
+        val result = fixture.sut(requestUserId, businessId, client)
+
+        then()
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is CreateClient.Error.MissingContactInfo)
+        coVerify(exactly = 0) { fixture.clientDataSource.createDetachedClient(any(), any()) }
     }
 
     @Test

@@ -2,35 +2,48 @@
 
 `POST /api/business/{businessId}/employee_invitation` → `CreateEmployeeInvitation`
 
-Only an `OWNER` can invite (stricter than the usual `EDIT` bar elsewhere in
-this service). The invite-email lookup against the user service is
-best-effort: if the invited email has no matching user yet, the
-`EmployeeInvitationCreated` event is simply skipped rather than failing the
-whole request — the invitation row still exists for when they sign up.
+Only a caller holding `EMPLOYEES.update` can invite. No employee identity is collected at invite time — the
+operation just mints a short, random invite code the owner shares with a
+future employee out of band (verbally, a QR code, etc). The employee later
+joins the business themselves via [Join business](join-business.md); the
+server never sees or stores the employee's email for this flow. On the
+rare chance the generated code collides with an existing one, the
+operation retries with a freshly generated code before giving up.
+
+The database never stores the plaintext code — only its SHA-256 hex hash
+(`EmployeeInvitationTable.codeHash`, column `code_hash`, see [business
+service schema](../../database/business.md)). Hashing happens in
+`CreateEmployeeInvitationImpl` (`EmployeeInvitationCode.hash`), not the
+datasource — `EmployeeInvitationDataSource.createInvitation` only ever
+receives and stores the hash, it has no hashing logic of its own. The
+plaintext is generated in memory, hashed before the datasource call, and
+handed back to the caller in this one response by overwriting the
+datasource's echoed-back result with the plaintext the operation still
+holds locally; it cannot be recovered afterward, including by the "Get
+employee invitations" list endpoint (a read-only `GET` route, out of scope
+for these diagrams — it always returns `code = null` since the plaintext
+was never persisted) or by a database compromise. The `code_hash` column
+is nullable and cleared the moment an invitation leaves
+`PENDING` (redeemed, revoked, or expired — see [Join
+business](join-business.md), [Revoke employee
+invitation](revoke-employee-invitation.md) and the
+`expireEmployeeInvitations` job in [Scheduled (recurring)
+jobs](../scheduled-jobs.md)), so its unique index only ever has to stay
+collision-free across invitations that are still `PENDING`, not every
+invitation ever issued.
 
 ```mermaid
 flowchart TD
     Start([POST /api/business/businessId/employee_invitation]) --> Auth{JWT valid?}
     Auth -- No --> R401([401 Unauthorized])
-    Auth -- Yes --> EmailCheck{EmailValidator.isValid email?}
-    EmailCheck -- No --> R422a([422 BUSINESS_EMPLOYEE_INVITATION_VALIDATION_ERROR 200016])
-    EmailCheck -- Yes --> Tx[[Begin transaction]]
-    Tx --> Perm{permission >= OWNER?}
+    Auth -- Yes --> Tx[[Begin transaction]]
+    Tx --> Perm{caller EMPLOYEES.update?}
     Perm -- No --> R404a([404 Error.OperationNotAllowed])
-    Perm -- Yes --> EmployeeExists{employeeDataSource.getEmployeeByEmail already an employee?}
-    EmployeeExists -- Yes --> R422b([422 BUSINESS_EMPLOYEE_EXISTS 200018])
-    EmployeeExists -- No --> GetBiz[BusinessDataSource.getBusinessById businessId]
+    Perm -- Yes --> GetBiz[BusinessDataSource.getBusinessById businessId]
     GetBiz -- not found --> R404b([404 Error.NotFound])
-    GetBiz -- found --> CreateInvite[EmployeeInvitationDataSource.createInvitation invitation]
-    CreateInvite --> Constraint{Unique constraint violated - pending invite exists?}
-    Constraint -- Yes --> R422c([422 BUSINESS_EMPLOYEE_INVITATION_EXISTS 200015])
-    Constraint -- No --> LookupUser[UserClient.getUserByEmail email]
-    LookupUser -- found --> Event[eventProducer.send BusinessEvent.EmployeeInvitationCreated]
-    LookupUser -- not found --> Skip[Skip event - invitation still persisted]
-    Event --> R200([200 Created EmployeeInvitation])
-    Skip --> R200
+    GetBiz -- found --> GenCode[Generate random 8-char invite code, plaintext kept in memory only]
+    GenCode --> HashCode[EmployeeInvitationCode.hash the code]
+    HashCode --> CreateInvite[EmployeeInvitationDataSource.createInvitation businessId invitedBy code_hash]
+    CreateInvite -- unique constraint violated, hash collision --> GenCode
+    CreateInvite -- ok --> R200([200 Created EmployeeInvitation, plaintext code included once])
 ```
-
-**Consumed by:** `BusinessEvent.EmployeeInvitationCreated` → [notifications:
-notify the invited user](../notifications/on-employee-invitation-created.md)
-— only fires when the email lookup above succeeds.

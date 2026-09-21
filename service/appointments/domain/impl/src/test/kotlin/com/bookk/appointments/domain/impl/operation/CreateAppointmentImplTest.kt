@@ -7,10 +7,10 @@ import com.bookk.appointments.domain.api.entity.BusinessSnapshot
 import com.bookk.appointments.domain.api.entity.EmployeeSnapshot
 import com.bookk.appointments.domain.api.operation.CreateAppointment
 import com.bookk.appointments.domain.datasource.AppointmentDataSource
+import com.bookk.appointments.domain.datasource.AppointmentPermissionDataSource
 import com.bookk.appointments.domain.datasource.AppointmentRequestDataSource
 import com.bookk.appointments.domain.datasource.AppointmentSettingsDataSource
 import com.bookk.appointments.domain.datasource.AppointmentSubscriptionDataSource
-import com.bookk.appointments.domain.datasource.PermissionsDataSource
 import com.bookk.core.data.eventstreaming.StandardEventProducer
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.datasource.transaction.mockTransaction
@@ -25,8 +25,7 @@ import io.mockk.coVerify
 import io.mockk.mockk
 import io.mockk.slot
 import kotlinx.datetime.TimeZone
-import library.permissions.ObjectPermission.EDIT
-import library.permissions.ObjectPermission.READ
+import library.permissions.ResourcePermission
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -41,7 +40,7 @@ internal class CreateAppointmentImplTest {
         val appointmentDataSource = mockk<AppointmentDataSource>()
         val requestDataSource = mockk<AppointmentRequestDataSource>()
         val settingsDataSource = mockk<AppointmentSettingsDataSource>()
-        val permissionsDataSource = mockk<PermissionsDataSource>()
+        val appointmentPermissionDataSource = mockk<AppointmentPermissionDataSource>()
         val subscriptionDataSource = mockk<AppointmentSubscriptionDataSource>()
         val transactionManager = mockk<TransactionManager>()
         val eventProducer = mockk<StandardEventProducer>()
@@ -50,7 +49,7 @@ internal class CreateAppointmentImplTest {
             appointmentDataSource,
             requestDataSource,
             settingsDataSource,
-            permissionsDataSource,
+            appointmentPermissionDataSource,
             subscriptionDataSource,
             transactionManager,
             eventProducer
@@ -117,7 +116,7 @@ internal class CreateAppointmentImplTest {
 
         then()
         assertTrue(result.isSuccess)
-        coVerify(exactly = 0) { sutFixture.permissionsDataSource.getPermissions(any(), any()) }
+        coVerify(exactly = 0) { sutFixture.appointmentPermissionDataSource.getPermission(any(), any()) }
     }
 
     @Test
@@ -352,7 +351,7 @@ internal class CreateAppointmentImplTest {
         then()
         assertTrue(result.isSuccess)
         assertEquals(appointment, result.getOrNull())
-        coVerify(exactly = 0) { fixture.permissionsDataSource.getPermissions(any(), any()) }
+        coVerify(exactly = 0) { fixture.appointmentPermissionDataSource.getPermission(any(), any()) }
     }
 
     @Test
@@ -480,7 +479,7 @@ internal class CreateAppointmentImplTest {
             coEvery { settingsDataSource.getForUpdate(request.businessId) } returns settings
             coEvery { settings.isInWorkday(request.date) } returns true
             coEvery { settings.isInWorktime(request.date, request.dateEnd) } returns true
-            coEvery { permissionsDataSource.getPermissions(userId, request.businessId) } returns EDIT.int
+            coEvery { appointmentPermissionDataSource.getPermission(userId, request.businessId) } returns ResourcePermission(update = true)
             coEvery { appointmentDataSource.hasOverlapsWith(request) } returns false
             coEvery { appointmentDataSource.create(request) } returns appointment
             coEvery { requestDataSource.approve(request) } returns Unit
@@ -506,7 +505,7 @@ internal class CreateAppointmentImplTest {
 
         with(fixture) {
             coEvery { requestDataSource.get(request.id) } returns request
-            coEvery { permissionsDataSource.getPermissions(userId, request.businessId) } returns READ.int
+            coEvery { appointmentPermissionDataSource.getPermission(userId, request.businessId) } returns ResourcePermission(view = true)
             transactionManager.mockTransaction()
         }
 
@@ -533,7 +532,7 @@ internal class CreateAppointmentImplTest {
             coEvery { settingsDataSource.getForUpdate(request.businessId) } returns settings
             coEvery { settings.isInWorkday(request.date) } returns true
             coEvery { settings.isInWorktime(request.date, request.dateEnd) } returns true
-            coEvery { permissionsDataSource.getPermissions(userId, request.businessId) } returns READ.int
+            coEvery { appointmentPermissionDataSource.getPermission(userId, request.businessId) } returns ResourcePermission(view = true)
             coEvery { appointmentDataSource.hasOverlapsWith(request) } returns false
             coEvery { appointmentDataSource.create(request) } returns appointment
             coEvery { requestDataSource.approve(request) } returns Unit

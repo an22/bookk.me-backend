@@ -8,7 +8,7 @@ Largest schema — a business, its staff, services and clients.
 erDiagram
     BUSINESS ||--o{ BUSINESS_DASHBOARD : "has"
     BUSINESS ||--o{ BUSINESS_DAY_OFFS : "has"
-    BUSINESS ||--o{ BUSINESS_PERMISSIONS : "grants"
+    BUSINESS ||--o{ BUSINESS_PERMISSION_GRANTS : "grants"
     BUSINESS ||--o{ BUSINESS_WORKING_HOURS : "has"
     BUSINESS ||--o{ CLIENT : "has"
     BUSINESS ||--o{ EMPLOYEE : "employs"
@@ -59,11 +59,14 @@ erDiagram
         timestamp updated_at
     }
 
-    BUSINESS_PERMISSIONS {
+    BUSINESS_PERMISSION_GRANTS {
         uuid id PK
-        uuid user_id "logical FK -> user.profile.id; UK with business_id"
+        uuid user_id "logical FK -> user.profile.id; UK with business_id, resource"
         uuid business_id FK
-        int permission
+        enum resource "BUSINESS | EMPLOYEES | CLIENTS | SERVICES | APPOINTMENTS; UK with user_id, business_id"
+        bool can_view
+        bool can_update
+        bool can_delete
     }
 
     BUSINESS_WORKING_HOURS {
@@ -122,9 +125,9 @@ erDiagram
 
     EMPLOYEE_INVITATION {
         uuid id PK
-        uuid business_id FK "UK with email"
+        uuid business_id FK
         uuid invited_by "logical FK -> user.profile.id"
-        string email
+        string code_hash UK "SHA-256 hex of the invite code, never the plaintext; nullable, cleared once the invitation leaves PENDING so the code can be reused"
         enum status
         timestamp created_at
         timestamp updated_at

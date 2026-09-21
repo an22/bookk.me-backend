@@ -18,6 +18,7 @@ import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import kotlin.time.Clock
@@ -330,8 +331,8 @@ internal class AppointmentDataSourceImplTest {
 
         then()
         assertEquals("Deleted User", found.client.fullName)
-        assertEquals("", found.client.phone)
-        assertEquals("", found.client.email)
+        assertNull(found.client.phone)
+        assertNull(found.client.email)
     }
 
     @Test

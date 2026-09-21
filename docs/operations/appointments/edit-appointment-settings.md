@@ -13,8 +13,9 @@ flowchart TD
     PathCheck -- Yes --> Auth{JWT valid?}
     Auth -- No --> R401([401 Unauthorized])
     Auth -- Yes --> Tx[[Begin transaction]]
-    Tx --> Perm{permission >= EDIT?}
+    Tx --> Perm{caller update permission?}
     Perm -- No --> R404([404 Error.OperationNotAllowed])
     Perm -- Yes --> Update[AppointmentSettingsDataSource.update update]
-    Update --> R200([200 Updated AppointmentSettings])
+    Update --> Attach[Attach caller's permission onto the returned settings]
+    Attach --> R200([200 Updated AppointmentSettings])
 ```

@@ -8,20 +8,21 @@ import com.bookk.business.domain.api.business.operation.GetBusinessById
 import com.bookk.business.domain.api.business.operation.GetBusinessPermission
 import com.bookk.business.domain.api.business.operation.GetDashboardBusiness
 import com.bookk.business.domain.api.business.operation.GetUserBusinesses
+import com.bookk.business.domain.api.business.operation.SetDashboardBusiness
 import com.bookk.business.domain.api.business.operation.UpdateBusiness
 import com.bookk.business.domain.api.client.operation.CreateClient
 import com.bookk.business.domain.api.client.operation.DeleteClient
+import com.bookk.business.domain.api.client.operation.GetClientBusinessIds
 import com.bookk.business.domain.api.client.operation.GetClients
 import com.bookk.business.domain.api.client.operation.UpdateClient
-import com.bookk.business.domain.api.employee.operation.ApproveEmployeeInvitation
 import com.bookk.business.domain.api.employee.operation.CreateEmployeeInvitation
 import com.bookk.business.domain.api.employee.operation.ExpireEmployeeInvitations
 import com.bookk.business.domain.api.employee.operation.GetEmployeeInvitations
+import com.bookk.business.domain.api.employee.operation.GetEmployeePermissions
 import com.bookk.business.domain.api.employee.operation.GetEmployees
-import com.bookk.business.domain.api.employee.operation.GetPendingEmployeeInvitationsByEmail
-import com.bookk.business.domain.api.employee.operation.PromoteEmployee
-import com.bookk.business.domain.api.employee.operation.RejectEmployeeInvitation
+import com.bookk.business.domain.api.employee.operation.JoinBusiness
 import com.bookk.business.domain.api.employee.operation.RevokeEmployeeInvitation
+import com.bookk.business.domain.api.employee.operation.SetEmployeePermission
 import com.bookk.business.domain.api.employee.operation.UpdateEmployee
 import com.bookk.business.domain.api.service.operation.CreateService
 import com.bookk.business.domain.api.service.operation.CreateServiceGroup
@@ -42,20 +43,21 @@ import com.bookk.business.domain.impl.operation.business.GetBusinessByIdImpl
 import com.bookk.business.domain.impl.operation.business.GetBusinessPermissionImpl
 import com.bookk.business.domain.impl.operation.business.GetDashboardBusinessImpl
 import com.bookk.business.domain.impl.operation.business.GetUserBusinessesImpl
+import com.bookk.business.domain.impl.operation.business.SetDashboardBusinessImpl
 import com.bookk.business.domain.impl.operation.business.UpdateBusinessImpl
 import com.bookk.business.domain.impl.operation.client.CreateClientImpl
 import com.bookk.business.domain.impl.operation.client.DeleteClientImpl
+import com.bookk.business.domain.impl.operation.client.GetClientBusinessIdsImpl
 import com.bookk.business.domain.impl.operation.client.GetClientsImpl
 import com.bookk.business.domain.impl.operation.client.UpdateClientImpl
-import com.bookk.business.domain.impl.operation.employee.ApproveEmployeeInvitationImpl
 import com.bookk.business.domain.impl.operation.employee.CreateEmployeeInvitationImpl
 import com.bookk.business.domain.impl.operation.employee.ExpireEmployeeInvitationsImpl
 import com.bookk.business.domain.impl.operation.employee.GetEmployeeInvitationsImpl
+import com.bookk.business.domain.impl.operation.employee.GetEmployeePermissionsImpl
 import com.bookk.business.domain.impl.operation.employee.GetEmployeesImpl
-import com.bookk.business.domain.impl.operation.employee.GetPendingEmployeeInvitationsByEmailImpl
-import com.bookk.business.domain.impl.operation.employee.PromoteEmployeeImpl
-import com.bookk.business.domain.impl.operation.employee.RejectEmployeeInvitationImpl
+import com.bookk.business.domain.impl.operation.employee.JoinBusinessImpl
 import com.bookk.business.domain.impl.operation.employee.RevokeEmployeeInvitationImpl
+import com.bookk.business.domain.impl.operation.employee.SetEmployeePermissionImpl
 import com.bookk.business.domain.impl.operation.employee.UpdateEmployeeImpl
 import com.bookk.business.domain.impl.operation.service.CreateServiceGroupImpl
 import com.bookk.business.domain.impl.operation.service.CreateServiceImpl
@@ -82,12 +84,14 @@ fun businessDomainModule() = module {
     singleOf(::DeleteBusinessImpl) bind DeleteBusiness::class
     singleOf(::GetBusinessPermissionImpl) bind GetBusinessPermission::class
     singleOf(::GetDashboardBusinessImpl) bind GetDashboardBusiness::class
+    singleOf(::SetDashboardBusinessImpl) bind SetDashboardBusiness::class
     singleOf(::UpdateBusinessImpl) bind UpdateBusiness::class
     singleOf(::GetUserBusinessesImpl) bind GetUserBusinesses::class
     singleOf(::DeleteDayOffsInThePastImpl) bind DeleteDayOffsInThePast::class
     factoryOf(::BusinessEventHandlerImpl) bind EventHandler::class
     singleOf(::CreateClientImpl) bind CreateClient::class
     singleOf(::GetClientsImpl) bind GetClients::class
+    singleOf(::GetClientBusinessIdsImpl) bind GetClientBusinessIds::class
     singleOf(::DeleteClientImpl) bind DeleteClient::class
     singleOf(::UpdateClientImpl) bind UpdateClient::class
     singleOf(::SyncUserProfileImpl) bind SyncUserProfile::class
@@ -101,13 +105,12 @@ fun businessDomainModule() = module {
     singleOf(::GetServiceGroupsImpl) bind GetServiceGroups::class
     singleOf(::IssueQuoteImpl) bind IssueServiceQuote::class
     singleOf(::CreateEmployeeInvitationImpl) bind CreateEmployeeInvitation::class
-    singleOf(::ApproveEmployeeInvitationImpl) bind ApproveEmployeeInvitation::class
+    singleOf(::JoinBusinessImpl) bind JoinBusiness::class
     singleOf(::GetEmployeeInvitationsImpl) bind GetEmployeeInvitations::class
-    singleOf(::GetPendingEmployeeInvitationsByEmailImpl) bind GetPendingEmployeeInvitationsByEmail::class
     singleOf(::GetEmployeesImpl) bind GetEmployees::class
     singleOf(::UpdateEmployeeImpl) bind UpdateEmployee::class
-    singleOf(::PromoteEmployeeImpl) bind PromoteEmployee::class
-    singleOf(::RejectEmployeeInvitationImpl) bind RejectEmployeeInvitation::class
+    singleOf(::SetEmployeePermissionImpl) bind SetEmployeePermission::class
+    singleOf(::GetEmployeePermissionsImpl) bind GetEmployeePermissions::class
     singleOf(::RevokeEmployeeInvitationImpl) bind RevokeEmployeeInvitation::class
     singleOf(::ExpireEmployeeInvitationsImpl) bind ExpireEmployeeInvitations::class
     singleOf(::GetAppointmentBookingContextImpl) bind GetAppointmentBookingContext::class

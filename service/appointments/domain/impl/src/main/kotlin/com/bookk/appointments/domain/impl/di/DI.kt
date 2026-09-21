@@ -12,6 +12,7 @@ import com.bookk.appointments.domain.api.operation.EnableAppointmentsForBusiness
 import com.bookk.appointments.domain.api.operation.GetAppointmentHistory
 import com.bookk.appointments.domain.api.operation.GetAppointmentRequests
 import com.bookk.appointments.domain.api.operation.GetAppointmentsForDate
+import com.bookk.appointments.domain.api.operation.GetClientBusinessesAppointmentsStatus
 import com.bookk.appointments.domain.api.operation.GetPendingAppointmentRequests
 import com.bookk.appointments.domain.api.operation.GetSettings
 import com.bookk.appointments.domain.api.operation.IsAppointmentsEnabled
@@ -30,6 +31,7 @@ import com.bookk.appointments.domain.impl.operation.EnableAppointmentsForBusines
 import com.bookk.appointments.domain.impl.operation.GetAppointmentHistoryImpl
 import com.bookk.appointments.domain.impl.operation.GetAppointmentRequestsImpl
 import com.bookk.appointments.domain.impl.operation.GetAppointmentsForDataImpl
+import com.bookk.appointments.domain.impl.operation.GetClientBusinessesAppointmentsStatusImpl
 import com.bookk.appointments.domain.impl.operation.GetPendingAppointmentRequestsImpl
 import com.bookk.appointments.domain.impl.operation.GetSettingsImpl
 import com.bookk.appointments.domain.impl.operation.IsAppointmentsEnabledImpl
@@ -60,6 +62,7 @@ fun appointmentsDomainModule() = module {
     factoryOf(::SyncEmployeePermission)
     factoryOf(::DeclineAppointmentRequestImpl) bind DeclineAppointmentRequest::class
     factoryOf(::IsAppointmentsEnabledImpl) bind IsAppointmentsEnabled::class
+    factoryOf(::GetClientBusinessesAppointmentsStatusImpl) bind GetClientBusinessesAppointmentsStatus::class
     factoryOf(::MarkAppointmentsCompletedImpl) bind MarkAppointmentsCompleted::class
     factoryOf(::DeleteOutdatedRequestsImpl) bind DeleteOutdatedRequests::class
     factoryOf(::DeleteUserAppointmentDataImpl) bind DeleteUserAppointmentData::class

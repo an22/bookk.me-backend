@@ -5,6 +5,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.protobuf.ProtoNumber
+import library.permissions.ResourcePermission
 import library.schedule.Schedule
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
@@ -17,7 +18,8 @@ data class AppointmentSettings(
     @ProtoNumber(4) val schedule: Schedule,
     @ProtoNumber(5) val automaticApproval: Boolean,
     @ProtoNumber(6) val inBetweenBreakInMinutes: Int,
-    @ProtoNumber(7) val appointmentNote: String
+    @ProtoNumber(7) val appointmentNote: String,
+    @ProtoNumber(8) val permissions: ResourcePermission
 ) {
     companion object {
         fun stub(businessId: Uuid = Uuid.random()) = AppointmentSettings(businessId = businessId, TimeZone.of("UTC"))
@@ -30,7 +32,8 @@ data class AppointmentSettings(
         schedule = Schedule(),
         automaticApproval = false,
         inBetweenBreakInMinutes = 10,
-        appointmentNote = ""
+        appointmentNote = "",
+        permissions = ResourcePermission.NONE
     )
 
     fun isInWorkday(date: Instant): Boolean {

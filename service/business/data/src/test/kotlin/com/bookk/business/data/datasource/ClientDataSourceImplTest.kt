@@ -2,7 +2,7 @@ package com.bookk.business.data.datasource
 
 import com.bookk.business.data.orm.table.BusinessDashboardTable
 import com.bookk.business.data.orm.table.BusinessDayOffTable
-import com.bookk.business.data.orm.table.BusinessPermissionsTable
+import com.bookk.business.data.orm.table.BusinessPermissionGrantsTable
 import com.bookk.business.data.orm.table.BusinessTable
 import com.bookk.business.data.orm.table.BusinessWorkingHoursTable
 import com.bookk.business.data.orm.table.ClientTable
@@ -26,7 +26,7 @@ import kotlin.uuid.Uuid
 internal class ClientDataSourceImplTest {
 
     private class SutFixture {
-        val db = createTestDatabase(BusinessTable, BusinessDashboardTable, BusinessPermissionsTable, BusinessWorkingHoursTable, BusinessDayOffTable, ClientTable)
+        val db = createTestDatabase(BusinessTable, BusinessDashboardTable, BusinessPermissionGrantsTable, BusinessWorkingHoursTable, BusinessDayOffTable, ClientTable)
         val sut = ClientDataSourceImpl()
         val businessSut = BusinessDataSourceImpl()
         lateinit var businessId: Uuid
@@ -552,6 +552,52 @@ internal class ClientDataSourceImplTest {
         assertEquals("Henry", result.name)
         val clients = suspendTransaction { fixture.sut.getClients(fixture.businessId) }
         assertEquals(1, clients.size)
+    }
+
+    @Test
+    fun `should return business ids for a client user id across multiple businesses`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val otherBusinessId = suspendTransaction {
+            fixture.businessSut.createBusiness(Uuid.random(), "Other Business", "USD", TimeZone.UTC)
+        }.id
+        val userId = Uuid.random()
+        suspendTransaction { fixture.sut.createIntegratedClient(fixture.businessId, Client.Integrated.stub(userId = userId)) }
+        suspendTransaction { fixture.sut.createIntegratedClient(otherBusinessId, Client.Integrated.stub(userId = userId)) }
+
+        whenn()
+        val businessIds = suspendTransaction { fixture.sut.getBusinessIdsByUserId(userId) }
+
+        then()
+        assertEquals(setOf(fixture.businessId, otherBusinessId), businessIds.toSet())
+    }
+
+    @Test
+    fun `should return empty list of business ids for a user with no client relations`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+
+        whenn()
+        val businessIds = suspendTransaction { fixture.sut.getBusinessIdsByUserId(Uuid.random()) }
+
+        then()
+        assertTrue(businessIds.isEmpty())
+    }
+
+    @Test
+    fun `should not return business ids for detached clients`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        suspendTransaction { fixture.sut.createDetachedClient(fixture.businessId, Client.Detached.stub()) }
+
+        whenn()
+        val businessIds = suspendTransaction { fixture.sut.getBusinessIdsByUserId(Uuid.random()) }
+
+        then()
+        assertTrue(businessIds.isEmpty())
     }
 
     @Test

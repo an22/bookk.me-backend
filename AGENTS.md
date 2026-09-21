@@ -18,7 +18,7 @@ service/<svc>/
 
 New gradle modules must be registered in `settings.gradle.kts` (one `include` per submodule, grouped per service). Convention plugins (`libs.plugins.bookk.microservice`, `bookk.domain.impl`, `bookk.domain.api`, `bookk.data`, …) already add Ktor/Koin/MockK/kotlin-test deps and JUnit platform — do not re-add them.
 
-**Generate database migrations.** This is now Claude's job, not the user's. When an ORM table changes (new column, new index, new table, etc.), bump `targetVersion` in `<Svc>Migration.kt` (`referenceVersion` becomes the old `targetVersion`) and run its `main()` to produce the new `V<n>__migration_script.sql`. This needs a MariaDB instance reachable at `127.0.0.1:3308` — bring one up via `deployment/dev/environment-compose.yml` if one isn't already running. Never hand-edit a generated `V<n>__migration_script.sql`; if the table definition changes again, regenerate it instead.
+**Write database migrations by hand.** This is now Claude's job, not the user's. There is no generator — earlier attempts at diffing the ORM table definitions with `MigrationUtils`/Flyway produced migration scripts that silently corrupted schema changes involving composite indices (a dropped column still referenced by a named unique index never got its `DROP INDEX`, and MariaDB rejected the result), so that tooling was removed rather than trusted. When an ORM table changes (new column, new index, new table, etc.), write the SQL directly into a new `service/<svc>/data/src/main/resources/db/migration/<schema>/V<n>__migration_script.sql`, where `<n>` is one past the highest `V<n>` already in that directory. Reflect exactly what changed in the table definition: column adds/drops/type changes, index adds/drops, constraint changes — and drop a named composite index yourself before dropping any column it covers, MariaDB will not infer that. Verify the new script applies cleanly before considering the change done: bring up a MariaDB instance reachable at `127.0.0.1:3308` (`deployment/dev/environment-compose.yml` if one isn't already running), then actually run Flyway against it through all migrations for that schema up to and including the new file and confirm it succeeds — never hand-wave this step or ship a script that hasn't been executed against a real database.
 **Keep the database ER diagrams current.** `docs/database/` documents every microservice's schema as a Mermaid ER diagram in its own file (`docs/database/<svc>.md`, indexed from `docs/database/README.md`), plus `docs/database/cross-service-overview.md` for logical (non-FK) references. Any change to an ORM table — new/removed table, column, or relationship — must update that service's diagram (and the cross-service overview, if a logical reference changed) in the same change.
 **Keep the operation activity diagrams current.** `docs/operations/` holds one Mermaid flowchart per HTTP route that mutates state, plus one per asynchronous reaction to a cross-service Kafka event (an `EventHandler`'s `registerResultReceiver` block — file named `on-<event>.md`, e.g. `on-user-deleted.md`), indexed in `docs/operations/README.md` and cross-linked from each route's KDoc via a `See: docs/operations/<svc>/<file>.md` line (an unrecognized KDoc field — the openApi plugin ignores it, verified by compiling). Any new mutating route or event handler, or a change to an existing one's permission checks/error cases/event publication/event handling, must add or update its diagram in the same change. Diagram nodes should carry the actual datasource calls, error codes and event names so the flow is understandable without opening the code. Whenever an operation sends a cross-service event, its diagram ends with a `**Consumed by:**` line linking forward to every reaction diagram for that event, and each reaction diagram links back to its producer(s) — keep both directions in sync, and mirror any addition/removal in `docs/operations/README.md`'s "Cross-service event map" table.
 **Ignore all git operations.** Managing Git is the responsibility of the developer, do not automatically commit, push or merge
@@ -31,7 +31,7 @@ New gradle modules must be registered in `settings.gradle.kts` (one `include` pe
 - Error codes live in `domain/api/.../<Svc>ErrorCodes` as `BASE + n`. Blocks: auth=0, user=100000, business=200000, appointments=300000. Next service takes the next 100000 block.
 - Generic infrastructure errors: `com.bookk.core.domain.entity.Error` (`NotFound`, `OperationNotAllowed`, …).
 - `call.respondWith(result)` (core/service) maps: success Unit→204, success T→200, `BusinessError`→its statusCode + `SimpleServerError(errorCode, message)`, `Error.NotFound`/`Error.OperationNotAllowed`→**404** (intentional: permission failures do NOT return 403), anything else→500 (logged).
-- Permissions: `permissionsDataSource.getPermissions(userId, businessId).assert(ObjectPermission.EDIT)` (library/permissions) — throws `Error.OperationNotAllowed`.
+- Permissions: fine-grained per-resource grants (`library.permissions.ResourcePermission(view, update, delete)`, three independent booleans, no ranking between them) — `businessPermissionDataSource.getPermission(userId, businessId, BusinessResource.CLIENTS).assert(PermissionAction.UPDATE)` (business) or `appointmentPermissionDataSource.getPermission(userId, businessId).assert(PermissionAction.VIEW)` (appointments, single implicit resource) — throws `Error.OperationNotAllowed`. A caller acting on their own assigned resource (e.g. an employee's own appointment) can pass an `update`/`delete` check on a `view`-only grant via `.assertOrSelf(action, actorId, assigneeId)`. See `docs/object-permissions.md` for the full model, including how a `Business`/`AppointmentSettings` entity gets the requesting user's grants attached (`.copy(permissions = ...)`, computed per request, never persisted on the row).
 - Name/email/phone format checks: `library.validation.{NameValidator,EmailValidator,PhoneValidator}.isValid(value, ...)` (library/validation, plain `bookk.domain.api` module, no domain dependency) — pure `Boolean` predicates, each with a default `maxLength`/`minLength` you can override per call site; the caller still owns throwing its own `*ValidationError`. Reuse these instead of hand-rolling a regex/length check in a new operation.
 - Wire format is ProtoBuf (`application/x-protobuf`) for all bodies/responses. **A nullable collection (`List<T>?`, `Map<K, V>?`) cannot be serialized when null** — kotlinx throws `'null' is not supported as the value of collection types in ProtoBuf`. For an optional group of fields in a partial-update DTO, wrap them in a nullable `@Serializable` holder class (a nullable message is fine) instead of making each list nullable — see `BusinessUpdateModel.schedule: Schedule?`. **A nullable property must not also have a default** — the serializer runs with `encodeDefaults = true`, and encoding a defaulted null throws `'null' is not supported for optional properties in ProtoBuf` as soon as a caller omits it. Give every nullable field on a partial-update DTO no default at all and pass them explicitly (`BusinessUpdateModel`, `UserEditModel`).
 - Entities: `@Serializable data class` in `domain/api/.../entity` with a `companion object { fun stub(...) }` factory (defaulted params, `Uuid.random()`, `Instant.fromEpochMilliseconds(0)`) — add `stub()` to every new entity; tests rely on it.
@@ -61,20 +61,20 @@ interface DoThing {
 ```kotlin
 internal class DoThingImpl(
     private val thingDataSource: ThingDataSource,
-    private val permissionsDataSource: PermissionsDataSource,
+    private val businessPermissionDataSource: BusinessPermissionDataSource,
     private val transactionManager: TransactionManager,
     private val eventProducer: StandardEventProducer, // only if events sent
 ) : DoThing {
     override suspend fun invoke(userId: Uuid, ...): Result<Thing> = transactionManager.transaction {
         val thing = thingDataSource.get(id) ?: throw Error.NotFound()
-        permissionsDataSource.getPermissions(userId, businessId).assert(ObjectPermission.EDIT)
+        businessPermissionDataSource.getPermission(userId, businessId, BusinessResource.THINGS).assert(PermissionAction.UPDATE)
         if (conflict) throw DoThing.Error.ThingExists()
         thingDataSource.create(...) // also { eventProducer.send(SvcEvent.X(...)) } if needed
     }
 }
 ```
 4. Register in `domain/impl/.../di/DI.kt`: `factoryOf(::DoThingImpl) bind DoThing::class`.
-5. If a new datasource method is needed: add to the interface in `data/source/.../datasource/`, implement in `data/.../datasource/<X>DataSourceImpl.kt` (`internal class ... : DataSource(), XDataSource`, queries wrapped in `dbQuery { }`, Exposed v1 DSL, `Uuid` for ids). New datasources are registered in `data/.../di/`: `singleOf(::XDataSourceImpl) bind XDataSource::class`. New tables go in `data/.../orm/{table,entity}` and must be added to the service's `<Svc>Migration.kt` `tables()` array.
+5. If a new datasource method is needed: add to the interface in `data/source/.../datasource/`, implement in `data/.../datasource/<X>DataSourceImpl.kt` (`internal class ... : DataSource(), XDataSource`, queries wrapped in `dbQuery { }`, Exposed v1 DSL, `Uuid` for ids). New datasources are registered in `data/.../di/`: `singleOf(::XDataSourceImpl) bind XDataSource::class`. New tables go in `data/.../orm/{table,entity}` and need a hand-written migration script (see "Write database migrations by hand" above).
 
 ### Writes live on the entity, not in the datasource
 
@@ -171,6 +171,7 @@ Required imports: `io.ktor.http.ContentType`, `io.ktor.openapi.jsonSchema`, `io.
 4. When a path id duplicates a body id, validate: `if (it.id != body.id) call.respond(HttpStatusCode.BadRequest, "Invalid request") else ...`.
 5. Register the new route fn in `route/<Svc>Route.kt` aggregator (`fun Routing.<svc>Route()`); the aggregator is already wired in `<Svc>Microservice.kt`.
 6. `AppPrincipal` fields: `authId`, `userId`, `deviceId` (all `Uuid`).
+7. **For `get`/`post`/`delete`/`put`/`patch` matching a typed `@Resource`, import from `io.ktor.server.resources.*`, never `io.ktor.server.routing.*`.** The two packages both export a same-named function taking a generic type parameter, so the wrong import still compiles: `io.ktor.server.routing.patch<R>(body: suspend RoutingContext.(R) -> Unit)` treats `R` as a **request-body type to deserialize** (`call.receive<R>()`) and registers a bare `method(HttpMethod.Patch)` node with no path — it silently ignores the `@Resource` class entirely instead of routing by it. A route written as `patch<Api.Thing.Id> { ... }` with that import compiles clean but never matches its real URL, so every request 404s with no error anywhere (found via `service/business/microservice/route/api/Client.kt`, which had `import io.ktor.server.routing.patch` where every sibling handler in the same file correctly imported from `io.ktor.server.resources.*`).
 
 ## Testing
 
@@ -198,9 +199,9 @@ internal class DoThingImplTest {
 
     private class SutFixture {
         val thingDataSource = mockk<ThingDataSource>()
-        val permissionsDataSource = mockk<PermissionsDataSource>()
+        val businessPermissionDataSource = mockk<BusinessPermissionDataSource>()
         val transactionManager = mockk<TransactionManager>()
-        val sut = DoThingImpl(thingDataSource, permissionsDataSource, transactionManager)
+        val sut = DoThingImpl(thingDataSource, businessPermissionDataSource, transactionManager)
     }
 
     @Test
@@ -210,7 +211,7 @@ internal class DoThingImplTest {
         val thing = Thing.stub(userId = userId)
         val fixture = SutFixture()
         with(fixture) {
-            coEvery { permissionsDataSource.getPermissions(userId, thing.businessId) } returns ObjectPermission.EDIT.int
+            coEvery { businessPermissionDataSource.getPermission(userId, thing.businessId, BusinessResource.THINGS) } returns ResourcePermission(update = true)
             coEvery { thingDataSource.create(any()) } returns thing
             transactionManager.mockTransaction() // testFixtures(projects.core.domain.datasource)
         }
@@ -224,7 +225,7 @@ internal class DoThingImplTest {
     }
 }
 ```
-Permission-denied case: stub `getPermissions` to return `ObjectPermission.READ.int`, assert `result.exceptionOrNull() is Error.OperationNotAllowed`.
+Permission-denied case: stub `getPermission` to return `ResourcePermission(view = true)` (or `ResourcePermission.NONE` for "no grant at all"), assert `result.exceptionOrNull() is Error.OperationNotAllowed`.
 
 ### Route (microservice) test template
 

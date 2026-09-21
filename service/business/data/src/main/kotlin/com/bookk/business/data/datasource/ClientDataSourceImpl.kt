@@ -15,6 +15,7 @@ import org.jetbrains.exposed.v1.core.less
 import org.jetbrains.exposed.v1.core.or
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insertAndGetId
+import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.update
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
@@ -132,5 +133,11 @@ internal class ClientDataSourceImpl : DataSource(), ClientDataSource {
             it[email] = null
             it[this.userId] = null
         }
+    }
+
+    override suspend fun getBusinessIdsByUserId(userId: Uuid): List<Uuid> = dbQuery {
+        ClientTable.select(ClientTable.businessId)
+            .where { ClientTable.userId eq userId }
+            .map { it[ClientTable.businessId].value }
     }
 }

@@ -1,5 +1,6 @@
 package com.bookk.business.microservice.route
 
+import com.bookk.business.domain.impl.di.BusinessScope
 import com.bookk.business.microservice.route.api.businessCrud
 import com.bookk.business.microservice.route.api.clientCrud
 import com.bookk.business.microservice.route.api.employeeCrud
@@ -18,7 +19,7 @@ import library.signing.route.jwks
 
 fun Routing.businessRoute() {
     healthCheck()
-    jwks()
+    jwks(BusinessScope)
     businessCrud()
     getBusinessById()
     getBusinessPermission()

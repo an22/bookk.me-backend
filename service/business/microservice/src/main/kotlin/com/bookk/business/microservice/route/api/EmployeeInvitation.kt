@@ -5,7 +5,9 @@ import com.bookk.business.domain.api.employee.operation.CreateEmployeeInvitation
 import com.bookk.business.domain.api.employee.operation.GetEmployeeInvitations
 import com.bookk.business.domain.api.employee.operation.JoinBusiness
 import com.bookk.business.domain.api.employee.operation.RevokeEmployeeInvitation
+import com.bookk.business.domain.impl.di.BusinessScope
 import com.bookk.business.microservice.route.BusinessRouting.Api
+import com.bookk.core.service.di.injectScoped
 import com.bookk.core.service.enity.respondWith
 import com.bookk.server.auth.client.AppPrincipal
 import io.ktor.http.ContentType
@@ -21,7 +23,6 @@ import io.ktor.server.routing.application
 import io.ktor.server.routing.openapi.describe
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.protobuf.ProtoNumber
-import org.koin.ktor.ext.inject
 
 @Serializable
 internal class EmployeeInvitationRedeemRequest(
@@ -41,7 +42,7 @@ fun Route.employeeInvitationCrud() {
          */
         post<Api.EmployeeInvitation> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
-            val createEmployeeInvitation by application.inject<CreateEmployeeInvitation>()
+            val createEmployeeInvitation by application.injectScoped<CreateEmployeeInvitation>(BusinessScope)
 
             call.respondWith(createEmployeeInvitation(requestUserId = principal.userId, businessId = it.businessId))
         }
@@ -54,7 +55,7 @@ fun Route.employeeInvitationCrud() {
          */
         get<Api.EmployeeInvitation> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
-            val getEmployeeInvitations by application.inject<GetEmployeeInvitations>()
+            val getEmployeeInvitations by application.injectScoped<GetEmployeeInvitations>(BusinessScope)
 
             call.respondWith(getEmployeeInvitations(userId = principal.userId, businessId = it.businessId))
         }.describe {
@@ -81,7 +82,7 @@ fun Route.employeeInvitationCrud() {
         post<Api.RedeemEmployeeInvitation> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
             val body = call.receive<EmployeeInvitationRedeemRequest>()
-            val joinBusiness by application.inject<JoinBusiness>()
+            val joinBusiness by application.injectScoped<JoinBusiness>(BusinessScope)
 
             call.respondWith(joinBusiness(requestUserId = principal.userId, code = body.code))
         }
@@ -98,7 +99,7 @@ fun Route.employeeInvitationCrud() {
          */
         post<Api.EmployeeInvitation.Revoke> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
-            val revokeEmployeeInvitation by application.inject<RevokeEmployeeInvitation>()
+            val revokeEmployeeInvitation by application.injectScoped<RevokeEmployeeInvitation>(BusinessScope)
 
             call.respondWith(
                 revokeEmployeeInvitation(

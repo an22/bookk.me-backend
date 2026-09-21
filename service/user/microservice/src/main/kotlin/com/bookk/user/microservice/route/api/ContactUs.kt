@@ -1,9 +1,11 @@
 package com.bookk.user.microservice.route.api
 
+import com.bookk.core.service.di.injectScoped
 import com.bookk.core.service.enity.respondWith
 import com.bookk.server.auth.client.AppPrincipal
 import com.bookk.user.domain.api.entity.ContactForm
 import com.bookk.user.domain.api.operation.CreateContactForm
+import com.bookk.user.domain.impl.di.UserScope
 import com.bookk.user.microservice.route.UserRouting.Api
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.principal
@@ -13,7 +15,6 @@ import io.ktor.server.routing.Route
 import io.ktor.server.routing.application
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.protobuf.ProtoNumber
-import org.koin.ktor.ext.inject
 import kotlin.uuid.Uuid
 
 @Serializable
@@ -45,7 +46,7 @@ internal fun Route.postContactForm() {
         post<Api.User.ContactUs> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
             val body = requireNotNull(call.receive<ContactFormBody>())
-            val createForm by application.inject<CreateContactForm>()
+            val createForm by application.injectScoped<CreateContactForm>(UserScope)
 
             call.respondWith(createForm(body.asForm(principal.userId)))
         }

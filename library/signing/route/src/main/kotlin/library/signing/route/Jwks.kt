@@ -1,5 +1,6 @@
 package library.signing.route
 
+import com.bookk.core.service.di.injectScoped
 import io.ktor.http.ContentType
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.Route
@@ -8,7 +9,7 @@ import io.ktor.server.routing.get
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import library.signing.GetVerificationKeys
-import org.koin.ktor.ext.inject
+import org.koin.core.qualifier.Qualifier
 import java.math.BigInteger
 import java.security.KeyFactory
 import java.security.interfaces.RSAPublicKey
@@ -16,13 +17,13 @@ import java.security.spec.X509EncodedKeySpec
 import java.util.Base64
 import kotlin.uuid.Uuid
 
-fun Route.jwks() {
+fun Route.jwks(qualifier: Qualifier) {
     /**
      * Summary: JSON Web Key Set
      * Description: Publishes the public keys used to verify tokens issued by this service.
      */
     get("/jwks.json") {
-        val getVerificationKeys by application.inject<GetVerificationKeys>()
+        val getVerificationKeys by application.injectScoped<GetVerificationKeys>(qualifier)
         val keys = getVerificationKeys().getOrThrow().map { createJwk(it.id, it.publicKeyPem) }
         call.respondText(jwksJson.encodeToString(JwkSet(keys)), ContentType.Application.Json)
     }

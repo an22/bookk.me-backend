@@ -3,7 +3,9 @@ package com.bookk.appointments.microservice.route.api
 import com.bookk.appointments.domain.api.entity.AppointmentSettingsUpdate
 import com.bookk.appointments.domain.api.operation.EditSettings
 import com.bookk.appointments.domain.api.operation.GetSettings
+import com.bookk.appointments.domain.impl.di.AppointmentsScope
 import com.bookk.appointments.microservice.route.AppointmentsRouting.Api
+import com.bookk.core.service.di.injectScoped
 import com.bookk.core.service.enity.respondWith
 import com.bookk.server.auth.client.AppPrincipal
 import io.ktor.http.HttpStatusCode
@@ -15,7 +17,6 @@ import io.ktor.server.resources.put
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Routing
 import io.ktor.server.routing.application
-import org.koin.ktor.ext.inject
 
 fun Routing.settings() {
     authenticate {
@@ -29,7 +30,7 @@ fun Routing.settings() {
          */
         get<Api.Appointment.Settings> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
-            val getSettings by application.inject<GetSettings>()
+            val getSettings by application.injectScoped<GetSettings>(AppointmentsScope)
 
             call.respondWith(
                 getSettings(
@@ -53,7 +54,7 @@ fun Routing.settings() {
         put<Api.Appointment.Settings> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
             val body = call.receive<AppointmentSettingsUpdate>()
-            val editSettings by application.inject<EditSettings>()
+            val editSettings by application.injectScoped<EditSettings>(AppointmentsScope)
 
             if (it.businessId != body.businessId) {
                 call.respond(HttpStatusCode.BadRequest, "Invalid request")

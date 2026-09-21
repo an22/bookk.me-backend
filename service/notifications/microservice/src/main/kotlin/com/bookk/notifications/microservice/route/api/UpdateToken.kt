@@ -1,7 +1,9 @@
 package com.bookk.notifications.microservice.route.api
 
+import com.bookk.core.service.di.injectScoped
 import com.bookk.core.service.enity.respondWith
 import com.bookk.notifications.domain.api.UpdatePushNotificationToken
+import com.bookk.notifications.domain.impl.di.NotificationsScope
 import com.bookk.notifications.microservice.route.NotificationsRouting.Api
 import io.ktor.server.auth.authenticate
 import io.ktor.server.request.receive
@@ -10,7 +12,6 @@ import io.ktor.server.routing.Route
 import io.ktor.server.routing.application
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.protobuf.ProtoNumber
-import org.koin.ktor.ext.inject
 
 @Serializable
 internal class UpdateTokenRequest(@ProtoNumber(1) val token: String)
@@ -28,7 +29,7 @@ internal fun Route.notificationToken() {
          */
         put<Api.Notification.Token> {
             val body = call.receive<UpdateTokenRequest>()
-            val updatePushNotificationToken by application.inject<UpdatePushNotificationToken>()
+            val updatePushNotificationToken by application.injectScoped<UpdatePushNotificationToken>(NotificationsScope)
             call.respondWith(updatePushNotificationToken(it.deviceUuid, body.token))
         }
     }

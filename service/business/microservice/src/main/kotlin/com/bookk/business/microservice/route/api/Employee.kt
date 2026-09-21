@@ -5,7 +5,9 @@ import com.bookk.business.domain.api.employee.operation.GetEmployeePermissions
 import com.bookk.business.domain.api.employee.operation.GetEmployees
 import com.bookk.business.domain.api.employee.operation.SetEmployeePermission
 import com.bookk.business.domain.api.employee.operation.UpdateEmployee
+import com.bookk.business.domain.impl.di.BusinessScope
 import com.bookk.business.microservice.route.BusinessRouting.Api
+import com.bookk.core.service.di.injectScoped
 import com.bookk.core.service.enity.respondWith
 import com.bookk.server.auth.client.AppPrincipal
 import io.ktor.http.ContentType
@@ -21,7 +23,6 @@ import io.ktor.server.routing.Route
 import io.ktor.server.routing.application
 import io.ktor.server.routing.openapi.describe
 import library.permissions.ResourcePermission
-import org.koin.ktor.ext.inject
 
 fun Route.employeeCrud() {
     authenticate {
@@ -33,7 +34,7 @@ fun Route.employeeCrud() {
          */
         get<Api.Employee> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
-            val getEmployees by application.inject<GetEmployees>()
+            val getEmployees by application.injectScoped<GetEmployees>(BusinessScope)
 
             call.respondWith(getEmployees(userId = principal.userId, businessId = it.businessId))
         }.describe {
@@ -60,7 +61,7 @@ fun Route.employeeCrud() {
         put<Api.Employee.Id> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
             val body = call.receive<Employee>()
-            val updateEmployee by application.inject<UpdateEmployee>()
+            val updateEmployee by application.injectScoped<UpdateEmployee>(BusinessScope)
 
             if (it.parent.businessId != body.businessId || it.id != body.id) {
                 call.respond(HttpStatusCode.BadRequest, "Bad request")
@@ -81,7 +82,7 @@ fun Route.employeeCrud() {
          */
         get<Api.Employee.Id.Permissions> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
-            val getEmployeePermissions by application.inject<GetEmployeePermissions>()
+            val getEmployeePermissions by application.injectScoped<GetEmployeePermissions>(BusinessScope)
 
             call.respondWith(
                 getEmployeePermissions(
@@ -106,7 +107,7 @@ fun Route.employeeCrud() {
         put<Api.Employee.Id.Permission> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
             val body = call.receive<ResourcePermission>()
-            val setEmployeePermission by application.inject<SetEmployeePermission>()
+            val setEmployeePermission by application.injectScoped<SetEmployeePermission>(BusinessScope)
 
             call.respondWith(
                 setEmployeePermission(

@@ -1,7 +1,9 @@
 package com.bookk.auth.microservice.route.api
 
 import com.bookk.auth.domain.api.token.operation.RefreshToken
+import com.bookk.auth.domain.impl.di.AuthScope
 import com.bookk.auth.microservice.route.AuthRouting.Api
+import com.bookk.core.service.di.injectScoped
 import com.bookk.core.service.enity.respondWith
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
@@ -9,7 +11,6 @@ import io.ktor.server.resources.post
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.application
-import org.koin.ktor.ext.inject
 
 internal fun Route.postRefreshToken() {
     /**
@@ -23,7 +24,7 @@ internal fun Route.postRefreshToken() {
      * See: docs/operations/authorization/refresh-token.md
      */
     post<Api.Auth.Refresh> {
-        val refreshToken by application.inject<RefreshToken>()
+        val refreshToken by application.injectScoped<RefreshToken>(AuthScope)
         val token = call.request.headers[HttpHeaders.Authorization]?.removePrefix("Bearer ")
 
         if (token.isNullOrBlank()) {

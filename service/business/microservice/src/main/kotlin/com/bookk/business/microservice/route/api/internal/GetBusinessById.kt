@@ -1,12 +1,13 @@
 package com.bookk.business.microservice.route.api.internal
 
 import com.bookk.business.domain.api.business.operation.GetBusinessById
+import com.bookk.business.domain.impl.di.BusinessScope
 import com.bookk.business.microservice.route.BusinessRouting.Api
+import com.bookk.core.service.di.injectScoped
 import com.bookk.core.service.enity.respondWith
 import io.ktor.server.resources.get
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.application
-import org.koin.ktor.ext.inject
 
 internal fun Route.getBusinessById() {
     /**
@@ -17,7 +18,7 @@ internal fun Route.getBusinessById() {
      * Response: 404 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Business errors<br>BUSINESS_NOT_FOUND (200003) Business with this id is missing
      */
     get<Api.Internal.Business.Id> { business ->
-        val getBusinessById by application.inject<GetBusinessById>()
+        val getBusinessById by application.injectScoped<GetBusinessById>(BusinessScope)
         call.respondWith(getBusinessById(business.id))
     }
 }

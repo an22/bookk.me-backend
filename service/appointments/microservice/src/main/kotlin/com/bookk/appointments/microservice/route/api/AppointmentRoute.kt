@@ -7,7 +7,9 @@ import com.bookk.appointments.domain.api.operation.CreateAppointment
 import com.bookk.appointments.domain.api.operation.GetAppointmentHistory
 import com.bookk.appointments.domain.api.operation.GetAppointmentsForDate
 import com.bookk.appointments.domain.api.operation.UpdateAppointment
+import com.bookk.appointments.domain.impl.di.AppointmentsScope
 import com.bookk.appointments.microservice.route.AppointmentsRouting.Api
+import com.bookk.core.service.di.injectScoped
 import com.bookk.core.service.enity.respondWith
 import com.bookk.server.auth.client.AppPrincipal
 import io.ktor.http.ContentType
@@ -25,7 +27,6 @@ import io.ktor.server.routing.application
 import io.ktor.server.routing.openapi.describe
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.protobuf.ProtoNumber
-import org.koin.ktor.ext.inject
 import kotlin.uuid.Uuid
 
 @Serializable
@@ -51,7 +52,7 @@ fun Routing.appointment() {
             if (it.id != body.id) {
                 call.respond(HttpStatusCode.BadRequest, "Invalid request")
             } else {
-                val updateAppointment by application.inject<UpdateAppointment>()
+                val updateAppointment by application.injectScoped<UpdateAppointment>(AppointmentsScope)
 
                 call.respondWith(
                     updateAppointment(
@@ -68,7 +69,7 @@ fun Routing.appointment() {
          */
         get<Api.Appointments> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
-            val getAppointments by application.inject<GetAppointmentsForDate>()
+            val getAppointments by application.injectScoped<GetAppointmentsForDate>(AppointmentsScope)
 
             call.respondWith(getAppointments(principal.userId, it.businessId, it.date))
         }.describe {
@@ -90,7 +91,7 @@ fun Routing.appointment() {
          */
         get<Api.AppointmentHistory> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
-            val getHistory by application.inject<GetAppointmentHistory>()
+            val getHistory by application.injectScoped<GetAppointmentHistory>(AppointmentsScope)
 
             call.respondWith(
                 getHistory(
@@ -116,7 +117,7 @@ fun Routing.appointment() {
         post<Api.Appointment> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
             val body = call.receive<AppointmentRequestId>()
-            val createAppointment by application.inject<CreateAppointment>()
+            val createAppointment by application.injectScoped<CreateAppointment>(AppointmentsScope)
 
             call.respondWith(
                 createAppointment(
@@ -139,7 +140,7 @@ fun Routing.appointment() {
         post<Api.Appointment.Instant> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
             val body = call.receive<Appointment>()
-            val createAppointment by application.inject<CreateAppointment>()
+            val createAppointment by application.injectScoped<CreateAppointment>(AppointmentsScope)
 
             call.respondWith(
                 createAppointment(
@@ -166,7 +167,7 @@ fun Routing.appointment() {
             if (it.id != body.id) {
                 call.respond(HttpStatusCode.BadRequest, "Invalid request")
             } else {
-                val cancelAppointment by application.inject<CancelAppointment>()
+                val cancelAppointment by application.injectScoped<CancelAppointment>(AppointmentsScope)
 
                 call.respondWith(
                     cancelAppointment(

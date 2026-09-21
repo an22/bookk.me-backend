@@ -5,6 +5,7 @@ import com.bookk.notifications.domain.api.CreateDeviceEntry
 import com.bookk.notifications.domain.api.DeleteDeviceByUUID
 import com.bookk.notifications.domain.api.DeleteUserNotificationData
 import com.bookk.notifications.domain.api.GetNotificationSettings
+import com.bookk.notifications.domain.api.NOTIFICATIONS_SCHEMA
 import com.bookk.notifications.domain.api.UpdateNotificationSettings
 import com.bookk.notifications.domain.api.UpdatePushNotificationToken
 import com.bookk.notifications.domain.api.entity.CommunicationChannel
@@ -23,31 +24,36 @@ import com.bookk.notifications.domain.impl.channel.TelegramNotificationSender
 import com.bookk.notifications.domain.impl.event.NotificationEventHandler
 import com.bookk.notifications.domain.impl.notification.SendNotification
 import com.google.firebase.messaging.FirebaseMessaging
-import org.koin.core.module.dsl.factoryOf
-import org.koin.core.module.dsl.singleOf
+import org.koin.core.module.dsl.scopedOf
+import org.koin.core.qualifier.Qualifier
+import org.koin.core.qualifier.named
 import org.koin.dsl.bind
 import org.koin.dsl.module
 
+val NotificationsScope: Qualifier = named(NOTIFICATIONS_SCHEMA)
+
 fun notificationsDomainModule() = module {
-    factoryOf(::NotificationEventHandler) bind EventHandler::class
-    factoryOf(::CreateDeviceEntryImpl) bind CreateDeviceEntry::class
-    factoryOf(::DeleteDeviceByUUIDImpl) bind DeleteDeviceByUUID::class
-    factoryOf(::DeleteUserNotificationDataImpl) bind DeleteUserNotificationData::class
-    factoryOf(::UpdatePushNotificationTokenImpl) bind UpdatePushNotificationToken::class
-    factoryOf(::UpdateNotificationSettingsImpl) bind UpdateNotificationSettings::class
-    factoryOf(::GetNotificationSettingsImpl) bind GetNotificationSettings::class
-    singleOf(::FirebaseNotificationSender) bind NotificationSender::class
-    singleOf(::EmailNotificationSender) bind NotificationSender::class
-    singleOf(::TelegramNotificationSender) bind NotificationSender::class
-    singleOf(::SendNotification)
-    singleOf(::UpdateTargetInformation)
-    singleOf(::UpdateDeviceLanguage)
-    single<Map<CommunicationChannel, NotificationSender>> {
-        mapOf(
-            CommunicationChannel.EMAIL to get<EmailNotificationSender>(),
-            CommunicationChannel.TELEGRAM to get<TelegramNotificationSender>(),
-            CommunicationChannel.PUSH_NOTIFICATIONS to get<FirebaseNotificationSender>()
-        )
+    scope(NotificationsScope) {
+        scopedOf(::NotificationEventHandler) bind EventHandler::class
+        scopedOf(::CreateDeviceEntryImpl) bind CreateDeviceEntry::class
+        scopedOf(::DeleteDeviceByUUIDImpl) bind DeleteDeviceByUUID::class
+        scopedOf(::DeleteUserNotificationDataImpl) bind DeleteUserNotificationData::class
+        scopedOf(::UpdatePushNotificationTokenImpl) bind UpdatePushNotificationToken::class
+        scopedOf(::UpdateNotificationSettingsImpl) bind UpdateNotificationSettings::class
+        scopedOf(::GetNotificationSettingsImpl) bind GetNotificationSettings::class
+        scopedOf(::FirebaseNotificationSender) bind NotificationSender::class
+        scopedOf(::EmailNotificationSender) bind NotificationSender::class
+        scopedOf(::TelegramNotificationSender) bind NotificationSender::class
+        scopedOf(::SendNotification)
+        scopedOf(::UpdateTargetInformation)
+        scopedOf(::UpdateDeviceLanguage)
+        scoped<Map<CommunicationChannel, NotificationSender>> {
+            mapOf(
+                CommunicationChannel.EMAIL to get<EmailNotificationSender>(),
+                CommunicationChannel.TELEGRAM to get<TelegramNotificationSender>(),
+                CommunicationChannel.PUSH_NOTIFICATIONS to get<FirebaseNotificationSender>()
+            )
+        }
+        scoped { FirebaseMessaging.getInstance() }
     }
-    single { FirebaseMessaging.getInstance() }
 }

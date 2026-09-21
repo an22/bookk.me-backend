@@ -1,18 +1,17 @@
 package com.bookk.core.data.eventstreaming
 
-import io.ktor.server.routing.Routing
-import io.ktor.server.routing.application
+import io.ktor.server.application.Application
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.plus
-import org.koin.ktor.ext.getKoin
+import org.koin.core.scope.Scope
 
 interface EventHandler {
     fun start(scope: CoroutineScope)
 }
 
-fun Routing.startEventHandling() {
-    application.getKoin().getAll<EventHandler>().forEach {
-        it.start(application + Dispatchers.Default)
+fun Application.startEventHandling(vararg scopes: Scope) {
+    scopes.flatMap { it.getAll<EventHandler>() }.forEach {
+        it.start(this + Dispatchers.Default)
     }
 }

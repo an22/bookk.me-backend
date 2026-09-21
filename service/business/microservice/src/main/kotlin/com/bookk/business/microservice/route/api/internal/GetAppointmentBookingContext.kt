@@ -2,13 +2,14 @@ package com.bookk.business.microservice.route.api.internal
 
 import com.bookk.business.domain.api.appointment.entity.AppointmentBookingContextRequest
 import com.bookk.business.domain.api.appointment.operation.GetAppointmentBookingContext
+import com.bookk.business.domain.impl.di.BusinessScope
 import com.bookk.business.microservice.route.BusinessRouting.Api
+import com.bookk.core.service.di.injectScoped
 import com.bookk.core.service.enity.respondWith
 import io.ktor.server.request.receive
 import io.ktor.server.resources.post
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.application
-import org.koin.ktor.ext.inject
 
 internal fun Route.getAppointmentBookingContext() {
     /**
@@ -22,7 +23,7 @@ internal fun Route.getAppointmentBookingContext() {
      */
     post<Api.Internal.Business.Id.AppointmentBookingContext> { resource ->
         val body = call.receive<AppointmentBookingContextRequest>()
-        val getAppointmentBookingContext by application.inject<GetAppointmentBookingContext>()
+        val getAppointmentBookingContext by application.injectScoped<GetAppointmentBookingContext>(BusinessScope)
 
         call.respondWith(
             getAppointmentBookingContext(

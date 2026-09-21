@@ -7,7 +7,9 @@ import com.bookk.business.domain.api.business.operation.GetBusinessById
 import com.bookk.business.domain.api.business.operation.GetUserBusinesses
 import com.bookk.business.domain.api.business.operation.SetDashboardBusiness
 import com.bookk.business.domain.api.business.operation.UpdateBusiness
+import com.bookk.business.domain.impl.di.BusinessScope
 import com.bookk.business.microservice.route.BusinessRouting.Api
+import com.bookk.core.service.di.injectScoped
 import com.bookk.core.service.enity.respondWith
 import com.bookk.server.auth.client.AppPrincipal
 import io.ktor.http.HttpStatusCode
@@ -20,7 +22,6 @@ import io.ktor.server.resources.put
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.application
-import org.koin.ktor.ext.inject
 
 fun Route.businessCrud() {
     authenticate {
@@ -36,7 +37,7 @@ fun Route.businessCrud() {
          post<Api.Business> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
             val body = call.receive<BusinessCreateRequest>()
-            val createBusiness by application.inject<CreateBusiness>()
+            val createBusiness by application.injectScoped<CreateBusiness>(BusinessScope)
 
             call.respondWith(createBusiness(userId = principal.userId, request = body))
          }
@@ -55,7 +56,7 @@ fun Route.businessCrud() {
         put<Api.Business.Id> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
             val body = call.receive<BusinessUpdateModel>()
-            val updateBusiness by application.inject<UpdateBusiness>()
+            val updateBusiness by application.injectScoped<UpdateBusiness>(BusinessScope)
 
             if (it.id != body.id) {
                 call.respond(HttpStatusCode.BadRequest, "Invalid request")
@@ -71,7 +72,7 @@ fun Route.businessCrud() {
          * Response: 200 application/x-protobuf [com.bookk.business.domain.api.business.entity.UserBusinesses] User business info
          */
         get<Api.Business> { path ->
-            val getUserBusinesses by application.inject<GetUserBusinesses>()
+            val getUserBusinesses by application.injectScoped<GetUserBusinesses>(BusinessScope)
             val principal = requireNotNull(call.principal<AppPrincipal>())
 
             call.respondWith(getUserBusinesses(userId = principal.userId))
@@ -84,7 +85,7 @@ fun Route.businessCrud() {
          */
         get<Api.Business.Id> { path ->
             val principal = requireNotNull(call.principal<AppPrincipal>())
-            val getBusinessById by application.inject<GetBusinessById>()
+            val getBusinessById by application.injectScoped<GetBusinessById>(BusinessScope)
 
             call.respondWith(getBusinessById(id = path.id, requestingUserId = principal.userId))
         }
@@ -99,7 +100,7 @@ fun Route.businessCrud() {
          */
         put<Api.Business.Id.Dashboard> { path ->
             val principal = requireNotNull(call.principal<AppPrincipal>())
-            val setDashboardBusiness by application.inject<SetDashboardBusiness>()
+            val setDashboardBusiness by application.injectScoped<SetDashboardBusiness>(BusinessScope)
 
             call.respondWith(setDashboardBusiness(userId = principal.userId, businessId = path.parent.id))
         }

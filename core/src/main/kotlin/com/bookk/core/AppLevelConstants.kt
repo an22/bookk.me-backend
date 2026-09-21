@@ -25,8 +25,6 @@ object AppLevelConstants {
         get() = System.getenv("APPLICATION_KAFKA_HOSTS")
     val servicePort: Int
         get() = System.getenv("APPLICATION_SERVICE_PORT").toInt()
-    val dbSchemaName: String
-        get() = System.getenv("APPLICATION_DB_SCHEME")
     val dbUrl: String
         get() = System.getenv("APPLICATION_DB_URL")
     val dbPort: String

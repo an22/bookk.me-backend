@@ -35,8 +35,18 @@ subprojects {
 
 dependencies {
     implementation(projects.core.service)
+    implementation(projects.core.data.eventstreaming.api)
+    implementation(projects.library.scheduler)
     implementation(projects.service.authorization.microservice)
+    implementation(projects.service.authorization.domain.impl)
     implementation(projects.service.user.microservice)
+    implementation(projects.service.user.domain.impl)
+    implementation(projects.service.business.microservice)
+    implementation(projects.service.business.domain.impl)
+    implementation(projects.service.appointments.microservice)
+    implementation(projects.service.appointments.domain.impl)
+    implementation(projects.service.notifications.microservice)
+    implementation(projects.service.notifications.domain.impl)
 }
 
 includeLocalProperties(providers.gradleProperty("local.propertiesFile").get())

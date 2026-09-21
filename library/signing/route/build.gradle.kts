@@ -4,6 +4,7 @@ plugins {
 
 dependencies {
     implementation(projects.library.signing.api)
+    implementation(projects.core.service)
     implementation(libs.ktor.core)
     implementation(libs.ktor.json)
     implementation(libs.koin.ktor)

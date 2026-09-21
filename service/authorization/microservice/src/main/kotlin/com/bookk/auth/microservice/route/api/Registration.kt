@@ -4,16 +4,17 @@ import com.bookk.auth.domain.api.registration.entity.CreateAccountRequest
 import com.bookk.auth.domain.api.registration.entity.VerifyAccountCreationRequest
 import com.bookk.auth.domain.api.registration.operation.FinishRegistration
 import com.bookk.auth.domain.api.registration.operation.StartRegistration
+import com.bookk.auth.domain.impl.di.AuthScope
 import com.bookk.auth.microservice.route.AuthRouting.Api
 import com.bookk.core.domain.entity.Language
 import com.bookk.core.domain.entity.fromAcceptLanguage
+import com.bookk.core.service.di.injectScoped
 import com.bookk.core.service.enity.respondWith
 import io.ktor.http.HttpHeaders
 import io.ktor.server.request.receive
 import io.ktor.server.resources.post
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.application
-import org.koin.ktor.ext.inject
 
 internal fun Route.registration() {
     /**
@@ -27,7 +28,7 @@ internal fun Route.registration() {
      */
     post<Api.Auth.PassKey.SignUpChallenge> {
         val info = call.receive<CreateAccountRequest>()
-        val startRegistration by application.inject<StartRegistration>()
+        val startRegistration by application.injectScoped<StartRegistration>(AuthScope)
 
         call.respondWith(startRegistration(info))
     }
@@ -43,7 +44,7 @@ internal fun Route.registration() {
     post<Api.Auth.SignUp> {
         val info = call.receive<VerifyAccountCreationRequest>()
         val language = Language.fromAcceptLanguage(call.request.headers[HttpHeaders.AcceptLanguage])
-        val finishRegistration by application.inject<FinishRegistration>()
+        val finishRegistration by application.injectScoped<FinishRegistration>(AuthScope)
         call.respondWith(finishRegistration(info, language))
     }
 }

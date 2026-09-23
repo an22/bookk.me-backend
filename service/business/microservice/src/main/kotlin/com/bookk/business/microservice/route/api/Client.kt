@@ -7,8 +7,10 @@ import com.bookk.business.domain.api.client.operation.CreateClient
 import com.bookk.business.domain.api.client.operation.DeleteClient
 import com.bookk.business.domain.api.client.operation.GetClients
 import com.bookk.business.domain.api.client.operation.UpdateClient
+import com.bookk.business.domain.impl.di.BusinessScope
 import com.bookk.business.microservice.route.BusinessRouting.Api
 import com.bookk.core.domain.entity.SimpleServerError
+import com.bookk.core.service.di.injectScoped
 import com.bookk.core.service.enity.respondWith
 import com.bookk.server.auth.client.AppPrincipal
 import io.ktor.http.ContentType
@@ -25,7 +27,6 @@ import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.application
 import io.ktor.server.routing.openapi.describe
-import org.koin.ktor.ext.inject
 
 fun Route.clientCrud() {
     authenticate {
@@ -43,7 +44,7 @@ fun Route.clientCrud() {
         post<Api.Clients> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
             val body = call.receive<ClientRemote>()
-            val createClient by application.inject<CreateClient>()
+            val createClient by application.injectScoped<CreateClient>(BusinessScope)
 
             call.respondWith(
                 createClient(
@@ -62,7 +63,7 @@ fun Route.clientCrud() {
          */
         get<Api.Clients> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
-            val getClients by application.inject<GetClients>()
+            val getClients by application.injectScoped<GetClients>(BusinessScope)
 
             call.respondWith(getClients(requestUserId = principal.userId, businessId = it.businessId))
         }.describe {
@@ -91,7 +92,7 @@ fun Route.clientCrud() {
          */
         delete<Api.Clients.Id> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
-            val deleteClient by application.inject<DeleteClient>()
+            val deleteClient by application.injectScoped<DeleteClient>(BusinessScope)
 
             call.respondWith(
                 deleteClient(
@@ -117,7 +118,7 @@ fun Route.clientCrud() {
         patch<Api.Clients.Id> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
             val body = call.receive<ClientUpdateModel>()
-            val updateClient by application.inject<UpdateClient>()
+            val updateClient by application.injectScoped<UpdateClient>(BusinessScope)
 
             if (it.id != body.id) {
                 call.respond(HttpStatusCode.BadRequest, "Invalid request")

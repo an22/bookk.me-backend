@@ -3,9 +3,11 @@ package com.bookk.auth.microservice.route.api
 import com.bookk.auth.domain.api.authentication.entity.VerifySignInRequest
 import com.bookk.auth.domain.api.authentication.operation.SignIn
 import com.bookk.auth.domain.api.authentication.operation.StartAssertion
+import com.bookk.auth.domain.impl.di.AuthScope
 import com.bookk.auth.microservice.route.AuthRouting.Api
 import com.bookk.core.domain.entity.Language
 import com.bookk.core.domain.entity.fromAcceptLanguage
+import com.bookk.core.service.di.injectScoped
 import com.bookk.core.service.enity.respondWith
 import io.ktor.http.HttpHeaders
 import io.ktor.server.request.receive
@@ -13,7 +15,6 @@ import io.ktor.server.resources.get
 import io.ktor.server.resources.post
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.application
-import org.koin.ktor.ext.inject
 
 internal fun Route.signIn() {
     /**
@@ -23,7 +24,7 @@ internal fun Route.signIn() {
      * Response: 200 application/x-protobuf [com.bookk.auth.domain.api.authentication.entity.AssertionStartResponse] Passkey json payload
      */
     get<Api.Auth.PassKey.SignInChallenge> {
-        val startAssertion: StartAssertion by application.inject()
+        val startAssertion: StartAssertion by application.injectScoped<StartAssertion>(AuthScope)
         call.respondWith(startAssertion())
     }
     /**
@@ -38,7 +39,7 @@ internal fun Route.signIn() {
     post<Api.Auth.SignIn> {
         val request = call.receive<VerifySignInRequest>()
         val language = Language.fromAcceptLanguage(call.request.headers[HttpHeaders.AcceptLanguage])
-        val startSigningIn: SignIn by application.inject()
+        val startSigningIn: SignIn by application.injectScoped<SignIn>(AuthScope)
         call.respondWith(startSigningIn(request, language))
     }
 }

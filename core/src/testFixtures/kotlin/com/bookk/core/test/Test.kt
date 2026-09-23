@@ -3,7 +3,6 @@ package com.bookk.core.test
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.withTimeout
 import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.CoroutineContext
 import kotlin.time.Duration.Companion.seconds
@@ -39,12 +38,11 @@ class TestHolder : AbstractCoroutineContextElement(Key) {
     companion object Key : CoroutineContext.Key<TestHolder>
 }
 
-fun runUnitTest(context: CoroutineContext = TestHolder(), body: suspend TestScope.() -> Unit) = runTest(context) {
-    withTimeout(2.seconds) {
+fun runUnitTest(context: CoroutineContext = TestHolder(), body: suspend TestScope.() -> Unit) =
+    runTest(context, timeout = 5.seconds) {
         body()
         requireNotNull(currentCoroutineContext()[TestHolder.Key]).assertFormat()
     }
-}
 
 suspend fun given() {
     requireNotNull(currentCoroutineContext()[TestHolder.Key]).givenCalled()

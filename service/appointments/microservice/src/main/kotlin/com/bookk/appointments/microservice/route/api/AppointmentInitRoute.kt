@@ -4,7 +4,9 @@ import com.bookk.appointments.domain.api.entity.BusinessAppointmentsEnabled
 import com.bookk.appointments.domain.api.operation.EnableAppointmentsForBusiness
 import com.bookk.appointments.domain.api.operation.GetClientBusinessesAppointmentsStatus
 import com.bookk.appointments.domain.api.operation.IsAppointmentsEnabled
+import com.bookk.appointments.domain.impl.di.AppointmentsScope
 import com.bookk.appointments.microservice.route.AppointmentsRouting.Api
+import com.bookk.core.service.di.injectScoped
 import com.bookk.core.service.enity.respondWith
 import com.bookk.server.auth.client.AppPrincipal
 import io.ktor.http.ContentType
@@ -17,7 +19,6 @@ import io.ktor.server.resources.post
 import io.ktor.server.routing.Routing
 import io.ktor.server.routing.application
 import io.ktor.server.routing.openapi.describe
-import org.koin.ktor.ext.inject
 
 fun Routing.appointmentInit() {
     authenticate {
@@ -33,7 +34,7 @@ fun Routing.appointmentInit() {
          */
         post<Api.Appointment.Enabled> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
-            val enableAppointments by application.inject<EnableAppointmentsForBusiness>()
+            val enableAppointments by application.injectScoped<EnableAppointmentsForBusiness>(AppointmentsScope)
 
             call.respondWith(
                 enableAppointments(
@@ -52,7 +53,7 @@ fun Routing.appointmentInit() {
          */
         get<Api.Appointment.Enabled> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
-            val isEnabled by application.inject<IsAppointmentsEnabled>()
+            val isEnabled by application.injectScoped<IsAppointmentsEnabled>(AppointmentsScope)
 
             call.respondWith(
                 isEnabled(
@@ -70,7 +71,7 @@ fun Routing.appointmentInit() {
          */
         get<Api.Appointment.EnabledForClientBusinesses> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
-            val getClientBusinessesAppointmentsStatus by application.inject<GetClientBusinessesAppointmentsStatus>()
+            val getClientBusinessesAppointmentsStatus by application.injectScoped<GetClientBusinessesAppointmentsStatus>(AppointmentsScope)
 
             call.respondWith(getClientBusinessesAppointmentsStatus(userId = principal.userId))
         }.describe {

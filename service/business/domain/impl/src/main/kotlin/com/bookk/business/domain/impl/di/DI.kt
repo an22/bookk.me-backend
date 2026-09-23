@@ -1,5 +1,7 @@
 package com.bookk.business.domain.impl.di
 
+import com.bookk.business.domain.api.BUSINESS_SCHEMA
+import com.bookk.business.domain.api.BUSINESS_SERVICE_NAME
 import com.bookk.business.domain.api.appointment.operation.GetAppointmentBookingContext
 import com.bookk.business.domain.api.business.operation.CreateBusiness
 import com.bookk.business.domain.api.business.operation.DeleteBusiness
@@ -69,49 +71,53 @@ import com.bookk.business.domain.impl.operation.service.IssueQuoteImpl
 import com.bookk.business.domain.impl.operation.service.UpdateServiceImpl
 import com.bookk.business.domain.impl.operation.user.AnonymizeUserProfileImpl
 import com.bookk.business.domain.impl.operation.user.SyncUserProfileImpl
-import com.bookk.core.AppLevelConstants
 import com.bookk.core.data.eventstreaming.EventHandler
 import com.bookk.server.user.client.di.userClientModule
-import org.koin.core.module.dsl.factoryOf
-import org.koin.core.module.dsl.singleOf
+import org.koin.core.module.dsl.scopedOf
+import org.koin.core.qualifier.Qualifier
+import org.koin.core.qualifier.named
 import org.koin.dsl.bind
 import org.koin.dsl.module
 
+val BusinessScope: Qualifier = named(BUSINESS_SCHEMA)
+
 fun businessDomainModule() = module {
-    includes(userClientModule(AppLevelConstants.serviceName))
-    singleOf(::GetBusinessByIdImpl) bind GetBusinessById::class
-    singleOf(::CreateBusinessImpl) bind CreateBusiness::class
-    singleOf(::DeleteBusinessImpl) bind DeleteBusiness::class
-    singleOf(::GetBusinessPermissionImpl) bind GetBusinessPermission::class
-    singleOf(::GetDashboardBusinessImpl) bind GetDashboardBusiness::class
-    singleOf(::SetDashboardBusinessImpl) bind SetDashboardBusiness::class
-    singleOf(::UpdateBusinessImpl) bind UpdateBusiness::class
-    singleOf(::GetUserBusinessesImpl) bind GetUserBusinesses::class
-    singleOf(::DeleteDayOffsInThePastImpl) bind DeleteDayOffsInThePast::class
-    factoryOf(::BusinessEventHandlerImpl) bind EventHandler::class
-    singleOf(::CreateClientImpl) bind CreateClient::class
-    singleOf(::GetClientsImpl) bind GetClients::class
-    singleOf(::GetClientBusinessIdsImpl) bind GetClientBusinessIds::class
-    singleOf(::DeleteClientImpl) bind DeleteClient::class
-    singleOf(::UpdateClientImpl) bind UpdateClient::class
-    singleOf(::SyncUserProfileImpl) bind SyncUserProfile::class
-    singleOf(::AnonymizeUserProfileImpl) bind AnonymizeUserProfile::class
-    singleOf(::CreateServiceImpl) bind CreateService::class
-    singleOf(::DeleteServiceGroupImpl) bind DeleteServiceGroup::class
-    singleOf(::CreateServiceGroupImpl) bind CreateServiceGroup::class
-    singleOf(::DeleteServiceImpl) bind DeleteService::class
-    singleOf(::UpdateServiceImpl) bind UpdateService::class
-    singleOf(::GetServicesImpl) bind GetServices::class
-    singleOf(::GetServiceGroupsImpl) bind GetServiceGroups::class
-    singleOf(::IssueQuoteImpl) bind IssueServiceQuote::class
-    singleOf(::CreateEmployeeInvitationImpl) bind CreateEmployeeInvitation::class
-    singleOf(::JoinBusinessImpl) bind JoinBusiness::class
-    singleOf(::GetEmployeeInvitationsImpl) bind GetEmployeeInvitations::class
-    singleOf(::GetEmployeesImpl) bind GetEmployees::class
-    singleOf(::UpdateEmployeeImpl) bind UpdateEmployee::class
-    singleOf(::SetEmployeePermissionImpl) bind SetEmployeePermission::class
-    singleOf(::GetEmployeePermissionsImpl) bind GetEmployeePermissions::class
-    singleOf(::RevokeEmployeeInvitationImpl) bind RevokeEmployeeInvitation::class
-    singleOf(::ExpireEmployeeInvitationsImpl) bind ExpireEmployeeInvitations::class
-    singleOf(::GetAppointmentBookingContextImpl) bind GetAppointmentBookingContext::class
+    includes(userClientModule(BusinessScope, BUSINESS_SERVICE_NAME))
+    scope(BusinessScope) {
+        scopedOf(::GetBusinessByIdImpl) bind GetBusinessById::class
+        scopedOf(::CreateBusinessImpl) bind CreateBusiness::class
+        scopedOf(::DeleteBusinessImpl) bind DeleteBusiness::class
+        scopedOf(::GetBusinessPermissionImpl) bind GetBusinessPermission::class
+        scopedOf(::GetDashboardBusinessImpl) bind GetDashboardBusiness::class
+        scopedOf(::SetDashboardBusinessImpl) bind SetDashboardBusiness::class
+        scopedOf(::UpdateBusinessImpl) bind UpdateBusiness::class
+        scopedOf(::GetUserBusinessesImpl) bind GetUserBusinesses::class
+        scopedOf(::DeleteDayOffsInThePastImpl) bind DeleteDayOffsInThePast::class
+        scopedOf(::BusinessEventHandlerImpl) bind EventHandler::class
+        scopedOf(::CreateClientImpl) bind CreateClient::class
+        scopedOf(::GetClientsImpl) bind GetClients::class
+        scopedOf(::GetClientBusinessIdsImpl) bind GetClientBusinessIds::class
+        scopedOf(::DeleteClientImpl) bind DeleteClient::class
+        scopedOf(::UpdateClientImpl) bind UpdateClient::class
+        scopedOf(::SyncUserProfileImpl) bind SyncUserProfile::class
+        scopedOf(::AnonymizeUserProfileImpl) bind AnonymizeUserProfile::class
+        scopedOf(::CreateServiceImpl) bind CreateService::class
+        scopedOf(::DeleteServiceGroupImpl) bind DeleteServiceGroup::class
+        scopedOf(::CreateServiceGroupImpl) bind CreateServiceGroup::class
+        scopedOf(::DeleteServiceImpl) bind DeleteService::class
+        scopedOf(::UpdateServiceImpl) bind UpdateService::class
+        scopedOf(::GetServicesImpl) bind GetServices::class
+        scopedOf(::GetServiceGroupsImpl) bind GetServiceGroups::class
+        scopedOf(::IssueQuoteImpl) bind IssueServiceQuote::class
+        scopedOf(::CreateEmployeeInvitationImpl) bind CreateEmployeeInvitation::class
+        scopedOf(::JoinBusinessImpl) bind JoinBusiness::class
+        scopedOf(::GetEmployeeInvitationsImpl) bind GetEmployeeInvitations::class
+        scopedOf(::GetEmployeesImpl) bind GetEmployees::class
+        scopedOf(::UpdateEmployeeImpl) bind UpdateEmployee::class
+        scopedOf(::SetEmployeePermissionImpl) bind SetEmployeePermission::class
+        scopedOf(::GetEmployeePermissionsImpl) bind GetEmployeePermissions::class
+        scopedOf(::RevokeEmployeeInvitationImpl) bind RevokeEmployeeInvitation::class
+        scopedOf(::ExpireEmployeeInvitationsImpl) bind ExpireEmployeeInvitations::class
+        scopedOf(::GetAppointmentBookingContextImpl) bind GetAppointmentBookingContext::class
+    }
 }

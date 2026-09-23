@@ -30,6 +30,7 @@ import io.ktor.serialization.kotlinx.json.json
 import io.ktor.serialization.kotlinx.protobuf.protobuf
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.protobuf.ProtoBuf
+import org.koin.core.qualifier.Qualifier
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
 import kotlin.uuid.Uuid
@@ -37,54 +38,56 @@ import kotlin.uuid.Uuid
 private const val BUSINESS_HTTP_CLIENT = "businessHttpClient"
 
 @Suppress("KotlinConstantConditions")
-fun businessClientModule(clientTag: String) = module {
-    single(named(BUSINESS_HTTP_CLIENT)) {
-        HttpClient(CIO) {
-            install(Resources)
-            install(UserAgent) { agent = clientTag }
-            install(HttpRequestRetry) {
-                retryOnExceptionOrServerErrors(maxRetries = 3)
-                constantDelay(millis = 50, randomizationMs = 100)
-            }
-            install(ContentNegotiation) {
-                when (AppLevelConstants.SERIALIZER) {
-                    SupportedSerializers.JSON.STR -> {
-                        json(Json {
-                            prettyPrint = true
-                            encodeDefaults = true
-                            explicitNulls = false
-                        })
-                    }
+fun businessClientModule(qualifier: Qualifier, clientTag: String) = module {
+    scope(qualifier) {
+        scoped(named(BUSINESS_HTTP_CLIENT)) {
+            HttpClient(CIO) {
+                install(Resources)
+                install(UserAgent) { agent = clientTag }
+                install(HttpRequestRetry) {
+                    retryOnExceptionOrServerErrors(maxRetries = 3)
+                    constantDelay(millis = 50, randomizationMs = 100)
+                }
+                install(ContentNegotiation) {
+                    when (AppLevelConstants.SERIALIZER) {
+                        SupportedSerializers.JSON.STR -> {
+                            json(Json {
+                                prettyPrint = true
+                                encodeDefaults = true
+                                explicitNulls = false
+                            })
+                        }
 
-                    SupportedSerializers.PROTOBUF.STR -> {
-                        protobuf(ProtoBuf { encodeDefaults = true })
+                        SupportedSerializers.PROTOBUF.STR -> {
+                            protobuf(ProtoBuf { encodeDefaults = true })
+                        }
                     }
                 }
-            }
-            install(Logging) {
-                logger = Logger.DEFAULT
-                level = when (AppLevelConstants.BUILD_TYPE) {
-                    AppLevelConstants.BuildType.DEBUG.STR -> LogLevel.BODY
-                    else -> LogLevel.INFO
+                install(Logging) {
+                    logger = Logger.DEFAULT
+                    level = when (AppLevelConstants.BUILD_TYPE) {
+                        AppLevelConstants.BuildType.DEBUG.STR -> LogLevel.BODY
+                        else -> LogLevel.INFO
+                    }
                 }
-            }
-            defaultRequest {
-                host = System.getenv("APPLICATION_BUSINESS_SERVICE_HOSTNAME")
+                defaultRequest {
+                    host = System.getenv("APPLICATION_BUSINESS_SERVICE_HOSTNAME")
 
-                headers["Idempotency-Key"] = Uuid.random().toString()
+                    headers["Idempotency-Key"] = Uuid.random().toString()
 
-                url { protocol = URLProtocol.HTTP }
+                    url { protocol = URLProtocol.HTTP }
 
-                when (AppLevelConstants.SERIALIZER) {
-                    SupportedSerializers.JSON.STR -> contentType(ContentType.Application.Json)
-                    SupportedSerializers.PROTOBUF.STR -> contentType(ContentType.Application.ProtoBuf)
+                    when (AppLevelConstants.SERIALIZER) {
+                        SupportedSerializers.JSON.STR -> contentType(ContentType.Application.Json)
+                        SupportedSerializers.PROTOBUF.STR -> contentType(ContentType.Application.ProtoBuf)
+                    }
                 }
             }
         }
+        scoped<GetBusinessById> { GetBusinessByIdClientImpl(get(named(BUSINESS_HTTP_CLIENT))) }
+        scoped<GetBusinessPermission> { GetBusinessPermissionClientImpl(get(named(BUSINESS_HTTP_CLIENT))) }
+        scoped<GetAppointmentBookingContext> { GetAppointmentBookingContextClientImpl(get(named(BUSINESS_HTTP_CLIENT))) }
+        scoped<GetClientBusinessIds> { GetClientBusinessIdsClientImpl(get(named(BUSINESS_HTTP_CLIENT))) }
+        scoped<BusinessClient> { BusinessClientImpl(get(), get(), get(), get()) }
     }
-    single<GetBusinessById> { GetBusinessByIdClientImpl(get(named(BUSINESS_HTTP_CLIENT))) }
-    single<GetBusinessPermission> { GetBusinessPermissionClientImpl(get(named(BUSINESS_HTTP_CLIENT))) }
-    single<GetAppointmentBookingContext> { GetAppointmentBookingContextClientImpl(get(named(BUSINESS_HTTP_CLIENT))) }
-    single<GetClientBusinessIds> { GetClientBusinessIdsClientImpl(get(named(BUSINESS_HTTP_CLIENT))) }
-    single<BusinessClient> { BusinessClientImpl(get(), get(), get(), get()) }
 }

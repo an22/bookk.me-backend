@@ -4,7 +4,9 @@ import com.bookk.business.domain.api.service.entity.ServiceGroup
 import com.bookk.business.domain.api.service.operation.CreateServiceGroup
 import com.bookk.business.domain.api.service.operation.DeleteServiceGroup
 import com.bookk.business.domain.api.service.operation.GetServiceGroups
+import com.bookk.business.domain.impl.di.BusinessScope
 import com.bookk.business.microservice.route.BusinessRouting.Api
+import com.bookk.core.service.di.injectScoped
 import com.bookk.core.service.enity.respondWith
 import com.bookk.server.auth.client.AppPrincipal
 import io.ktor.http.ContentType
@@ -20,7 +22,6 @@ import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.application
 import io.ktor.server.routing.openapi.describe
-import org.koin.ktor.ext.inject
 
 fun Route.serviceGroupCrud() {
     authenticate {
@@ -37,7 +38,7 @@ fun Route.serviceGroupCrud() {
         post<Api.ServiceGroup> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
             val body = call.receive<ServiceGroup>()
-            val createServiceGroup by application.inject<CreateServiceGroup>()
+            val createServiceGroup by application.injectScoped<CreateServiceGroup>(BusinessScope)
 
             if (it.businessId != body.businessId) {
                 call.respond(HttpStatusCode.BadRequest, "Bad request")
@@ -58,7 +59,7 @@ fun Route.serviceGroupCrud() {
          * Security: jwt
          */
         get<Api.ServiceGroup> {
-            val getGroups by application.inject<GetServiceGroups>()
+            val getGroups by application.injectScoped<GetServiceGroups>(BusinessScope)
 
             call.respondWith(getGroups(it.businessId))
         }.describe {
@@ -81,7 +82,7 @@ fun Route.serviceGroupCrud() {
          */
         delete<Api.ServiceGroup.Id> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
-            val deleteGroup by application.inject<DeleteServiceGroup>()
+            val deleteGroup by application.injectScoped<DeleteServiceGroup>(BusinessScope)
 
             call.respondWith(
                 deleteGroup(

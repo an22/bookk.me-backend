@@ -3,6 +3,7 @@ package com.bookk.business.domain.impl.event
 import com.bookk.business.domain.api.business.operation.DeleteBusiness
 import com.bookk.business.domain.api.user.operation.AnonymizeUserProfile
 import com.bookk.business.domain.api.user.operation.SyncUserProfile
+import com.bookk.core.data.eventstreaming.impl.InMemoryExhaustedEventDataSource
 import com.bookk.core.data.eventstreaming.impl.kafka.KafkaEventConsumer
 import com.bookk.core.data.eventstreaming.impl.kafka.KafkaEventProducer
 import com.bookk.core.data.eventstreaming.impl.kafka.KafkaTestBroker
@@ -52,7 +53,8 @@ internal class BusinessEventHandlerImplEventTest {
             consumerGroup = "business-handler-${Uuid.random()}",
             eventIdempotencyStorage = RecordingIdempotencyStorage(),
             protoBuf = KafkaTestBroker.protoBuf,
-            dltProducer = NoopProducer()
+            dltProducer = NoopProducer(),
+            exhaustedEventDataSource = InMemoryExhaustedEventDataSource()
         )
         val sut = BusinessEventHandlerImpl(consumer, deleteBusiness, syncUserProfile, anonymizeUserProfile)
 

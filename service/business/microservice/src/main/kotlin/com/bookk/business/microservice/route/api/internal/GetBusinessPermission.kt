@@ -1,12 +1,13 @@
 package com.bookk.business.microservice.route.api.internal
 
 import com.bookk.business.domain.api.business.operation.GetBusinessPermission
+import com.bookk.business.domain.impl.di.BusinessScope
 import com.bookk.business.microservice.route.BusinessRouting.Api
+import com.bookk.core.service.di.injectScoped
 import com.bookk.core.service.enity.respondWith
 import io.ktor.server.resources.get
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.application
-import org.koin.ktor.ext.inject
 
 internal fun Route.getBusinessPermission() {
     /**
@@ -16,7 +17,7 @@ internal fun Route.getBusinessPermission() {
      * Response: 200 application/x-protobuf [library.permissions.ResourcePermission] Permission value
      */
     get<Api.Internal.Business.Id.Permissions> { permissions ->
-        val getBusinessPermission by application.inject<GetBusinessPermission>()
+        val getBusinessPermission by application.injectScoped<GetBusinessPermission>(BusinessScope)
         call.respondWith(getBusinessPermission(permissions.userId, permissions.parent.id, permissions.resource))
     }
 }

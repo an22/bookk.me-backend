@@ -1,7 +1,9 @@
 package com.bookk.business.microservice.route.api.internal
 
 import com.bookk.business.domain.api.client.operation.GetClientBusinessIds
+import com.bookk.business.domain.impl.di.BusinessScope
 import com.bookk.business.microservice.route.BusinessRouting.Api
+import com.bookk.core.service.di.injectScoped
 import com.bookk.core.service.enity.respondWith
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
@@ -10,7 +12,6 @@ import io.ktor.server.resources.get
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.application
 import io.ktor.server.routing.openapi.describe
-import org.koin.ktor.ext.inject
 import kotlin.uuid.Uuid
 
 internal fun Route.getClientBusinessIds() {
@@ -20,7 +21,7 @@ internal fun Route.getClientBusinessIds() {
      * Tag: internal
      */
     get<Api.Internal.Client.Businesses> { businesses ->
-        val getClientBusinessIds by application.inject<GetClientBusinessIds>()
+        val getClientBusinessIds by application.injectScoped<GetClientBusinessIds>(BusinessScope)
         call.respondWith(getClientBusinessIds(businesses.userId))
     }.describe {
         responses {

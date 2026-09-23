@@ -36,16 +36,17 @@ import kotlinx.serialization.protobuf.ProtoBuf
 import library.idempotency.IdempotencyPlugin
 import library.signing.TokenValidatorFactory
 import library.signing.ValidationType
-import library.signing.impl.di.signingModule
+import library.signing.impl.di.tokenValidatorModule
 import org.koin.core.module.Module
 import org.koin.ktor.ext.get
 import org.koin.ktor.plugin.Koin
 import org.slf4j.event.Level
 
+
 fun startServer(
     diModules: List<Module> = emptyList(),
     config: ServiceConfig = ServiceConfig(),
-    modules: Routing.(Application) -> Unit
+    modules: (Routing) -> Unit
 ) {
     embeddedServer(
         factory = CIO,
@@ -63,7 +64,7 @@ fun startServer(
                 modules(
                     *diModules.toTypedArray(),
                     commonModule(),
-                    signingModule()
+                    tokenValidatorModule()
                 )
             }
             install(CallLogging) {
@@ -109,7 +110,7 @@ fun startServer(
                         routingRoot.descendants()
                     }
                 }
-                modules(this@embeddedServer)
+                modules(this)
             }
         }
     ).start(wait = true)

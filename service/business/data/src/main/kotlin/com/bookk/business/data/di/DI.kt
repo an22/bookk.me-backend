@@ -15,6 +15,8 @@ import com.bookk.business.domain.datasource.EmployeeInvitationDataSource
 import com.bookk.business.domain.datasource.ServiceDataSource
 import com.bookk.core.data.ExposedTransactionManager
 import com.bookk.core.data.database.createDatabase
+import com.bookk.core.data.eventstreaming.ExhaustedEventDataSource
+import com.bookk.core.data.eventstreaming.data.datasource.ExhaustedEventDataSourceImpl
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
@@ -27,6 +29,7 @@ fun businessDataModule() = module {
         scoped<ServiceDataSource> { ServiceDataSourceImpl() }
         scoped<EmployeeDataSource> { EmployeeDataSourceImpl() }
         scoped<EmployeeInvitationDataSource> { EmployeeInvitationDataSourceImpl() }
+        scoped<ExhaustedEventDataSource> { ExhaustedEventDataSourceImpl() }
         scoped { createDatabase(schemaName = BUSINESS_SCHEMA) }
         scoped<TransactionManager> { ExposedTransactionManager(get()) }
     }

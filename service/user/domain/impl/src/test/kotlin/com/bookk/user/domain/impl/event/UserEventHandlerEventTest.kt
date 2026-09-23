@@ -1,5 +1,6 @@
 package com.bookk.user.domain.impl.event
 
+import com.bookk.core.data.eventstreaming.impl.InMemoryExhaustedEventDataSource
 import com.bookk.core.data.eventstreaming.impl.kafka.KafkaEventConsumer
 import com.bookk.core.data.eventstreaming.impl.kafka.KafkaEventProducer
 import com.bookk.core.data.eventstreaming.impl.kafka.KafkaTestBroker
@@ -44,7 +45,8 @@ internal class UserEventHandlerEventTest {
             consumerGroup = "user-handler-${Uuid.random()}",
             eventIdempotencyStorage = RecordingIdempotencyStorage(),
             protoBuf = KafkaTestBroker.protoBuf,
-            dltProducer = NoopProducer()
+            dltProducer = NoopProducer(),
+            exhaustedEventDataSource = InMemoryExhaustedEventDataSource()
         )
         val sut = UserEventHandler(consumer, deleteUser)
         private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)

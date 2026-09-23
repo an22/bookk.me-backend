@@ -4,6 +4,8 @@ plugins {
 
 dependencies {
     implementation(projects.core.data)
+    implementation(projects.core.data.eventstreaming.api)
+    implementation(projects.core.data.eventstreaming.data)
     implementation(projects.core.data.cache.api)
     implementation(projects.core.domain.datasource)
     implementation(projects.service.business.domain.api)

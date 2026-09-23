@@ -17,7 +17,7 @@ fun eventStreamingModule(qualifier: Qualifier, serviceName: String) = module {
         scoped<StandardEventConsumer> {
             val servers = AppLevelConstants.eventStreamingHost.split(',')
             val group = "${serviceName}_group"
-            KafkaEventConsumer(servers, group, get(), ProtoBuf { encodeDefaults = true }, get())
+            KafkaEventConsumer(servers, group, get(), ProtoBuf { encodeDefaults = true }, get(), get())
         }
         scoped<StandardEventProducer> {
             val servers = AppLevelConstants.eventStreamingHost.split(',')
@@ -33,7 +33,7 @@ fun topicQueueHolderModule() = module {
 
 fun embeddedEventStreamingModule(qualifier: Qualifier) = module {
     scope(qualifier) {
-        scoped<StandardEventConsumer> { EmbeddedEventConsumer(get()) }
-        scoped<StandardEventProducer> { EmbeddedEventProducer(get()) }
+        scoped<StandardEventConsumer> { EmbeddedEventConsumer(get(), ProtoBuf { encodeDefaults = true }, get()) }
+        scoped<StandardEventProducer> { EmbeddedEventProducer(get(), ProtoBuf { encodeDefaults = true }) }
     }
 }

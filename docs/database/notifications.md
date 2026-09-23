@@ -53,8 +53,20 @@ erDiagram
         timestamp createdAt
         timestamp updatedAt
     }
+
+    EXHAUSTED_EVENT {
+        uuid id PK
+        string original_topic
+        string idempotency_key UK
+        int attempt
+        blob payload
+        timestamp createdAt
+        timestamp updatedAt
+    }
 ```
 
 `notification_email_targets` and `notification_telegram_targets` are not
 foreign-keyed to `notification_settings` in the schema — they are joined to a
 user's settings at query time via the shared `user_id`.
+
+`EXHAUSTED_EVENT` is not part of the notifications domain model — it's the shared DLT landing table (`core/data/eventstreaming/data`, one instance per service schema) that `KafkaEventConsumer`/`EmbeddedEventConsumer` write to when an event exhausts its retry budget, so a failed event survives a process restart or crash instead of being lost. See `AGENTS.md`'s event-streaming retry design notes.

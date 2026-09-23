@@ -11,6 +11,8 @@ import com.bookk.auth.domain.datasource.PassKeyDataSource
 import com.bookk.auth.domain.repository.CacheableCredentialRepository
 import com.bookk.core.data.ExposedTransactionManager
 import com.bookk.core.data.database.createDatabase
+import com.bookk.core.data.eventstreaming.ExhaustedEventDataSource
+import com.bookk.core.data.eventstreaming.data.datasource.ExhaustedEventDataSourceImpl
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import org.koin.core.module.dsl.scopedOf
 import org.koin.core.qualifier.Qualifier
@@ -26,6 +28,7 @@ fun authDataModule() = module {
         scopedOf(::DeviceDataSourceImpl) bind DeviceDataSource::class
         scopedOf(::PassKeyDataSourceImpl) bind PassKeyDataSource::class
         scopedOf(::YubicoCredentialRepository) bind CacheableCredentialRepository::class
+        scopedOf(::ExhaustedEventDataSourceImpl) bind ExhaustedEventDataSource::class
         scoped { createDatabase(schemaName = AUTH_SCHEMA) }
         scoped<TransactionManager> { ExposedTransactionManager(get()) }
     }

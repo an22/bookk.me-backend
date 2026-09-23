@@ -5,6 +5,7 @@ import com.bookk.appointments.domain.api.operation.DeleteUserAppointmentData
 import com.bookk.appointments.domain.impl.operation.SyncEmployeePermission
 import com.bookk.appointments.domain.impl.operation.UpdateBusinessInformation
 import com.bookk.business.domain.api.business.entity.BusinessPermissions
+import com.bookk.core.data.eventstreaming.impl.InMemoryExhaustedEventDataSource
 import com.bookk.core.data.eventstreaming.impl.kafka.KafkaEventConsumer
 import com.bookk.core.data.eventstreaming.impl.kafka.KafkaEventProducer
 import com.bookk.core.data.eventstreaming.impl.kafka.KafkaTestBroker
@@ -65,7 +66,8 @@ internal class AppointmentEventHandlerEventTest {
             consumerGroup = "appointment-handler-${Uuid.random()}",
             eventIdempotencyStorage = RecordingIdempotencyStorage(),
             protoBuf = KafkaTestBroker.protoBuf,
-            dltProducer = NoopProducer()
+            dltProducer = NoopProducer(),
+            exhaustedEventDataSource = InMemoryExhaustedEventDataSource()
         )
         val sut = AppointmentEventHandler(
             consumer,

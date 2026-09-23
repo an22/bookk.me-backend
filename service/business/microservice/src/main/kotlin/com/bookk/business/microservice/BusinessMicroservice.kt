@@ -8,6 +8,7 @@ import com.bookk.business.domain.impl.di.BusinessScope
 import com.bookk.business.domain.impl.di.businessDomainModule
 import com.bookk.business.microservice.route.businessRoute
 import com.bookk.core.data.cache.impl.di.cacheModule
+import com.bookk.core.data.eventstreaming.di.embeddedEventStreamingModule
 import com.bookk.core.data.eventstreaming.di.eventStreamingModule
 import com.bookk.core.data.eventstreaming.startEventHandling
 import com.bookk.core.service.di.installServiceScope
@@ -30,6 +31,16 @@ fun businessModule() = module {
         businessDataModule(),
         cacheModule(),
         eventStreamingModule(BusinessScope, BUSINESS_SERVICE_NAME),
+        signingModule(BusinessScope)
+    )
+}
+
+fun businessEmbeddedModule() = module {
+    includes(
+        businessDomainModule(),
+        businessDataModule(),
+        cacheModule(),
+        embeddedEventStreamingModule(BusinessScope),
         signingModule(BusinessScope)
     )
 }

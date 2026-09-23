@@ -8,6 +8,7 @@ import com.bookk.appointments.domain.impl.di.AppointmentsScope
 import com.bookk.appointments.domain.impl.di.appointmentsDomainModule
 import com.bookk.appointments.microservice.route.appointmentsRoute
 import com.bookk.core.data.cache.impl.di.cacheModule
+import com.bookk.core.data.eventstreaming.di.embeddedEventStreamingModule
 import com.bookk.core.data.eventstreaming.di.eventStreamingModule
 import com.bookk.core.data.eventstreaming.startEventHandling
 import com.bookk.core.service.di.installServiceScope
@@ -30,6 +31,16 @@ fun appointmentsModule() = module {
         appointmentsDataModule(),
         cacheModule(),
         eventStreamingModule(AppointmentsScope, APPOINTMENTS_SERVICE_NAME),
+        businessClientModule(AppointmentsScope, APPOINTMENTS_SERVICE_NAME)
+    )
+}
+
+fun appointmentsEmbeddedModule() = module {
+    includes(
+        appointmentsDomainModule(),
+        appointmentsDataModule(),
+        cacheModule(),
+        embeddedEventStreamingModule(AppointmentsScope),
         businessClientModule(AppointmentsScope, APPOINTMENTS_SERVICE_NAME)
     )
 }

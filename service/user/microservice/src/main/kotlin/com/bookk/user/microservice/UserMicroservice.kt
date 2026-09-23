@@ -1,6 +1,7 @@
 package com.bookk.user.microservice
 
 import com.bookk.core.data.cache.impl.di.cacheModule
+import com.bookk.core.data.eventstreaming.di.embeddedEventStreamingModule
 import com.bookk.core.data.eventstreaming.di.eventStreamingModule
 import com.bookk.core.data.eventstreaming.startEventHandling
 import com.bookk.core.service.di.installServiceScope
@@ -20,6 +21,15 @@ fun userModule() = module {
         userDataModule(),
         cacheModule(),
         eventStreamingModule(UserScope, USER_SERVICE_NAME)
+    )
+}
+
+fun userEmbeddedModule() = module {
+    includes(
+        userDomainModule(),
+        userDataModule(),
+        cacheModule(),
+        embeddedEventStreamingModule(UserScope)
     )
 }
 

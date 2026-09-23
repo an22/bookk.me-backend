@@ -38,7 +38,7 @@ class EmbeddedEventConsumer(
         return merge(
             *receivers.keys
                 .map {
-                    topicQueueHolder.get(it)
+                    topicQueueHolder.subscribe(it)
                         .receiveAsFlow()
                         .onEach { event ->
                             try {

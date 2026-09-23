@@ -36,6 +36,7 @@ subprojects {
 dependencies {
     implementation(projects.core.service)
     implementation(projects.core.data.eventstreaming.api)
+    implementation(projects.core.data.eventstreaming.impl)
     implementation(projects.library.scheduler)
     implementation(projects.service.authorization.microservice)
     implementation(projects.service.authorization.domain.impl)

@@ -2,6 +2,7 @@ package com.bookk.notifications.microservice
 
 import com.bookk.core.AppLevelConstants
 import com.bookk.core.data.cache.impl.di.cacheModule
+import com.bookk.core.data.eventstreaming.di.embeddedEventStreamingModule
 import com.bookk.core.data.eventstreaming.di.eventStreamingModule
 import com.bookk.core.data.eventstreaming.startEventHandling
 import com.bookk.core.service.di.installServiceScope
@@ -23,6 +24,15 @@ fun notificationsModule() = module {
         notificationsDomainModule(),
         notificationsDataModule(),
         eventStreamingModule(NotificationsScope, NOTIFICATIONS_SERVICE_NAME),
+        cacheModule()
+    )
+}
+
+fun notificationsEmbeddedModule() = module {
+    includes(
+        notificationsDomainModule(),
+        notificationsDataModule(),
+        embeddedEventStreamingModule(NotificationsScope),
         cacheModule()
     )
 }

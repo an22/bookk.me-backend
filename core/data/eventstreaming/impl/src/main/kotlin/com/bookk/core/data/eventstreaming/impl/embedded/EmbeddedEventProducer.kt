@@ -8,6 +8,6 @@ class EmbeddedEventProducer(
 ) : EventStreaming.Producer<String> {
 
     override suspend fun <T : EventStreaming.Event<String>> send(data: T, kType: KType) {
-        topicQueueHolder.get(data.topic).send(data)
+        topicQueueHolder.publish(data)
     }
 }

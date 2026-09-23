@@ -7,6 +7,7 @@ import com.bookk.auth.domain.impl.di.AuthScope
 import com.bookk.auth.domain.impl.di.authDomainModule
 import com.bookk.auth.microservice.route.authRoute
 import com.bookk.core.data.cache.impl.di.cacheModule
+import com.bookk.core.data.eventstreaming.di.embeddedEventStreamingModule
 import com.bookk.core.data.eventstreaming.di.eventStreamingModule
 import com.bookk.core.data.eventstreaming.startEventHandling
 import com.bookk.core.service.di.installServiceScope
@@ -27,6 +28,15 @@ fun authModule() = module {
         authDomainModule(),
         authDataModule(),
         eventStreamingModule(AuthScope, AUTH_SERVICE_NAME),
+        cacheModule()
+    )
+}
+
+fun authEmbeddedModule() = module {
+    includes(
+        authDomainModule(),
+        authDataModule(),
+        embeddedEventStreamingModule(AuthScope),
         cacheModule()
     )
 }

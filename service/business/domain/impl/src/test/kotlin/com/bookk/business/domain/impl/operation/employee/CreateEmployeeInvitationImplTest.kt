@@ -1,9 +1,9 @@
 package com.bookk.business.domain.impl.operation.employee
 
-import com.bookk.business.domain.api.business.entity.Business
 import com.bookk.business.domain.api.business.entity.BusinessResource
 import com.bookk.business.domain.api.employee.entity.EmployeeInvitation
 import com.bookk.business.domain.api.employee.entity.EmployeeInvitationStatus
+import com.bookk.business.domain.api.employee.operation.CreateEmployeeInvitation
 import com.bookk.business.domain.datasource.BusinessDataSource
 import com.bookk.business.domain.datasource.BusinessPermissionDataSource
 import com.bookk.business.domain.datasource.EmployeeInvitationDataSource
@@ -16,15 +16,18 @@ import com.bookk.core.test.then
 import com.bookk.core.test.whenn
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.coVerifyOrder
 import io.mockk.mockk
 import io.mockk.slot
-import kotlinx.datetime.TimeZone
 import library.permissions.ResourcePermission
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
 internal class CreateEmployeeInvitationImplTest {
@@ -37,15 +40,6 @@ internal class CreateEmployeeInvitationImplTest {
         val sut = CreateEmployeeInvitationImpl(invitationDataSource, businessDataSource, businessPermissionDataSource, transactionManager)
     }
 
-    private fun business(id: Uuid, name: String = "Barbershop") = Business.stub(
-        id = id,
-        name = name,
-        description = "",
-        address = "1 Main St",
-        timeZone = TimeZone.UTC,
-        currencyCode = "USD"
-    )
-
     @Test
     fun `should create invitation successfully`() = runUnitTest {
         given()
@@ -56,7 +50,9 @@ internal class CreateEmployeeInvitationImplTest {
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(update = true)
-            coEvery { businessDataSource.getBusinessById(businessId) } returns business(businessId)
+            coEvery { businessDataSource.lockBusiness(businessId) } returns true
+            coEvery { invitationDataSource.countPendingInvitations(businessId) } returns 0L
+            coEvery { invitationDataSource.countInvitationsCreatedSince(businessId, any()) } returns 0L
             coEvery { invitationDataSource.createInvitation(capture(persisted)) } answers { persisted.captured }
         }
 
@@ -82,7 +78,9 @@ internal class CreateEmployeeInvitationImplTest {
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(update = true)
-            coEvery { businessDataSource.getBusinessById(businessId) } returns business(businessId)
+            coEvery { businessDataSource.lockBusiness(businessId) } returns true
+            coEvery { invitationDataSource.countPendingInvitations(businessId) } returns 0L
+            coEvery { invitationDataSource.countInvitationsCreatedSince(businessId, any()) } returns 0L
             coEvery { invitationDataSource.createInvitation(capture(persisted)) } answers { persisted.captured }
         }
 
@@ -107,7 +105,9 @@ internal class CreateEmployeeInvitationImplTest {
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(update = true)
-            coEvery { businessDataSource.getBusinessById(businessId) } returns business(businessId)
+            coEvery { businessDataSource.lockBusiness(businessId) } returns true
+            coEvery { invitationDataSource.countPendingInvitations(businessId) } returns 0L
+            coEvery { invitationDataSource.countInvitationsCreatedSince(businessId, any()) } returns 0L
             coEvery { invitationDataSource.createInvitation(any()) } answers {
                 val invitation = firstArg<EmployeeInvitation>()
                 invitations.add(invitation)
@@ -134,7 +134,9 @@ internal class CreateEmployeeInvitationImplTest {
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(update = true)
-            coEvery { businessDataSource.getBusinessById(businessId) } returns business(businessId)
+            coEvery { businessDataSource.lockBusiness(businessId) } returns true
+            coEvery { invitationDataSource.countPendingInvitations(businessId) } returns 0L
+            coEvery { invitationDataSource.countInvitationsCreatedSince(businessId, any()) } returns 0L
             coEvery {
                 invitationDataSource.createInvitation(any())
             } throws Error.UniqueConstraintFailed("", RuntimeException())
@@ -177,7 +179,7 @@ internal class CreateEmployeeInvitationImplTest {
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(update = true)
-            coEvery { businessDataSource.getBusinessById(businessId) } returns null
+            coEvery { businessDataSource.lockBusiness(businessId) } returns false
         }
 
         whenn()
@@ -186,5 +188,143 @@ internal class CreateEmployeeInvitationImplTest {
         then()
         assertTrue(result.isFailure)
         assertTrue(result.exceptionOrNull() is Error.NotFound)
+    }
+
+    @Test
+    fun `should return failure when the business already has the maximum number of pending invitations`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val requestUserId = Uuid.random()
+        val businessId = Uuid.random()
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(update = true)
+            coEvery { businessDataSource.lockBusiness(businessId) } returns true
+            coEvery { invitationDataSource.countPendingInvitations(businessId) } returns CreateEmployeeInvitation.MAX_PENDING_INVITATIONS.toLong()
+        }
+
+        whenn()
+        val result = fixture.sut(requestUserId, businessId)
+
+        then()
+        assertTrue(result.exceptionOrNull() is CreateEmployeeInvitation.Error.PendingInvitationsLimitReached)
+        coVerify(exactly = 0) { fixture.invitationDataSource.createInvitation(any()) }
+    }
+
+    @Test
+    fun `should create invitation when one slot below the pending invitations limit`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val requestUserId = Uuid.random()
+        val businessId = Uuid.random()
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(update = true)
+            coEvery { businessDataSource.lockBusiness(businessId) } returns true
+            coEvery { invitationDataSource.countPendingInvitations(businessId) } returns CreateEmployeeInvitation.MAX_PENDING_INVITATIONS.toLong() - 1
+            coEvery { invitationDataSource.countInvitationsCreatedSince(businessId, any()) } returns 0L
+            coEvery { invitationDataSource.createInvitation(any()) } answers { firstArg() }
+        }
+
+        whenn()
+        val result = fixture.sut(requestUserId, businessId)
+
+        then()
+        assertTrue(result.isSuccess)
+        coVerify(exactly = 1) { fixture.invitationDataSource.createInvitation(any()) }
+    }
+
+    @Test
+    fun `should lock the business before counting pending invitations`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val requestUserId = Uuid.random()
+        val businessId = Uuid.random()
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(update = true)
+            coEvery { businessDataSource.lockBusiness(businessId) } returns true
+            coEvery { invitationDataSource.countPendingInvitations(businessId) } returns 0L
+            coEvery { invitationDataSource.countInvitationsCreatedSince(businessId, any()) } returns 0L
+            coEvery { invitationDataSource.createInvitation(any()) } answers { firstArg() }
+        }
+
+        whenn()
+        fixture.sut(requestUserId, businessId)
+
+        then()
+        coVerifyOrder {
+            fixture.businessDataSource.lockBusiness(businessId)
+            fixture.invitationDataSource.countPendingInvitations(businessId)
+            fixture.invitationDataSource.createInvitation(any())
+        }
+    }
+    @Test
+    fun `should return failure when the business already created the maximum number of invitations today`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val requestUserId = Uuid.random()
+        val businessId = Uuid.random()
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(update = true)
+            coEvery { businessDataSource.lockBusiness(businessId) } returns true
+            coEvery { invitationDataSource.countPendingInvitations(businessId) } returns 0L
+            coEvery { invitationDataSource.countInvitationsCreatedSince(businessId, any()) } returns CreateEmployeeInvitation.MAX_INVITATIONS_PER_DAY.toLong()
+        }
+
+        whenn()
+        val result = fixture.sut(requestUserId, businessId)
+
+        then()
+        assertTrue(result.exceptionOrNull() is CreateEmployeeInvitation.Error.DailyInvitationsLimitReached)
+        coVerify(exactly = 0) { fixture.invitationDataSource.createInvitation(any()) }
+    }
+
+    @Test
+    fun `should create invitation when one below the daily invitations limit`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val requestUserId = Uuid.random()
+        val businessId = Uuid.random()
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(update = true)
+            coEvery { businessDataSource.lockBusiness(businessId) } returns true
+            coEvery { invitationDataSource.countPendingInvitations(businessId) } returns 0L
+            coEvery { invitationDataSource.countInvitationsCreatedSince(businessId, any()) } returns CreateEmployeeInvitation.MAX_INVITATIONS_PER_DAY.toLong() - 1
+            coEvery { invitationDataSource.createInvitation(any()) } answers { firstArg() }
+        }
+
+        whenn()
+        val result = fixture.sut(requestUserId, businessId)
+
+        then()
+        assertTrue(result.isSuccess)
+    }
+
+    @Test
+    fun `should count todays invitations over the last 24 hours`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val requestUserId = Uuid.random()
+        val businessId = Uuid.random()
+        val since = slot<Instant>()
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(update = true)
+            coEvery { businessDataSource.lockBusiness(businessId) } returns true
+            coEvery { invitationDataSource.countPendingInvitations(businessId) } returns 0L
+            coEvery { invitationDataSource.countInvitationsCreatedSince(businessId, capture(since)) } returns 0L
+            coEvery { invitationDataSource.createInvitation(any()) } answers { firstArg() }
+        }
+
+        whenn()
+        val before = Clock.System.now()
+        fixture.sut(requestUserId, businessId)
+        val after = Clock.System.now()
+
+        then()
+        assertTrue(since.captured in (before - 24.hours)..(after - 24.hours))
     }
 }

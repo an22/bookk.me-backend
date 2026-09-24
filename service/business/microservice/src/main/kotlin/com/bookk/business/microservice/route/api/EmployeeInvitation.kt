@@ -38,6 +38,7 @@ fun Route.employeeInvitationCrud() {
          * Security: jwt
          * Response: 200 application/x-protobuf [com.bookk.business.domain.api.employee.entity.EmployeeInvitation] Created invitation
          * Response: 404 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Business is not found or the caller has no rights to invite
+         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Create invitation errors<br>BUSINESS_EMPLOYEE_PENDING_INVITATIONS_LIMIT_REACHED (200028) Business already has the maximum number of pending invitations<br>BUSINESS_EMPLOYEE_DAILY_INVITATIONS_LIMIT_REACHED (200029) Business already created the maximum number of invitations in the last 24 hours
          * See: docs/operations/business/create-employee-invitation.md
          */
         post<Api.EmployeeInvitation> {

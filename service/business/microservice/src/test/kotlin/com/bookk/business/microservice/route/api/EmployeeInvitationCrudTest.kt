@@ -95,6 +95,56 @@ internal class EmployeeInvitationCrudTest {
     }
 
     @Test
+    fun `should return unprocessable entity when the pending invitations limit is reached`() = routeTest {
+        given()
+        val useCase: CreateEmployeeInvitation = mockk()
+        coEvery { useCase.invoke(userId, businessId) } returns
+            Result.failure(CreateEmployeeInvitation.Error.PendingInvitationsLimitReached())
+
+        setupApplication(
+            extension = jwtAuthentication(),
+            diModule = module { single { useCase } },
+            routeUnderTest = { employeeInvitationCrud() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.post(BusinessRouting.Api.EmployeeInvitation(businessId = businessId))
+
+        then()
+        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
+        assertEquals(
+            BusinessErrorCodes.BUSINESS_EMPLOYEE_PENDING_INVITATIONS_LIMIT_REACHED,
+            response.body<SimpleServerError>().errorCode
+        )
+    }
+
+    @Test
+    fun `should return unprocessable entity when the daily invitations limit is reached`() = routeTest {
+        given()
+        val useCase: CreateEmployeeInvitation = mockk()
+        coEvery { useCase.invoke(userId, businessId) } returns
+            Result.failure(CreateEmployeeInvitation.Error.DailyInvitationsLimitReached())
+
+        setupApplication(
+            extension = jwtAuthentication(),
+            diModule = module { single { useCase } },
+            routeUnderTest = { employeeInvitationCrud() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.post(BusinessRouting.Api.EmployeeInvitation(businessId = businessId))
+
+        then()
+        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
+        assertEquals(
+            BusinessErrorCodes.BUSINESS_EMPLOYEE_DAILY_INVITATIONS_LIMIT_REACHED,
+            response.body<SimpleServerError>().errorCode
+        )
+    }
+
+    @Test
     fun `should return unauthorized when creating invitation without authentication`() = routeTest {
         given()
         val useCase: CreateEmployeeInvitation = mockk()

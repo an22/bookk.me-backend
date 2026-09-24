@@ -11,6 +11,7 @@ interface BusinessDataSource {
     suspend fun createBusiness(userId: Uuid, name: String, currencyCode: String, timeZone: TimeZone): Business
     suspend fun updateBusiness(model: BusinessUpdateModel, updatedAt: Instant): Business
     suspend fun getBusinessById(id: Uuid): Business?
+    suspend fun lockBusiness(id: Uuid): Boolean
     suspend fun isBusinessExist(userId: Uuid): Boolean
     suspend fun deleteUserBusinesses(userId: Uuid): List<Uuid>
     suspend fun getDashboardBusiness(userId: Uuid): Business?

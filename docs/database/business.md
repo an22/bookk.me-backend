@@ -129,8 +129,8 @@ erDiagram
         uuid invited_by "logical FK -> user.profile.id"
         string code_hash UK "SHA-256 hex of the invite code, never the plaintext; nullable, cleared once the invitation leaves PENDING so the code can be reused"
         enum status
-        timestamp created_at
-        timestamp updated_at
+        timestamp created_at "indexed together with business_id for the daily invitation quota"
+        timestamp updated_at "processed rows are deleted 30 days after this"
     }
 
     EMPLOYEE_WORKING_HOURS {

@@ -305,6 +305,10 @@ Rules:
 
 ---
 
+### Scheduled job wiring test
+
+Every `Application.register<Svc>Jobs(scheduler)` has a `<Svc>JobsTest` in its microservice module (`BusinessJobsTest`, `AppointmentsJobsTest`, `AuthJobsTest`) — full recipe in `docs/operations/scheduled-jobs.md` → "Adding a new job". Tools: `startScopedApplication(<Svc>Scope) { scoped { mockOp } }` (`testFixtures(projects.core.service)`) boots Koin + the service scope and returns the `Application`; `registeredJobs()` / `runJob(name)` (`testFixtures(projects.library.scheduler)`) inspect and run a `SchedulerConfiguration`'s jobs directly, no timing. Assert the whole name → interval map, and per job both the invocation (with arguments) and that a `Result.failure` propagates — that is what catches a dropped `getOrThrow()`. A module's `testFixtures` source set can read that module's `internal` members (`runJob` reads `SchedulerConfiguration.jobs`), so a fixture never needs a production API widened just for tests. `MonolithJobsTest` (root project, `src/test`) covers the monolith's single shared scheduler: it asserts `registerMonolithJobs` registers exactly the union of each service's own `register<Svc>Jobs` (a cross-service name clash throws at registration, a service missing from the monolith shows up as a map mismatch), and that same-typed operations in different scopes (auth vs business `RotateSigningKeys`) resolve from their own scope — use the `startScopedApplication(AuthScope to { … }, BusinessScope to { … })` overload for several scopes at once.
+
 ## Datasource (H2 integration) test conventions
 
 `createTestDatabase(vararg tables: Table)` in `core/data/src/testFixtures` creates a per-test H2 database in `MODE=MySQL`. Call datasource methods inside `suspendTransaction { fixture.sut.method() }` within `runUnitTest { }`. Use `dbQuery`-based methods inside `suspendTransaction {}`. Cache-based methods (those using `mapExceptions` without `dbQuery`) are called directly without wrapping.

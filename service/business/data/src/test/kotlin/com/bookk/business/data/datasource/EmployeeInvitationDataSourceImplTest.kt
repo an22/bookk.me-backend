@@ -1,5 +1,6 @@
 package com.bookk.business.data.datasource
 
+import com.bookk.business.data.orm.entity.EmployeeInvitationEntity
 import com.bookk.business.data.orm.table.BusinessDashboardTable
 import com.bookk.business.data.orm.table.BusinessDayOffTable
 import com.bookk.business.data.orm.table.BusinessPermissionGrantsTable
@@ -15,6 +16,7 @@ import com.bookk.core.test.runUnitTest
 import com.bookk.core.test.then
 import com.bookk.core.test.whenn
 import kotlinx.datetime.TimeZone
+import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -495,5 +497,175 @@ internal class EmployeeInvitationDataSourceImplTest {
 
         then()
         assertTrue(result.exceptionOrNull() is Error.UniqueConstraintFailed)
+    }
+
+    @Test
+    fun `should count only pending invitations of the business`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val otherBusinessId = suspendTransaction {
+            fixture.businessSut.createBusiness(Uuid.random(), "Other Business", "USD", TimeZone.UTC)
+        }.id
+        suspendTransaction {
+            fixture.sut.createInvitation(EmployeeInvitation.stub(businessId = fixture.businessId, code = "PENDING1"))
+            fixture.sut.createInvitation(EmployeeInvitation.stub(businessId = fixture.businessId, code = "PENDING2"))
+            fixture.sut.createInvitation(EmployeeInvitation.stub(businessId = otherBusinessId, code = "OTHERBIZ"))
+        }
+        val redeemed = suspendTransaction {
+            fixture.sut.createInvitation(EmployeeInvitation.stub(businessId = fixture.businessId, code = "REDEEMED"))
+        }
+        val revoked = suspendTransaction {
+            fixture.sut.createInvitation(EmployeeInvitation.stub(businessId = fixture.businessId, code = "REVOKED1"))
+        }
+        suspendTransaction { fixture.sut.redeemInvitation(redeemed.id) }
+        suspendTransaction { fixture.sut.revokeInvitation(revoked.id) }
+
+        whenn()
+        val count = suspendTransaction { fixture.sut.countPendingInvitations(fixture.businessId) }
+
+        then()
+        assertEquals(2L, count)
+    }
+
+    @Test
+    fun `should count zero pending invitations for a business without invitations`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+
+        whenn()
+        val count = suspendTransaction { fixture.sut.countPendingInvitations(fixture.businessId) }
+
+        then()
+        assertEquals(0L, count)
+    }
+
+    @Test
+    fun `should count invitations of the business created since the cutoff regardless of status`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val otherBusinessId = suspendTransaction {
+            fixture.businessSut.createBusiness(Uuid.random(), "Other Business", "USD", TimeZone.UTC)
+        }.id
+        suspendTransaction {
+            fixture.sut.createInvitation(EmployeeInvitation.stub(businessId = fixture.businessId, code = "PENDING1"))
+            fixture.sut.createInvitation(EmployeeInvitation.stub(businessId = otherBusinessId, code = "OTHERBIZ"))
+        }
+        val revoked = suspendTransaction {
+            fixture.sut.createInvitation(EmployeeInvitation.stub(businessId = fixture.businessId, code = "REVOKED1"))
+        }
+        suspendTransaction { fixture.sut.revokeInvitation(revoked.id) }
+
+        whenn()
+        val count = suspendTransaction {
+            fixture.sut.countInvitationsCreatedSince(fixture.businessId, Instant.fromEpochMilliseconds(0))
+        }
+
+        then()
+        assertEquals(2L, count)
+    }
+
+    @Test
+    fun `should not count invitations created before the cutoff`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        suspendTransaction {
+            fixture.sut.createInvitation(EmployeeInvitation.stub(businessId = fixture.businessId))
+        }
+
+        whenn()
+        val count = suspendTransaction {
+            fixture.sut.countInvitationsCreatedSince(fixture.businessId, Clock.System.now().plus(1.hours))
+        }
+
+        then()
+        assertEquals(0L, count)
+    }
+
+    @Test
+    fun `should delete processed invitations last updated before the cutoff`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val redeemed = suspendTransaction {
+            fixture.sut.createInvitation(EmployeeInvitation.stub(businessId = fixture.businessId, code = "REDEEMED"))
+        }
+        val revoked = suspendTransaction {
+            fixture.sut.createInvitation(EmployeeInvitation.stub(businessId = fixture.businessId, code = "REVOKED1"))
+        }
+        val expired = suspendTransaction {
+            fixture.sut.createInvitation(EmployeeInvitation.stub(businessId = fixture.businessId, code = "EXPIRED1"))
+        }
+        suspendTransaction { fixture.sut.redeemInvitation(redeemed.id) }
+        suspendTransaction { fixture.sut.revokeInvitation(revoked.id) }
+        suspendTransaction { fixture.sut.expireOldInvitations(Clock.System.now().plus(1.hours)) }
+
+        whenn()
+        suspendTransaction { fixture.sut.deleteProcessedInvitations(Clock.System.now().plus(1.hours)) }
+
+        then()
+        assertNull(suspendTransaction { fixture.sut.getInvitation(fixture.businessId, redeemed.id) })
+        assertNull(suspendTransaction { fixture.sut.getInvitation(fixture.businessId, revoked.id) })
+        assertNull(suspendTransaction { fixture.sut.getInvitation(fixture.businessId, expired.id) })
+    }
+
+    @Test
+    fun `should keep processed invitations last updated after the cutoff`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val revoked = suspendTransaction {
+            fixture.sut.createInvitation(EmployeeInvitation.stub(businessId = fixture.businessId))
+        }
+        suspendTransaction { fixture.sut.revokeInvitation(revoked.id) }
+
+        whenn()
+        suspendTransaction { fixture.sut.deleteProcessedInvitations(Instant.fromEpochMilliseconds(0)) }
+
+        then()
+        assertNotNull(suspendTransaction { fixture.sut.getInvitation(fixture.businessId, revoked.id) })
+    }
+
+    @Test
+    fun `should never delete pending invitations`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val pending = suspendTransaction {
+            fixture.sut.createInvitation(EmployeeInvitation.stub(businessId = fixture.businessId))
+        }
+
+        whenn()
+        suspendTransaction { fixture.sut.deleteProcessedInvitations(Clock.System.now().plus(1.hours)) }
+
+        then()
+        assertEquals(
+            EmployeeInvitationStatus.PENDING,
+            suspendTransaction { fixture.sut.getInvitation(fixture.businessId, pending.id) }?.status
+        )
+    }
+
+    @Test
+    fun `should delete processed invitations without an update timestamp when created before the cutoff`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val legacyId = suspendTransaction {
+            EmployeeInvitationEntity.new {
+                businessId = EntityID(fixture.businessId, BusinessTable)
+                invitedBy = Uuid.random()
+                codeHash = null
+                status = EmployeeInvitationStatus.REVOKED
+            }.id.value
+        }
+
+        whenn()
+        suspendTransaction { fixture.sut.deleteProcessedInvitations(Clock.System.now().plus(1.hours)) }
+
+        then()
+        assertNull(suspendTransaction { fixture.sut.getInvitation(fixture.businessId, legacyId) })
     }
 }

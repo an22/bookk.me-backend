@@ -101,6 +101,33 @@ internal class BusinessDataSourceImplTest {
     }
 
     @Test
+    fun `should lock an existing business`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val created = suspendTransaction {
+            fixture.sut.createBusiness(Uuid.random(), "Salon", "USD", TimeZone.UTC)
+        }
+
+        whenn()
+        val locked = suspendTransaction { fixture.sut.lockBusiness(created.id) }
+
+        then()
+        assertTrue(locked)
+    }
+
+    @Test
+    fun `should not lock an unknown business`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+
+        whenn()
+        val locked = suspendTransaction { fixture.sut.lockBusiness(Uuid.random()) }
+
+        then()
+        assertFalse(locked)
+    }
+
+    @Test
     fun `should report business exists after creation`() = runUnitTest {
         given()
         val fixture = SutFixture()

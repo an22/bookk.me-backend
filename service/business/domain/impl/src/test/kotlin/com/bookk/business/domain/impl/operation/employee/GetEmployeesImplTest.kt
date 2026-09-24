@@ -61,7 +61,7 @@ internal class GetEmployeesImplTest {
         given()
         val fixture = SutFixture()
         fixture.transactionManager.mockTransaction()
-        fixture.grantPermission(ResourcePermission(update = true, delete = true))
+        fixture.grantPermission(ResourcePermission(view = false, update = true, delete = true))
 
         whenn()
         val result = fixture.sut(userId, businessId)

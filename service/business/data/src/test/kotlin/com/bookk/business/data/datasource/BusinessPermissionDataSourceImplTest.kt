@@ -5,7 +5,15 @@ import com.bookk.business.data.orm.table.BusinessDayOffTable
 import com.bookk.business.data.orm.table.BusinessPermissionGrantsTable
 import com.bookk.business.data.orm.table.BusinessTable
 import com.bookk.business.data.orm.table.BusinessWorkingHoursTable
+import com.bookk.business.data.orm.table.EmployeeCanProvideServiceTable
+import com.bookk.business.data.orm.table.EmployeeDayOffTable
+import com.bookk.business.data.orm.table.EmployeeTable
+import com.bookk.business.data.orm.table.EmployeeWorkingHoursTable
+import com.bookk.business.data.orm.table.ServiceGroupTable
+import com.bookk.business.data.orm.table.ServiceTable
+import com.bookk.business.domain.api.business.entity.BusinessPermissions
 import com.bookk.business.domain.api.business.entity.BusinessResource
+import com.bookk.business.domain.api.employee.entity.Employee
 import com.bookk.core.data.test.createTestDatabase
 import com.bookk.core.test.given
 import com.bookk.core.test.runUnitTest
@@ -25,25 +33,36 @@ internal class BusinessPermissionDataSourceImplTest {
         val db = createTestDatabase(
             BusinessTable,
             BusinessDashboardTable,
-            BusinessPermissionGrantsTable,
             BusinessWorkingHoursTable,
-            BusinessDayOffTable
+            BusinessDayOffTable,
+            ServiceGroupTable,
+            ServiceTable,
+            EmployeeTable,
+            EmployeeCanProvideServiceTable,
+            EmployeeWorkingHoursTable,
+            EmployeeDayOffTable,
+            BusinessPermissionGrantsTable
         )
         val businessDataSource = BusinessDataSourceImpl()
+        val employeeDataSource = EmployeeDataSourceImpl()
         val sut = BusinessPermissionDataSourceImpl()
+
+        suspend fun employee(userId: Uuid, businessName: String = "Salon"): Employee {
+            val business = suspendTransaction { businessDataSource.createBusiness(Uuid.random(), businessName, "USD", TimeZone.UTC) }
+            return suspendTransaction { employeeDataSource.createEmployee(Employee.stub(businessId = business.id, userId = userId)) }
+        }
     }
 
     @Test
     fun `should set and retrieve a resource permission`() = runUnitTest {
         given()
         val fixture = SutFixture()
-        val userId = Uuid.random()
-        val created = suspendTransaction { fixture.businessDataSource.createBusiness(userId, "Salon", "USD", TimeZone.UTC) }
-        val permission = ResourcePermission(view = true, update = true)
+        val employee = fixture.employee(Uuid.random())
+        val permission = ResourcePermission(view = true, update = true, delete = false)
 
         whenn()
-        suspendTransaction { fixture.sut.setPermission(userId, created.id, BusinessResource.CLIENTS, permission) }
-        val stored = suspendTransaction { fixture.sut.getPermission(userId, created.id, BusinessResource.CLIENTS) }
+        suspendTransaction { fixture.sut.setPermissions(employee, mapOf(BusinessResource.CLIENTS to permission)) }
+        val stored = suspendTransaction { fixture.sut.getPermission(employee.userId, employee.businessId, BusinessResource.CLIENTS) }
 
         then()
         assertEquals(permission, stored)
@@ -53,27 +72,55 @@ internal class BusinessPermissionDataSourceImplTest {
     fun `should overwrite an existing permission when set again`() = runUnitTest {
         given()
         val fixture = SutFixture()
-        val userId = Uuid.random()
-        val created = suspendTransaction { fixture.businessDataSource.createBusiness(userId, "Salon", "USD", TimeZone.UTC) }
-        suspendTransaction { fixture.sut.setPermission(userId, created.id, BusinessResource.CLIENTS, ResourcePermission(view = true)) }
+        val employee = fixture.employee(Uuid.random())
+        suspendTransaction { fixture.sut.setPermissions(employee, mapOf(BusinessResource.CLIENTS to ResourcePermission(view = true, update = false, delete = false))) }
 
         whenn()
-        suspendTransaction { fixture.sut.setPermission(userId, created.id, BusinessResource.CLIENTS, ResourcePermission.FULL) }
-        val stored = suspendTransaction { fixture.sut.getPermission(userId, created.id, BusinessResource.CLIENTS) }
+        suspendTransaction { fixture.sut.setPermissions(employee, mapOf(BusinessResource.CLIENTS to ResourcePermission.FULL)) }
+        val stored = suspendTransaction { fixture.sut.getPermission(employee.userId, employee.businessId, BusinessResource.CLIENTS) }
 
         then()
         assertEquals(ResourcePermission.FULL, stored)
     }
 
     @Test
+    fun `should set several resources at once and leave the rest untouched`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val employee = fixture.employee(Uuid.random())
+        suspendTransaction { fixture.sut.setPermissions(employee, mapOf(BusinessResource.BUSINESS to ResourcePermission(view = true, update = false, delete = false))) }
+
+        whenn()
+        suspendTransaction {
+            fixture.sut.setPermissions(
+                employee,
+                mapOf(
+                    BusinessResource.CLIENTS to ResourcePermission.FULL,
+                    BusinessResource.SERVICES to ResourcePermission(view = true, update = true, delete = false)
+                )
+            )
+        }
+        val permissions = suspendTransaction { fixture.sut.getPermissions(employee.userId, employee.businessId) }
+
+        then()
+        assertEquals(
+            BusinessPermissions.stub(
+                business = ResourcePermission(view = true, update = false, delete = false),
+                clients = ResourcePermission.FULL,
+                services = ResourcePermission(view = true, update = true, delete = false)
+            ),
+            permissions
+        )
+    }
+
+    @Test
     fun `should return none permission when not set`() = runUnitTest {
         given()
         val fixture = SutFixture()
-        val userId = Uuid.random()
-        val created = suspendTransaction { fixture.businessDataSource.createBusiness(userId, "Salon", "USD", TimeZone.UTC) }
+        val employee = fixture.employee(Uuid.random())
 
         whenn()
-        val permission = suspendTransaction { fixture.sut.getPermission(Uuid.random(), created.id, BusinessResource.CLIENTS) }
+        val permission = suspendTransaction { fixture.sut.getPermission(Uuid.random(), employee.businessId, BusinessResource.CLIENTS) }
 
         then()
         assertEquals(ResourcePermission.NONE, permission)
@@ -83,12 +130,11 @@ internal class BusinessPermissionDataSourceImplTest {
     fun `should keep resource grants independent from one another`() = runUnitTest {
         given()
         val fixture = SutFixture()
-        val userId = Uuid.random()
-        val created = suspendTransaction { fixture.businessDataSource.createBusiness(userId, "Salon", "USD", TimeZone.UTC) }
-        suspendTransaction { fixture.sut.setPermission(userId, created.id, BusinessResource.CLIENTS, ResourcePermission.FULL) }
+        val employee = fixture.employee(Uuid.random())
+        suspendTransaction { fixture.sut.setPermissions(employee, mapOf(BusinessResource.CLIENTS to ResourcePermission.FULL)) }
 
         whenn()
-        val employees = suspendTransaction { fixture.sut.getPermission(userId, created.id, BusinessResource.EMPLOYEES) }
+        val employees = suspendTransaction { fixture.sut.getPermission(employee.userId, employee.businessId, BusinessResource.EMPLOYEES) }
 
         then()
         assertEquals(ResourcePermission.NONE, employees)
@@ -98,18 +144,17 @@ internal class BusinessPermissionDataSourceImplTest {
     fun `should aggregate every resource into a single permissions snapshot`() = runUnitTest {
         given()
         val fixture = SutFixture()
-        val userId = Uuid.random()
-        val created = suspendTransaction { fixture.businessDataSource.createBusiness(userId, "Salon", "USD", TimeZone.UTC) }
+        val employee = fixture.employee(Uuid.random())
         suspendTransaction {
-            fixture.sut.setPermission(userId, created.id, BusinessResource.CLIENTS, ResourcePermission(view = true))
-            fixture.sut.setPermission(userId, created.id, BusinessResource.SERVICES, ResourcePermission.FULL)
+            fixture.sut.setPermissions(employee, mapOf(BusinessResource.CLIENTS to ResourcePermission(view = true, update = false, delete = false)))
+            fixture.sut.setPermissions(employee, mapOf(BusinessResource.SERVICES to ResourcePermission.FULL))
         }
 
         whenn()
-        val permissions = suspendTransaction { fixture.sut.getPermissions(userId, created.id) }
+        val permissions = suspendTransaction { fixture.sut.getPermissions(employee.userId, employee.businessId) }
 
         then()
-        assertEquals(ResourcePermission(view = true), permissions.clients)
+        assertEquals(ResourcePermission(view = true, update = false, delete = false), permissions.clients)
         assertEquals(ResourcePermission.FULL, permissions.services)
         assertEquals(ResourcePermission.NONE, permissions.business)
         assertEquals(ResourcePermission.NONE, permissions.employees)
@@ -121,13 +166,11 @@ internal class BusinessPermissionDataSourceImplTest {
         given()
         val fixture = SutFixture()
         val userId = Uuid.random()
-        val ownBusiness = suspendTransaction { fixture.businessDataSource.createBusiness(userId, "Salon", "USD", TimeZone.UTC) }
-        val otherBusiness = suspendTransaction {
-            fixture.businessDataSource.createBusiness(Uuid.random(), "Other Salon", "USD", TimeZone.UTC)
-        }
+        val ownEmployee = fixture.employee(userId, businessName = "Salon")
+        val otherEmployee = fixture.employee(userId, businessName = "Other Salon")
         suspendTransaction {
-            fixture.sut.setPermission(userId, ownBusiness.id, BusinessResource.CLIENTS, ResourcePermission.FULL)
-            fixture.sut.setPermission(userId, otherBusiness.id, BusinessResource.CLIENTS, ResourcePermission(view = true))
+            fixture.sut.setPermissions(ownEmployee, mapOf(BusinessResource.CLIENTS to ResourcePermission.FULL))
+            fixture.sut.setPermissions(otherEmployee, mapOf(BusinessResource.CLIENTS to ResourcePermission(view = true, update = false, delete = false)))
         }
 
         whenn()
@@ -136,12 +179,27 @@ internal class BusinessPermissionDataSourceImplTest {
         then()
         assertEquals(
             ResourcePermission.NONE,
-            suspendTransaction { fixture.sut.getPermission(userId, ownBusiness.id, BusinessResource.CLIENTS) }
+            suspendTransaction { fixture.sut.getPermission(userId, ownEmployee.businessId, BusinessResource.CLIENTS) }
         )
         assertEquals(
             ResourcePermission.NONE,
-            suspendTransaction { fixture.sut.getPermission(userId, otherBusiness.id, BusinessResource.CLIENTS) }
+            suspendTransaction { fixture.sut.getPermission(userId, otherEmployee.businessId, BusinessResource.CLIENTS) }
         )
+    }
+
+    @Test
+    fun `should delete employee grants when the employee is deleted`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val employee = fixture.employee(Uuid.random())
+        suspendTransaction { fixture.sut.setPermissions(employee, mapOf(BusinessResource.CLIENTS to ResourcePermission.FULL)) }
+
+        whenn()
+        suspendTransaction { fixture.employeeDataSource.deleteEmployee(employee.businessId, employee.id) }
+        val stored = suspendTransaction { fixture.sut.getPermission(employee.userId, employee.businessId, BusinessResource.CLIENTS) }
+
+        then()
+        assertEquals(ResourcePermission.NONE, stored)
     }
 
     @Test

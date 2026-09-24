@@ -51,7 +51,7 @@ internal class AppointmentPermissionDataSourceImplTest {
         val fixture = SutFixture()
         fixture.setup()
         val userId = Uuid.random()
-        val permission = ResourcePermission(view = true, update = true)
+        val permission = ResourcePermission(view = true, update = true, delete = false)
 
         whenn()
         suspendTransaction { fixture.sut.setPermission(userId, fixture.businessId, permission) }
@@ -67,7 +67,7 @@ internal class AppointmentPermissionDataSourceImplTest {
         val fixture = SutFixture()
         fixture.setup()
         val userId = Uuid.random()
-        suspendTransaction { fixture.sut.setPermission(userId, fixture.businessId, ResourcePermission(view = true)) }
+        suspendTransaction { fixture.sut.setPermission(userId, fixture.businessId, ResourcePermission(view = true, update = false, delete = false)) }
 
         whenn()
         suspendTransaction { fixture.sut.setPermission(userId, fixture.businessId, ResourcePermission.FULL) }

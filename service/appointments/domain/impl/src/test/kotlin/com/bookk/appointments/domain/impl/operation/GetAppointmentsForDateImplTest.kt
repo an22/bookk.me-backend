@@ -47,7 +47,7 @@ internal class GetAppointmentsForDateImplTest {
 
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { appointmentPermissionDataSource.getPermission(userId, businessId) } returns ResourcePermission(view = true)
+            coEvery { appointmentPermissionDataSource.getPermission(userId, businessId) } returns ResourcePermission(view = true, update = false, delete = false)
             coEvery { settingsDataSource.get(businessId) } returns settings
             coEvery { appointmentDataSource.getAllForDate(businessId, expectedRange) } returns appointments
         }
@@ -91,7 +91,7 @@ internal class GetAppointmentsForDateImplTest {
 
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { appointmentPermissionDataSource.getPermission(userId, businessId) } returns ResourcePermission(view = true)
+            coEvery { appointmentPermissionDataSource.getPermission(userId, businessId) } returns ResourcePermission(view = true, update = false, delete = false)
             coEvery { settingsDataSource.get(businessId) } returns null
         }
 
@@ -117,7 +117,7 @@ internal class GetAppointmentsForDateImplTest {
 
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { appointmentPermissionDataSource.getPermission(userId, businessId) } returns ResourcePermission(view = true)
+            coEvery { appointmentPermissionDataSource.getPermission(userId, businessId) } returns ResourcePermission(view = true, update = false, delete = false)
             coEvery { settingsDataSource.get(businessId) } returns settings
             coEvery { appointmentDataSource.getAllForDate(businessId, expectedRange) } throws exception
         }

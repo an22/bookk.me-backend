@@ -82,8 +82,8 @@ is keyed by `(userId, businessId)` alone.
 |---|---|---|
 | `BUSINESS` | `update` | Update the business profile (`UpdateBusinessImpl`) |
 | `BUSINESS` | full control (`covers(FULL)`) | Enable the appointments module for a business, checked cross-service (`EnableAppointmentsForBusinessImpl`) |
-| `EMPLOYEES` | `view` | List employees (`GetEmployeesImpl`), read an employee's permissions (`GetEmployeePermissionsImpl`) |
-| `EMPLOYEES` | `update` | Update an employee's own record (`UpdateEmployeeImpl`), create/revoke an employee invitation (`CreateEmployeeInvitationImpl`, `RevokeEmployeeInvitationImpl`), grant or revoke another resource's permission for an employee (`SetEmployeePermissionImpl`) |
+| `EMPLOYEES` | `view` | List employees, each carrying their own grants as `Employee.permissions` (`GetEmployeesImpl`) |
+| `EMPLOYEES` | `update` | Update an employee's own record (`UpdateEmployeeImpl`), create/revoke an employee invitation (`CreateEmployeeInvitationImpl`, `RevokeEmployeeInvitationImpl`), grant or revoke another resource's permission for an employee (`SetEmployeePermissionsImpl`) |
 | `CLIENTS` | `view` | List clients (`GetClientsImpl`) |
 | `CLIENTS` | `update` | Create/update a client (`CreateClientImpl`, `UpdateClientImpl`) |
 | `CLIENTS` | `delete` | Delete a client (`DeleteClientImpl`) |
@@ -96,28 +96,35 @@ is keyed by `(userId, businessId)` alone.
 
 There is no fixed role (the old `EMPLOYEE`/`MANAGER` split is gone).
 Instead, an owner (or anyone holding `EMPLOYEES.update`) grants or revokes
-one resource's `view`/`update`/`delete` bits for one employee at a time:
+the `view`/`update`/`delete` bits of one or more resources for one
+employee in a single request:
 
 ```
-PUT /api/business/{businessId}/employee/{id}/permissions/{resource}
-Body: library.permissions.ResourcePermission
+PUT /api/business/{businessId}/employee/{id}/permissions
+Body: EmployeePermissionsRequest(grants: Map<BusinessResource, ResourcePermission>)
 ```
 
-`SetEmployeePermissionImpl` requires the caller to hold `EMPLOYEES.update`,
+`SetEmployeePermissionsImpl` requires the caller to hold `EMPLOYEES.update`,
 looks up the target employee, and additionally requires the caller's own
-grant on the **target resource** to `.covers()` the permission being handed
-out — you cannot grant delegate access you don't hold yourself
-(`SetEmployeePermission.Error.InsufficientGrant`, 422). A companion read
-endpoint, `GET /api/business/{businessId}/employee/{id}/permissions`
-(`GetEmployeePermissionsImpl`, requires `EMPLOYEES.view`), returns the
-employee's current grants across all five resources as
-`BusinessPermissions`, letting a management UI pre-fill toggles.
+grant on **every listed resource** to `.covers()` the permission being
+handed out — you cannot grant delegate access you don't hold yourself
+(`SetEmployeePermissions.Error.InsufficientGrant`, 422). The check is
+all-or-nothing, so one uncovered grant rejects the whole request and
+nothing is written. Resources not listed keep their grants. It responds with
+the updated `Employee`. There is no separate read endpoint: every
+`Employee` the business service returns carries that employee's current
+grants across all five resources as `Employee.permissions`
+(`BusinessPermissions`), so the employee list (`EMPLOYEES.view`) is enough
+for a management UI to pre-fill toggles. Note the difference from
+`Business.permissions`, which holds the **requesting user's** grants on
+that business, whereas `Employee.permissions` holds **that employee's**
+grants.
 
 | Grant | Where | Result |
 |---|---|---|
-| Business creator | `CreateBusinessImpl` | `ResourcePermission.FULL` on all five resources |
-| Employee who joined | `JoinBusinessImpl` | `view = true` (nothing else) on all five resources — customizable afterward via `SetEmployeePermission` |
-| Employee's permission changed by an authorized caller | `SetEmployeePermissionImpl` | Whatever `ResourcePermission` was requested, for the one resource specified |
+| Business creator | `CreateBusinessImpl` (via the owner's `Employee.permissions`, written by `createEmployee`) | `ResourcePermission.FULL` on all five resources |
+| Employee who joined | `JoinBusinessImpl` (via the new `Employee.permissions`, written by `createEmployee`) | `view = true` (nothing else) on all five resources — customizable afterward via `SetEmployeePermissions` |
+| Employee's permissions changed by an authorized caller | `SetEmployeePermissionsImpl` | Whatever `ResourcePermission` was requested, for each listed resource (one event per request) |
 
 Every row above that changes an **existing** employee's grants (join, or an
 explicit set) publishes `BusinessEvent.EmployeePermissionsChanged`
@@ -159,6 +166,15 @@ grants it needs rather than sharing one table across services.
   `GetDashboardBusiness`, and `GetUserBusinesses` all attach the requesting
   user's grants onto the business (or businesses) they return, computed
   per request rather than stored on the business row itself.
+  Every grant row also carries an `employee_id` FK to the `employee` it
+  belongs to (`ON DELETE CASCADE`), so `Employee.permissions` is an
+  ordinary DAO referrer (`EmployeeEntity.grants`,
+  `BusinessPermissionGrantEntity`). The employee list eager-loads it with
+  `.with(..., EmployeeEntity::grants)`, which is one grants query for N
+  employees. Creating an employee (`EmployeeEntity.new`) upserts that
+  employee's five grant rows, and deleting one removes them. `user_id` and
+  `business_id` stay on the row so permission checks
+  (`getPermission(userId, businessId, resource)`) don't need a join.
 - **Appointments service** keeps its own local copy in
   `appointment_permission_grants` (`AppointmentPermissionDataSourceImpl`),
   one row per `(userId, businessId)` with the same three boolean columns —

@@ -2,13 +2,11 @@ package com.bookk.business.domain.impl.operation.employee
 
 import com.bookk.business.domain.api.business.entity.Business
 import com.bookk.business.domain.api.business.entity.BusinessPermissions
-import com.bookk.business.domain.api.business.entity.BusinessResource
 import com.bookk.business.domain.api.employee.entity.Employee
 import com.bookk.business.domain.api.employee.entity.EmployeeInvitation
 import com.bookk.business.domain.api.employee.entity.EmployeeInvitationStatus
 import com.bookk.business.domain.api.employee.operation.JoinBusiness
 import com.bookk.business.domain.datasource.BusinessDataSource
-import com.bookk.business.domain.datasource.BusinessPermissionDataSource
 import com.bookk.business.domain.datasource.EmployeeDataSource
 import com.bookk.business.domain.datasource.EmployeeInvitationDataSource
 import com.bookk.core.data.eventstreaming.StandardEventProducer
@@ -39,7 +37,6 @@ internal class JoinBusinessImplTest {
         val invitationDataSource = mockk<EmployeeInvitationDataSource>()
         val employeeDataSource = mockk<EmployeeDataSource>()
         val businessDataSource = mockk<BusinessDataSource>()
-        val businessPermissionDataSource = mockk<BusinessPermissionDataSource>()
         val userClient = mockk<UserClient>()
         val transactionManager = mockk<TransactionManager>()
         val eventProducer = mockk<StandardEventProducer>(relaxed = true)
@@ -47,7 +44,6 @@ internal class JoinBusinessImplTest {
             invitationDataSource,
             employeeDataSource,
             businessDataSource,
-            businessPermissionDataSource,
             userClient,
             transactionManager,
             eventProducer
@@ -80,16 +76,14 @@ internal class JoinBusinessImplTest {
         coEvery { userClient.getUserById(requestUserId) } returns Result.success(userSnapshot(requestUserId))
         coEvery { businessDataSource.getBusinessById(invitation.businessId) } returns business(invitation.businessId)
         coEvery { employeeDataSource.createEmployee(any()) } returns employee
-        coEvery { businessPermissionDataSource.setPermission(requestUserId, invitation.businessId, any(), any()) } returns Unit
-        coEvery { businessPermissionDataSource.getPermissions(requestUserId, invitation.businessId) } returns viewOnlyPermissions
     }
 
     private val viewOnlyPermissions = BusinessPermissions(
-        business = ResourcePermission(view = true),
-        employees = ResourcePermission(view = true),
-        clients = ResourcePermission(view = true),
-        services = ResourcePermission(view = true),
-        appointments = ResourcePermission(view = true)
+        business = ResourcePermission(view = true, update = false, delete = false),
+        employees = ResourcePermission(view = true, update = false, delete = false),
+        clients = ResourcePermission(view = true, update = false, delete = false),
+        services = ResourcePermission(view = true, update = false, delete = false),
+        appointments = ResourcePermission(view = true, update = false, delete = false)
     )
 
     @Test
@@ -135,15 +129,8 @@ internal class JoinBusinessImplTest {
 
         then()
         assertTrue(result.isSuccess)
-        BusinessResource.entries.forEach { resource ->
-            coVerify(exactly = 1) {
-                fixture.businessPermissionDataSource.setPermission(
-                    requestUserId,
-                    invitation.businessId,
-                    resource,
-                    ResourcePermission(view = true)
-                )
-            }
+        coVerify(exactly = 1) {
+            fixture.employeeDataSource.createEmployee(match { it.permissions == viewOnlyPermissions })
         }
     }
 
@@ -190,7 +177,7 @@ internal class JoinBusinessImplTest {
         val fixture = SutFixture()
         val requestUserId = Uuid.random()
         val invitation = EmployeeInvitation.stub()
-        val employee = Employee.stub(businessId = invitation.businessId, userId = requestUserId)
+        val employee = Employee.stub(businessId = invitation.businessId, userId = requestUserId, permissions = viewOnlyPermissions)
         val event = slot<BusinessEvent.EmployeePermissionsChanged>()
         with(fixture) {
             stubHappyPath(requestUserId, invitation, employee)
@@ -209,7 +196,7 @@ internal class JoinBusinessImplTest {
         }
         assertEquals(requestUserId, event.captured.employeeUserId)
         assertEquals(invitation.businessId, event.captured.businessId)
-        assertEquals(ResourcePermission(view = true), event.captured.permissions.appointments)
+        assertEquals(viewOnlyPermissions, event.captured.permissions)
     }
 
     @Test

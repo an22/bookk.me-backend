@@ -43,7 +43,7 @@ internal class GetAppointmentHistoryImplTest {
 
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { appointmentPermissionDataSource.getPermission(userId, businessId) } returns ResourcePermission(view = true)
+            coEvery { appointmentPermissionDataSource.getPermission(userId, businessId) } returns ResourcePermission(view = true, update = false, delete = false)
             coEvery { dataSource.getAllPaginated(businessId, 50, 0, null) } returns pagination
         }
 
@@ -69,7 +69,7 @@ internal class GetAppointmentHistoryImplTest {
 
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { appointmentPermissionDataSource.getPermission(userId, businessId) } returns ResourcePermission(view = true)
+            coEvery { appointmentPermissionDataSource.getPermission(userId, businessId) } returns ResourcePermission(view = true, update = false, delete = false)
             coEvery {
                 dataSource.getAllPaginated(businessId, 50, 0, "John")
             } returns pagination
@@ -119,7 +119,7 @@ internal class GetAppointmentHistoryImplTest {
 
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { appointmentPermissionDataSource.getPermission(userId, businessId) } returns ResourcePermission(view = true)
+            coEvery { appointmentPermissionDataSource.getPermission(userId, businessId) } returns ResourcePermission(view = true, update = false, delete = false)
             coEvery { dataSource.getAllPaginated(businessId, 50, 0, null) } throws exception
         }
 

@@ -147,7 +147,7 @@ internal class EnableAppointmentsForBusinessImplTest {
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { businessClient.getPermission(testUserId, testBusinessId, BusinessResource.BUSINESS) } returns
-                Result.success(ResourcePermission(view = true, update = true))
+                Result.success(ResourcePermission(view = true, update = true, delete = false))
             coEvery { businessClient.getBusinessById(testBusinessId) } returns Result.success(businessDto())
         }
 

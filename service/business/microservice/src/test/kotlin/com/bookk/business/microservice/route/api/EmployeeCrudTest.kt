@@ -3,9 +3,9 @@ package com.bookk.business.microservice.route.api
 import com.bookk.business.domain.api.business.entity.BusinessPermissions
 import com.bookk.business.domain.api.business.entity.BusinessResource
 import com.bookk.business.domain.api.employee.entity.Employee
-import com.bookk.business.domain.api.employee.operation.GetEmployeePermissions
+import com.bookk.business.domain.api.employee.entity.EmployeeUpdateModel
 import com.bookk.business.domain.api.employee.operation.GetEmployees
-import com.bookk.business.domain.api.employee.operation.SetEmployeePermission
+import com.bookk.business.domain.api.employee.operation.SetEmployeePermissions
 import com.bookk.business.domain.api.employee.operation.UpdateEmployee
 import com.bookk.business.domain.api.error.BusinessErrorCodes
 import com.bookk.business.microservice.route.BusinessRouting
@@ -57,13 +57,7 @@ internal class EmployeeCrudTest {
         routeUnderTest = { employeeCrud() }
     )
 
-    private fun ApplicationTestBuilder.authenticatedApplication(useCase: SetEmployeePermission) = setupApplication(
-        extension = jwtAuthentication(),
-        diModule = module { single { useCase } },
-        routeUnderTest = { employeeCrud() }
-    )
-
-    private fun ApplicationTestBuilder.authenticatedApplication(useCase: GetEmployeePermissions) = setupApplication(
+    private fun ApplicationTestBuilder.authenticatedApplication(useCase: SetEmployeePermissions) = setupApplication(
         extension = jwtAuthentication(),
         diModule = module { single { useCase } },
         routeUnderTest = { employeeCrud() }
@@ -75,11 +69,6 @@ internal class EmployeeCrudTest {
         routeUnderTest = { employeeCrud() }
     )
 
-    private fun permissionResource(id: Uuid, resource: BusinessResource) = BusinessRouting.Api.Employee.Id.Permission(
-        BusinessRouting.Api.Employee.Id(BusinessRouting.Api.Employee(businessId = businessId), id),
-        resource
-    )
-
     private fun permissionsResource(id: Uuid) = BusinessRouting.Api.Employee.Id.Permissions(
         BusinessRouting.Api.Employee.Id(BusinessRouting.Api.Employee(businessId = businessId), id)
     )
@@ -89,13 +78,13 @@ internal class EmployeeCrudTest {
         given()
         val useCase: UpdateEmployee = mockk()
         val employee = createTestEmployee()
-        coEvery { useCase.invoke(userId, employee) } returns Result.success(employee)
+        coEvery { useCase.invoke(userId, updateModel(employee)) } returns Result.success(employee)
         authenticatedApplication(useCase)
 
         whenn()
         val client = createTestClient()
         val response = client.put(BusinessRouting.Api.Employee.Id(BusinessRouting.Api.Employee(businessId = businessId), employee.id)) {
-            setBody(employee)
+            setBody(updateModel(employee))
         }
 
         then()
@@ -112,7 +101,7 @@ internal class EmployeeCrudTest {
         whenn()
         val client = createTestClient()
         val response = client.put(BusinessRouting.Api.Employee.Id(BusinessRouting.Api.Employee(businessId = Uuid.random()), employee.id)) {
-            setBody(employee)
+            setBody(updateModel(employee))
         }
 
         then()
@@ -129,7 +118,7 @@ internal class EmployeeCrudTest {
         whenn()
         val client = createTestClient()
         val response = client.put(BusinessRouting.Api.Employee.Id(BusinessRouting.Api.Employee(businessId = businessId), Uuid.random())) {
-            setBody(employee)
+            setBody(updateModel(employee))
         }
 
         then()
@@ -141,13 +130,13 @@ internal class EmployeeCrudTest {
         given()
         val useCase: UpdateEmployee = mockk()
         val employee = createTestEmployee()
-        coEvery { useCase.invoke(userId, employee) } returns Result.failure(UpdateEmployee.Error.ValidationError())
+        coEvery { useCase.invoke(userId, updateModel(employee)) } returns Result.failure(UpdateEmployee.Error.ValidationError())
         authenticatedApplication(useCase)
 
         whenn()
         val client = createTestClient()
         val response = client.put(BusinessRouting.Api.Employee.Id(BusinessRouting.Api.Employee(businessId = businessId), employee.id)) {
-            setBody(employee)
+            setBody(updateModel(employee))
         }
 
         then()
@@ -160,13 +149,13 @@ internal class EmployeeCrudTest {
         given()
         val useCase: UpdateEmployee = mockk()
         val employee = createTestEmployee()
-        coEvery { useCase.invoke(userId, employee) } returns Result.failure(UpdateEmployee.Error.ActiveDayWithoutWorkHours())
+        coEvery { useCase.invoke(userId, updateModel(employee)) } returns Result.failure(UpdateEmployee.Error.ActiveDayWithoutWorkHours())
         authenticatedApplication(useCase)
 
         whenn()
         val client = createTestClient()
         val response = client.put(BusinessRouting.Api.Employee.Id(BusinessRouting.Api.Employee(businessId = businessId), employee.id)) {
-            setBody(employee)
+            setBody(updateModel(employee))
         }
 
         then()
@@ -179,13 +168,13 @@ internal class EmployeeCrudTest {
         given()
         val useCase: UpdateEmployee = mockk()
         val employee = createTestEmployee()
-        coEvery { useCase.invoke(userId, employee) } returns Result.failure(UpdateEmployee.Error.InvalidDayOffRange())
+        coEvery { useCase.invoke(userId, updateModel(employee)) } returns Result.failure(UpdateEmployee.Error.InvalidDayOffRange())
         authenticatedApplication(useCase)
 
         whenn()
         val client = createTestClient()
         val response = client.put(BusinessRouting.Api.Employee.Id(BusinessRouting.Api.Employee(businessId = businessId), employee.id)) {
-            setBody(employee)
+            setBody(updateModel(employee))
         }
 
         then()
@@ -198,13 +187,13 @@ internal class EmployeeCrudTest {
         given()
         val useCase: UpdateEmployee = mockk()
         val employee = createTestEmployee()
-        coEvery { useCase.invoke(userId, employee) } returns Result.failure(Error.OperationNotAllowed())
+        coEvery { useCase.invoke(userId, updateModel(employee)) } returns Result.failure(Error.OperationNotAllowed())
         authenticatedApplication(useCase)
 
         whenn()
         val client = createTestClient()
         val response = client.put(BusinessRouting.Api.Employee.Id(BusinessRouting.Api.Employee(businessId = businessId), employee.id)) {
-            setBody(employee)
+            setBody(updateModel(employee))
         }
 
         then()
@@ -226,7 +215,7 @@ internal class EmployeeCrudTest {
         whenn()
         val client = createTestClient()
         val response = client.put(BusinessRouting.Api.Employee.Id(BusinessRouting.Api.Employee(businessId = businessId), employee.id)) {
-            setBody(employee)
+            setBody(updateModel(employee))
         }
 
         then()
@@ -234,40 +223,84 @@ internal class EmployeeCrudTest {
     }
 
     @Test
-    fun `should set employee permission`() = routeTest {
+    fun `should return not found when employee does not belong to the business`() = routeTest {
         given()
-        val useCase: SetEmployeePermission = mockk()
-        val id = Uuid.random()
-        val permission = ResourcePermission(view = true, update = true)
-        val updated = BusinessPermissions.stub(clients = permission)
-        coEvery { useCase.invoke(userId, businessId, id, BusinessResource.CLIENTS, permission) } returns Result.success(updated)
+        val useCase: UpdateEmployee = mockk()
+        val employee = createTestEmployee()
+        coEvery { useCase.invoke(userId, updateModel(employee)) } returns Result.failure(Error.NotFound())
         authenticatedApplication(useCase)
 
         whenn()
         val client = createTestClient()
-        val response = client.put(permissionResource(id, BusinessResource.CLIENTS)) {
-            setBody(permission)
+        val response = client.put(BusinessRouting.Api.Employee.Id(BusinessRouting.Api.Employee(businessId = businessId), employee.id)) {
+            setBody(updateModel(employee))
+        }
+
+        then()
+        assertEquals(HttpStatusCode.NotFound, response.status)
+    }
+
+    @Test
+    fun `should accept a full employee body from clients that predate the update model`() = routeTest {
+        given()
+        val useCase: UpdateEmployee = mockk()
+        val employee = createTestEmployee().copy(permissions = BusinessPermissions.FULL)
+        coEvery { useCase.invoke(userId, updateModel(employee)) } returns Result.success(employee)
+        authenticatedApplication(useCase)
+
+        whenn()
+        val client = createTestClient()
+        val response = client.put(BusinessRouting.Api.Employee.Id(BusinessRouting.Api.Employee(businessId = businessId), employee.id)) {
+            setBody(employee)
         }
 
         then()
         assertEquals(HttpStatusCode.OK, response.status)
-        assertEquals(updated, response.body<BusinessPermissions>())
+        assertEquals(employee, response.body<Employee>())
+    }
+
+    @Test
+    fun `should set permissions for several resources in one request`() = routeTest {
+        given()
+        val useCase: SetEmployeePermissions = mockk()
+        val id = Uuid.random()
+        val grants = mapOf(
+            BusinessResource.CLIENTS to ResourcePermission(view = true, update = true, delete = false),
+            BusinessResource.SERVICES to ResourcePermission.FULL
+        )
+        val updated = Employee.stub(
+            id = id,
+            businessId = businessId,
+            permissions = BusinessPermissions.stub(clients = ResourcePermission(view = true, update = true, delete = false), services = ResourcePermission.FULL)
+        )
+        coEvery { useCase.invoke(userId, businessId, id, grants) } returns Result.success(updated)
+        authenticatedApplication(useCase)
+
+        whenn()
+        val client = createTestClient()
+        val response = client.put(permissionsResource(id)) {
+            setBody(EmployeePermissionsRequest(grants))
+        }
+
+        then()
+        assertEquals(HttpStatusCode.OK, response.status)
+        assertEquals(updated, response.body<Employee>())
     }
 
     @Test
     fun `should return unprocessable entity when caller cannot grant a permission level they do not hold`() = routeTest {
         given()
-        val useCase: SetEmployeePermission = mockk()
+        val useCase: SetEmployeePermissions = mockk()
         val id = Uuid.random()
-        val permission = ResourcePermission.FULL
-        coEvery { useCase.invoke(userId, businessId, id, BusinessResource.CLIENTS, permission) } returns
-            Result.failure(SetEmployeePermission.Error.InsufficientGrant())
+        val grants = mapOf(BusinessResource.CLIENTS to ResourcePermission.FULL)
+        coEvery { useCase.invoke(userId, businessId, id, grants) } returns
+            Result.failure(SetEmployeePermissions.Error.InsufficientGrant())
         authenticatedApplication(useCase)
 
         whenn()
         val client = createTestClient()
-        val response = client.put(permissionResource(id, BusinessResource.CLIENTS)) {
-            setBody(permission)
+        val response = client.put(permissionsResource(id)) {
+            setBody(EmployeePermissionsRequest(grants))
         }
 
         then()
@@ -276,19 +309,18 @@ internal class EmployeeCrudTest {
     }
 
     @Test
-    fun `should return not found when setting permission for an unknown employee`() = routeTest {
+    fun `should return not found when setting permissions for an unknown employee`() = routeTest {
         given()
-        val useCase: SetEmployeePermission = mockk()
+        val useCase: SetEmployeePermissions = mockk()
         val id = Uuid.random()
-        val permission = ResourcePermission(view = true)
-        coEvery { useCase.invoke(userId, businessId, id, BusinessResource.CLIENTS, permission) } returns
-            Result.failure(Error.NotFound())
+        val grants = mapOf(BusinessResource.CLIENTS to ResourcePermission(view = true, update = false, delete = false))
+        coEvery { useCase.invoke(userId, businessId, id, grants) } returns Result.failure(Error.NotFound())
         authenticatedApplication(useCase)
 
         whenn()
         val client = createTestClient()
-        val response = client.put(permissionResource(id, BusinessResource.CLIENTS)) {
-            setBody(permission)
+        val response = client.put(permissionsResource(id)) {
+            setBody(EmployeePermissionsRequest(grants))
         }
 
         then()
@@ -298,17 +330,16 @@ internal class EmployeeCrudTest {
     @Test
     fun `should return not found when caller has no rights to manage permissions`() = routeTest {
         given()
-        val useCase: SetEmployeePermission = mockk()
+        val useCase: SetEmployeePermissions = mockk()
         val id = Uuid.random()
-        val permission = ResourcePermission(view = true)
-        coEvery { useCase.invoke(userId, businessId, id, BusinessResource.CLIENTS, permission) } returns
-            Result.failure(Error.OperationNotAllowed())
+        val grants = mapOf(BusinessResource.CLIENTS to ResourcePermission(view = true, update = false, delete = false))
+        coEvery { useCase.invoke(userId, businessId, id, grants) } returns Result.failure(Error.OperationNotAllowed())
         authenticatedApplication(useCase)
 
         whenn()
         val client = createTestClient()
-        val response = client.put(permissionResource(id, BusinessResource.CLIENTS)) {
-            setBody(permission)
+        val response = client.put(permissionsResource(id)) {
+            setBody(EmployeePermissionsRequest(grants))
         }
 
         then()
@@ -316,9 +347,9 @@ internal class EmployeeCrudTest {
     }
 
     @Test
-    fun `should return unauthorized when setting permission without authentication`() = routeTest {
+    fun `should return unauthorized when setting permissions without authentication`() = routeTest {
         given()
-        val useCase: SetEmployeePermission = mockk()
+        val useCase: SetEmployeePermissions = mockk()
 
         setupApplication(
             extension = { install(Authentication) { bearer { authenticate { null } } } },
@@ -328,78 +359,9 @@ internal class EmployeeCrudTest {
 
         whenn()
         val client = createTestClient()
-        val response = client.put(permissionResource(Uuid.random(), BusinessResource.CLIENTS)) {
-            setBody(ResourcePermission(view = true))
+        val response = client.put(permissionsResource(Uuid.random())) {
+            setBody(EmployeePermissionsRequest(mapOf(BusinessResource.CLIENTS to ResourcePermission(view = true, update = false, delete = false))))
         }
-
-        then()
-        assertEquals(HttpStatusCode.Unauthorized, response.status)
-    }
-
-    @Test
-    fun `should get employee permissions`() = routeTest {
-        given()
-        val useCase: GetEmployeePermissions = mockk()
-        val id = Uuid.random()
-        val permissions = BusinessPermissions.stub(clients = ResourcePermission.FULL)
-        coEvery { useCase.invoke(userId, businessId, id) } returns Result.success(permissions)
-        authenticatedApplication(useCase)
-
-        whenn()
-        val client = createTestClient()
-        val response = client.get(permissionsResource(id))
-
-        then()
-        assertEquals(HttpStatusCode.OK, response.status)
-        assertEquals(permissions, response.body<BusinessPermissions>())
-    }
-
-    @Test
-    fun `should return not found when getting permissions for an unknown employee`() = routeTest {
-        given()
-        val useCase: GetEmployeePermissions = mockk()
-        val id = Uuid.random()
-        coEvery { useCase.invoke(userId, businessId, id) } returns Result.failure(Error.NotFound())
-        authenticatedApplication(useCase)
-
-        whenn()
-        val client = createTestClient()
-        val response = client.get(permissionsResource(id))
-
-        then()
-        assertEquals(HttpStatusCode.NotFound, response.status)
-    }
-
-    @Test
-    fun `should return not found when caller has no rights to view permissions`() = routeTest {
-        given()
-        val useCase: GetEmployeePermissions = mockk()
-        val id = Uuid.random()
-        coEvery { useCase.invoke(userId, businessId, id) } returns Result.failure(Error.OperationNotAllowed())
-        authenticatedApplication(useCase)
-
-        whenn()
-        val client = createTestClient()
-        val response = client.get(permissionsResource(id))
-
-        then()
-        assertEquals(HttpStatusCode.NotFound, response.status)
-    }
-
-    @Test
-    fun `should return unauthorized when getting permissions without authentication`() = routeTest {
-        given()
-        val useCase: GetEmployeePermissions = mockk()
-
-        setupApplication(
-            extension = { install(Authentication) { bearer { authenticate { null } } } },
-            diModule = module { single { useCase } },
-            routeUnderTest = { employeeCrud() }
-        )
-
-        whenn()
-        val client = createTestClient()
-        val response = client.get(permissionsResource(Uuid.random()))
 
         then()
         assertEquals(HttpStatusCode.Unauthorized, response.status)
@@ -409,7 +371,10 @@ internal class EmployeeCrudTest {
     fun `should return employees of the business`() = routeTest {
         given()
         val useCase: GetEmployees = mockk()
-        val employees = listOf(createTestEmployee(), createTestEmployee())
+        val employees = listOf(
+            createTestEmployee().copy(permissions = BusinessPermissions.FULL),
+            createTestEmployee().copy(permissions = BusinessPermissions.VIEW_ONLY)
+        )
         coEvery { useCase.invoke(userId, businessId) } returns Result.success(employees)
         authenticatedApplication(useCase)
 
@@ -419,7 +384,7 @@ internal class EmployeeCrudTest {
 
         then()
         assertEquals(HttpStatusCode.OK, response.status)
-        assertEquals(employees.map { it.id }, response.body<List<Employee>>().map { it.id })
+        assertEquals(employees, response.body<List<Employee>>())
     }
 
     @Test
@@ -455,4 +420,15 @@ internal class EmployeeCrudTest {
         then()
         assertEquals(HttpStatusCode.Unauthorized, response.status)
     }
+
+    private fun updateModel(employee: Employee) = EmployeeUpdateModel(
+        id = employee.id,
+        businessId = employee.businessId,
+        name = employee.name,
+        lastName = employee.lastName,
+        phone = employee.phone,
+        email = employee.email,
+        services = employee.services,
+        schedule = employee.schedule
+    )
 }

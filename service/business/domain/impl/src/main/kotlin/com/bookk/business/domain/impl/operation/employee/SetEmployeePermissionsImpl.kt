@@ -1,8 +1,8 @@
 package com.bookk.business.domain.impl.operation.employee
 
-import com.bookk.business.domain.api.business.entity.BusinessPermissions
 import com.bookk.business.domain.api.business.entity.BusinessResource
-import com.bookk.business.domain.api.employee.operation.SetEmployeePermission
+import com.bookk.business.domain.api.employee.entity.Employee
+import com.bookk.business.domain.api.employee.operation.SetEmployeePermissions
 import com.bookk.business.domain.datasource.BusinessPermissionDataSource
 import com.bookk.business.domain.datasource.EmployeeDataSource
 import com.bookk.core.data.eventstreaming.StandardEventProducer
@@ -15,31 +15,33 @@ import library.permissions.ResourcePermission
 import library.permissions.assert
 import kotlin.uuid.Uuid
 
-internal class SetEmployeePermissionImpl(
+internal class SetEmployeePermissionsImpl(
     private val employeeDataSource: EmployeeDataSource,
     private val businessPermissionDataSource: BusinessPermissionDataSource,
     private val transactionManager: TransactionManager,
     private val eventProducer: StandardEventProducer
-) : SetEmployeePermission {
+) : SetEmployeePermissions {
     override suspend fun invoke(
         requestUserId: Uuid,
         businessId: Uuid,
         employeeId: Uuid,
-        resource: BusinessResource,
-        permission: ResourcePermission
-    ): Result<BusinessPermissions> = transactionManager.transaction {
+        grants: Map<BusinessResource, ResourcePermission>
+    ): Result<Employee> = transactionManager.transaction {
         businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES)
             .assert(PermissionAction.UPDATE)
         val employee = employeeDataSource.getEmployee(businessId, employeeId) ?: throw Error.NotFound()
-        val callersOwnGrant = businessPermissionDataSource.getPermission(requestUserId, businessId, resource)
-        if (!callersOwnGrant.covers(permission)) throw SetEmployeePermission.Error.InsufficientGrant()
-        businessPermissionDataSource.setPermission(employee.userId, businessId, resource, permission)
-        val updated = businessPermissionDataSource.getPermissions(employee.userId, businessId)
+        if (grants.isEmpty()) return@transaction employee
+        val callersOwnPermissions = businessPermissionDataSource.getPermissions(requestUserId, businessId)
+        if (grants.any { (resource, permission) -> !callersOwnPermissions[resource].covers(permission) }) {
+            throw SetEmployeePermissions.Error.InsufficientGrant()
+        }
+        businessPermissionDataSource.setPermissions(employee, grants)
+        val updated = employee.copy(permissions = employee.permissions.with(grants))
         eventProducer.send(
             BusinessEvent.EmployeePermissionsChanged(
                 employeeUserId = employee.userId,
                 businessId = businessId,
-                permissions = updated
+                permissions = updated.permissions
             )
         )
         updated

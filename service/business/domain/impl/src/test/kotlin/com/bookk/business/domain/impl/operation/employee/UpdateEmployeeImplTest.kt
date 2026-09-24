@@ -2,6 +2,7 @@ package com.bookk.business.domain.impl.operation.employee
 
 import com.bookk.business.domain.api.business.entity.BusinessResource
 import com.bookk.business.domain.api.employee.entity.Employee
+import com.bookk.business.domain.api.employee.entity.EmployeeUpdateModel
 import com.bookk.business.domain.api.employee.operation.UpdateEmployee
 import com.bookk.business.domain.datasource.BusinessPermissionDataSource
 import com.bookk.business.domain.datasource.EmployeeDataSource
@@ -38,7 +39,8 @@ internal class UpdateEmployeeImplTest {
         val sut = UpdateEmployeeImpl(employeeDataSource, businessPermissionDataSource, transactionManager)
 
         init {
-            coEvery { businessPermissionDataSource.getPermission(any(), any(), BusinessResource.EMPLOYEES) } returns ResourcePermission(update = true)
+            coEvery { businessPermissionDataSource.getPermission(any(), any(), BusinessResource.EMPLOYEES) } returns ResourcePermission(view = false, update = true, delete = false)
+            coEvery { employeeDataSource.getEmployee(any(), any()) } returns Employee.stub()
         }
 
         fun grantPermission(permission: ResourcePermission) {
@@ -52,15 +54,15 @@ internal class UpdateEmployeeImplTest {
         val fixture = SutFixture()
         fixture.transactionManager.mockTransaction()
         val employee = Employee.stub()
-        coEvery { fixture.employeeDataSource.updateEmployee(employee) } returns employee
+        coEvery { fixture.employeeDataSource.updateEmployee(updateModel(employee)) } returns employee
 
         whenn()
-        val result = fixture.sut(requestUserId, employee)
+        val result = fixture.sut(requestUserId, updateModel(employee))
 
         then()
         assertTrue(result.isSuccess)
         assertEquals(employee, result.getOrNull())
-        coVerify(exactly = 1) { fixture.employeeDataSource.updateEmployee(employee) }
+        coVerify(exactly = 1) { fixture.employeeDataSource.updateEmployee(updateModel(employee)) }
     }
 
     @Test
@@ -69,14 +71,14 @@ internal class UpdateEmployeeImplTest {
         val fixture = SutFixture()
         fixture.transactionManager.mockTransaction()
         val employee = Employee.stub(phone = null, email = null)
-        coEvery { fixture.employeeDataSource.updateEmployee(employee) } returns employee
+        coEvery { fixture.employeeDataSource.updateEmployee(updateModel(employee)) } returns employee
 
         whenn()
-        val result = fixture.sut(requestUserId, employee)
+        val result = fixture.sut(requestUserId, updateModel(employee))
 
         then()
         assertTrue(result.isSuccess)
-        coVerify(exactly = 1) { fixture.employeeDataSource.updateEmployee(employee) }
+        coVerify(exactly = 1) { fixture.employeeDataSource.updateEmployee(updateModel(employee)) }
     }
 
     @Test
@@ -87,7 +89,7 @@ internal class UpdateEmployeeImplTest {
         val employee = Employee.stub(name = "a".repeat(600))
 
         whenn()
-        val result = fixture.sut(requestUserId, employee)
+        val result = fixture.sut(requestUserId, updateModel(employee))
 
         then()
         assertTrue(result.exceptionOrNull() is UpdateEmployee.Error.ValidationError)
@@ -102,7 +104,7 @@ internal class UpdateEmployeeImplTest {
         val employee = Employee.stub(lastName = "a".repeat(600))
 
         whenn()
-        val result = fixture.sut(requestUserId, employee)
+        val result = fixture.sut(requestUserId, updateModel(employee))
 
         then()
         assertTrue(result.exceptionOrNull() is UpdateEmployee.Error.ValidationError)
@@ -117,7 +119,7 @@ internal class UpdateEmployeeImplTest {
         val employee = Employee.stub(phone = "not-a-phone")
 
         whenn()
-        val result = fixture.sut(requestUserId, employee)
+        val result = fixture.sut(requestUserId, updateModel(employee))
 
         then()
         assertTrue(result.exceptionOrNull() is UpdateEmployee.Error.ValidationError)
@@ -132,7 +134,7 @@ internal class UpdateEmployeeImplTest {
         val employee = Employee.stub(email = "not-an-email")
 
         whenn()
-        val result = fixture.sut(requestUserId, employee)
+        val result = fixture.sut(requestUserId, updateModel(employee))
 
         then()
         assertTrue(result.exceptionOrNull() is UpdateEmployee.Error.ValidationError)
@@ -148,7 +150,7 @@ internal class UpdateEmployeeImplTest {
         val employee = Employee.stub(schedule = schedule)
 
         whenn()
-        val result = fixture.sut(requestUserId, employee)
+        val result = fixture.sut(requestUserId, updateModel(employee))
 
         then()
         assertTrue(result.exceptionOrNull() is UpdateEmployee.Error.ActiveDayWithoutWorkHours)
@@ -165,7 +167,7 @@ internal class UpdateEmployeeImplTest {
         val employee = Employee.stub(schedule = schedule)
 
         whenn()
-        val result = fixture.sut(requestUserId, employee)
+        val result = fixture.sut(requestUserId, updateModel(employee))
 
         then()
         assertTrue(result.exceptionOrNull() is UpdateEmployee.Error.InvalidDayOffRange)
@@ -182,10 +184,10 @@ internal class UpdateEmployeeImplTest {
             workingHours = mapOf(DayOfWeek.MONDAY to listOf(WorkHour(LocalTime(9, 0), LocalTime(17, 0))))
         )
         val employee = Employee.stub(schedule = schedule)
-        coEvery { fixture.employeeDataSource.updateEmployee(employee) } returns employee
+        coEvery { fixture.employeeDataSource.updateEmployee(updateModel(employee)) } returns employee
 
         whenn()
-        val result = fixture.sut(requestUserId, employee)
+        val result = fixture.sut(requestUserId, updateModel(employee))
 
         then()
         assertTrue(result.isSuccess)
@@ -196,11 +198,11 @@ internal class UpdateEmployeeImplTest {
         given()
         val fixture = SutFixture()
         fixture.transactionManager.mockTransaction()
-        fixture.grantPermission(ResourcePermission(view = true))
+        fixture.grantPermission(ResourcePermission(view = true, update = false, delete = false))
         val employee = Employee.stub()
 
         whenn()
-        val result = fixture.sut(requestUserId, employee)
+        val result = fixture.sut(requestUserId, updateModel(employee))
 
         then()
         assertTrue(result.exceptionOrNull() is Error.OperationNotAllowed)
@@ -216,7 +218,7 @@ internal class UpdateEmployeeImplTest {
         val employee = Employee.stub()
 
         whenn()
-        val result = fixture.sut(requestUserId, employee)
+        val result = fixture.sut(requestUserId, updateModel(employee))
 
         then()
         assertTrue(result.exceptionOrNull() is Error.OperationNotAllowed)
@@ -229,13 +231,40 @@ internal class UpdateEmployeeImplTest {
         fixture.transactionManager.mockTransaction()
         val businessId = Uuid.random()
         val employee = Employee.stub(businessId = businessId)
-        coEvery { fixture.employeeDataSource.updateEmployee(employee) } returns employee
+        coEvery { fixture.employeeDataSource.updateEmployee(updateModel(employee)) } returns employee
 
         whenn()
-        val result = fixture.sut(requestUserId, employee)
+        val result = fixture.sut(requestUserId, updateModel(employee))
 
         then()
         assertTrue(result.isSuccess)
         coVerify(exactly = 1) { fixture.businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) }
     }
+
+    @Test
+    fun `should return not found when employee does not belong to the business`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.transactionManager.mockTransaction()
+        val employee = Employee.stub()
+        coEvery { fixture.employeeDataSource.getEmployee(employee.businessId, employee.id) } returns null
+
+        whenn()
+        val result = fixture.sut(requestUserId, updateModel(employee))
+
+        then()
+        assertTrue(result.exceptionOrNull() is Error.NotFound)
+        coVerify(exactly = 0) { fixture.employeeDataSource.updateEmployee(any()) }
+    }
+
+    private fun updateModel(employee: Employee) = EmployeeUpdateModel(
+        id = employee.id,
+        businessId = employee.businessId,
+        name = employee.name,
+        lastName = employee.lastName,
+        phone = employee.phone,
+        email = employee.email,
+        services = employee.services,
+        schedule = employee.schedule
+    )
 }

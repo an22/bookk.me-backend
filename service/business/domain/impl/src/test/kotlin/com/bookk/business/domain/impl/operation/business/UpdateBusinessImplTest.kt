@@ -319,7 +319,7 @@ internal class UpdateBusinessImplTest {
         given()
         val fixture = SutFixture()
         fixture.transactionManager.mockTransaction()
-        fixture.grantPermission(ResourcePermission(view = true))
+        fixture.grantPermission(ResourcePermission(view = true, update = false, delete = false))
 
         whenn()
         val result = fixture.sut(requestUserId, updateModel(name = "New Name"))
@@ -347,7 +347,7 @@ internal class UpdateBusinessImplTest {
         given()
         val fixture = SutFixture()
         fixture.transactionManager.mockTransaction()
-        fixture.grantPermission(ResourcePermission(view = true))
+        fixture.grantPermission(ResourcePermission(view = true, update = false, delete = false))
 
         whenn()
         val result = fixture.sut(requestUserId, updateModel(name = "New Name", schedule = scheduleOf(DayOfWeek.MONDAY)))

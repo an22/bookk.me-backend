@@ -3,7 +3,15 @@
 `PUT /api/business/{businessId}/employee/{id}` → `UpdateEmployee`
 
 A full-record replace covering profile fields, schedule and provided
-services in one write.
+services in one write. The body is `EmployeeUpdateModel`, not `Employee`:
+permissions are not editable here (they change only through [Set employee
+permissions](set-employee-permissions.md), which enforces the `.covers()`
+delegation rule and publishes `EmployeePermissionsChanged`). Its proto field
+numbers match `Employee`'s, so a client still sending a full `Employee`
+decodes cleanly and the extra fields are ignored. The target employee is
+looked up by `(businessId, id)` before the write, so a caller holding
+`EMPLOYEES.update` on one business cannot edit another business's employee
+by id.
 
 ```mermaid
 flowchart TD
@@ -14,7 +22,10 @@ flowchart TD
     Auth -- Yes --> Tx[[Begin transaction]]
     Tx --> Perm{caller EMPLOYEES.update?}
     Perm -- No --> R404a([404 Error.OperationNotAllowed])
-    Perm -- Yes --> NameCheck{name and lastName valid?}
+    Perm -- Yes --> Lookup[EmployeeDataSource.getEmployee businessId, id]
+    Lookup --> Found{employee found in this business?}
+    Found -- No --> R404b([404 Error.NotFound])
+    Found -- Yes --> NameCheck{name and lastName valid?}
     NameCheck -- No --> R422a([422 BUSINESS_EMPLOYEE_VALIDATION_ERROR 200021])
     NameCheck -- Yes --> PhoneCheck{phone valid, if present?}
     PhoneCheck -- No --> R422a
@@ -24,8 +35,6 @@ flowchart TD
     WorkHours -- Yes --> R422b([422 BUSINESS_EMPLOYEE_ACTIVE_DAY_WITHOUT_WORK_HOURS 200022])
     WorkHours -- No --> DayOffRange{any dayOff.start > end?}
     DayOffRange -- Yes --> R422c([422 BUSINESS_EMPLOYEE_INVALID_DAY_OFF_RANGE 200023])
-    DayOffRange -- No --> Update[EmployeeDataSource.updateEmployee employee]
-    Update --> Found{employee found?}
-    Found -- No --> R404b([404 Error.NotFound])
-    Found -- Yes --> R200([200 Updated Employee])
+    DayOffRange -- No --> Update[EmployeeDataSource.updateEmployee model]
+    Update --> R200([200 Updated Employee with its permissions, via EmployeeEntity.grants])
 ```

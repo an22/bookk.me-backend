@@ -2,6 +2,7 @@ package com.bookk.business.data.datasource
 
 import com.bookk.business.data.orm.table.BusinessDashboardTable
 import com.bookk.business.data.orm.table.BusinessDayOffTable
+import com.bookk.business.data.orm.table.BusinessPermissionGrantsTable
 import com.bookk.business.data.orm.table.BusinessTable
 import com.bookk.business.data.orm.table.BusinessWorkingHoursTable
 import com.bookk.business.data.orm.table.EmployeeCanProvideServiceTable
@@ -42,6 +43,7 @@ internal class BusinessDataSourceImplTest {
         val db = createTestDatabase(
             BusinessTable,
             BusinessDashboardTable,
+            BusinessPermissionGrantsTable,
             BusinessWorkingHoursTable,
             BusinessDayOffTable,
             EmployeeTable,

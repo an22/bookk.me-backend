@@ -11,7 +11,10 @@ import com.bookk.business.data.orm.table.EmployeeTable
 import com.bookk.business.data.orm.table.EmployeeWorkingHoursTable
 import com.bookk.business.data.orm.table.ServiceGroupTable
 import com.bookk.business.data.orm.table.ServiceTable
+import com.bookk.business.domain.api.business.entity.BusinessPermissions
+import com.bookk.business.domain.api.business.entity.BusinessResource
 import com.bookk.business.domain.api.employee.entity.Employee
+import com.bookk.business.domain.api.employee.entity.EmployeeUpdateModel
 import com.bookk.business.domain.api.service.entity.Service
 import com.bookk.business.domain.api.service.entity.ServiceGroup
 import com.bookk.core.data.test.createTestDatabase
@@ -24,6 +27,7 @@ import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
+import library.permissions.ResourcePermission
 import library.schedule.DayOffRange
 import library.schedule.Schedule
 import library.schedule.WorkHour
@@ -48,6 +52,7 @@ internal class EmployeeDataSourceImplTest {
         val sut = EmployeeDataSourceImpl()
         val businessSut = BusinessDataSourceImpl()
         val serviceSut = ServiceDataSourceImpl()
+        val permissionSut = BusinessPermissionDataSourceImpl()
         lateinit var businessId: Uuid
 
         suspend fun setup() {
@@ -277,7 +282,7 @@ internal class EmployeeDataSourceImplTest {
             fixture.sut.createEmployee(Employee.stub(businessId = fixture.businessId))
         }
         val service = fixture.createService(name = "haircut")
-        suspendTransaction { fixture.sut.updateEmployee(employee.copy(services = listOf(service))) }
+        suspendTransaction { fixture.sut.updateEmployee(updateModel(employee).copy(services = listOf(service))) }
 
         whenn()
         val found = suspendTransaction { fixture.sut.getEmployee(fixture.businessId, employee.id) }
@@ -298,7 +303,7 @@ internal class EmployeeDataSourceImplTest {
         }
         val first = fixture.createService(name = "haircut")
         val second = fixture.createService(name = "shave")
-        suspendTransaction { fixture.sut.updateEmployee(employee.copy(services = listOf(first, second))) }
+        suspendTransaction { fixture.sut.updateEmployee(updateModel(employee).copy(services = listOf(first, second))) }
 
         whenn()
         val employees = suspendTransaction { fixture.sut.getEmployees(fixture.businessId) }
@@ -342,7 +347,7 @@ internal class EmployeeDataSourceImplTest {
         val service = fixture.createService()
 
         whenn()
-        suspendTransaction { fixture.sut.updateEmployee(employee.copy(services = listOf(service))) }
+        suspendTransaction { fixture.sut.updateEmployee(updateModel(employee).copy(services = listOf(service))) }
         val serviceIds = suspendTransaction { fixture.sut.getServiceIds(employee.id) }
 
         then()
@@ -360,8 +365,8 @@ internal class EmployeeDataSourceImplTest {
         val service = fixture.createService()
 
         whenn()
-        suspendTransaction { fixture.sut.updateEmployee(employee.copy(services = listOf(service))) }
-        suspendTransaction { fixture.sut.updateEmployee(employee.copy(services = listOf(service))) }
+        suspendTransaction { fixture.sut.updateEmployee(updateModel(employee).copy(services = listOf(service))) }
+        suspendTransaction { fixture.sut.updateEmployee(updateModel(employee).copy(services = listOf(service))) }
         val serviceIds = suspendTransaction { fixture.sut.getServiceIds(employee.id) }
 
         then()
@@ -380,7 +385,7 @@ internal class EmployeeDataSourceImplTest {
             fixture.sut.createEmployee(Employee.stub(businessId = fixture.businessId, name = "Other"))
         }
         val service = fixture.createService()
-        suspendTransaction { fixture.sut.updateEmployee(provider.copy(services = listOf(service))) }
+        suspendTransaction { fixture.sut.updateEmployee(updateModel(provider).copy(services = listOf(service))) }
 
         whenn()
         val employees = suspendTransaction { fixture.sut.getEmployeesByService(service.id) }
@@ -399,7 +404,7 @@ internal class EmployeeDataSourceImplTest {
             fixture.sut.createEmployee(Employee.stub(businessId = fixture.businessId))
         }
         val service = fixture.createService()
-        suspendTransaction { fixture.sut.updateEmployee(employee.copy(services = listOf(service))) }
+        suspendTransaction { fixture.sut.updateEmployee(updateModel(employee).copy(services = listOf(service))) }
 
         whenn()
         suspendTransaction { fixture.sut.deleteEmployee(fixture.businessId, employee.id) }
@@ -418,7 +423,7 @@ internal class EmployeeDataSourceImplTest {
             fixture.sut.createEmployee(Employee.stub(businessId = fixture.businessId))
         }
         val service = fixture.createService()
-        suspendTransaction { fixture.sut.updateEmployee(employee.copy(services = listOf(service))) }
+        suspendTransaction { fixture.sut.updateEmployee(updateModel(employee).copy(services = listOf(service))) }
 
         whenn()
         suspendTransaction { fixture.serviceSut.deleteService(service.id) }
@@ -539,7 +544,7 @@ internal class EmployeeDataSourceImplTest {
         whenn()
         val updated = suspendTransaction {
             fixture.sut.updateEmployee(
-                created.copy(name = "New", lastName = "Surname", phone = "+2000", email = "new@test.com")
+                updateModel(created).copy(name = "New", lastName = "Surname", phone = "+2000", email = "new@test.com")
             )
         }
         val found = suspendTransaction { fixture.sut.getEmployee(fixture.businessId, created.id) }
@@ -570,7 +575,7 @@ internal class EmployeeDataSourceImplTest {
         )
 
         whenn()
-        val updated = suspendTransaction { fixture.sut.updateEmployee(created.copy(schedule = schedule)) }
+        val updated = suspendTransaction { fixture.sut.updateEmployee(updateModel(created).copy(schedule = schedule)) }
         val found = suspendTransaction { fixture.sut.getEmployee(fixture.businessId, created.id) }
 
         then()
@@ -594,7 +599,7 @@ internal class EmployeeDataSourceImplTest {
 
         whenn()
         val updated = suspendTransaction {
-            fixture.sut.updateEmployee(created.copy(services = listOf(kept, added)))
+            fixture.sut.updateEmployee(updateModel(created).copy(services = listOf(kept, added)))
         }
         val found = suspendTransaction { fixture.sut.getEmployee(fixture.businessId, created.id) }
 
@@ -611,7 +616,7 @@ internal class EmployeeDataSourceImplTest {
 
         whenn()
         val result = runCatching {
-            suspendTransaction { fixture.sut.updateEmployee(Employee.stub(id = Uuid.random(), businessId = fixture.businessId)) }
+            suspendTransaction { fixture.sut.updateEmployee(updateModel(Employee.stub(id = Uuid.random(), businessId = fixture.businessId))) }
         }
 
         then()
@@ -673,4 +678,162 @@ internal class EmployeeDataSourceImplTest {
         then()
         assertEquals(0, affected)
     }
+
+    @Test
+    fun `should persist employee permissions on creation`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val permissions = BusinessPermissions.stub(clients = ResourcePermission(view = true, update = true, delete = false))
+
+        whenn()
+        val created = suspendTransaction {
+            fixture.sut.createEmployee(Employee.stub(businessId = fixture.businessId, permissions = permissions))
+        }
+        val found = suspendTransaction { fixture.sut.getEmployee(fixture.businessId, created.id) }
+
+        then()
+        assertEquals(permissions, created.permissions)
+        assertEquals(permissions, found!!.permissions)
+    }
+
+    @Test
+    fun `should return each employee with own permissions when listing employees of business`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val owner = suspendTransaction {
+            fixture.sut.createEmployee(Employee.stub(businessId = fixture.businessId, permissions = BusinessPermissions.FULL))
+        }
+        val viewer = suspendTransaction {
+            fixture.sut.createEmployee(
+                Employee.stub(businessId = fixture.businessId, permissions = BusinessPermissions.stub(services = ResourcePermission(view = true, update = false, delete = false)))
+            )
+        }
+
+        whenn()
+        val employees = suspendTransaction { fixture.sut.getEmployees(fixture.businessId) }
+
+        then()
+        assertEquals(2, employees.size)
+        assertEquals(BusinessPermissions.FULL, employees.single { it.id == owner.id }.permissions)
+        assertEquals(viewer.permissions, employees.single { it.id == viewer.id }.permissions)
+    }
+
+    @Test
+    fun `should return employee with no permissions when user has no grants`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val created = suspendTransaction {
+            fixture.sut.createEmployee(Employee.stub(businessId = fixture.businessId, permissions = BusinessPermissions.FULL))
+        }
+        suspendTransaction { fixture.permissionSut.deleteUserPermissions(created.userId) }
+
+        whenn()
+        val employees = suspendTransaction { fixture.sut.getEmployees(fixture.businessId) }
+
+        then()
+        assertEquals(1, employees.size)
+        assertEquals(BusinessPermissions.NONE, employees.single().permissions)
+    }
+
+    @Test
+    fun `should not mix in grants the same user holds in another business`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val userId = Uuid.random()
+        val otherBusinessId = suspendTransaction {
+            fixture.businessSut.createBusiness(Uuid.random(), "Other Business", "USD", TimeZone.UTC)
+        }.id
+        suspendTransaction {
+            fixture.sut.createEmployee(
+                Employee.stub(businessId = otherBusinessId, userId = userId, permissions = BusinessPermissions.FULL)
+            )
+        }
+        val permissions = BusinessPermissions.stub(appointments = ResourcePermission(view = true, update = false, delete = false))
+        val created = suspendTransaction {
+            fixture.sut.createEmployee(Employee.stub(businessId = fixture.businessId, userId = userId, permissions = permissions))
+        }
+
+        whenn()
+        val byId = suspendTransaction { fixture.sut.getEmployee(fixture.businessId, created.id) }
+        val byUserId = suspendTransaction { fixture.sut.getEmployeeByUserId(fixture.businessId, userId) }
+        val listed = suspendTransaction { fixture.sut.getEmployees(fixture.businessId) }
+
+        then()
+        assertEquals(permissions, byId!!.permissions)
+        assertEquals(permissions, byUserId!!.permissions)
+        assertEquals(listOf(permissions), listed.map { it.permissions })
+    }
+
+    @Test
+    fun `should reflect a permission change on the next employee read`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val created = suspendTransaction {
+            fixture.sut.createEmployee(Employee.stub(businessId = fixture.businessId, permissions = BusinessPermissions.NONE))
+        }
+        val granted = ResourcePermission(view = true, update = true, delete = false)
+
+        whenn()
+        suspendTransaction {
+            fixture.permissionSut.setPermissions(created, mapOf(BusinessResource.CLIENTS to granted))
+        }
+        val found = suspendTransaction { fixture.sut.getEmployee(fixture.businessId, created.id) }
+
+        then()
+        assertEquals(BusinessPermissions.stub(clients = granted), found!!.permissions)
+    }
+
+    @Test
+    fun `should keep permissions when employee is updated`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val permissions = BusinessPermissions.stub(employees = ResourcePermission(view = true, update = false, delete = false))
+        val created = suspendTransaction {
+            fixture.sut.createEmployee(Employee.stub(businessId = fixture.businessId, permissions = permissions))
+        }
+
+        whenn()
+        val updated = suspendTransaction { fixture.sut.updateEmployee(updateModel(created).copy(name = "Renamed")) }
+
+        then()
+        assertEquals("Renamed", updated.name)
+        assertEquals(permissions, updated.permissions)
+    }
+
+    @Test
+    fun `should include permissions when listing employees that can provide a service`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val service = fixture.createService()
+        val permissions = BusinessPermissions.stub(services = ResourcePermission(view = true, update = false, delete = false))
+        suspendTransaction {
+            fixture.sut.createEmployee(
+                Employee.stub(businessId = fixture.businessId, services = listOf(service), permissions = permissions)
+            )
+        }
+
+        whenn()
+        val employees = suspendTransaction { fixture.sut.getEmployeesByService(service.id) }
+
+        then()
+        assertEquals(listOf(permissions), employees.map { it.permissions })
+    }
+
+    private fun updateModel(employee: Employee) = EmployeeUpdateModel(
+        id = employee.id,
+        businessId = employee.businessId,
+        name = employee.name,
+        lastName = employee.lastName,
+        phone = employee.phone,
+        email = employee.email,
+        services = employee.services,
+        schedule = employee.schedule
+    )
 }

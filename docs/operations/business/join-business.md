@@ -8,7 +8,7 @@ whoever holds a `PENDING` code can join. Joining creates the `Employee`
 row for the calling user and grants baseline view-only access
 (`view = true`, nothing else) on every `BusinessResource` — customizable
 afterward by an owner via [Set employee
-permission](set-employee-permission.md). `JoinBusinessImpl` (not the
+permissions](set-employee-permissions.md). `JoinBusinessImpl` (not the
 datasource — see below) hashes the
 submitted plaintext code (SHA-256, `EmployeeInvitationCode.hash`) and
 looks it up via `EmployeeInvitationDataSource.getInvitationByCodeHash` —
@@ -41,10 +41,9 @@ flowchart TD
     GetUser -- error --> RErr([Propagate user-service error])
     GetUser -- ok --> GetBiz[BusinessDataSource.getBusinessById businessId]
     GetBiz -- not found --> R404b([404 Error.NotFound])
-    GetBiz -- found --> CreateEmployee[EmployeeDataSource.createEmployee from requestUser]
-    CreateEmployee --> SetPerm[BusinessPermissionDataSource.setPermission requestUserId businessId resource view=true, for every BusinessResource]
-    SetPerm --> Event[eventProducer.send BusinessEvent.EmployeeInvitationRedeemed]
-    Event --> PermEvent[eventProducer.send BusinessEvent.EmployeePermissionsChanged]
+    GetBiz -- found --> CreateEmployee[EmployeeDataSource.createEmployee from requestUser, permissions = BusinessPermissions.VIEW_ONLY - also upserts the five business_permission_grants rows]
+    CreateEmployee --> Event[eventProducer.send BusinessEvent.EmployeeInvitationRedeemed]
+    Event --> PermEvent[eventProducer.send BusinessEvent.EmployeePermissionsChanged employee.permissions]
     PermEvent --> R200([200 Created Employee])
 ```
 

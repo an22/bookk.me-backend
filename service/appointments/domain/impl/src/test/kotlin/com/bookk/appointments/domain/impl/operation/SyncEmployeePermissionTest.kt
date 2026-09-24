@@ -31,7 +31,7 @@ internal class SyncEmployeePermissionTest {
         val fixture = SutFixture()
         val userId = Uuid.random()
         val businessId = Uuid.random()
-        val permission = ResourcePermission(view = true)
+        val permission = ResourcePermission(view = true, update = false, delete = false)
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { subscriptionDataSource.isBusinessEnabled(businessId) } returns true
@@ -58,7 +58,7 @@ internal class SyncEmployeePermissionTest {
         }
 
         whenn()
-        val result = fixture.sut.invoke(userId, businessId, ResourcePermission(update = true))
+        val result = fixture.sut.invoke(userId, businessId, ResourcePermission(view = false, update = true, delete = false))
 
         then()
         assertTrue(result.isSuccess)

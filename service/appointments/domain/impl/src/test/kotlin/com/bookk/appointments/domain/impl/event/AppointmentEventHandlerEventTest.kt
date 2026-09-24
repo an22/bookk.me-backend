@@ -199,7 +199,7 @@ internal class AppointmentEventHandlerEventTest {
         val fixture = SutFixture()
         val employeeUserId = Uuid.random()
         val businessId = Uuid.random()
-        val permissions = BusinessPermissions.stub(appointments = ResourcePermission(view = true))
+        val permissions = BusinessPermissions.stub(appointments = ResourcePermission(view = true, update = false, delete = false))
         val arrived = CountDownLatch(1)
         coEvery {
             fixture.syncEmployeePermission(employeeUserId, businessId, permissions.appointments)

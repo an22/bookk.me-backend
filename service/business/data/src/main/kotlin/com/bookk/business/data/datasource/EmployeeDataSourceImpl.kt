@@ -6,6 +6,7 @@ import com.bookk.business.data.orm.table.EmployeeDayOffTable
 import com.bookk.business.data.orm.table.EmployeeTable
 import com.bookk.business.data.orm.table.EmployeeWorkingHoursTable
 import com.bookk.business.domain.api.employee.entity.Employee
+import com.bookk.business.domain.api.employee.entity.EmployeeUpdateModel
 import com.bookk.business.domain.datasource.EmployeeDataSource
 import com.bookk.core.data.DataSource
 import com.bookk.core.domain.entity.Error
@@ -30,8 +31,8 @@ internal class EmployeeDataSourceImpl : DataSource(), EmployeeDataSource {
         EmployeeEntity.new(employee).toDomain()
     }
 
-    override suspend fun updateEmployee(employee: Employee): Employee = dbQuery {
-        (EmployeeEntity.findByIdAndUpdate(employee) ?: throw Error.NotFound()).toDomain()
+    override suspend fun updateEmployee(model: EmployeeUpdateModel): Employee = dbQuery {
+        (EmployeeEntity.findByIdAndUpdate(model) ?: throw Error.NotFound()).toDomain()
     }
 
     override suspend fun getEmployees(businessId: Uuid): List<Employee> = dbQuery {
@@ -39,7 +40,7 @@ internal class EmployeeDataSourceImpl : DataSource(), EmployeeDataSource {
             EmployeeTable.businessId eq businessId
         }
             .toList()
-            .with(EmployeeEntity::services, EmployeeEntity::workingHours, EmployeeEntity::dayOffs)
+            .with(EmployeeEntity::services, EmployeeEntity::workingHours, EmployeeEntity::dayOffs, EmployeeEntity::grants)
             .map(EmployeeEntity::toDomain)
     }
 
@@ -125,7 +126,7 @@ internal class EmployeeDataSourceImpl : DataSource(), EmployeeDataSource {
             EmployeeTable.id inSubQuery employeeIds
         }
             .toList()
-            .with(EmployeeEntity::services, EmployeeEntity::workingHours, EmployeeEntity::dayOffs)
+            .with(EmployeeEntity::services, EmployeeEntity::workingHours, EmployeeEntity::dayOffs, EmployeeEntity::grants)
             .map(EmployeeEntity::toDomain)
     }
 }

@@ -20,13 +20,32 @@ data class BusinessPermissions(
         BusinessResource.APPOINTMENTS -> appointments
     }
 
+    fun with(grants: Map<BusinessResource, ResourcePermission>): BusinessPermissions =
+        from(BusinessResource.entries.associateWith(::get) + grants)
+
     companion object {
+        fun from(grants: Map<BusinessResource, ResourcePermission>) = BusinessPermissions(
+            business = grants[BusinessResource.BUSINESS] ?: ResourcePermission.NONE,
+            employees = grants[BusinessResource.EMPLOYEES] ?: ResourcePermission.NONE,
+            clients = grants[BusinessResource.CLIENTS] ?: ResourcePermission.NONE,
+            services = grants[BusinessResource.SERVICES] ?: ResourcePermission.NONE,
+            appointments = grants[BusinessResource.APPOINTMENTS] ?: ResourcePermission.NONE
+        )
+
         val NONE = BusinessPermissions(
             business = ResourcePermission.NONE,
             employees = ResourcePermission.NONE,
             clients = ResourcePermission.NONE,
             services = ResourcePermission.NONE,
             appointments = ResourcePermission.NONE
+        )
+
+        val VIEW_ONLY = BusinessPermissions(
+            business = ResourcePermission(view = true, update = false, delete = false),
+            employees = ResourcePermission(view = true, update = false, delete = false),
+            clients = ResourcePermission(view = true, update = false, delete = false),
+            services = ResourcePermission(view = true, update = false, delete = false),
+            appointments = ResourcePermission(view = true, update = false, delete = false)
         )
 
         val FULL = BusinessPermissions(

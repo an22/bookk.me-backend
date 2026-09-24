@@ -4,8 +4,9 @@ Kafka topic `BusinessEvent.EmployeePermissionsChanged` → `AppointmentEventHand
 
 Produced by [Join business](../business/join-business.md) (grants
 view-only on every resource) and [Set employee
-permission](../business/set-employee-permission.md) (grants whatever
-`ResourcePermission` was requested, for one resource). Keeps the
+permissions](../business/set-employee-permissions.md) (grants whatever
+`ResourcePermission`s were requested, for one or more resources, in one
+event). Keeps the
 appointments service's own copy of the grant
 (`appointment_permission_grants`) in sync with the business service's
 source of truth, reading just the `appointments` field off the published

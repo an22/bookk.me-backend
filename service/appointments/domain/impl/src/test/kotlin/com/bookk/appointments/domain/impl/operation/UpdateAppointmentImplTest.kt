@@ -66,7 +66,7 @@ internal class UpdateAppointmentImplTest {
         coEvery { appointmentDataSource.get(testAppointment.id) } returns testAppointment
         coEvery { settings.isInWorkday(any()) } returns true
         coEvery { settings.isInWorktime(any(), any()) } returns true
-        coEvery { appointmentPermissionDataSource.getPermission(testUserId, testBusinessId) } returns ResourcePermission(update = true)
+        coEvery { appointmentPermissionDataSource.getPermission(testUserId, testBusinessId) } returns ResourcePermission(view = false, update = true, delete = false)
         coEvery { appointmentDataSource.update(any<Appointment>()) } returns testAppointment
         coEvery { appointmentDataSource.hasOverlapsWith(any<Appointment>()) } returns false
 
@@ -121,7 +121,7 @@ internal class UpdateAppointmentImplTest {
         val settings = mockk<AppointmentSettings>()
         coEvery { settingsDataSource.getForUpdate(testBusinessId) } returns settings
         coEvery { appointmentDataSource.get(testAppointment.id) } returns testAppointment
-        coEvery { appointmentPermissionDataSource.getPermission(testUserId, testBusinessId) } returns ResourcePermission(view = true)
+        coEvery { appointmentPermissionDataSource.getPermission(testUserId, testBusinessId) } returns ResourcePermission(view = true, update = false, delete = false)
 
         whenn()
         val result = sut(testUserId, testAppointment)
@@ -152,7 +152,7 @@ internal class UpdateAppointmentImplTest {
         coEvery { appointmentDataSource.get(ownAppointment.id) } returns ownAppointment
         coEvery { settings.isInWorkday(any()) } returns true
         coEvery { settings.isInWorktime(any(), any()) } returns true
-        coEvery { appointmentPermissionDataSource.getPermission(testUserId, testBusinessId) } returns ResourcePermission(view = true)
+        coEvery { appointmentPermissionDataSource.getPermission(testUserId, testBusinessId) } returns ResourcePermission(view = true, update = false, delete = false)
         coEvery { appointmentDataSource.update(any<Appointment>()) } returns ownAppointment
         coEvery { appointmentDataSource.hasOverlapsWith(any<Appointment>()) } returns false
 
@@ -183,7 +183,7 @@ internal class UpdateAppointmentImplTest {
         coEvery { appointmentDataSource.get(testAppointment.id) } returns testAppointment
         coEvery { settings.isInWorkday(any()) } returns true
         coEvery { settings.isInWorktime(any(), any()) } returns true
-        coEvery { appointmentPermissionDataSource.getPermission(testUserId, testBusinessId) } returns ResourcePermission(update = true)
+        coEvery { appointmentPermissionDataSource.getPermission(testUserId, testBusinessId) } returns ResourcePermission(view = false, update = true, delete = false)
         coEvery { appointmentDataSource.update(any<Appointment>()) } returns testAppointment // Update is called BEFORE overlap check
         coEvery { appointmentDataSource.hasOverlapsWith(any<Appointment>()) } returns true
 
@@ -214,7 +214,7 @@ internal class UpdateAppointmentImplTest {
         val pastAppointment = testAppointment.copy(date = Instant.parse("2000-01-01T00:00:00Z"))
         coEvery { settingsDataSource.getForUpdate(testBusinessId) } returns settings
         coEvery { appointmentDataSource.get(pastAppointment.id) } returns pastAppointment
-        coEvery { appointmentPermissionDataSource.getPermission(testUserId, testBusinessId) } returns ResourcePermission(update = true)
+        coEvery { appointmentPermissionDataSource.getPermission(testUserId, testBusinessId) } returns ResourcePermission(view = false, update = true, delete = false)
 
         whenn()
         val result = sut(testUserId, pastAppointment)
@@ -243,7 +243,7 @@ internal class UpdateAppointmentImplTest {
         coEvery { settingsDataSource.getForUpdate(testBusinessId) } returns settings
         coEvery { appointmentDataSource.get(testAppointment.id) } returns testAppointment
         coEvery { settings.isInWorkday(any()) } returns false
-        coEvery { appointmentPermissionDataSource.getPermission(testUserId, testBusinessId) } returns ResourcePermission(update = true)
+        coEvery { appointmentPermissionDataSource.getPermission(testUserId, testBusinessId) } returns ResourcePermission(view = false, update = true, delete = false)
         coEvery { appointmentDataSource.update(any()) } returns testAppointment // Update is called BEFORE workday check
 
         whenn()
@@ -274,7 +274,7 @@ internal class UpdateAppointmentImplTest {
         coEvery { appointmentDataSource.get(testAppointment.id) } returns testAppointment
         coEvery { settings.isInWorkday(any()) } returns true
         coEvery { settings.isInWorktime(any(), any()) } returns false
-        coEvery { appointmentPermissionDataSource.getPermission(testUserId, testBusinessId) } returns ResourcePermission(update = true)
+        coEvery { appointmentPermissionDataSource.getPermission(testUserId, testBusinessId) } returns ResourcePermission(view = false, update = true, delete = false)
         coEvery { appointmentDataSource.update(any()) } returns testAppointment // Update is called BEFORE worktime check
 
         whenn()

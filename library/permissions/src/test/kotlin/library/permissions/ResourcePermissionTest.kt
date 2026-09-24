@@ -15,7 +15,7 @@ internal class ResourcePermissionTest {
     @Test
     fun `should grant the action it was given`() = runUnitTest {
         given()
-        val permission = ResourcePermission(view = true)
+        val permission = ResourcePermission(view = true, update = false, delete = false)
 
         whenn()
         val grantsView = permission.grants(PermissionAction.VIEW)
@@ -30,7 +30,7 @@ internal class ResourcePermissionTest {
     fun `should cover a permission with fewer or equal bits set`() = runUnitTest {
         given()
         val full = ResourcePermission.FULL
-        val partial = ResourcePermission(view = true, update = true)
+        val partial = ResourcePermission(view = true, update = true, delete = false)
 
         whenn()
         val result = full.covers(partial)
@@ -42,8 +42,8 @@ internal class ResourcePermissionTest {
     @Test
     fun `should not cover a permission with a bit the holder lacks`() = runUnitTest {
         given()
-        val holder = ResourcePermission(view = true, update = true)
-        val requested = ResourcePermission(view = true, delete = true)
+        val holder = ResourcePermission(view = true, update = true, delete = false)
+        val requested = ResourcePermission(view = true, update = false, delete = true)
 
         whenn()
         val result = holder.covers(requested)
@@ -55,7 +55,7 @@ internal class ResourcePermissionTest {
     @Test
     fun `should allow asserting a granted action`() = runUnitTest {
         given()
-        val permission = ResourcePermission(update = true)
+        val permission = ResourcePermission(view = false, update = true, delete = false)
 
         whenn()
         val result = runCatching { permission.assert(PermissionAction.UPDATE) }
@@ -67,7 +67,7 @@ internal class ResourcePermissionTest {
     @Test
     fun `should reject asserting an action that was not granted`() = runUnitTest {
         given()
-        val permission = ResourcePermission(view = true)
+        val permission = ResourcePermission(view = true, update = false, delete = false)
 
         whenn()
         val result = runCatching { permission.assert(PermissionAction.UPDATE) }
@@ -92,7 +92,7 @@ internal class ResourcePermissionTest {
         given()
         val actorId = Uuid.random()
         val assigneeId = Uuid.random()
-        val permission = ResourcePermission(update = true)
+        val permission = ResourcePermission(view = false, update = true, delete = false)
 
         whenn()
         val result = runCatching { permission.assertOrSelf(PermissionAction.UPDATE, actorId = actorId, assigneeId = assigneeId) }
@@ -105,7 +105,7 @@ internal class ResourcePermissionTest {
     fun `should allow a view holder acting on their own resource`() = runUnitTest {
         given()
         val actorId = Uuid.random()
-        val permission = ResourcePermission(view = true)
+        val permission = ResourcePermission(view = true, update = false, delete = false)
 
         whenn()
         val result = runCatching { permission.assertOrSelf(PermissionAction.UPDATE, actorId = actorId, assigneeId = actorId) }
@@ -119,7 +119,7 @@ internal class ResourcePermissionTest {
         given()
         val actorId = Uuid.random()
         val assigneeId = Uuid.random()
-        val permission = ResourcePermission(view = true)
+        val permission = ResourcePermission(view = true, update = false, delete = false)
 
         whenn()
         val result = runCatching { permission.assertOrSelf(PermissionAction.UPDATE, actorId = actorId, assigneeId = assigneeId) }

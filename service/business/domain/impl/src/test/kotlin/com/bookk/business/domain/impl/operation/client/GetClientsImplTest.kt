@@ -80,7 +80,7 @@ internal class GetClientsImplTest {
         val businessId = Uuid.random()
         with(fixture) {
             transactionManager.mockTransaction()
-            grantPermission(ResourcePermission(view = true))
+            grantPermission(ResourcePermission(view = true, update = false, delete = false))
             coEvery { clientDataSource.getClients(businessId) } returns emptyList()
         }
 

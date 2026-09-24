@@ -1,5 +1,6 @@
 package com.bookk.business.microservice.route
 
+import com.bookk.business.domain.impl.di.BusinessScope
 import com.bookk.business.microservice.route.api.businessCrud
 import com.bookk.business.microservice.route.api.clientCrud
 import com.bookk.business.microservice.route.api.employeeCrud
@@ -8,6 +9,7 @@ import com.bookk.business.microservice.route.api.healthCheck
 import com.bookk.business.microservice.route.api.internal.getAppointmentBookingContext
 import com.bookk.business.microservice.route.api.internal.getBusinessById
 import com.bookk.business.microservice.route.api.internal.getBusinessPermission
+import com.bookk.business.microservice.route.api.internal.getClientBusinessIds
 import com.bookk.business.microservice.route.api.quote
 import com.bookk.business.microservice.route.api.serviceCrud
 import com.bookk.business.microservice.route.api.serviceGroupCrud
@@ -17,11 +19,12 @@ import library.signing.route.jwks
 
 fun Routing.businessRoute() {
     healthCheck()
-    jwks()
+    jwks(BusinessScope)
     businessCrud()
     getBusinessById()
     getBusinessPermission()
     getAppointmentBookingContext()
+    getClientBusinessIds()
     clientCrud()
     serviceCrud()
     serviceGroupCrud()

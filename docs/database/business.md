@@ -8,7 +8,7 @@ Largest schema — a business, its staff, services and clients.
 erDiagram
     BUSINESS ||--o{ BUSINESS_DASHBOARD : "has"
     BUSINESS ||--o{ BUSINESS_DAY_OFFS : "has"
-    BUSINESS ||--o{ BUSINESS_PERMISSIONS : "grants"
+    BUSINESS ||--o{ BUSINESS_PERMISSION_GRANTS : "grants"
     BUSINESS ||--o{ BUSINESS_WORKING_HOURS : "has"
     BUSINESS ||--o{ CLIENT : "has"
     BUSINESS ||--o{ EMPLOYEE : "employs"
@@ -59,11 +59,14 @@ erDiagram
         timestamp updated_at
     }
 
-    BUSINESS_PERMISSIONS {
+    BUSINESS_PERMISSION_GRANTS {
         uuid id PK
-        uuid user_id "logical FK -> user.profile.id; UK with business_id"
+        uuid user_id "logical FK -> user.profile.id; UK with business_id, resource"
         uuid business_id FK
-        int permission
+        enum resource "BUSINESS | EMPLOYEES | CLIENTS | SERVICES | APPOINTMENTS; UK with user_id, business_id"
+        bool can_view
+        bool can_update
+        bool can_delete
     }
 
     BUSINESS_WORKING_HOURS {
@@ -84,6 +87,7 @@ erDiagram
         string phone "nullable"
         string email "nullable; at least one of phone/email required on create"
         uuid user_id "logical FK -> user.profile.id, nullable; UK with business_id"
+        string description "nullable; business owner's notes about the client"
         timestamp source_updated_at
         timestamp created_at
         timestamp updated_at
@@ -121,12 +125,12 @@ erDiagram
 
     EMPLOYEE_INVITATION {
         uuid id PK
-        uuid business_id FK "UK with email"
+        uuid business_id FK
         uuid invited_by "logical FK -> user.profile.id"
-        string email
+        string code_hash UK "SHA-256 hex of the invite code, never the plaintext; nullable, cleared once the invitation leaves PENDING so the code can be reused"
         enum status
-        timestamp created_at
-        timestamp updated_at
+        timestamp created_at "indexed together with business_id for the daily invitation quota"
+        timestamp updated_at "processed rows are deleted 30 days after this"
     }
 
     EMPLOYEE_WORKING_HOURS {
@@ -160,4 +164,16 @@ erDiagram
         timestamp created_at
         timestamp updated_at
     }
+
+    EXHAUSTED_EVENT {
+        uuid id PK
+        string original_topic
+        string idempotency_key UK
+        int attempt
+        blob payload
+        timestamp createdAt
+        timestamp updatedAt
+    }
 ```
+
+`EXHAUSTED_EVENT` is not part of the business domain model — it's the shared DLT landing table (`core/data/eventstreaming/data`, one instance per service schema) that `KafkaEventConsumer`/`EmbeddedEventConsumer` write to when an event exhausts its retry budget, so a failed event survives a process restart or crash instead of being lost. See `AGENTS.md`'s event-streaming retry design notes.

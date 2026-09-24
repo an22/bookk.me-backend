@@ -7,4 +7,5 @@ dependencies {
     implementation(projects.core.domain)
     implementation(projects.library.money)
     api(projects.library.schedule)
+    api(projects.library.permissions)
 }

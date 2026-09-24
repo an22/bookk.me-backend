@@ -30,58 +30,61 @@ import io.ktor.serialization.kotlinx.json.json
 import io.ktor.serialization.kotlinx.protobuf.protobuf
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.protobuf.ProtoBuf
+import org.koin.core.qualifier.Qualifier
 import org.koin.dsl.module
 import kotlin.uuid.Uuid
 
 @Suppress("KotlinConstantConditions")
-fun userClientModule(clientTag: String) = module {
-    single {
-        HttpClient(CIO) {
-            install(Resources)
-            install(UserAgent) { agent = clientTag }
-            install(HttpRequestRetry) {
-                retryOnExceptionOrServerErrors(maxRetries = 3)
-                constantDelay(millis = 50, randomizationMs = 100)
-            }
-            install(ContentNegotiation) {
-                when (AppLevelConstants.SERIALIZER) {
-                    SupportedSerializers.JSON.STR -> {
-                        json(Json {
-                            prettyPrint = true
-                            encodeDefaults = true
-                            explicitNulls = false
-                        })
-                    }
+fun userClientModule(qualifier: Qualifier, clientTag: String) = module {
+    scope(qualifier) {
+        scoped {
+            HttpClient(CIO) {
+                install(Resources)
+                install(UserAgent) { agent = clientTag }
+                install(HttpRequestRetry) {
+                    retryOnExceptionOrServerErrors(maxRetries = 3)
+                    constantDelay(millis = 50, randomizationMs = 100)
+                }
+                install(ContentNegotiation) {
+                    when (AppLevelConstants.SERIALIZER) {
+                        SupportedSerializers.JSON.STR -> {
+                            json(Json {
+                                prettyPrint = true
+                                encodeDefaults = true
+                                explicitNulls = false
+                            })
+                        }
 
-                    SupportedSerializers.PROTOBUF.STR -> {
-                        protobuf(ProtoBuf { encodeDefaults = true })
+                        SupportedSerializers.PROTOBUF.STR -> {
+                            protobuf(ProtoBuf { encodeDefaults = true })
+                        }
                     }
                 }
-            }
-            install(Logging) {
-                logger = Logger.DEFAULT
-                level = when (AppLevelConstants.BUILD_TYPE) {
-                    AppLevelConstants.BuildType.DEBUG.STR -> LogLevel.BODY
-                    else -> LogLevel.INFO
+                install(Logging) {
+                    logger = Logger.DEFAULT
+                    level = when (AppLevelConstants.BUILD_TYPE) {
+                        AppLevelConstants.BuildType.DEBUG.STR -> LogLevel.BODY
+                        else -> LogLevel.INFO
+                    }
                 }
-            }
-            defaultRequest {
-                host = System.getenv("APPLICATION_USER_SERVICE_HOSTNAME")
+                defaultRequest {
+                    host = System.getenv("APPLICATION_USER_SERVICE_HOSTNAME")
 
-                headers["Idempotency-Key"] = Uuid.random().toString()
+                    headers["Idempotency-Key"] = Uuid.random().toString()
 
-                url { protocol = URLProtocol.HTTP }
+                    url { protocol = URLProtocol.HTTP }
 
-                when (AppLevelConstants.SERIALIZER) {
-                    SupportedSerializers.JSON.STR -> contentType(ContentType.Application.Json)
-                    SupportedSerializers.PROTOBUF.STR -> contentType(ContentType.Application.ProtoBuf)
+                    when (AppLevelConstants.SERIALIZER) {
+                        SupportedSerializers.JSON.STR -> contentType(ContentType.Application.Json)
+                        SupportedSerializers.PROTOBUF.STR -> contentType(ContentType.Application.ProtoBuf)
+                    }
                 }
             }
         }
+        scoped<GetUserById> { GetUserByIdClientImpl(get()) }
+        scoped<CreateUser> { CreateUserClientImpl(get()) }
+        scoped<DeleteUser> { DeleteUserClientImpl(get()) }
+        scoped<GetUserByEmail> { GetUserByEmailClientImpl(get()) }
+        scoped<UserClient> { UserClientImpl(get(), get(), get(), get()) }
     }
-    single<GetUserById> { GetUserByIdClientImpl(get()) }
-    single<CreateUser> { CreateUserClientImpl(get()) }
-    single<DeleteUser> { DeleteUserClientImpl(get()) }
-    single<GetUserByEmail> { GetUserByEmailClientImpl(get()) }
-    single<UserClient> { UserClientImpl(get(), get(), get(), get()) }
 }

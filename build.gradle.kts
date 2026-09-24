@@ -14,7 +14,7 @@ plugins {
 }
 
 group = "com.bookk.server"
-version = "0.1.5"
+version = "0.3.3"
 
 application {
     mainClass.set("com.bookk.server.MonolithServerKt")
@@ -35,8 +35,23 @@ subprojects {
 
 dependencies {
     implementation(projects.core.service)
+    implementation(projects.core.data.eventstreaming.api)
+    implementation(projects.core.data.eventstreaming.impl)
+    implementation(projects.library.scheduler)
     implementation(projects.service.authorization.microservice)
+    implementation(projects.service.authorization.domain.impl)
     implementation(projects.service.user.microservice)
+    implementation(projects.service.user.domain.impl)
+    implementation(projects.service.business.microservice)
+    implementation(projects.service.business.domain.impl)
+    implementation(projects.service.appointments.microservice)
+    implementation(projects.service.appointments.domain.impl)
+    implementation(projects.service.notifications.microservice)
+    implementation(projects.service.notifications.domain.impl)
+    testImplementation(projects.library.signing.api)
+    testImplementation(testFixtures(projects.core))
+    testImplementation(testFixtures(projects.core.service))
+    testImplementation(testFixtures(projects.library.scheduler))
 }
 
 includeLocalProperties(providers.gradleProperty("local.propertiesFile").get())

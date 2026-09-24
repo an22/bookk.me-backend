@@ -12,7 +12,7 @@ flowchart TD
     PathCheck -- Yes --> Auth{JWT valid?}
     Auth -- No --> R401([401 Unauthorized])
     Auth -- Yes --> Tx[[Begin transaction]]
-    Tx --> Perm{permission >= EDIT?}
+    Tx --> Perm{caller EMPLOYEES.update?}
     Perm -- No --> R404a([404 Error.OperationNotAllowed])
     Perm -- Yes --> NameCheck{name and lastName valid?}
     NameCheck -- No --> R422a([422 BUSINESS_EMPLOYEE_VALIDATION_ERROR 200021])

@@ -1,5 +1,7 @@
 package com.bookk.auth.domain.impl.di
 
+import com.bookk.auth.domain.api.AUTH_SCHEMA
+import com.bookk.auth.domain.api.AUTH_SERVICE_NAME
 import com.bookk.auth.domain.api.authentication.operation.FinishAssertion
 import com.bookk.auth.domain.api.authentication.operation.SignIn
 import com.bookk.auth.domain.api.authentication.operation.StartAssertion
@@ -32,28 +34,35 @@ import com.bookk.auth.domain.impl.operation.registration.StartPasskeyRegistratio
 import com.bookk.auth.domain.impl.operation.registration.StartRegistrationImpl
 import com.bookk.auth.domain.impl.operation.token.GenerateAuthTokenImpl
 import com.bookk.auth.domain.impl.operation.token.RefreshTokenImpl
-import com.bookk.core.AppLevelConstants
 import com.bookk.server.user.client.di.userClientModule
-import org.koin.core.module.dsl.singleOf
+import library.signing.impl.di.signingModule
+import org.koin.core.module.dsl.scopedOf
+import org.koin.core.qualifier.Qualifier
+import org.koin.core.qualifier.named
 import org.koin.dsl.bind
 import org.koin.dsl.module
 
+val AuthScope: Qualifier = named(AUTH_SCHEMA)
+
 fun authDomainModule() = module {
-    includes(userClientModule(AppLevelConstants.serviceName))
-    singleOf(::GenerateAuthTokenImpl) bind GenerateAuthToken::class
-    singleOf(::RefreshTokenImpl) bind RefreshToken::class
-    singleOf(::SignOutImpl) bind SignOut::class
-    singleOf(::DeleteAccountImpl) bind DeleteAccount::class
-    singleOf(::StartRegistrationImpl) bind StartRegistration::class
-    singleOf(::FinishRegistrationImpl) bind FinishRegistration::class
-    singleOf(::StartAssertionImpl) bind StartAssertion::class
-    singleOf(::FinishAssertionImpl) bind FinishAssertion::class
-    singleOf(::SignInImpl) bind SignIn::class
-    singleOf(::GetAvailablePasskeysImpl) bind GetAvailablePasskeys::class
-    singleOf(::DeletePasskeyImpl) bind DeletePasskey::class
-    singleOf(::GetAttachPasskeyToAccountChallengeImpl) bind GetAttachPasskeyToAccountChallenge::class
-    singleOf(::StartPasskeyRegistrationImpl) bind StartPasskeyRegistration::class
-    singleOf(::FinishPasskeyRegistrationImpl) bind FinishPasskeyRegistration::class
-    singleOf(::AttachNewPasskeyToAccountImpl) bind AttachNewPasskeyToAccount::class
-    singleOf(::DeleteInactiveDevicesImpl) bind DeleteInactiveDevices::class
+    includes(userClientModule(AuthScope, AUTH_SERVICE_NAME))
+    includes(signingModule(AuthScope))
+    scope(AuthScope) {
+        scopedOf(::GenerateAuthTokenImpl) bind GenerateAuthToken::class
+        scopedOf(::RefreshTokenImpl) bind RefreshToken::class
+        scopedOf(::SignOutImpl) bind SignOut::class
+        scopedOf(::DeleteAccountImpl) bind DeleteAccount::class
+        scopedOf(::StartRegistrationImpl) bind StartRegistration::class
+        scopedOf(::FinishRegistrationImpl) bind FinishRegistration::class
+        scopedOf(::StartAssertionImpl) bind StartAssertion::class
+        scopedOf(::FinishAssertionImpl) bind FinishAssertion::class
+        scopedOf(::SignInImpl) bind SignIn::class
+        scopedOf(::GetAvailablePasskeysImpl) bind GetAvailablePasskeys::class
+        scopedOf(::DeletePasskeyImpl) bind DeletePasskey::class
+        scopedOf(::GetAttachPasskeyToAccountChallengeImpl) bind GetAttachPasskeyToAccountChallenge::class
+        scopedOf(::StartPasskeyRegistrationImpl) bind StartPasskeyRegistration::class
+        scopedOf(::FinishPasskeyRegistrationImpl) bind FinishPasskeyRegistration::class
+        scopedOf(::AttachNewPasskeyToAccountImpl) bind AttachNewPasskeyToAccount::class
+        scopedOf(::DeleteInactiveDevicesImpl) bind DeleteInactiveDevices::class
+    }
 }

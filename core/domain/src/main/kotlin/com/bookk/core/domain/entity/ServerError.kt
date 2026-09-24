@@ -1,10 +1,11 @@
 package com.bookk.core.domain.entity
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.protobuf.ProtoNumber
 
 @Serializable
 data class SimpleServerError(
-    val errorCode: Int,
-    val message: String
+    @ProtoNumber(1) val errorCode: Int,
+    @ProtoNumber(2) val message: String
 ) {
     override fun toString(): String {
         return "errorCode: $errorCode, message: $message"
@@ -13,14 +14,14 @@ data class SimpleServerError(
 
 @Serializable
 data class MessageServerError(
-    val message: String
+    @ProtoNumber(1) val message: String
 )
 
 @Serializable
 data class BodyServerError<T : Any>(
-    val message: String,
-    val errorCode: Int,
-    val errorBody: T
+    @ProtoNumber(1) val message: String,
+    @ProtoNumber(2) val errorCode: Int,
+    @ProtoNumber(3) val errorBody: T
 )
 
 fun BusinessError.asServerError(): SimpleServerError = SimpleServerError(

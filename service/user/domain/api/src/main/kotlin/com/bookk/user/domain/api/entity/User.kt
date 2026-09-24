@@ -1,15 +1,16 @@
 package com.bookk.user.domain.api.entity
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.protobuf.ProtoNumber
 import kotlin.uuid.Uuid
 
 @Serializable
 data class User(
-    val id: Uuid,
-    val name: String,
-    val lastName: String,
-    val email: String,
-    val phone: String?
+    @ProtoNumber(1) val id: Uuid,
+    @ProtoNumber(2) val name: String,
+    @ProtoNumber(3) val lastName: String,
+    @ProtoNumber(4) val email: String,
+    @ProtoNumber(5) val phone: String?
 ) {
     companion object {
         fun stub(

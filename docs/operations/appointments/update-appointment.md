@@ -7,10 +7,10 @@ happens twice in the current implementation — once before the workday/
 worktime/overlap checks and once after — so a caller sees the row written
 even if a later check throws; the checks only gate the second write. The
 permission check uses the **existing** row's assigned employee, not the
-request body's, so a `READ`-level employee can't hijack someone else's
+request body's, so a `view`-only employee can't hijack someone else's
 appointment by reassigning it to themselves in the payload — see [Managing
-your own resource on a `READ`
-grant](../../object-permissions.md#managing-your-own-resource-on-a-read-grant).
+your own resource on a `view`
+grant](../../object-permissions.md#managing-your-own-resource-on-a-view-grant).
 
 ```mermaid
 flowchart TD
@@ -22,7 +22,7 @@ flowchart TD
     Tx --> Settings[AppointmentSettingsDataSource.getForUpdate businessId]
     Settings -- not found --> R404a([404 Error.NotFound])
     Settings -- found --> GetExisting[AppointmentDataSource.get appointment.id]
-    GetExisting --> Perm{permission >= EDIT, or permission >= READ and existing.employee.userId == userId?}
+    GetExisting --> Perm{caller update permission, or view permission and existing.employee.userId == userId?}
     Perm -- No --> R404b([404 Error.OperationNotAllowed])
     Perm -- Yes --> PastCheck{appointment.date < now?}
     PastCheck -- Yes --> R422a([422 DATE_IN_PAST 300012])

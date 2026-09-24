@@ -14,7 +14,7 @@ flowchart TD
     Dedup -- Yes --> Skip([Skip - already handled])
     Dedup -- No --> Anon[AppointmentDataSource.anonymizeForUser userId]
     Anon --> DelReq[AppointmentRequestDataSource.deleteForUser userId]
-    DelReq --> DelPerm[PermissionsDataSource.deleteForUser userId]
+    DelReq --> DelPerm[AppointmentPermissionDataSource.deleteForUser userId]
     DelPerm -- any step throws --> Dlt([Sent to AuthEvent.UserDeleted_dlt topic, logged - no auto-retry])
     DelPerm -- ok --> Ack([Marked processed])
 ```

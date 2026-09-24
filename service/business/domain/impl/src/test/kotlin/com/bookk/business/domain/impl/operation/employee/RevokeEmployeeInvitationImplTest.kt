@@ -1,9 +1,10 @@
 package com.bookk.business.domain.impl.operation.employee
 
+import com.bookk.business.domain.api.business.entity.BusinessResource
 import com.bookk.business.domain.api.employee.entity.EmployeeInvitation
 import com.bookk.business.domain.api.employee.entity.EmployeeInvitationStatus
 import com.bookk.business.domain.api.employee.operation.RevokeEmployeeInvitation
-import com.bookk.business.domain.datasource.BusinessDataSource
+import com.bookk.business.domain.datasource.BusinessPermissionDataSource
 import com.bookk.business.domain.datasource.EmployeeInvitationDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.datasource.transaction.mockTransaction
@@ -15,7 +16,7 @@ import com.bookk.core.test.whenn
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
-import library.permissions.ObjectPermission
+import library.permissions.ResourcePermission
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import kotlin.uuid.Uuid
@@ -27,16 +28,16 @@ internal class RevokeEmployeeInvitationImplTest {
 
     private class SutFixture {
         val invitationDataSource = mockk<EmployeeInvitationDataSource>()
-        val businessDataSource = mockk<BusinessDataSource>()
+        val businessPermissionDataSource = mockk<BusinessPermissionDataSource>()
         val transactionManager = mockk<TransactionManager>()
-        val sut = RevokeEmployeeInvitationImpl(invitationDataSource, businessDataSource, transactionManager)
+        val sut = RevokeEmployeeInvitationImpl(invitationDataSource, businessPermissionDataSource, transactionManager)
 
         init {
-            coEvery { businessDataSource.getPermission(any(), any()) } returns ObjectPermission.OWNER.int
+            coEvery { businessPermissionDataSource.getPermission(any(), any(), BusinessResource.EMPLOYEES) } returns ResourcePermission(update = true)
         }
 
-        fun grantPermission(permission: ObjectPermission?) {
-            coEvery { businessDataSource.getPermission(any(), any()) } returns permission?.int
+        fun grantPermission(permission: ResourcePermission) {
+            coEvery { businessPermissionDataSource.getPermission(any(), any(), BusinessResource.EMPLOYEES) } returns permission
         }
     }
 
@@ -62,7 +63,7 @@ internal class RevokeEmployeeInvitationImplTest {
         given()
         val fixture = SutFixture()
         fixture.transactionManager.mockTransaction()
-        fixture.grantPermission(ObjectPermission.EDIT)
+        fixture.grantPermission(ResourcePermission(view = true))
         val id = Uuid.random()
 
         whenn()
@@ -79,7 +80,7 @@ internal class RevokeEmployeeInvitationImplTest {
         given()
         val fixture = SutFixture()
         fixture.transactionManager.mockTransaction()
-        fixture.grantPermission(null)
+        fixture.grantPermission(ResourcePermission.NONE)
         val id = Uuid.random()
 
         whenn()
@@ -110,7 +111,7 @@ internal class RevokeEmployeeInvitationImplTest {
         given()
         val fixture = SutFixture()
         fixture.transactionManager.mockTransaction()
-        val invitation = EmployeeInvitation.stub(businessId = businessId, status = EmployeeInvitationStatus.APPROVED)
+        val invitation = EmployeeInvitation.stub(businessId = businessId, status = EmployeeInvitationStatus.REDEEMED)
         coEvery { fixture.invitationDataSource.getInvitation(businessId, invitation.id) } returns invitation
 
         whenn()

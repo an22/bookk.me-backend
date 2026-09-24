@@ -14,7 +14,7 @@ flowchart TD
     Start([POST /api/business/businessId/clients]) --> Auth{JWT valid?}
     Auth -- No --> R401([401 Unauthorized])
     Auth -- Yes --> Tx[[Begin transaction]]
-    Tx --> Perm{permission >= EDIT?}
+    Tx --> Perm{caller CLIENTS.update?}
     Perm -- No --> R404a([404 Error.OperationNotAllowed])
     Perm -- Yes --> ContactCheck{phone or email present?}
     ContactCheck -- No --> R422c([422 BUSINESS_CLIENT_MISSING_CONTACT_INFO 200025])

@@ -4,19 +4,22 @@ import com.bookk.core.containedIn
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.protobuf.ProtoNumber
+import library.permissions.ResourcePermission
 import library.schedule.Schedule
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
 @Serializable
 data class AppointmentSettings(
-    val id: Uuid,
-    val businessId: Uuid,
-    val timeZone: TimeZone,
-    val schedule: Schedule,
-    val automaticApproval: Boolean,
-    val inBetweenBreakInMinutes: Int,
-    val appointmentNote: String
+    @ProtoNumber(1) val id: Uuid,
+    @ProtoNumber(2) val businessId: Uuid,
+    @ProtoNumber(3) val timeZone: TimeZone,
+    @ProtoNumber(4) val schedule: Schedule,
+    @ProtoNumber(5) val automaticApproval: Boolean,
+    @ProtoNumber(6) val inBetweenBreakInMinutes: Int,
+    @ProtoNumber(7) val appointmentNote: String,
+    @ProtoNumber(8) val permissions: ResourcePermission
 ) {
     companion object {
         fun stub(businessId: Uuid = Uuid.random()) = AppointmentSettings(businessId = businessId, TimeZone.of("UTC"))
@@ -29,7 +32,8 @@ data class AppointmentSettings(
         schedule = Schedule(),
         automaticApproval = false,
         inBetweenBreakInMinutes = 10,
-        appointmentNote = ""
+        appointmentNote = "",
+        permissions = ResourcePermission.NONE
     )
 
     fun isInWorkday(date: Instant): Boolean {

@@ -1,7 +1,9 @@
 package com.bookk.auth.microservice.route.api
 
 import com.bookk.auth.domain.api.signout.operation.SignOut
+import com.bookk.auth.domain.impl.di.AuthScope
 import com.bookk.auth.microservice.route.AuthRouting.Api
+import com.bookk.core.service.di.injectScoped
 import com.bookk.core.service.enity.respondWith
 import com.bookk.server.auth.client.AppPrincipal
 import io.ktor.server.auth.authenticate
@@ -9,7 +11,6 @@ import io.ktor.server.auth.principal
 import io.ktor.server.resources.delete
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.application
-import org.koin.ktor.ext.inject
 
 internal fun Route.logOut() {
     authenticate {
@@ -23,7 +24,7 @@ internal fun Route.logOut() {
          */
         delete<Api.Auth.SignOut> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
-            val signOut by application.inject<SignOut>()
+            val signOut by application.injectScoped<SignOut>(AuthScope)
             call.respondWith(signOut(principal.deviceId))
         }
     }

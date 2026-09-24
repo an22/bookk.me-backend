@@ -5,7 +5,9 @@ import com.bookk.business.domain.api.service.operation.CreateService
 import com.bookk.business.domain.api.service.operation.DeleteService
 import com.bookk.business.domain.api.service.operation.GetServices
 import com.bookk.business.domain.api.service.operation.UpdateService
+import com.bookk.business.domain.impl.di.BusinessScope
 import com.bookk.business.microservice.route.BusinessRouting.Api
+import com.bookk.core.service.di.injectScoped
 import com.bookk.core.service.enity.respondWith
 import com.bookk.server.auth.client.AppPrincipal
 import io.ktor.http.ContentType
@@ -22,7 +24,6 @@ import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.application
 import io.ktor.server.routing.openapi.describe
-import org.koin.ktor.ext.inject
 
 fun Route.serviceCrud() {
     authenticate {
@@ -39,7 +40,7 @@ fun Route.serviceCrud() {
         post<Api.Service> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
             val body = call.receive<Service>()
-            val createService by application.inject<CreateService>()
+            val createService by application.injectScoped<CreateService>(BusinessScope)
             if (it.businessId != body.businessId) {
                 call.respond(HttpStatusCode.BadRequest, "Bad request")
             } else {
@@ -62,7 +63,7 @@ fun Route.serviceCrud() {
         put<Api.Service.Id> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
             val body = call.receive<Service>()
-            val updateService by application.inject<UpdateService>()
+            val updateService by application.injectScoped<UpdateService>(BusinessScope)
 
             if (it.parent.businessId != body.businessId) {
                 call.respond(HttpStatusCode.BadRequest, "Bad request")
@@ -80,7 +81,7 @@ fun Route.serviceCrud() {
          * Security: jwt
          */
         get<Api.Service> {
-            val getServices by application.inject<GetServices>()
+            val getServices by application.injectScoped<GetServices>(BusinessScope)
 
             call.respondWith(getServices(it.businessId))
         }.describe {
@@ -103,7 +104,7 @@ fun Route.serviceCrud() {
          */
         delete<Api.Service.Id> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
-            val deleteService by application.inject<DeleteService>()
+            val deleteService by application.injectScoped<DeleteService>(BusinessScope)
 
             call.respondWith(
                 deleteService(

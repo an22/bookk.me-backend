@@ -3,25 +3,25 @@ package com.bookk.appointments.domain.impl.operation
 import com.bookk.appointments.domain.api.entity.Appointment
 import com.bookk.appointments.domain.api.operation.GetAppointmentsForDate
 import com.bookk.appointments.domain.datasource.AppointmentDataSource
+import com.bookk.appointments.domain.datasource.AppointmentPermissionDataSource
 import com.bookk.appointments.domain.datasource.AppointmentSettingsDataSource
-import com.bookk.appointments.domain.datasource.PermissionsDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.entity.Error
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.atStartOfDayIn
-import library.permissions.ObjectPermission
+import library.permissions.PermissionAction
 import library.permissions.assert
 import kotlin.time.Duration.Companion.days
 import kotlin.uuid.Uuid
 
 internal class GetAppointmentsForDataImpl(
     private val appointmentDataSource: AppointmentDataSource,
-    private val permissionsDataSource: PermissionsDataSource,
+    private val appointmentPermissionDataSource: AppointmentPermissionDataSource,
     private val settingsDataSource: AppointmentSettingsDataSource,
     private val transactionManager: TransactionManager
 ) : GetAppointmentsForDate {
     override suspend fun invoke(userId: Uuid, businessId: Uuid, date: LocalDate): Result<List<Appointment>> = transactionManager.transaction {
-        permissionsDataSource.getPermissions(userId, businessId).assert(ObjectPermission.READ)
+        appointmentPermissionDataSource.getPermission(userId, businessId).assert(PermissionAction.VIEW)
         val settings = settingsDataSource.get(businessId) ?: throw Error.NotFound()
         val instant = date.atStartOfDayIn(settings.timeZone)
         val range = instant..(instant + 1.days)

@@ -2,6 +2,7 @@ package com.bookk.business.domain.api.service.entity
 
 import com.bookk.library.serializer.MoneySerializer
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.protobuf.ProtoNumber
 import org.joda.money.Money
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
@@ -10,15 +11,16 @@ import kotlin.uuid.Uuid
 
 @Serializable
 data class Service(
-    val id: Uuid,
-    val businessId: Uuid,
-    val group: ServiceGroup,
-    val name: String,
-    val duration: Duration,
+    @ProtoNumber(1) val id: Uuid,
+    @ProtoNumber(2) val businessId: Uuid,
+    @ProtoNumber(3) val group: ServiceGroup,
+    @ProtoNumber(4) val name: String,
+    @ProtoNumber(5) val duration: Duration,
+    @ProtoNumber(6)
     @Serializable(with = MoneySerializer::class)
     val price: Money,
-    val isAvailable: Boolean,
-    val createdAt: Instant
+    @ProtoNumber(7) val isAvailable: Boolean,
+    @ProtoNumber(8) val createdAt: Instant
 ) {
     companion object {
         fun stub(

@@ -5,7 +5,9 @@ import com.bookk.auth.domain.api.identification.operation.DeletePasskey
 import com.bookk.auth.domain.api.identification.operation.GetAttachPasskeyToAccountChallenge
 import com.bookk.auth.domain.api.identification.operation.GetAvailablePasskeys
 import com.bookk.auth.domain.api.registration.operation.AttachNewPasskeyToAccount
+import com.bookk.auth.domain.impl.di.AuthScope
 import com.bookk.auth.microservice.route.AuthRouting.Api
+import com.bookk.core.service.di.injectScoped
 import com.bookk.core.service.enity.respondWith
 import com.bookk.server.auth.client.AppPrincipal
 import io.ktor.server.auth.authenticate
@@ -16,7 +18,6 @@ import io.ktor.server.resources.get
 import io.ktor.server.resources.post
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.application
-import org.koin.ktor.ext.inject
 
 internal fun Route.passkeyOperations() {
     authenticate {
@@ -29,7 +30,7 @@ internal fun Route.passkeyOperations() {
          */
         get<Api.Auth.PassKey> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
-            val getPasskeys by application.inject<GetAvailablePasskeys>()
+            val getPasskeys by application.injectScoped<GetAvailablePasskeys>(AuthScope)
 
             call.respondWith(getPasskeys(principal.authId))
         }
@@ -43,7 +44,7 @@ internal fun Route.passkeyOperations() {
          */
         get<Api.Auth.PassKey.AddChallenge> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
-            val getChallenge by application.inject<GetAttachPasskeyToAccountChallenge>()
+            val getChallenge by application.injectScoped<GetAttachPasskeyToAccountChallenge>(AuthScope)
 
             call.respondWith(getChallenge(principal.authId, principal.deviceId, principal.userId))
         }
@@ -60,7 +61,7 @@ internal fun Route.passkeyOperations() {
         post<Api.Auth.PassKey.AddFinish> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
             val body = call.receive<AddPasskeyRequest>()
-            val attachPasskey by application.inject<AttachNewPasskeyToAccount>()
+            val attachPasskey by application.injectScoped<AttachNewPasskeyToAccount>(AuthScope)
 
             call.respondWith(attachPasskey(principal.authId, body))
         }
@@ -76,7 +77,7 @@ internal fun Route.passkeyOperations() {
          */
         delete<Api.Auth.PassKey.Id> { path ->
             val principal = requireNotNull(call.principal<AppPrincipal>())
-            val deletePasskey by application.inject<DeletePasskey>()
+            val deletePasskey by application.injectScoped<DeletePasskey>(AuthScope)
             call.respondWith(deletePasskey(path.id, principal.authId))
         }
     }

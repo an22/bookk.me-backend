@@ -1,13 +1,14 @@
 package com.bookk.appointments.domain.api.entity
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.protobuf.ProtoNumber
 import kotlin.uuid.Uuid
 
 @Serializable
 data class EmployeeSnapshot(
-    val id: Uuid,
-    val userId: Uuid,
-    val fullName: String
+    @ProtoNumber(1) val id: Uuid,
+    @ProtoNumber(2) val userId: Uuid,
+    @ProtoNumber(3) val fullName: String
 ) {
     companion object {
         fun stub(id: Uuid = Uuid.random(), userId: Uuid = Uuid.random()): EmployeeSnapshot {

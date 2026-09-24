@@ -18,10 +18,12 @@ service/<svc>/
 
 New gradle modules must be registered in `settings.gradle.kts` (one `include` per submodule, grouped per service). Convention plugins (`libs.plugins.bookk.microservice`, `bookk.domain.impl`, `bookk.domain.api`, `bookk.data`, …) already add Ktor/Koin/MockK/kotlin-test deps and JUnit platform — do not re-add them.
 
-**Generate database migrations.** This is now Claude's job, not the user's. When an ORM table changes (new column, new index, new table, etc.), bump `targetVersion` in `<Svc>Migration.kt` (`referenceVersion` becomes the old `targetVersion`) and run its `main()` to produce the new `V<n>__migration_script.sql`. This needs a MariaDB instance reachable at `127.0.0.1:3308` — bring one up via `deployment/dev/environment-compose.yml` if one isn't already running. Never hand-edit a generated `V<n>__migration_script.sql`; if the table definition changes again, regenerate it instead.
+**Write database migrations by hand.** This is now Claude's job, not the user's. There is no generator — earlier attempts at diffing the ORM table definitions with `MigrationUtils`/Flyway produced migration scripts that silently corrupted schema changes involving composite indices (a dropped column still referenced by a named unique index never got its `DROP INDEX`, and MariaDB rejected the result), so that tooling was removed rather than trusted. When an ORM table changes (new column, new index, new table, etc.), write the SQL directly into a new `service/<svc>/data/src/main/resources/db/migration/<schema>/V<n>__migration_script.sql`, where `<n>` is one past the highest `V<n>` already in that directory. Reflect exactly what changed in the table definition: column adds/drops/type changes, index adds/drops, constraint changes — and drop a named composite index yourself before dropping any column it covers, MariaDB will not infer that. Verify the new script applies cleanly before considering the change done: bring up a MariaDB instance reachable at `127.0.0.1:3308` (`deployment/dev/environment-compose.yml` if one isn't already running), then actually run Flyway against it through all migrations for that schema up to and including the new file and confirm it succeeds — never hand-wave this step or ship a script that hasn't been executed against a real database.
 **Keep the database ER diagrams current.** `docs/database/` documents every microservice's schema as a Mermaid ER diagram in its own file (`docs/database/<svc>.md`, indexed from `docs/database/README.md`), plus `docs/database/cross-service-overview.md` for logical (non-FK) references. Any change to an ORM table — new/removed table, column, or relationship — must update that service's diagram (and the cross-service overview, if a logical reference changed) in the same change.
 **Keep the operation activity diagrams current.** `docs/operations/` holds one Mermaid flowchart per HTTP route that mutates state, plus one per asynchronous reaction to a cross-service Kafka event (an `EventHandler`'s `registerResultReceiver` block — file named `on-<event>.md`, e.g. `on-user-deleted.md`), indexed in `docs/operations/README.md` and cross-linked from each route's KDoc via a `See: docs/operations/<svc>/<file>.md` line (an unrecognized KDoc field — the openApi plugin ignores it, verified by compiling). Any new mutating route or event handler, or a change to an existing one's permission checks/error cases/event publication/event handling, must add or update its diagram in the same change. Diagram nodes should carry the actual datasource calls, error codes and event names so the flow is understandable without opening the code. Whenever an operation sends a cross-service event, its diagram ends with a `**Consumed by:**` line linking forward to every reaction diagram for that event, and each reaction diagram links back to its producer(s) — keep both directions in sync, and mirror any addition/removal in `docs/operations/README.md`'s "Cross-service event map" table.
 **Ignore all git operations.** Managing Git is the responsibility of the developer, do not automatically commit, push or merge
+**The monolith (`src/main/kotlin/com/bookk/server/MonolithServer.kt`) uses `EmbeddedEventConsumer`/`EmbeddedEventProducer`, never Kafka.** Each service's `xModule()` builder (e.g. `authModule()`, `appointmentsModule()`) takes an `eventStreaming: Module` parameter defaulting to `eventStreamingModule(Scope, SERVICE_NAME)` (Kafka) — standalone microservices call it with no argument and get Kafka unchanged. `MonolithServer.diModules()` passes `embeddedEventStreamingModule(Scope)` (from `core/data/eventstreaming/impl/.../di/DI.kt`) for every service instead, plus one `topicQueueHolderModule()` providing a single root-level `TopicQueueHolder<String>` singleton shared by all five scopes. `TopicQueueHolder` is pub/sub, not a point-to-point queue: `subscribe(topic)` hands each caller its own `Channel`, and `publish(event)` fans the event out to every subscriber of that topic — this matters because several services' `EventHandler`s register receivers for the same topic (e.g. `AuthEvent.UserDeleted` is consumed by user, business, appointments and notifications), so a single shared `Channel` per topic would let only one of them win the event. When adding a new service to the monolith, register it the same way: add its `xModule(embeddedEventStreamingModule(NewScope))` line to `diModules()`, no other wiring needed.
+**The monolith needs a single cross-schema DB user, unlike per-service deployments.** `createDatabase(schemaName, ...)` (`core/data/database/Migration.kt`) reads its host/port/user/password from `AppLevelConstants`, which is process-global (`System.getenv("APPLICATION_DB_*")`) — only `schemaName` varies per call. A standalone microservice gets one schema-scoped MariaDB user (`deployment/dev/db/init.sql` creates `user`/`authorization`/`business`/`appointments`/`notifications`, each granted only on its own database). The monolith runs all five services' `createDatabase` calls inside one process reading the same env vars, so it needs one MariaDB user granted on all five schemas — `init.sql` also creates a `monolith` user with `GRANT ALL PRIVILEGES` on each of the five databases. Root-cause a `FlywaySqlUnableToConnectToDbException` / `Access denied for user 'monolith'` in the monolith container before assuming a code bug: `init.sql` only runs on a MariaDB volume's *first* initialization, so a pre-existing dev `database_data` volume won't pick up a newly added user until the grants are applied by hand (`docker exec <db-container> mysql -h 127.0.0.1 -P 3307 -u root -p'<MARIADB_ROOT_PASSWORD>' -e "..."`) or the volume is recreated. The root project itself carries the `bookk.microservice` convention plugin (`build.gradle.kts` applies it directly, not `.apply(false)`), so `./gradlew publishImageToLocalRegistry` with no module path builds and tags the monolith image as `com.bookk.server:latest` (and `:<version>`) straight from the repo root, no subproject prefix needed. Dev deployment artifacts mirror the per-service ones: `deployment/dev/service/monolith.env` (one env file, all internal `*_SERVICE_HOSTNAME` vars pointed at `monolith.service` itself since every route lives in one process, no Kafka vars since it's embedded), `deployment/dev/monolith-compose.yml` (one `monolith` service, both the app port and the jdwp debug port published to the host since there's no nginx entry routing to it yet), and `deployment/dev/rollout-monolith.sh` (same shape as `rollout.sh`, but builds the root project's image directly instead of looping per service).
 
 ## Core conventions (apply everywhere)
 
@@ -31,7 +33,7 @@ New gradle modules must be registered in `settings.gradle.kts` (one `include` pe
 - Error codes live in `domain/api/.../<Svc>ErrorCodes` as `BASE + n`. Blocks: auth=0, user=100000, business=200000, appointments=300000. Next service takes the next 100000 block.
 - Generic infrastructure errors: `com.bookk.core.domain.entity.Error` (`NotFound`, `OperationNotAllowed`, …).
 - `call.respondWith(result)` (core/service) maps: success Unit→204, success T→200, `BusinessError`→its statusCode + `SimpleServerError(errorCode, message)`, `Error.NotFound`/`Error.OperationNotAllowed`→**404** (intentional: permission failures do NOT return 403), anything else→500 (logged).
-- Permissions: `permissionsDataSource.getPermissions(userId, businessId).assert(ObjectPermission.EDIT)` (library/permissions) — throws `Error.OperationNotAllowed`.
+- Permissions: fine-grained per-resource grants (`library.permissions.ResourcePermission(view, update, delete)`, three independent booleans, no ranking between them) — `businessPermissionDataSource.getPermission(userId, businessId, BusinessResource.CLIENTS).assert(PermissionAction.UPDATE)` (business) or `appointmentPermissionDataSource.getPermission(userId, businessId).assert(PermissionAction.VIEW)` (appointments, single implicit resource) — throws `Error.OperationNotAllowed`. A caller acting on their own assigned resource (e.g. an employee's own appointment) can pass an `update`/`delete` check on a `view`-only grant via `.assertOrSelf(action, actorId, assigneeId)`. See `docs/object-permissions.md` for the full model, including how a `Business`/`AppointmentSettings` entity gets the requesting user's grants attached (`.copy(permissions = ...)`, computed per request, never persisted on the row).
 - Name/email/phone format checks: `library.validation.{NameValidator,EmailValidator,PhoneValidator}.isValid(value, ...)` (library/validation, plain `bookk.domain.api` module, no domain dependency) — pure `Boolean` predicates, each with a default `maxLength`/`minLength` you can override per call site; the caller still owns throwing its own `*ValidationError`. Reuse these instead of hand-rolling a regex/length check in a new operation.
 - Wire format is ProtoBuf (`application/x-protobuf`) for all bodies/responses. **A nullable collection (`List<T>?`, `Map<K, V>?`) cannot be serialized when null** — kotlinx throws `'null' is not supported as the value of collection types in ProtoBuf`. For an optional group of fields in a partial-update DTO, wrap them in a nullable `@Serializable` holder class (a nullable message is fine) instead of making each list nullable — see `BusinessUpdateModel.schedule: Schedule?`. **A nullable property must not also have a default** — the serializer runs with `encodeDefaults = true`, and encoding a defaulted null throws `'null' is not supported for optional properties in ProtoBuf` as soon as a caller omits it. Give every nullable field on a partial-update DTO no default at all and pass them explicitly (`BusinessUpdateModel`, `UserEditModel`).
 - Entities: `@Serializable data class` in `domain/api/.../entity` with a `companion object { fun stub(...) }` factory (defaulted params, `Uuid.random()`, `Instant.fromEpochMilliseconds(0)`) — add `stub()` to every new entity; tests rely on it.
@@ -61,20 +63,20 @@ interface DoThing {
 ```kotlin
 internal class DoThingImpl(
     private val thingDataSource: ThingDataSource,
-    private val permissionsDataSource: PermissionsDataSource,
+    private val businessPermissionDataSource: BusinessPermissionDataSource,
     private val transactionManager: TransactionManager,
     private val eventProducer: StandardEventProducer, // only if events sent
 ) : DoThing {
     override suspend fun invoke(userId: Uuid, ...): Result<Thing> = transactionManager.transaction {
         val thing = thingDataSource.get(id) ?: throw Error.NotFound()
-        permissionsDataSource.getPermissions(userId, businessId).assert(ObjectPermission.EDIT)
+        businessPermissionDataSource.getPermission(userId, businessId, BusinessResource.THINGS).assert(PermissionAction.UPDATE)
         if (conflict) throw DoThing.Error.ThingExists()
         thingDataSource.create(...) // also { eventProducer.send(SvcEvent.X(...)) } if needed
     }
 }
 ```
 4. Register in `domain/impl/.../di/DI.kt`: `factoryOf(::DoThingImpl) bind DoThing::class`.
-5. If a new datasource method is needed: add to the interface in `data/source/.../datasource/`, implement in `data/.../datasource/<X>DataSourceImpl.kt` (`internal class ... : DataSource(), XDataSource`, queries wrapped in `dbQuery { }`, Exposed v1 DSL, `Uuid` for ids). New datasources are registered in `data/.../di/`: `singleOf(::XDataSourceImpl) bind XDataSource::class`. New tables go in `data/.../orm/{table,entity}` and must be added to the service's `<Svc>Migration.kt` `tables()` array.
+5. If a new datasource method is needed: add to the interface in `data/source/.../datasource/`, implement in `data/.../datasource/<X>DataSourceImpl.kt` (`internal class ... : DataSource(), XDataSource`, queries wrapped in `dbQuery { }`, Exposed v1 DSL, `Uuid` for ids). New datasources are registered in `data/.../di/`: `singleOf(::XDataSourceImpl) bind XDataSource::class`. New tables go in `data/.../orm/{table,entity}` and need a hand-written migration script (see "Write database migrations by hand" above).
 
 ### Writes live on the entity, not in the datasource
 
@@ -171,6 +173,7 @@ Required imports: `io.ktor.http.ContentType`, `io.ktor.openapi.jsonSchema`, `io.
 4. When a path id duplicates a body id, validate: `if (it.id != body.id) call.respond(HttpStatusCode.BadRequest, "Invalid request") else ...`.
 5. Register the new route fn in `route/<Svc>Route.kt` aggregator (`fun Routing.<svc>Route()`); the aggregator is already wired in `<Svc>Microservice.kt`.
 6. `AppPrincipal` fields: `authId`, `userId`, `deviceId` (all `Uuid`).
+7. **For `get`/`post`/`delete`/`put`/`patch` matching a typed `@Resource`, import from `io.ktor.server.resources.*`, never `io.ktor.server.routing.*`.** The two packages both export a same-named function taking a generic type parameter, so the wrong import still compiles: `io.ktor.server.routing.patch<R>(body: suspend RoutingContext.(R) -> Unit)` treats `R` as a **request-body type to deserialize** (`call.receive<R>()`) and registers a bare `method(HttpMethod.Patch)` node with no path — it silently ignores the `@Resource` class entirely instead of routing by it. A route written as `patch<Api.Thing.Id> { ... }` with that import compiles clean but never matches its real URL, so every request 404s with no error anywhere (found via `service/business/microservice/route/api/Client.kt`, which had `import io.ktor.server.routing.patch` where every sibling handler in the same file correctly imported from `io.ktor.server.resources.*`).
 
 ## Testing
 
@@ -182,7 +185,7 @@ Hard rules (enforced by fixtures or review):
 - Fresh SUT and fresh mocks per test — no sharing across tests, no class-level mocks.
 - DO NOT EDIT `core/src/testFixtures/kotlin/com/bookk/core/test/Test.kt`.
 - Test names: backticked sentences, e.g. `` fun `should return failure when request overlaps with existing appointment`() ``.
-- Use entity `stub()` factories instead of hand-built instances; pass only the fields the test depends on. Provide real entity instances to mocks (ProtoBuf serialization NPEs otherwise).
+- Use entity `stub()` factories instead of hand-built instances; pass only the fields the test depends on. Provide real entity instances to mocks (ProtoBuf serialization NPEs otherwise). **Never write a local test-file helper function (`private fun createTestX()`, `makeX()`, …) that re-lists an entity's fields to construct it** — that duplicates the field list the entity's own `stub()` exists to own. If the entity has no `stub()` yet, add one to its companion (see the Entities rule above) and call it directly at each test call site instead. The one exception is a partial-update DTO (`BusinessUpdateModel`, `ClientUpdateModel`, …) — those are request shapes, not domain entities, so they don't get a `stub()`; a local private helper (conventionally named `updateModel(...)`, defaulting every field to `null`) is the established pattern for building them in tests, e.g. `UpdateBusinessImplTest.updateModel()`.
 - JUnit assertions (`org.junit.jupiter.api.Assertions`). Assert error types with `is`: `assertTrue(result.exceptionOrNull() is DoThing.Error.ThingExists)`.
 - If the operation sends events: include a test with `coVerify(exactly = 1) { eventProducer.send(any(SvcEvent.X::class), any()) }`.
 
@@ -198,9 +201,9 @@ internal class DoThingImplTest {
 
     private class SutFixture {
         val thingDataSource = mockk<ThingDataSource>()
-        val permissionsDataSource = mockk<PermissionsDataSource>()
+        val businessPermissionDataSource = mockk<BusinessPermissionDataSource>()
         val transactionManager = mockk<TransactionManager>()
-        val sut = DoThingImpl(thingDataSource, permissionsDataSource, transactionManager)
+        val sut = DoThingImpl(thingDataSource, businessPermissionDataSource, transactionManager)
     }
 
     @Test
@@ -210,7 +213,7 @@ internal class DoThingImplTest {
         val thing = Thing.stub(userId = userId)
         val fixture = SutFixture()
         with(fixture) {
-            coEvery { permissionsDataSource.getPermissions(userId, thing.businessId) } returns ObjectPermission.EDIT.int
+            coEvery { businessPermissionDataSource.getPermission(userId, thing.businessId, BusinessResource.THINGS) } returns ResourcePermission(update = true)
             coEvery { thingDataSource.create(any()) } returns thing
             transactionManager.mockTransaction() // testFixtures(projects.core.domain.datasource)
         }
@@ -224,7 +227,7 @@ internal class DoThingImplTest {
     }
 }
 ```
-Permission-denied case: stub `getPermissions` to return `ObjectPermission.READ.int`, assert `result.exceptionOrNull() is Error.OperationNotAllowed`.
+Permission-denied case: stub `getPermission` to return `ResourcePermission(view = true)` (or `ResourcePermission.NONE` for "no grant at all"), assert `result.exceptionOrNull() is Error.OperationNotAllowed`.
 
 ### Route (microservice) test template
 
@@ -302,6 +305,10 @@ Rules:
 
 ---
 
+### Scheduled job wiring test
+
+Every `Application.register<Svc>Jobs(scheduler)` has a `<Svc>JobsTest` in its microservice module (`BusinessJobsTest`, `AppointmentsJobsTest`, `AuthJobsTest`) — full recipe in `docs/operations/scheduled-jobs.md` → "Adding a new job". Tools: `startScopedApplication(<Svc>Scope) { scoped { mockOp } }` (`testFixtures(projects.core.service)`) boots Koin + the service scope and returns the `Application`; `registeredJobs()` / `runJob(name)` (`testFixtures(projects.library.scheduler)`) inspect and run a `SchedulerConfiguration`'s jobs directly, no timing. Assert the whole name → interval map, and per job both the invocation (with arguments) and that a `Result.failure` propagates — that is what catches a dropped `getOrThrow()`. A module's `testFixtures` source set can read that module's `internal` members (`runJob` reads `SchedulerConfiguration.jobs`), so a fixture never needs a production API widened just for tests. `MonolithJobsTest` (root project, `src/test`) covers the monolith's single shared scheduler: it asserts `registerMonolithJobs` registers exactly the union of each service's own `register<Svc>Jobs` (a cross-service name clash throws at registration, a service missing from the monolith shows up as a map mismatch), and that same-typed operations in different scopes (auth vs business `RotateSigningKeys`) resolve from their own scope — use the `startScopedApplication(AuthScope to { … }, BusinessScope to { … })` overload for several scopes at once.
+
 ## Datasource (H2 integration) test conventions
 
 `createTestDatabase(vararg tables: Table)` in `core/data/src/testFixtures` creates a per-test H2 database in `MODE=MySQL`. Call datasource methods inside `suspendTransaction { fixture.sut.method() }` within `runUnitTest { }`. Use `dbQuery`-based methods inside `suspendTransaction {}`. Cache-based methods (those using `mapExceptions` without `dbQuery`) are called directly without wrapping.
@@ -352,3 +359,17 @@ assertTrue(result.exceptionOrNull() is Error.UniqueConstraintFailed)
 ### Cleanup methods (deleteDayOffsInThePast)
 
 Insert `DayOffRange(LocalDate(2020,1,1), LocalDate(2020,1,2))` for a past day-off and `DayOffRange(LocalDate(2099,12,30), LocalDate(2099,12,31))` for a future one. After calling `deleteDayOffsInThePast()` re-read via `sut.get(businessId)` and assert counts.
+
+### Never use `advanceUntilIdle()` to drive work running on `backgroundScope` — use `advanceTimeBy` + `runCurrent`
+
+This bit twice before the real cause was found, so: **`TestScope.advanceUntilIdle()` deliberately does not fully drain `backgroundScope`.** Straight from the `kotlinx-coroutines-test` KDoc on `TestScope.backgroundScope` — "The coroutines in this scope are run as usual when using `advanceTimeBy` and `runCurrent`. `advanceUntilIdle`, on the other hand, will stop advancing the virtual time once only the coroutines in this scope are left unprocessed." This is intentional (it's what lets a `backgroundScope` job that loops forever not hang `advanceUntilIdle()`), not a bug — but every `EmbeddedEventConsumer` test here runs the consumer via `consumer.start(backgroundScope)`, so `advanceUntilIdle()` is the wrong tool for **any** of them, not just multi-round DLT retry chains: it previously looked like it worked (a plain single-hop `send()` → `advanceUntilIdle()` → assert delivered) purely by timing coincidence, and stopped working the moment something upstream changed (see `EmbeddedEventStreamingTest`, which predates this whole feature and still hit it).
+
+The fix, per that same KDoc: drive time with `runCurrent()` (runs whatever is due at the current virtual instant — nothing more) and `advanceTimeBy(duration)` (moves the clock forward, running scheduled tasks in the meantime) instead. Two things to know about these:
+- `advanceTimeBy(duration)` does **not** run tasks scheduled for exactly `currentTime + duration` — always follow it with a `runCurrent()` to catch anything sitting exactly on that boundary.
+- `runCurrent()` alone will not run a task scheduled via `delay()` for a future virtual time — only `advanceTimeBy`/`advanceUntilIdle` actually move the clock, so a chain with real backoff needs the clock advanced past each `delay()`, not just `runCurrent()` in a loop.
+
+Pattern used across `EmbeddedDltRetryTest`/`EmbeddedEventStreamingTest`: for a delay-free single hop, `runCurrent()` alone is enough. For a chain with backoff (DLT retries), advance a single generous virtual duration (see `advanceThroughRetries()`: `runCurrent(); advanceTimeBy(1.hours); runCurrent()`) — virtual time is free, so there's no cost to advancing far more than the scenario actually needs, and it reliably sweeps through however many delay-then-reschedule rounds occur without having to compute exact cumulative backoff by hand.
+
+### `runUnitTest`'s timeout is real time, not virtual
+
+`runUnitTest` passes its 2-second budget as `runTest(context, timeout = 2.seconds) { ... }` (`core/src/testFixtures/.../Test.kt`), not a manual `withTimeout()` nested inside the test body. `runTest`'s own `timeout` parameter is a real-wall-clock watchdog against a hung test (it runs on the outer `runBlocking` dispatcher, outside the `TestCoroutineScheduler`) — it does not count virtual time advanced via `advanceTimeBy()`/`advanceUntilIdle()`. So a DLT retry test can freely use the production `DltRetry.DEFAULT_MAX_ATTEMPTS` and uncapped `backoffMillis` even though cumulative simulated backoff reaches many seconds or more — advancing that much virtual time costs no measurable real time.

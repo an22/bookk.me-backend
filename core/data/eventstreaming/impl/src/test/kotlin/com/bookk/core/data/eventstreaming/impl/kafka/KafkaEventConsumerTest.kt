@@ -1,5 +1,6 @@
 package com.bookk.core.data.eventstreaming.impl.kafka
 
+import com.bookk.core.data.eventstreaming.impl.InMemoryExhaustedEventDataSource
 import com.bookk.core.data.eventstreaming.registerReceiver
 import com.bookk.core.data.eventstreaming.send
 import com.bookk.core.test.given
@@ -49,7 +50,8 @@ internal class KafkaEventConsumerTest {
             consumerGroup = "consumer-test-${Uuid.random()}",
             eventIdempotencyStorage = RecordingIdempotencyStorage(),
             protoBuf = KafkaTestBroker.protoBuf,
-            dltProducer = NoopProducer()
+            dltProducer = NoopProducer(),
+            exhaustedEventDataSource = InMemoryExhaustedEventDataSource()
         )
         consumer.registerReceiver<KeyedTestEvent, String>(topic) { event ->
             observations.enter()

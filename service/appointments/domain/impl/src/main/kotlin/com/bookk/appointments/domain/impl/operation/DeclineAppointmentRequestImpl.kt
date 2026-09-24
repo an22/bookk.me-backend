@@ -4,17 +4,17 @@ import com.bookk.appointments.domain.api.entity.AppointmentCancellation
 import com.bookk.appointments.domain.api.entity.AppointmentRequest
 import com.bookk.appointments.domain.api.entity.AppointmentRequestStatus
 import com.bookk.appointments.domain.api.operation.DeclineAppointmentRequest
+import com.bookk.appointments.domain.datasource.AppointmentPermissionDataSource
 import com.bookk.appointments.domain.datasource.AppointmentRequestDataSource
 import com.bookk.appointments.domain.datasource.AppointmentSubscriptionDataSource
-import com.bookk.appointments.domain.datasource.PermissionsDataSource
 import com.bookk.core.data.eventstreaming.StandardEventProducer
 import com.bookk.core.data.eventstreaming.send
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.entity.Error
 import com.bookk.library.serializer.moneyFormatter
 import com.bookk.server.appointments.client.api.event.AppointmentEvent
-import library.permissions.ObjectPermission
-import library.permissions.assertOrOwner
+import library.permissions.PermissionAction
+import library.permissions.assertOrSelf
 import org.slf4j.LoggerFactory
 import kotlin.uuid.Uuid
 
@@ -22,7 +22,7 @@ private val declineAppointmentRequestLogger = LoggerFactory.getLogger(CancelAppo
 
 internal class DeclineAppointmentRequestImpl(
     private val requestDataSource: AppointmentRequestDataSource,
-    private val permissionsDataSource: PermissionsDataSource,
+    private val appointmentPermissionDataSource: AppointmentPermissionDataSource,
     private val subscriptionDataSource: AppointmentSubscriptionDataSource,
     private val eventProducer: StandardEventProducer,
     private val transactionManager: TransactionManager
@@ -30,8 +30,8 @@ internal class DeclineAppointmentRequestImpl(
 
     override suspend fun invoke(userId: Uuid, cancellation: AppointmentCancellation): Result<Unit> = transactionManager.transaction {
         val appointment = requestDataSource.get(cancellation.id) ?: throw Error.NotFound()
-        permissionsDataSource.getPermissions(userId, cancellation.businessId)
-            .assertOrOwner(ObjectPermission.EDIT, actorId = userId, assigneeId = appointment.employee.userId)
+        appointmentPermissionDataSource.getPermission(userId, cancellation.businessId)
+            .assertOrSelf(PermissionAction.UPDATE, actorId = userId, assigneeId = appointment.employee.userId)
         val declined = when (appointment.status) {
             AppointmentRequestStatus.APPROVED -> throw DeclineAppointmentRequest.Error.AlreadyApproved()
             AppointmentRequestStatus.DECLINED,

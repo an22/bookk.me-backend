@@ -1,14 +1,15 @@
 package com.bookk.appointments.domain.api.entity
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.protobuf.ProtoNumber
 import kotlin.uuid.Uuid
 
 @Serializable
 data class AppointmentSettingsUpdate(
-    val businessId: Uuid,
-    val automaticApproval: Boolean,
-    val inBetweenBreakInMinutes: Int,
-    val appointmentNote: String
+    @ProtoNumber(1) val businessId: Uuid,
+    @ProtoNumber(2) val automaticApproval: Boolean,
+    @ProtoNumber(3) val inBetweenBreakInMinutes: Int,
+    @ProtoNumber(4) val appointmentNote: String
 ) {
     companion object {
         fun stub(

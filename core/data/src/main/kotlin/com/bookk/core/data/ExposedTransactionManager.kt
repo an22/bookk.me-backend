@@ -5,12 +5,13 @@ import com.bookk.core.data.map.toDomain
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.entity.BusinessError
 import com.bookk.core.domain.entity.Error
+import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
 
-class ExposedTransactionManager : TransactionManager {
+class ExposedTransactionManager(private val database: Database) : TransactionManager {
     override suspend fun <T> transaction(transaction: suspend () -> T): Result<T> {
         return runCatching {
-            suspendTransaction {
+            suspendTransaction(db = database) {
                 transaction()
             }
         }.recoverCatching {

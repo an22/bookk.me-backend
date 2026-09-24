@@ -2,22 +2,23 @@ package com.bookk.appointments.domain.api.entity
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
+import kotlinx.serialization.protobuf.ProtoNumber
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
 @Serializable
 data class AppointmentRequest(
-    override val id: Uuid,
-    override val userId: Uuid,
-    override val businessId: Uuid,
-    override val employee: EmployeeSnapshot,
-    val client: ClientSnapshot,
-    val services: List<ServiceSnapshot>,
-    val status: AppointmentRequestStatus,
-    override val date: Instant,
-    val note: String,
-    val declineReason: String,
+    @ProtoNumber(1) override val id: Uuid,
+    @ProtoNumber(2) override val userId: Uuid,
+    @ProtoNumber(3) override val businessId: Uuid,
+    @ProtoNumber(4) override val employee: EmployeeSnapshot,
+    @ProtoNumber(5) val client: ClientSnapshot,
+    @ProtoNumber(6) val services: List<ServiceSnapshot>,
+    @ProtoNumber(7) val status: AppointmentRequestStatus,
+    @ProtoNumber(8) override val date: Instant,
+    @ProtoNumber(9) val note: String,
+    @ProtoNumber(10) val declineReason: String,
 ) : AppointmentRepresentation {
 
     @Transient

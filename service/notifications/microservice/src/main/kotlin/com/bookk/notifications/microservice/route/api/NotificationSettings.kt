@@ -1,9 +1,11 @@
 package com.bookk.notifications.microservice.route.api
 
+import com.bookk.core.service.di.injectScoped
 import com.bookk.core.service.enity.respondWith
 import com.bookk.notifications.domain.api.GetNotificationSettings
 import com.bookk.notifications.domain.api.UpdateNotificationSettings
 import com.bookk.notifications.domain.api.entity.NotificationSettings
+import com.bookk.notifications.domain.impl.di.NotificationsScope
 import com.bookk.notifications.microservice.route.NotificationsRouting.Api
 import com.bookk.server.auth.client.AppPrincipal
 import io.ktor.server.auth.authenticate
@@ -13,7 +15,6 @@ import io.ktor.server.resources.get
 import io.ktor.server.resources.put
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.application
-import org.koin.ktor.ext.inject
 
 internal fun Route.notificationSettings() {
     authenticate {
@@ -26,7 +27,7 @@ internal fun Route.notificationSettings() {
          */
         get<Api.Notification.Settings> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
-            val getNotificationSettings by application.inject<GetNotificationSettings>()
+            val getNotificationSettings by application.injectScoped<GetNotificationSettings>(NotificationsScope)
             call.respondWith(getNotificationSettings(principal.userId))
         }
 
@@ -42,7 +43,7 @@ internal fun Route.notificationSettings() {
         put<Api.Notification.Settings> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
             val body = call.receive<NotificationSettings.Update>()
-            val updateNotificationSettings by application.inject<UpdateNotificationSettings>()
+            val updateNotificationSettings by application.injectScoped<UpdateNotificationSettings>(NotificationsScope)
             call.respondWith(updateNotificationSettings(principal.userId, body))
         }
     }

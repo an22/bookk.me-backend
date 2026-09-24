@@ -41,7 +41,7 @@ internal class GetAppointmentBookingContextImplTest {
         val employeeId = Uuid.random()
         val userId = Uuid.random()
         val employee = Employee.stub(id = employeeId, businessId = businessId)
-        val client = Client.Integrated(id = Uuid.random(), name = "Alice", lastName = "Smith", phone = "123", email = "a@b.com", userId = userId)
+        val client = Client.Integrated.stub(userId = userId)
         val service = Service.stub(businessId = businessId)
         val fixture = SutFixture()
         with(fixture) {
@@ -76,7 +76,7 @@ internal class GetAppointmentBookingContextImplTest {
         val userId = Uuid.random()
         val employee = Employee.stub(id = employeeId, businessId = businessId)
         val user = UserSnapshot.stub(id = userId, name = "Bob", lastName = "Jones", email = "bob@test.com", phone = "+123456789")
-        val createdClient = Client.Integrated(id = Uuid.random(), name = user.name, lastName = user.lastName, phone = user.phone!!, email = user.email, userId = userId)
+        val createdClient = Client.Integrated.stub(name = user.name, lastName = user.lastName, phone = user.phone!!, email = user.email, userId = userId)
         val service = Service.stub(businessId = businessId)
         val fixture = SutFixture()
         with(fixture) {
@@ -115,7 +115,7 @@ internal class GetAppointmentBookingContextImplTest {
         val userId = Uuid.random()
         val employee = Employee.stub(id = employeeId, businessId = businessId)
         val user = UserSnapshot.stub(id = userId, phone = null)
-        val createdClient = Client.Integrated(id = Uuid.random(), name = user.name, lastName = user.lastName, phone = null, email = user.email, userId = userId)
+        val createdClient = Client.Integrated.stub(name = user.name, lastName = user.lastName, phone = null, email = user.email, userId = userId)
         val service = Service.stub(businessId = businessId)
         val fixture = SutFixture()
         with(fixture) {
@@ -149,7 +149,7 @@ internal class GetAppointmentBookingContextImplTest {
         val employeeId = Uuid.random()
         val userId = Uuid.random()
         val employee = Employee.stub(id = employeeId, businessId = businessId)
-        val client = Client.Integrated(id = Uuid.random(), name = "Alice", lastName = "Smith", phone = "123", email = "a@b.com", userId = userId)
+        val client = Client.Integrated.stub(userId = userId)
         val serviceX = Service.stub(businessId = businessId)
         val serviceIds = listOf(serviceX.id, serviceX.id, serviceX.id, serviceX.id, serviceX.id)
         val fixture = SutFixture()
@@ -213,7 +213,7 @@ internal class GetAppointmentBookingContextImplTest {
         val employeeId = Uuid.random()
         val userId = Uuid.random()
         val employee = Employee.stub(id = employeeId, businessId = businessId)
-        val client = Client.Integrated(id = Uuid.random(), name = "Alice", lastName = "Smith", phone = "123", email = "a@b.com", userId = userId)
+        val client = Client.Integrated.stub(userId = userId)
         val serviceIds = listOf(Uuid.random(), Uuid.random())
         val fixture = SutFixture()
         with(fixture) {
@@ -238,7 +238,7 @@ internal class GetAppointmentBookingContextImplTest {
         val employeeId = Uuid.random()
         val userId = Uuid.random()
         val employee = Employee.stub(id = employeeId, businessId = businessId)
-        val client = Client.Integrated(id = Uuid.random(), name = "Alice", lastName = "Smith", phone = "123", email = "a@b.com", userId = userId)
+        val client = Client.Integrated.stub(userId = userId)
         val foreignService = Service.stub(businessId = Uuid.random())
         val fixture = SutFixture()
         with(fixture) {

@@ -1,0 +1,49 @@
+package com.bookk.appointments.data.datasource
+
+import com.bookk.appointments.data.orm.table.AppointmentPermissionGrantsTable
+import com.bookk.appointments.domain.datasource.AppointmentPermissionDataSource
+import com.bookk.core.data.DataSource
+import library.permissions.ResourcePermission
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.upsert
+import kotlin.uuid.Uuid
+
+internal class AppointmentPermissionDataSourceImpl : DataSource(), AppointmentPermissionDataSource {
+
+    override suspend fun setPermission(
+        userId: Uuid,
+        businessId: Uuid,
+        permission: ResourcePermission
+    ) {
+        dbQuery {
+            AppointmentPermissionGrantsTable.upsert {
+                it[this.userId] = userId
+                it[this.businessId] = businessId
+                it[this.canView] = permission.view
+                it[this.canUpdate] = permission.update
+                it[this.canDelete] = permission.delete
+            }
+        }
+    }
+
+    override suspend fun getPermission(userId: Uuid, businessId: Uuid): ResourcePermission = dbQuery {
+        AppointmentPermissionGrantsTable
+            .select(AppointmentPermissionGrantsTable.canView, AppointmentPermissionGrantsTable.canUpdate, AppointmentPermissionGrantsTable.canDelete)
+            .where { (AppointmentPermissionGrantsTable.userId eq userId) and (AppointmentPermissionGrantsTable.businessId eq businessId) }
+            .singleOrNull()
+            ?.let {
+                ResourcePermission(
+                    view = it[AppointmentPermissionGrantsTable.canView],
+                    update = it[AppointmentPermissionGrantsTable.canUpdate],
+                    delete = it[AppointmentPermissionGrantsTable.canDelete]
+                )
+            } ?: ResourcePermission.NONE
+    }
+
+    override suspend fun deleteForUser(userId: Uuid) = dbQuery<Unit> {
+        AppointmentPermissionGrantsTable.deleteWhere { AppointmentPermissionGrantsTable.userId eq userId }
+    }
+}

@@ -7,7 +7,7 @@ import io.ktor.http.HttpStatusCode
 import kotlin.uuid.Uuid
 
 interface GetBusinessById {
-    suspend operator fun invoke(id: Uuid): Result<Business>
+    suspend operator fun invoke(id: Uuid, requestingUserId: Uuid? = null): Result<Business>
 
     sealed interface Error {
         class NotFound : BusinessError(

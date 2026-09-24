@@ -1,17 +1,18 @@
 package com.bookk.appointments.domain.api.entity
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.protobuf.ProtoNumber
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
 @Serializable
 data class AppointmentRequestDraft(
-    val businessId: Uuid,
-    val employeeId: Uuid,
-    val services: List<RequestedService>,
-    val date: Instant,
-    val note: String,
-    val offerToken: String
+    @ProtoNumber(1) val businessId: Uuid,
+    @ProtoNumber(2) val employeeId: Uuid,
+    @ProtoNumber(3) val services: List<RequestedService>,
+    @ProtoNumber(4) val date: Instant,
+    @ProtoNumber(5) val note: String,
+    @ProtoNumber(6) val offerToken: String
 ) {
     companion object {
         fun stub(

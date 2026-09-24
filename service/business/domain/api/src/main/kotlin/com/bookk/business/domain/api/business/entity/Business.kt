@@ -2,31 +2,33 @@ package com.bookk.business.domain.api.business.entity
 
 import kotlinx.datetime.TimeZone
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.protobuf.ProtoNumber
 import library.schedule.Schedule
 import kotlin.uuid.Uuid
 
 @Serializable
-class Business(
-    val id: Uuid,
-    val name: String,
-    val description: String,
-    val address: String,
-    val timeZone: TimeZone,
-    val location: Location?,
-    val currencyCode: String,
-    val socials: List<Social>,
-    val schedule: Schedule
+data class Business(
+    @ProtoNumber(1) val id: Uuid,
+    @ProtoNumber(2) val name: String,
+    @ProtoNumber(3) val description: String,
+    @ProtoNumber(4) val address: String,
+    @ProtoNumber(5) val timeZone: TimeZone,
+    @ProtoNumber(6) val location: Location?,
+    @ProtoNumber(7) val currencyCode: String,
+    @ProtoNumber(8) val socials: List<Social>,
+    @ProtoNumber(9) val schedule: Schedule,
+    @ProtoNumber(10) val permissions: BusinessPermissions
 ) {
     @Serializable
     class Location(
-        val lat: Double,
-        val lng: Double
+        @ProtoNumber(1) val lat: Double,
+        @ProtoNumber(2) val lng: Double
     )
 
     @Serializable
     data class Social(
-        val kind: SocialKind,
-        val value: String?
+        @ProtoNumber(1) val kind: SocialKind,
+        @ProtoNumber(2) val value: String?
     )
 
     enum class SocialKind {
@@ -53,7 +55,8 @@ class Business(
             location: Location? = null,
             currencyCode: String = "USD",
             socials: List<Social> = emptyList(),
-            schedule: Schedule = Schedule()
+            schedule: Schedule = Schedule(),
+            permissions: BusinessPermissions = BusinessPermissions.NONE
         ) = Business(
             id = id,
             name = name,
@@ -63,7 +66,8 @@ class Business(
             location = location,
             currencyCode = currencyCode,
             socials = socials,
-            schedule = schedule
+            schedule = schedule,
+            permissions = permissions
         )
     }
 }

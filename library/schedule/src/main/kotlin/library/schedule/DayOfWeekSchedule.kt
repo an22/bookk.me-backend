@@ -2,11 +2,12 @@ package library.schedule
 
 import kotlinx.datetime.DayOfWeek
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.protobuf.ProtoNumber
 
 @Serializable
 data class DayOfWeekSchedule(
-    val workingTime: List<WorkHour>,
-    val isActive: Boolean
+    @ProtoNumber(1) val workingTime: List<WorkHour>,
+    @ProtoNumber(2) val isActive: Boolean
 ) {
     companion object {
         fun default(dayOfWeek: DayOfWeek): DayOfWeekSchedule {

@@ -12,6 +12,7 @@ internal object ClientTable: UuidTable("client") {
     val email = varchar("email", 512).nullable().index()
     val userId = uuid("user_id").nullable().index()
     val sourceUpdatedAt = timestamp("source_updated_at").nullable()
+    val description = varchar("description", 1024).nullable()
 
     init {
         uniqueIndex(businessId, userId)

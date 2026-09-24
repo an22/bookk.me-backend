@@ -19,7 +19,7 @@ erDiagram
     BUSINESS_HAS_APPOINTMENTS ||--o{ APPOINTMENT_DAY_OFFS : "has"
     BUSINESS_HAS_APPOINTMENTS ||--|| APPOINTMENT_SETTINGS : "configures"
     BUSINESS_HAS_APPOINTMENTS ||--o{ WORKING_HOURS : "has"
-    BUSINESS_HAS_APPOINTMENTS ||--o{ USER_HAS_APPOINTMENT_PERMISSIONS : "grants"
+    BUSINESS_HAS_APPOINTMENTS ||--o{ APPOINTMENT_PERMISSION_GRANTS : "grants"
     APPOINTMENT ||--o{ APPOINTMENT_SERVICES : "line items"
     APPOINTMENT_REQUEST ||--o{ APPOINTMENT_REQUEST_SERVICES : "line items"
 
@@ -132,12 +132,26 @@ erDiagram
         timestamp updatedAt
     }
 
-    USER_HAS_APPOINTMENT_PERMISSIONS {
+    APPOINTMENT_PERMISSION_GRANTS {
         uuid id PK
         uuid userId "logical FK -> user.profile.id; UK with business_id"
         uuid business_id FK
-        int permission
+        bool can_view
+        bool can_update
+        bool can_delete
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    EXHAUSTED_EVENT {
+        uuid id PK
+        string original_topic
+        string idempotency_key UK
+        int attempt
+        blob payload
         timestamp createdAt
         timestamp updatedAt
     }
 ```
+
+`EXHAUSTED_EVENT` is not part of the appointments domain model — it's the shared DLT landing table (`core/data/eventstreaming/data`, one instance per service schema) that `KafkaEventConsumer`/`EmbeddedEventConsumer` write to when an event exhausts its retry budget, so a failed event survives a process restart or crash instead of being lost. See `AGENTS.md`'s event-streaming retry design notes.

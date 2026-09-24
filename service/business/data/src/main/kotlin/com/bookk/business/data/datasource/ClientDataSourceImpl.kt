@@ -3,6 +3,7 @@ package com.bookk.business.data.datasource
 import com.bookk.business.data.orm.entity.ClientEntity
 import com.bookk.business.data.orm.table.ClientTable
 import com.bookk.business.domain.api.client.entity.Client
+import com.bookk.business.domain.api.client.entity.ClientUpdateModel
 import com.bookk.business.domain.datasource.ClientDataSource
 import com.bookk.core.data.DataSource
 import com.bookk.core.data.map.toDomain
@@ -14,6 +15,7 @@ import org.jetbrains.exposed.v1.core.less
 import org.jetbrains.exposed.v1.core.or
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insertAndGetId
+import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.update
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
@@ -27,6 +29,7 @@ internal class ClientDataSourceImpl : DataSource(), ClientDataSource {
             it[phone] = client.phone?.trim()
             it[email] = client.email?.trim()
             it[userId] = null
+            it[description] = client.description?.trim()
         }
         client.copy(
             id = id.value
@@ -85,6 +88,7 @@ internal class ClientDataSourceImpl : DataSource(), ClientDataSource {
             it[phone] = client.phone?.trim()
             it[email] = client.email?.trim()
             it[userId] = client.userId
+            it[description] = client.description?.trim()
         }
         return client.copy(id = id.value)
     }
@@ -93,6 +97,10 @@ internal class ClientDataSourceImpl : DataSource(), ClientDataSource {
         ClientTable.deleteWhere {
             (ClientTable.businessId eq businessId) and (ClientTable.id eq id)
         } != 0
+    }
+
+    override suspend fun updateClient(businessId: Uuid, model: ClientUpdateModel): Client? = dbQuery {
+        ClientEntity.findByIdAndUpdate(businessId, model)?.toDomain()
     }
 
     override suspend fun updateIntegratedClients(
@@ -121,9 +129,15 @@ internal class ClientDataSourceImpl : DataSource(), ClientDataSource {
         ClientTable.update(where = { ClientTable.userId eq userId }) {
             it[name] = "Deleted User"
             it[lastName] = ""
-            it[phone] = ""
-            it[email] = ""
+            it[phone] = null
+            it[email] = null
             it[this.userId] = null
         }
+    }
+
+    override suspend fun getBusinessIdsByUserId(userId: Uuid): List<Uuid> = dbQuery {
+        ClientTable.select(ClientTable.businessId)
+            .where { ClientTable.userId eq userId }
+            .map { it[ClientTable.businessId].value }
     }
 }

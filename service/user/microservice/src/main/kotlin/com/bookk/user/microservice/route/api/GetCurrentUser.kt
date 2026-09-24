@@ -1,15 +1,16 @@
 package com.bookk.user.microservice.route.api
 
+import com.bookk.core.service.di.injectScoped
 import com.bookk.core.service.enity.respondWith
 import com.bookk.server.auth.client.AppPrincipal
 import com.bookk.user.domain.api.operation.GetUserById
+import com.bookk.user.domain.impl.di.UserScope
 import com.bookk.user.microservice.route.UserRouting.Api
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.principal
 import io.ktor.server.resources.get
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.application
-import org.koin.ktor.ext.inject
 
 internal fun Route.getCurrentUser() {
     authenticate {
@@ -23,7 +24,7 @@ internal fun Route.getCurrentUser() {
          */
         get<Api.User.Me> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
-            val getCurrentUser by application.inject<GetUserById>()
+            val getCurrentUser by application.injectScoped<GetUserById>(UserScope)
 
             call.respondWith(getCurrentUser(principal.userId))
         }

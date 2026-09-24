@@ -51,8 +51,8 @@ internal class AppointmentRequestEntity(id: EntityID<Uuid>) : UuidEntity(id) {
             client = ClientSnapshot(
                 id = clientId,
                 fullName = clientName,
-                phone = clientPhone.orEmpty(),
-                email = clientEmail.orEmpty()
+                phone = clientPhone,
+                email = clientEmail
             ),
             services = services.map {
                 ServiceSnapshot(

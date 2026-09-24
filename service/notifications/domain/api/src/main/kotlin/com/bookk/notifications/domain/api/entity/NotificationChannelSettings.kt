@@ -1,14 +1,15 @@
 package com.bookk.notifications.domain.api.entity
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.protobuf.ProtoNumber
 import kotlin.uuid.Uuid
 
 @Serializable
 data class NotificationChannelSettings(
-    val id: Uuid,
-    val channel: CommunicationChannel,
-    val enabled: Boolean,
-    val availableToClients: Boolean,
+    @ProtoNumber(1) val id: Uuid,
+    @ProtoNumber(2) val channel: CommunicationChannel,
+    @ProtoNumber(3) val enabled: Boolean,
+    @ProtoNumber(4) val availableToClients: Boolean,
 ) {
     companion object {
         fun stub(

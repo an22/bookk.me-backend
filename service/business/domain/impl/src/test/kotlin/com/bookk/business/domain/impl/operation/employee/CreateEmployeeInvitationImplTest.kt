@@ -1,13 +1,12 @@
 package com.bookk.business.domain.impl.operation.employee
 
-import com.bookk.business.domain.api.business.entity.Business
-import com.bookk.business.domain.api.employee.entity.Employee
+import com.bookk.business.domain.api.business.entity.BusinessResource
 import com.bookk.business.domain.api.employee.entity.EmployeeInvitation
+import com.bookk.business.domain.api.employee.entity.EmployeeInvitationStatus
 import com.bookk.business.domain.api.employee.operation.CreateEmployeeInvitation
 import com.bookk.business.domain.datasource.BusinessDataSource
-import com.bookk.business.domain.datasource.EmployeeDataSource
+import com.bookk.business.domain.datasource.BusinessPermissionDataSource
 import com.bookk.business.domain.datasource.EmployeeInvitationDataSource
-import com.bookk.core.data.eventstreaming.StandardEventProducer
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.datasource.transaction.mockTransaction
 import com.bookk.core.domain.entity.Error
@@ -15,214 +14,140 @@ import com.bookk.core.test.given
 import com.bookk.core.test.runUnitTest
 import com.bookk.core.test.then
 import com.bookk.core.test.whenn
-import com.bookk.server.business.client.api.event.BusinessEvent
-import com.bookk.server.user.client.UserClient
-import com.bookk.server.user.client.api.UserSnapshot
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.coVerifyOrder
 import io.mockk.mockk
 import io.mockk.slot
-import kotlinx.datetime.TimeZone
-import library.permissions.ObjectPermission
+import library.permissions.ResourcePermission
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
 internal class CreateEmployeeInvitationImplTest {
 
     private class SutFixture {
         val invitationDataSource = mockk<EmployeeInvitationDataSource>()
-        val employeeDataSource = mockk<EmployeeDataSource>()
         val businessDataSource = mockk<BusinessDataSource>()
-        val userClient = mockk<UserClient>()
+        val businessPermissionDataSource = mockk<BusinessPermissionDataSource>()
         val transactionManager = mockk<TransactionManager>()
-        val eventProducer = mockk<StandardEventProducer>(relaxed = true)
-        val sut = CreateEmployeeInvitationImpl(
-            invitationDataSource,
-            employeeDataSource,
-            businessDataSource,
-            userClient,
-            transactionManager,
-            eventProducer
-        )
+        val sut = CreateEmployeeInvitationImpl(invitationDataSource, businessDataSource, businessPermissionDataSource, transactionManager)
     }
-
-    private fun business(id: Uuid, name: String = "Barbershop") = Business.stub(
-        id = id,
-        name = name,
-        description = "",
-        address = "1 Main St",
-        timeZone = TimeZone.UTC,
-        currencyCode = "USD"
-    )
 
     @Test
     fun `should create invitation successfully`() = runUnitTest {
         given()
         val fixture = SutFixture()
         val requestUserId = Uuid.random()
-        val invitation = EmployeeInvitation.stub()
-        val stored = invitation.copy(invitedBy = requestUserId)
-        with(fixture) {
-            transactionManager.mockTransaction()
-            coEvery {
-                businessDataSource.getPermission(requestUserId, invitation.businessId)
-            } returns ObjectPermission.OWNER.int
-            coEvery {
-                employeeDataSource.getEmployeeByEmail(invitation.businessId, invitation.email)
-            } returns null
-            coEvery { businessDataSource.getBusinessById(invitation.businessId) } returns
-                business(invitation.businessId)
-            coEvery { invitationDataSource.createInvitation(stored) } returns stored
-            coEvery { userClient.getUserByEmail(stored.email) } returns Result.failure(RuntimeException("not found"))
-        }
-
-        whenn()
-        val result = fixture.sut(requestUserId, invitation)
-
-        then()
-        assertTrue(result.isSuccess)
-        assertEquals(stored, result.getOrNull())
-        coVerify(exactly = 1) { fixture.invitationDataSource.createInvitation(stored) }
-    }
-
-    @Test
-    fun `should store the authenticated caller as the inviter`() = runUnitTest {
-        given()
-        val fixture = SutFixture()
-        val requestUserId = Uuid.random()
-        val invitation = EmployeeInvitation.stub(invitedBy = Uuid.random())
+        val businessId = Uuid.random()
         val persisted = slot<EmployeeInvitation>()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery {
-                businessDataSource.getPermission(requestUserId, invitation.businessId)
-            } returns ObjectPermission.OWNER.int
-            coEvery {
-                employeeDataSource.getEmployeeByEmail(invitation.businessId, invitation.email)
-            } returns null
-            coEvery { businessDataSource.getBusinessById(invitation.businessId) } returns
-                business(invitation.businessId)
+            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(update = true)
+            coEvery { businessDataSource.lockBusiness(businessId) } returns true
+            coEvery { invitationDataSource.countPendingInvitations(businessId) } returns 0L
+            coEvery { invitationDataSource.countInvitationsCreatedSince(businessId, any()) } returns 0L
             coEvery { invitationDataSource.createInvitation(capture(persisted)) } answers { persisted.captured }
-            coEvery { userClient.getUserByEmail(invitation.email) } returns Result.failure(RuntimeException("not found"))
         }
 
         whenn()
-        val result = fixture.sut(requestUserId, invitation)
+        val result = fixture.sut(requestUserId, businessId)
 
         then()
         assertTrue(result.isSuccess)
         assertEquals(requestUserId, persisted.captured.invitedBy)
+        assertEquals(businessId, persisted.captured.businessId)
+        assertEquals(EmployeeInvitationStatus.PENDING, persisted.captured.status)
+        assertNotNull(persisted.captured.code)
+        coVerify(exactly = 1) { fixture.invitationDataSource.createInvitation(any()) }
     }
 
     @Test
-    fun `should publish invitation created event when invited email belongs to a registered user`() = runUnitTest {
+    fun `should send a hashed code to the datasource and return the plaintext code to the caller`() = runUnitTest {
         given()
         val fixture = SutFixture()
         val requestUserId = Uuid.random()
-        val invitation = EmployeeInvitation.stub(email = "alice@test.com")
-        val stored = invitation.copy(invitedBy = requestUserId)
-        val invitedUserId = Uuid.random()
-        val event = slot<BusinessEvent.EmployeeInvitationCreated>()
+        val businessId = Uuid.random()
+        val persisted = slot<EmployeeInvitation>()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery {
-                businessDataSource.getPermission(requestUserId, invitation.businessId)
-            } returns ObjectPermission.OWNER.int
-            coEvery {
-                employeeDataSource.getEmployeeByEmail(invitation.businessId, invitation.email)
-            } returns null
-            coEvery { businessDataSource.getBusinessById(invitation.businessId) } returns
-                business(invitation.businessId, name = "Barbershop")
-            coEvery { invitationDataSource.createInvitation(stored) } returns stored
-            coEvery { userClient.getUserByEmail(stored.email) } returns
-                Result.success(UserSnapshot.stub(id = invitedUserId, email = stored.email))
-            coEvery { eventProducer.send(capture(event), any()) } returns Unit
+            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(update = true)
+            coEvery { businessDataSource.lockBusiness(businessId) } returns true
+            coEvery { invitationDataSource.countPendingInvitations(businessId) } returns 0L
+            coEvery { invitationDataSource.countInvitationsCreatedSince(businessId, any()) } returns 0L
+            coEvery { invitationDataSource.createInvitation(capture(persisted)) } answers { persisted.captured }
         }
 
         whenn()
-        val result = fixture.sut(requestUserId, invitation)
+        val result = fixture.sut(requestUserId, businessId)
 
         then()
         assertTrue(result.isSuccess)
-        coVerify(exactly = 1) {
-            fixture.eventProducer.send(any(BusinessEvent.EmployeeInvitationCreated::class), any())
-        }
-        assertEquals(invitedUserId, event.captured.invitedUserId)
-        assertEquals(invitation.businessId, event.captured.businessId)
-        assertEquals("Barbershop", event.captured.businessName)
+        val plainCode = requireNotNull(result.getOrNull()?.code)
+        val hashSentToDatasource = requireNotNull(persisted.captured.code)
+        assertNotEquals(plainCode, hashSentToDatasource)
+        assertEquals(EmployeeInvitationCode.hash(plainCode), hashSentToDatasource)
     }
 
     @Test
-    fun `should not publish an event when the invited email has no registered account`() = runUnitTest {
+    fun `should retry with a new code when the generated code collides`() = runUnitTest {
         given()
         val fixture = SutFixture()
         val requestUserId = Uuid.random()
-        val invitation = EmployeeInvitation.stub(email = "unregistered@test.com")
-        val stored = invitation.copy(invitedBy = requestUserId)
+        val businessId = Uuid.random()
+        val invitations = mutableListOf<EmployeeInvitation>()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery {
-                businessDataSource.getPermission(requestUserId, invitation.businessId)
-            } returns ObjectPermission.OWNER.int
-            coEvery {
-                employeeDataSource.getEmployeeByEmail(invitation.businessId, invitation.email)
-            } returns null
-            coEvery { businessDataSource.getBusinessById(invitation.businessId) } returns
-                business(invitation.businessId)
-            coEvery { invitationDataSource.createInvitation(stored) } returns stored
-            coEvery { userClient.getUserByEmail(stored.email) } returns Result.failure(RuntimeException("not found"))
+            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(update = true)
+            coEvery { businessDataSource.lockBusiness(businessId) } returns true
+            coEvery { invitationDataSource.countPendingInvitations(businessId) } returns 0L
+            coEvery { invitationDataSource.countInvitationsCreatedSince(businessId, any()) } returns 0L
+            coEvery { invitationDataSource.createInvitation(any()) } answers {
+                val invitation = firstArg<EmployeeInvitation>()
+                invitations.add(invitation)
+                if (invitations.size == 1) throw Error.UniqueConstraintFailed("", RuntimeException())
+                invitation
+            }
         }
 
         whenn()
-        val result = fixture.sut(requestUserId, invitation)
+        val result = fixture.sut(requestUserId, businessId)
 
         then()
         assertTrue(result.isSuccess)
-        coVerify(exactly = 0) { fixture.eventProducer.send(any(), any()) }
+        assertEquals(2, invitations.size)
+        assertTrue(invitations[0].code != invitations[1].code)
     }
 
     @Test
-    fun `should return failure when email is blank`() = runUnitTest {
+    fun `should return failure when code generation keeps colliding`() = runUnitTest {
         given()
         val fixture = SutFixture()
-        val invitation = EmployeeInvitation.stub(email = " ")
+        val requestUserId = Uuid.random()
+        val businessId = Uuid.random()
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(update = true)
+            coEvery { businessDataSource.lockBusiness(businessId) } returns true
+            coEvery { invitationDataSource.countPendingInvitations(businessId) } returns 0L
+            coEvery { invitationDataSource.countInvitationsCreatedSince(businessId, any()) } returns 0L
+            coEvery {
+                invitationDataSource.createInvitation(any())
+            } throws Error.UniqueConstraintFailed("", RuntimeException())
+        }
 
         whenn()
-        val result = fixture.sut(Uuid.random(), invitation)
+        val result = fixture.sut(requestUserId, businessId)
 
         then()
         assertTrue(result.isFailure)
-        assertTrue(result.exceptionOrNull() is CreateEmployeeInvitation.Error.ValidationError)
-    }
-
-    @Test
-    fun `should return failure when email is invalid`() = runUnitTest {
-        given()
-        val fixture = SutFixture()
-        val invitation = EmployeeInvitation.stub(email = "not-an-email")
-
-        whenn()
-        val result = fixture.sut(Uuid.random(), invitation)
-
-        then()
-        assertTrue(result.isFailure)
-        assertTrue(result.exceptionOrNull() is CreateEmployeeInvitation.Error.ValidationError)
-    }
-
-    @Test
-    fun `should return failure when email is too long`() = runUnitTest {
-        given()
-        val fixture = SutFixture()
-        val invitation = EmployeeInvitation.stub(email = "${"a".repeat(513)}@test.com")
-
-        whenn()
-        val result = fixture.sut(Uuid.random(), invitation)
-
-        then()
-        assertTrue(result.isFailure)
-        assertTrue(result.exceptionOrNull() is CreateEmployeeInvitation.Error.ValidationError)
+        assertTrue(result.exceptionOrNull() is Error.UniqueConstraintFailed)
     }
 
     @Test
@@ -230,46 +155,19 @@ internal class CreateEmployeeInvitationImplTest {
         given()
         val fixture = SutFixture()
         val requestUserId = Uuid.random()
-        val invitation = EmployeeInvitation.stub()
+        val businessId = Uuid.random()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery {
-                businessDataSource.getPermission(requestUserId, invitation.businessId)
-            } returns ObjectPermission.READ.int
+            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(view = true)
         }
 
         whenn()
-        val result = fixture.sut(requestUserId, invitation)
+        val result = fixture.sut(requestUserId, businessId)
 
         then()
         assertTrue(result.isFailure)
         assertTrue(result.exceptionOrNull() is Error.OperationNotAllowed)
-        coVerify(exactly = 0) { fixture.eventProducer.send(any(), any()) }
-    }
-
-    @Test
-    fun `should return failure when user is already an employee`() = runUnitTest {
-        given()
-        val fixture = SutFixture()
-        val requestUserId = Uuid.random()
-        val invitation = EmployeeInvitation.stub()
-        with(fixture) {
-            transactionManager.mockTransaction()
-            coEvery {
-                businessDataSource.getPermission(requestUserId, invitation.businessId)
-            } returns ObjectPermission.OWNER.int
-            coEvery {
-                employeeDataSource.getEmployeeByEmail(invitation.businessId, invitation.email)
-            } returns Employee.stub(businessId = invitation.businessId, email = invitation.email)
-        }
-
-        whenn()
-        val result = fixture.sut(requestUserId, invitation)
-
-        then()
-        assertTrue(result.isFailure)
-        assertTrue(result.exceptionOrNull() is CreateEmployeeInvitation.Error.EmployeeExist)
-        coVerify(exactly = 0) { fixture.eventProducer.send(any(), any()) }
+        coVerify(exactly = 0) { fixture.invitationDataSource.createInvitation(any()) }
     }
 
     @Test
@@ -277,20 +175,15 @@ internal class CreateEmployeeInvitationImplTest {
         given()
         val fixture = SutFixture()
         val requestUserId = Uuid.random()
-        val invitation = EmployeeInvitation.stub()
+        val businessId = Uuid.random()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery {
-                businessDataSource.getPermission(requestUserId, invitation.businessId)
-            } returns ObjectPermission.OWNER.int
-            coEvery {
-                employeeDataSource.getEmployeeByEmail(invitation.businessId, invitation.email)
-            } returns null
-            coEvery { businessDataSource.getBusinessById(invitation.businessId) } returns null
+            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(update = true)
+            coEvery { businessDataSource.lockBusiness(businessId) } returns false
         }
 
         whenn()
-        val result = fixture.sut(requestUserId, invitation)
+        val result = fixture.sut(requestUserId, businessId)
 
         then()
         assertTrue(result.isFailure)
@@ -298,33 +191,140 @@ internal class CreateEmployeeInvitationImplTest {
     }
 
     @Test
-    fun `should return failure when invitation already exists`() = runUnitTest {
+    fun `should return failure when the business already has the maximum number of pending invitations`() = runUnitTest {
         given()
         val fixture = SutFixture()
         val requestUserId = Uuid.random()
-        val invitation = EmployeeInvitation.stub()
-        val stored = invitation.copy(invitedBy = requestUserId)
+        val businessId = Uuid.random()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery {
-                businessDataSource.getPermission(requestUserId, invitation.businessId)
-            } returns ObjectPermission.OWNER.int
-            coEvery {
-                employeeDataSource.getEmployeeByEmail(invitation.businessId, invitation.email)
-            } returns null
-            coEvery { businessDataSource.getBusinessById(invitation.businessId) } returns
-                business(invitation.businessId)
-            coEvery {
-                invitationDataSource.createInvitation(stored)
-            } throws Error.UniqueConstraintFailed("", RuntimeException())
+            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(update = true)
+            coEvery { businessDataSource.lockBusiness(businessId) } returns true
+            coEvery { invitationDataSource.countPendingInvitations(businessId) } returns CreateEmployeeInvitation.MAX_PENDING_INVITATIONS.toLong()
         }
 
         whenn()
-        val result = fixture.sut(requestUserId, invitation)
+        val result = fixture.sut(requestUserId, businessId)
 
         then()
-        assertTrue(result.isFailure)
-        assertTrue(result.exceptionOrNull() is CreateEmployeeInvitation.Error.InvitationExist)
-        coVerify(exactly = 0) { fixture.eventProducer.send(any(), any()) }
+        assertTrue(result.exceptionOrNull() is CreateEmployeeInvitation.Error.PendingInvitationsLimitReached)
+        coVerify(exactly = 0) { fixture.invitationDataSource.createInvitation(any()) }
+    }
+
+    @Test
+    fun `should create invitation when one slot below the pending invitations limit`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val requestUserId = Uuid.random()
+        val businessId = Uuid.random()
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(update = true)
+            coEvery { businessDataSource.lockBusiness(businessId) } returns true
+            coEvery { invitationDataSource.countPendingInvitations(businessId) } returns CreateEmployeeInvitation.MAX_PENDING_INVITATIONS.toLong() - 1
+            coEvery { invitationDataSource.countInvitationsCreatedSince(businessId, any()) } returns 0L
+            coEvery { invitationDataSource.createInvitation(any()) } answers { firstArg() }
+        }
+
+        whenn()
+        val result = fixture.sut(requestUserId, businessId)
+
+        then()
+        assertTrue(result.isSuccess)
+        coVerify(exactly = 1) { fixture.invitationDataSource.createInvitation(any()) }
+    }
+
+    @Test
+    fun `should lock the business before counting pending invitations`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val requestUserId = Uuid.random()
+        val businessId = Uuid.random()
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(update = true)
+            coEvery { businessDataSource.lockBusiness(businessId) } returns true
+            coEvery { invitationDataSource.countPendingInvitations(businessId) } returns 0L
+            coEvery { invitationDataSource.countInvitationsCreatedSince(businessId, any()) } returns 0L
+            coEvery { invitationDataSource.createInvitation(any()) } answers { firstArg() }
+        }
+
+        whenn()
+        fixture.sut(requestUserId, businessId)
+
+        then()
+        coVerifyOrder {
+            fixture.businessDataSource.lockBusiness(businessId)
+            fixture.invitationDataSource.countPendingInvitations(businessId)
+            fixture.invitationDataSource.createInvitation(any())
+        }
+    }
+    @Test
+    fun `should return failure when the business already created the maximum number of invitations today`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val requestUserId = Uuid.random()
+        val businessId = Uuid.random()
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(update = true)
+            coEvery { businessDataSource.lockBusiness(businessId) } returns true
+            coEvery { invitationDataSource.countPendingInvitations(businessId) } returns 0L
+            coEvery { invitationDataSource.countInvitationsCreatedSince(businessId, any()) } returns CreateEmployeeInvitation.MAX_INVITATIONS_PER_DAY.toLong()
+        }
+
+        whenn()
+        val result = fixture.sut(requestUserId, businessId)
+
+        then()
+        assertTrue(result.exceptionOrNull() is CreateEmployeeInvitation.Error.DailyInvitationsLimitReached)
+        coVerify(exactly = 0) { fixture.invitationDataSource.createInvitation(any()) }
+    }
+
+    @Test
+    fun `should create invitation when one below the daily invitations limit`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val requestUserId = Uuid.random()
+        val businessId = Uuid.random()
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(update = true)
+            coEvery { businessDataSource.lockBusiness(businessId) } returns true
+            coEvery { invitationDataSource.countPendingInvitations(businessId) } returns 0L
+            coEvery { invitationDataSource.countInvitationsCreatedSince(businessId, any()) } returns CreateEmployeeInvitation.MAX_INVITATIONS_PER_DAY.toLong() - 1
+            coEvery { invitationDataSource.createInvitation(any()) } answers { firstArg() }
+        }
+
+        whenn()
+        val result = fixture.sut(requestUserId, businessId)
+
+        then()
+        assertTrue(result.isSuccess)
+    }
+
+    @Test
+    fun `should count todays invitations over the last 24 hours`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val requestUserId = Uuid.random()
+        val businessId = Uuid.random()
+        val since = slot<Instant>()
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(update = true)
+            coEvery { businessDataSource.lockBusiness(businessId) } returns true
+            coEvery { invitationDataSource.countPendingInvitations(businessId) } returns 0L
+            coEvery { invitationDataSource.countInvitationsCreatedSince(businessId, capture(since)) } returns 0L
+            coEvery { invitationDataSource.createInvitation(any()) } answers { firstArg() }
+        }
+
+        whenn()
+        val before = Clock.System.now()
+        fixture.sut(requestUserId, businessId)
+        val after = Clock.System.now()
+
+        then()
+        assertTrue(since.captured in (before - 24.hours)..(after - 24.hours))
     }
 }

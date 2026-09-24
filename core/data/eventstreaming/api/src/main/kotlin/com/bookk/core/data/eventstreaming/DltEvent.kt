@@ -5,7 +5,29 @@ import kotlin.uuid.Uuid
 
 @Serializable
 data class DltEvent(
-    val payload: String,
+    val payload: ByteArray,
+    val originalTopic: String,
+    val attempt: Int = 0,
     override val topic: String,
     override val idempotencyKey: String = Uuid.random().toString()
-): EventStreaming.Event<String>
+) : EventStreaming.Event<String> {
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is DltEvent) return false
+        return payload.contentEquals(other.payload) &&
+            originalTopic == other.originalTopic &&
+            attempt == other.attempt &&
+            topic == other.topic &&
+            idempotencyKey == other.idempotencyKey
+    }
+
+    override fun hashCode(): Int {
+        var result = payload.contentHashCode()
+        result = 31 * result + originalTopic.hashCode()
+        result = 31 * result + attempt
+        result = 31 * result + topic.hashCode()
+        result = 31 * result + idempotencyKey.hashCode()
+        return result
+    }
+}

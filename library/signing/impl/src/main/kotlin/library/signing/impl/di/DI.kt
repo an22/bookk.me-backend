@@ -11,15 +11,22 @@ import library.signing.impl.RotateSigningKeysImpl
 import library.signing.impl.SigningKeyDataSource
 import library.signing.impl.TokenValidatorFactoryImpl
 import library.signing.impl.key.TokenIssuerImpl
+import org.koin.core.module.dsl.scopedOf
 import org.koin.core.module.dsl.singleOf
+import org.koin.core.qualifier.Qualifier
 import org.koin.dsl.bind
 import org.koin.dsl.module
 
-fun signingModule() = module {
-    singleOf(::SigningKeyDataSource)
-    singleOf(::GetActiveSigningKeyImpl) bind GetActiveSigningKey::class
-    singleOf(::GetVerificationKeysImpl) bind GetVerificationKeys::class
-    singleOf(::RotateSigningKeysImpl) bind RotateSigningKeys::class
-    singleOf(::TokenIssuerImpl) bind TokenIssuer::class
+fun signingModule(qualifier: Qualifier) = module {
+    scope(qualifier) {
+        scopedOf(::SigningKeyDataSource)
+        scopedOf(::GetActiveSigningKeyImpl) bind GetActiveSigningKey::class
+        scopedOf(::GetVerificationKeysImpl) bind GetVerificationKeys::class
+        scopedOf(::RotateSigningKeysImpl) bind RotateSigningKeys::class
+        scopedOf(::TokenIssuerImpl) bind TokenIssuer::class
+    }
+}
+
+fun tokenValidatorModule() = module {
     singleOf(::TokenValidatorFactoryImpl) bind TokenValidatorFactory::class
 }

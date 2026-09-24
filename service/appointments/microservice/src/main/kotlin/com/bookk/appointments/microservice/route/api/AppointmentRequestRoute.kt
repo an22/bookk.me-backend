@@ -6,7 +6,9 @@ import com.bookk.appointments.domain.api.entity.AppointmentRequestDraft
 import com.bookk.appointments.domain.api.operation.CreateAppointmentRequest
 import com.bookk.appointments.domain.api.operation.DeclineAppointmentRequest
 import com.bookk.appointments.domain.api.operation.GetPendingAppointmentRequests
+import com.bookk.appointments.domain.impl.di.AppointmentsScope
 import com.bookk.appointments.microservice.route.AppointmentsRouting.Api
+import com.bookk.core.service.di.injectScoped
 import com.bookk.core.service.enity.respondWith
 import com.bookk.server.auth.client.AppPrincipal
 import io.ktor.http.ContentType
@@ -21,7 +23,6 @@ import io.ktor.server.response.respond
 import io.ktor.server.routing.Routing
 import io.ktor.server.routing.application
 import io.ktor.server.routing.openapi.describe
-import org.koin.ktor.ext.inject
 
 fun Routing.requests() {
     authenticate {
@@ -32,7 +33,7 @@ fun Routing.requests() {
          */
         get<Api.Appointment.Requests> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
-            val getRequests by application.inject<GetPendingAppointmentRequests>()
+            val getRequests by application.injectScoped<GetPendingAppointmentRequests>(AppointmentsScope)
 
             call.respondWith(getRequests(principal.userId, it.businessId))
         }.describe {
@@ -60,7 +61,7 @@ fun Routing.requests() {
         post<Api.Appointment.Request> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
             val body = call.receive<AppointmentRequestDraft>()
-            val createRequest by application.inject<CreateAppointmentRequest>()
+            val createRequest by application.injectScoped<CreateAppointmentRequest>(AppointmentsScope)
 
             call.respondWith(
                 createRequest(
@@ -86,7 +87,7 @@ fun Routing.requests() {
             if (it.id != body.id) {
                 call.respond(HttpStatusCode.BadRequest, "Invalid request")
             } else {
-                val cancelRequest by application.inject<DeclineAppointmentRequest>()
+                val cancelRequest by application.injectScoped<DeclineAppointmentRequest>(AppointmentsScope)
 
                 call.respondWith(
                     cancelRequest(

@@ -1,63 +1,70 @@
 package com.bookk.business.domain.impl.operation.employee
 
-import com.bookk.business.domain.api.business.entity.Business
+import com.bookk.business.domain.api.business.entity.BusinessResource
 import com.bookk.business.domain.api.employee.entity.EmployeeInvitation
+import com.bookk.business.domain.api.employee.entity.EmployeeInvitationStatus
 import com.bookk.business.domain.api.employee.operation.CreateEmployeeInvitation
-import com.bookk.business.domain.api.employee.operation.CreateEmployeeInvitation.Error
 import com.bookk.business.domain.datasource.BusinessDataSource
-import com.bookk.business.domain.datasource.EmployeeDataSource
+import com.bookk.business.domain.datasource.BusinessPermissionDataSource
 import com.bookk.business.domain.datasource.EmployeeInvitationDataSource
-import com.bookk.core.data.eventstreaming.StandardEventProducer
-import com.bookk.core.data.eventstreaming.send
 import com.bookk.core.domain.datasource.transaction.TransactionManager
-import com.bookk.core.domain.entity.onConstraintFailure
-import com.bookk.server.business.client.api.event.BusinessEvent
-import com.bookk.server.user.client.UserClient
-import library.permissions.ObjectPermission
+import com.bookk.core.domain.entity.Error
+import library.permissions.PermissionAction
 import library.permissions.assert
-import library.validation.EmailValidator
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.hours
 import kotlin.uuid.Uuid
-import com.bookk.core.domain.entity.Error as InfrastructureError
 
 internal class CreateEmployeeInvitationImpl(
     private val invitationDataSource: EmployeeInvitationDataSource,
-    private val employeeDataSource: EmployeeDataSource,
     private val businessDataSource: BusinessDataSource,
-    private val userClient: UserClient,
-    private val transactionManager: TransactionManager,
-    private val eventProducer: StandardEventProducer
+    private val businessPermissionDataSource: BusinessPermissionDataSource,
+    private val transactionManager: TransactionManager
 ) : CreateEmployeeInvitation {
-    override suspend fun invoke(
-        requestUserId: Uuid,
-        invitation: EmployeeInvitation
-    ): Result<EmployeeInvitation> {
-        if (!EmailValidator.isValid(invitation.email)) {
-            return Result.failure(Error.ValidationError())
-        }
+    override suspend fun invoke(requestUserId: Uuid, businessId: Uuid): Result<EmployeeInvitation> {
         return transactionManager.transaction {
-            businessDataSource.getPermission(requestUserId, invitation.businessId).assert(ObjectPermission.OWNER)
-            if (employeeDataSource.getEmployeeByEmail(invitation.businessId, invitation.email) != null) {
-                throw Error.EmployeeExist()
+            businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES)
+                .assert(PermissionAction.UPDATE)
+            if (!businessDataSource.lockBusiness(businessId)) throw Error.NotFound()
+            val pendingInvitations = invitationDataSource.countPendingInvitations(businessId)
+            if (pendingInvitations >= CreateEmployeeInvitation.MAX_PENDING_INVITATIONS) {
+                throw CreateEmployeeInvitation.Error.PendingInvitationsLimitReached()
             }
-            val business = businessDataSource.getBusinessById(invitation.businessId) ?: throw InfrastructureError.NotFound()
-
-            invitationDataSource.createInvitation(invitation.copy(invitedBy = requestUserId)).also { created ->
-                sendInviteEvent(created, business)
+            val invitationsToday = invitationDataSource.countInvitationsCreatedSince(
+                businessId,
+                Clock.System.now() - DAILY_QUOTA_WINDOW
+            )
+            if (invitationsToday >= CreateEmployeeInvitation.MAX_INVITATIONS_PER_DAY) {
+                throw CreateEmployeeInvitation.Error.DailyInvitationsLimitReached()
             }
-        }.onConstraintFailure {
-            throw Error.InvitationExist()
+            createInvitationWithUniqueCode(requestUserId, businessId)
         }
     }
 
-    private suspend fun sendInviteEvent(created: EmployeeInvitation, business: Business) {
-        userClient.getUserByEmail(created.email).onSuccess { invitedUser ->
-            eventProducer.send(
-                BusinessEvent.EmployeeInvitationCreated(
-                    invitedUserId = invitedUser.id,
-                    businessId = business.id,
-                    businessName = business.name
-                )
-            )
+    private suspend fun createInvitationWithUniqueCode(
+        requestUserId: Uuid,
+        businessId: Uuid,
+        remainingAttempts: Int = MAX_CODE_ATTEMPTS
+    ): EmployeeInvitation {
+        val plainCode = EmployeeInvitationCode.generate()
+        val invitation = EmployeeInvitation(
+            id = Uuid.random(),
+            businessId = businessId,
+            invitedBy = requestUserId,
+            code = EmployeeInvitationCode.hash(plainCode),
+            status = EmployeeInvitationStatus.PENDING,
+            createdAt = Clock.System.now()
+        )
+        return try {
+            invitationDataSource.createInvitation(invitation).copy(code = plainCode)
+        } catch (error: Error.UniqueConstraintFailed) {
+            if (remainingAttempts <= 1) throw error
+            createInvitationWithUniqueCode(requestUserId, businessId, remainingAttempts - 1)
         }
+    }
+
+    private companion object {
+        const val MAX_CODE_ATTEMPTS = 5
+        val DAILY_QUOTA_WINDOW = 24.hours
     }
 }

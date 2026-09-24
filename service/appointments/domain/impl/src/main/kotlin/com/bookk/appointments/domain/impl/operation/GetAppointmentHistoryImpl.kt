@@ -3,15 +3,15 @@ package com.bookk.appointments.domain.impl.operation
 import com.bookk.appointments.domain.api.entity.AppointmentPagination
 import com.bookk.appointments.domain.api.operation.GetAppointmentHistory
 import com.bookk.appointments.domain.datasource.AppointmentDataSource
-import com.bookk.appointments.domain.datasource.PermissionsDataSource
+import com.bookk.appointments.domain.datasource.AppointmentPermissionDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
-import library.permissions.ObjectPermission
+import library.permissions.PermissionAction
 import library.permissions.assert
 import kotlin.uuid.Uuid
 
 internal class GetAppointmentHistoryImpl(
     private val dataSource: AppointmentDataSource,
-    private val permissionsDataSource: PermissionsDataSource,
+    private val appointmentPermissionDataSource: AppointmentPermissionDataSource,
     private val transactionManager: TransactionManager
 ) : GetAppointmentHistory {
     override suspend fun invoke(
@@ -21,7 +21,7 @@ internal class GetAppointmentHistoryImpl(
         offset: Long,
         query: String?
     ): Result<AppointmentPagination> = transactionManager.transaction {
-        permissionsDataSource.getPermissions(userId, businessId).assert(ObjectPermission.READ)
+        appointmentPermissionDataSource.getPermission(userId, businessId).assert(PermissionAction.VIEW)
         dataSource.getAllPaginated(businessId, limit, offset, query)
     }
 }

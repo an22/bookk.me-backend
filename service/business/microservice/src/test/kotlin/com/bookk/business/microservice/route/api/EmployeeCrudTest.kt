@@ -1,9 +1,11 @@
 package com.bookk.business.microservice.route.api
 
+import com.bookk.business.domain.api.business.entity.BusinessPermissions
+import com.bookk.business.domain.api.business.entity.BusinessResource
 import com.bookk.business.domain.api.employee.entity.Employee
-import com.bookk.business.domain.api.employee.entity.EmployeeRole
+import com.bookk.business.domain.api.employee.operation.GetEmployeePermissions
 import com.bookk.business.domain.api.employee.operation.GetEmployees
-import com.bookk.business.domain.api.employee.operation.PromoteEmployee
+import com.bookk.business.domain.api.employee.operation.SetEmployeePermission
 import com.bookk.business.domain.api.employee.operation.UpdateEmployee
 import com.bookk.business.domain.api.error.BusinessErrorCodes
 import com.bookk.business.microservice.route.BusinessRouting
@@ -18,7 +20,6 @@ import com.bookk.core.test.whenn
 import com.bookk.server.auth.client.AppPrincipal
 import io.ktor.client.call.body
 import io.ktor.client.plugins.resources.get
-import io.ktor.client.plugins.resources.post
 import io.ktor.client.plugins.resources.put
 import io.ktor.client.request.setBody
 import io.ktor.http.HttpStatusCode
@@ -29,6 +30,7 @@ import io.ktor.server.auth.bearer
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.mockk.coEvery
 import io.mockk.mockk
+import library.permissions.ResourcePermission
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.koin.dsl.module
@@ -55,7 +57,13 @@ internal class EmployeeCrudTest {
         routeUnderTest = { employeeCrud() }
     )
 
-    private fun ApplicationTestBuilder.authenticatedApplication(useCase: PromoteEmployee) = setupApplication(
+    private fun ApplicationTestBuilder.authenticatedApplication(useCase: SetEmployeePermission) = setupApplication(
+        extension = jwtAuthentication(),
+        diModule = module { single { useCase } },
+        routeUnderTest = { employeeCrud() }
+    )
+
+    private fun ApplicationTestBuilder.authenticatedApplication(useCase: GetEmployeePermissions) = setupApplication(
         extension = jwtAuthentication(),
         diModule = module { single { useCase } },
         routeUnderTest = { employeeCrud() }
@@ -67,9 +75,13 @@ internal class EmployeeCrudTest {
         routeUnderTest = { employeeCrud() }
     )
 
-    private fun promoteResource(id: Uuid) = BusinessRouting.Api.Employee.Promote(
-        BusinessRouting.Api.Employee(businessId = businessId),
-        id
+    private fun permissionResource(id: Uuid, resource: BusinessResource) = BusinessRouting.Api.Employee.Id.Permission(
+        BusinessRouting.Api.Employee.Id(BusinessRouting.Api.Employee(businessId = businessId), id),
+        resource
+    )
+
+    private fun permissionsResource(id: Uuid) = BusinessRouting.Api.Employee.Id.Permissions(
+        BusinessRouting.Api.Employee.Id(BusinessRouting.Api.Employee(businessId = businessId), id)
     )
 
     @Test
@@ -222,36 +234,61 @@ internal class EmployeeCrudTest {
     }
 
     @Test
-    fun `should promote employee`() = routeTest {
+    fun `should set employee permission`() = routeTest {
         given()
-        val useCase: PromoteEmployee = mockk()
+        val useCase: SetEmployeePermission = mockk()
         val id = Uuid.random()
-        coEvery { useCase.invoke(userId, businessId, id, EmployeeRole.MANAGER) } returns Result.success(Unit)
+        val permission = ResourcePermission(view = true, update = true)
+        val updated = BusinessPermissions.stub(clients = permission)
+        coEvery { useCase.invoke(userId, businessId, id, BusinessResource.CLIENTS, permission) } returns Result.success(updated)
         authenticatedApplication(useCase)
 
         whenn()
         val client = createTestClient()
-        val response = client.post(promoteResource(id)) {
-            setBody(PromoteEmployeeRequest(role = EmployeeRole.MANAGER))
+        val response = client.put(permissionResource(id, BusinessResource.CLIENTS)) {
+            setBody(permission)
         }
 
         then()
-        assertEquals(HttpStatusCode.NoContent, response.status)
+        assertEquals(HttpStatusCode.OK, response.status)
+        assertEquals(updated, response.body<BusinessPermissions>())
     }
 
     @Test
-    fun `should return not found when promoting unknown employee`() = routeTest {
+    fun `should return unprocessable entity when caller cannot grant a permission level they do not hold`() = routeTest {
         given()
-        val useCase: PromoteEmployee = mockk()
+        val useCase: SetEmployeePermission = mockk()
         val id = Uuid.random()
-        coEvery { useCase.invoke(userId, businessId, id, EmployeeRole.EMPLOYEE) } returns
+        val permission = ResourcePermission.FULL
+        coEvery { useCase.invoke(userId, businessId, id, BusinessResource.CLIENTS, permission) } returns
+            Result.failure(SetEmployeePermission.Error.InsufficientGrant())
+        authenticatedApplication(useCase)
+
+        whenn()
+        val client = createTestClient()
+        val response = client.put(permissionResource(id, BusinessResource.CLIENTS)) {
+            setBody(permission)
+        }
+
+        then()
+        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
+        assertEquals(BusinessErrorCodes.BUSINESS_INSUFFICIENT_GRANT_PERMISSION, response.body<SimpleServerError>().errorCode)
+    }
+
+    @Test
+    fun `should return not found when setting permission for an unknown employee`() = routeTest {
+        given()
+        val useCase: SetEmployeePermission = mockk()
+        val id = Uuid.random()
+        val permission = ResourcePermission(view = true)
+        coEvery { useCase.invoke(userId, businessId, id, BusinessResource.CLIENTS, permission) } returns
             Result.failure(Error.NotFound())
         authenticatedApplication(useCase)
 
         whenn()
         val client = createTestClient()
-        val response = client.post(promoteResource(id)) {
-            setBody(PromoteEmployeeRequest(role = EmployeeRole.EMPLOYEE))
+        val response = client.put(permissionResource(id, BusinessResource.CLIENTS)) {
+            setBody(permission)
         }
 
         then()
@@ -259,18 +296,19 @@ internal class EmployeeCrudTest {
     }
 
     @Test
-    fun `should return not found when caller has no rights to promote employees`() = routeTest {
+    fun `should return not found when caller has no rights to manage permissions`() = routeTest {
         given()
-        val useCase: PromoteEmployee = mockk()
+        val useCase: SetEmployeePermission = mockk()
         val id = Uuid.random()
-        coEvery { useCase.invoke(userId, businessId, id, EmployeeRole.MANAGER) } returns
+        val permission = ResourcePermission(view = true)
+        coEvery { useCase.invoke(userId, businessId, id, BusinessResource.CLIENTS, permission) } returns
             Result.failure(Error.OperationNotAllowed())
         authenticatedApplication(useCase)
 
         whenn()
         val client = createTestClient()
-        val response = client.post(promoteResource(id)) {
-            setBody(PromoteEmployeeRequest(role = EmployeeRole.MANAGER))
+        val response = client.put(permissionResource(id, BusinessResource.CLIENTS)) {
+            setBody(permission)
         }
 
         then()
@@ -278,9 +316,9 @@ internal class EmployeeCrudTest {
     }
 
     @Test
-    fun `should return unauthorized when promoting employee without authentication`() = routeTest {
+    fun `should return unauthorized when setting permission without authentication`() = routeTest {
         given()
-        val useCase: PromoteEmployee = mockk()
+        val useCase: SetEmployeePermission = mockk()
 
         setupApplication(
             extension = { install(Authentication) { bearer { authenticate { null } } } },
@@ -290,9 +328,78 @@ internal class EmployeeCrudTest {
 
         whenn()
         val client = createTestClient()
-        val response = client.post(promoteResource(Uuid.random())) {
-            setBody(PromoteEmployeeRequest(role = EmployeeRole.MANAGER))
+        val response = client.put(permissionResource(Uuid.random(), BusinessResource.CLIENTS)) {
+            setBody(ResourcePermission(view = true))
         }
+
+        then()
+        assertEquals(HttpStatusCode.Unauthorized, response.status)
+    }
+
+    @Test
+    fun `should get employee permissions`() = routeTest {
+        given()
+        val useCase: GetEmployeePermissions = mockk()
+        val id = Uuid.random()
+        val permissions = BusinessPermissions.stub(clients = ResourcePermission.FULL)
+        coEvery { useCase.invoke(userId, businessId, id) } returns Result.success(permissions)
+        authenticatedApplication(useCase)
+
+        whenn()
+        val client = createTestClient()
+        val response = client.get(permissionsResource(id))
+
+        then()
+        assertEquals(HttpStatusCode.OK, response.status)
+        assertEquals(permissions, response.body<BusinessPermissions>())
+    }
+
+    @Test
+    fun `should return not found when getting permissions for an unknown employee`() = routeTest {
+        given()
+        val useCase: GetEmployeePermissions = mockk()
+        val id = Uuid.random()
+        coEvery { useCase.invoke(userId, businessId, id) } returns Result.failure(Error.NotFound())
+        authenticatedApplication(useCase)
+
+        whenn()
+        val client = createTestClient()
+        val response = client.get(permissionsResource(id))
+
+        then()
+        assertEquals(HttpStatusCode.NotFound, response.status)
+    }
+
+    @Test
+    fun `should return not found when caller has no rights to view permissions`() = routeTest {
+        given()
+        val useCase: GetEmployeePermissions = mockk()
+        val id = Uuid.random()
+        coEvery { useCase.invoke(userId, businessId, id) } returns Result.failure(Error.OperationNotAllowed())
+        authenticatedApplication(useCase)
+
+        whenn()
+        val client = createTestClient()
+        val response = client.get(permissionsResource(id))
+
+        then()
+        assertEquals(HttpStatusCode.NotFound, response.status)
+    }
+
+    @Test
+    fun `should return unauthorized when getting permissions without authentication`() = routeTest {
+        given()
+        val useCase: GetEmployeePermissions = mockk()
+
+        setupApplication(
+            extension = { install(Authentication) { bearer { authenticate { null } } } },
+            diModule = module { single { useCase } },
+            routeUnderTest = { employeeCrud() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.get(permissionsResource(Uuid.random()))
 
         then()
         assertEquals(HttpStatusCode.Unauthorized, response.status)

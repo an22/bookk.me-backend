@@ -7,25 +7,24 @@ import io.ktor.http.HttpStatusCode
 import kotlin.uuid.Uuid
 
 interface CreateEmployeeInvitation {
-    suspend operator fun invoke(requestUserId: Uuid, invitation: EmployeeInvitation): Result<EmployeeInvitation>
+    suspend operator fun invoke(requestUserId: Uuid, businessId: Uuid): Result<EmployeeInvitation>
 
     sealed interface Error {
-        class InvitationExist : BusinessError(
+        class PendingInvitationsLimitReached : BusinessError(
             statusCode = HttpStatusCode.UnprocessableEntity.value,
-            code = BusinessErrorCodes.BUSINESS_EMPLOYEE_INVITATION_EXISTS,
-            message = "Invitation for this user already exists"
+            code = BusinessErrorCodes.BUSINESS_EMPLOYEE_PENDING_INVITATIONS_LIMIT_REACHED,
+            message = "Business already has the maximum number of pending invitations"
         ), Error
 
-        class ValidationError : BusinessError(
+        class DailyInvitationsLimitReached : BusinessError(
             statusCode = HttpStatusCode.UnprocessableEntity.value,
-            code = BusinessErrorCodes.BUSINESS_EMPLOYEE_INVITATION_VALIDATION_ERROR,
-            message = "Invitation email is blank or invalid"
+            code = BusinessErrorCodes.BUSINESS_EMPLOYEE_DAILY_INVITATIONS_LIMIT_REACHED,
+            message = "Business already created the maximum number of invitations in the last 24 hours"
         ), Error
+    }
 
-        class EmployeeExist : BusinessError(
-            statusCode = HttpStatusCode.UnprocessableEntity.value,
-            code = BusinessErrorCodes.BUSINESS_EMPLOYEE_EXISTS,
-            message = "User is already an employee of this business"
-        ), Error
+    companion object {
+        const val MAX_PENDING_INVITATIONS = 20
+        const val MAX_INVITATIONS_PER_DAY = 50
     }
 }

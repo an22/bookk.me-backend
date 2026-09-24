@@ -4,13 +4,18 @@
 
 Grants or revokes independent `view`/`update`/`delete` access to one or more
 `BusinessResource`s for one employee in a single request. The body,
-`EmployeePermissionsRequest`, is a `Map<BusinessResource, ResourcePermission>`:
-resources not listed keep their current grants. The caller needs
+`EmployeePermissionsRequest`, has one optional `ResourcePermission` field per
+resource — `business` (1), `employees` (2), `clients` (3), `services` (4),
+`appointments` (5), proto field numbers in brackets — so every key is named in
+the OpenAPI schema instead of being a bare enum ordinal inside a map. An
+omitted field keeps that resource's current grant; the route turns the
+present fields into the `Map<BusinessResource, ResourcePermission>` the
+operation takes (`EmployeePermissionsRequest.grants()`). The caller needs
 `EMPLOYEES.update` to manage permissions at all, and additionally cannot
 hand out more access to any listed resource than they themselves hold
 (`.covers()`) — you cannot delegate what you don't have. The check is
 all-or-nothing: if a single grant exceeds the caller's own, nothing is
-written and no event is sent. An empty map is a no-op that returns the
+written and no event is sent. A body with every field omitted (an empty map) is a no-op that returns the
 employee unchanged. The `Employee` row itself is unchanged; the response is
 the `Employee` with its merged `permissions`, computed in memory as
 `employee.permissions.with(grants)` rather than re-read. See [Resource

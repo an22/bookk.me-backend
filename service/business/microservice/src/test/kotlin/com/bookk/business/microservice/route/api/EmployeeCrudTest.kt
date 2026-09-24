@@ -264,8 +264,9 @@ internal class EmployeeCrudTest {
         given()
         val useCase: SetEmployeePermissions = mockk()
         val id = Uuid.random()
+        val clients = ResourcePermission(view = true, update = true, delete = false)
         val grants = mapOf(
-            BusinessResource.CLIENTS to ResourcePermission(view = true, update = true, delete = false),
+            BusinessResource.CLIENTS to clients,
             BusinessResource.SERVICES to ResourcePermission.FULL
         )
         val updated = Employee.stub(
@@ -279,12 +280,62 @@ internal class EmployeeCrudTest {
         whenn()
         val client = createTestClient()
         val response = client.put(permissionsResource(id)) {
-            setBody(EmployeePermissionsRequest(grants))
+            setBody(permissionsRequest(clients = clients, services = ResourcePermission.FULL))
         }
 
         then()
         assertEquals(HttpStatusCode.OK, response.status)
         assertEquals(updated, response.body<Employee>())
+    }
+
+    @Test
+    fun `should map every named request field to its own business resource`() = routeTest {
+        given()
+        val useCase: SetEmployeePermissions = mockk()
+        val id = Uuid.random()
+        val business = ResourcePermission(view = true, update = false, delete = false)
+        val employees = ResourcePermission(view = false, update = true, delete = false)
+        val clients = ResourcePermission(view = false, update = false, delete = true)
+        val services = ResourcePermission(view = true, update = true, delete = false)
+        val appointments = ResourcePermission(view = false, update = true, delete = true)
+        val grants = mapOf(
+            BusinessResource.BUSINESS to business,
+            BusinessResource.EMPLOYEES to employees,
+            BusinessResource.CLIENTS to clients,
+            BusinessResource.SERVICES to services,
+            BusinessResource.APPOINTMENTS to appointments
+        )
+        coEvery { useCase.invoke(userId, businessId, id, grants) } returns Result.success(Employee.stub(id = id, businessId = businessId))
+        authenticatedApplication(useCase)
+
+        whenn()
+        val client = createTestClient()
+        val response = client.put(permissionsResource(id)) {
+            setBody(permissionsRequest(business, employees, clients, services, appointments))
+        }
+
+        then()
+        assertEquals(HttpStatusCode.OK, response.status)
+    }
+
+    @Test
+    fun `should pass no grants when every request field is omitted`() = routeTest {
+        given()
+        val useCase: SetEmployeePermissions = mockk()
+        val id = Uuid.random()
+        val employee = Employee.stub(id = id, businessId = businessId)
+        coEvery { useCase.invoke(userId, businessId, id, emptyMap()) } returns Result.success(employee)
+        authenticatedApplication(useCase)
+
+        whenn()
+        val client = createTestClient()
+        val response = client.put(permissionsResource(id)) {
+            setBody(permissionsRequest())
+        }
+
+        then()
+        assertEquals(HttpStatusCode.OK, response.status)
+        assertEquals(employee, response.body<Employee>())
     }
 
     @Test
@@ -300,7 +351,7 @@ internal class EmployeeCrudTest {
         whenn()
         val client = createTestClient()
         val response = client.put(permissionsResource(id)) {
-            setBody(EmployeePermissionsRequest(grants))
+            setBody(permissionsRequest(clients = grants.getValue(BusinessResource.CLIENTS)))
         }
 
         then()
@@ -320,7 +371,7 @@ internal class EmployeeCrudTest {
         whenn()
         val client = createTestClient()
         val response = client.put(permissionsResource(id)) {
-            setBody(EmployeePermissionsRequest(grants))
+            setBody(permissionsRequest(clients = grants.getValue(BusinessResource.CLIENTS)))
         }
 
         then()
@@ -339,7 +390,7 @@ internal class EmployeeCrudTest {
         whenn()
         val client = createTestClient()
         val response = client.put(permissionsResource(id)) {
-            setBody(EmployeePermissionsRequest(grants))
+            setBody(permissionsRequest(clients = grants.getValue(BusinessResource.CLIENTS)))
         }
 
         then()
@@ -360,7 +411,7 @@ internal class EmployeeCrudTest {
         whenn()
         val client = createTestClient()
         val response = client.put(permissionsResource(Uuid.random())) {
-            setBody(EmployeePermissionsRequest(mapOf(BusinessResource.CLIENTS to ResourcePermission(view = true, update = false, delete = false))))
+            setBody(permissionsRequest(clients = ResourcePermission(view = true, update = false, delete = false)))
         }
 
         then()
@@ -430,5 +481,19 @@ internal class EmployeeCrudTest {
         email = employee.email,
         services = employee.services,
         schedule = employee.schedule
+    )
+
+    private fun permissionsRequest(
+        business: ResourcePermission? = null,
+        employees: ResourcePermission? = null,
+        clients: ResourcePermission? = null,
+        services: ResourcePermission? = null,
+        appointments: ResourcePermission? = null
+    ) = EmployeePermissionsRequest(
+        business = business,
+        employees = employees,
+        clients = clients,
+        services = services,
+        appointments = appointments
     )
 }

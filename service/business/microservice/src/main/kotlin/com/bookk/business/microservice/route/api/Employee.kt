@@ -29,8 +29,20 @@ import library.permissions.ResourcePermission
 
 @Serializable
 internal class EmployeePermissionsRequest(
-    @ProtoNumber(1) val grants: Map<BusinessResource, ResourcePermission>
-)
+    @ProtoNumber(1) val business: ResourcePermission?,
+    @ProtoNumber(2) val employees: ResourcePermission?,
+    @ProtoNumber(3) val clients: ResourcePermission?,
+    @ProtoNumber(4) val services: ResourcePermission?,
+    @ProtoNumber(5) val appointments: ResourcePermission?
+) {
+    fun grants(): Map<BusinessResource, ResourcePermission> = buildMap {
+        business?.let { put(BusinessResource.BUSINESS, it) }
+        employees?.let { put(BusinessResource.EMPLOYEES, it) }
+        clients?.let { put(BusinessResource.CLIENTS, it) }
+        services?.let { put(BusinessResource.SERVICES, it) }
+        appointments?.let { put(BusinessResource.APPOINTMENTS, it) }
+    }
+}
 
 fun Route.employeeCrud() {
     authenticate {
@@ -82,7 +94,7 @@ fun Route.employeeCrud() {
 
         /**
          * Summary: Set employee permissions
-         * Description: Grants or revokes view/update/delete access to one or more business resources for an employee in a single request. Resources not listed keep their current grants. The caller cannot grant a level of access they do not themselves hold on any listed resource, in which case nothing is changed. An empty map changes nothing and returns the employee as is
+         * Description: Grants or revokes view/update/delete access to one or more business resources for an employee in a single request. The body has one optional field per business resource (business, employees, clients, services, appointments); an omitted field keeps that resource's current grant. The caller cannot grant a level of access they do not themselves hold on any provided resource, in which case nothing is changed. A body with every field omitted changes nothing and returns the employee as is
          * Tag: employee
          * Security: jwt
          * Body: application/x-protobuf [com.bookk.business.microservice.route.api.EmployeePermissionsRequest]
@@ -101,7 +113,7 @@ fun Route.employeeCrud() {
                     requestUserId = principal.userId,
                     businessId = it.parent.parent.businessId,
                     employeeId = it.parent.id,
-                    grants = body.grants
+                    grants = body.grants()
                 )
             )
         }

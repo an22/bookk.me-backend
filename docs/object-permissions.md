@@ -101,7 +101,7 @@ employee in a single request:
 
 ```
 PUT /api/business/{businessId}/employee/{id}/permissions
-Body: EmployeePermissionsRequest(grants: Map<BusinessResource, ResourcePermission>)
+Body: EmployeePermissionsRequest(business?, employees?, clients?, services?, appointments?: ResourcePermission)
 ```
 
 `SetEmployeePermissionsImpl` requires the caller to hold `EMPLOYEES.update`,

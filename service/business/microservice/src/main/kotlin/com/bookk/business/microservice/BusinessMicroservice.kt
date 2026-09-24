@@ -3,6 +3,7 @@ package com.bookk.business.microservice
 import com.bookk.business.data.di.businessDataModule
 import com.bookk.business.domain.api.BUSINESS_SERVICE_NAME
 import com.bookk.business.domain.api.business.operation.DeleteDayOffsInThePast
+import com.bookk.business.domain.api.employee.operation.DeleteProcessedEmployeeInvitations
 import com.bookk.business.domain.api.employee.operation.ExpireEmployeeInvitations
 import com.bookk.business.domain.impl.di.BusinessScope
 import com.bookk.business.domain.impl.di.businessDomainModule
@@ -69,5 +70,8 @@ fun Application.registerBusinessJobs(scheduler: SchedulerConfiguration) {
     }
     scheduler.job("expireEmployeeInvitations", interval = 1.days) {
         scope.get<ExpireEmployeeInvitations>().invoke().getOrThrow()
+    }
+    scheduler.job("deleteProcessedEmployeeInvitations", interval = 1.days) {
+        scope.get<DeleteProcessedEmployeeInvitations>().invoke().getOrThrow()
     }
 }

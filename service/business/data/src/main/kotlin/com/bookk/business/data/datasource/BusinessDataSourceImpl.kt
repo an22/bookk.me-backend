@@ -47,6 +47,14 @@ internal class BusinessDataSourceImpl : DataSource(), BusinessDataSource {
         BusinessEntity.findById(id)?.toDomain()
     }
 
+    override suspend fun lockBusiness(id: Uuid): Boolean = dbQuery {
+        BusinessTable.select(BusinessTable.id)
+            .where { BusinessTable.id eq id }
+            .forUpdate()
+            .empty()
+            .not()
+    }
+
     override suspend fun isBusinessExist(userId: Uuid): Boolean = dbQuery {
         BusinessTable.select(BusinessTable.id)
             .where { BusinessTable.userId eq userId }

@@ -24,9 +24,11 @@ import com.bookk.notifications.microservice.route.notificationsRoute
 import com.bookk.user.domain.impl.di.UserScope
 import com.bookk.user.microservice.route.userRoute
 import com.bookk.user.microservice.userEmbeddedModule
+import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.routing.application
 import library.scheduler.Scheduler
+import library.scheduler.SchedulerConfiguration
 
 private fun diModules() = listOf(
     topicQueueHolderModule(),
@@ -46,11 +48,7 @@ fun main() {
             val businessScope = installServiceScope(BusinessScope)
             val appointmentsScope = installServiceScope(AppointmentsScope)
             val notificationsScope = installServiceScope(NotificationsScope)
-            install(Scheduler) {
-                registerAuthJobs(this)
-                registerBusinessJobs(this)
-                registerAppointmentsJobs(this)
-            }
+            install(Scheduler) { registerMonolithJobs(this) }
             startEventHandling(authScope, userScope, businessScope, appointmentsScope, notificationsScope)
         }
         with(routing) {
@@ -62,4 +60,10 @@ fun main() {
             notificationsRoute()
         }
     }
+}
+
+fun Application.registerMonolithJobs(scheduler: SchedulerConfiguration) {
+    registerAuthJobs(scheduler)
+    registerBusinessJobs(scheduler)
+    registerAppointmentsJobs(scheduler)
 }

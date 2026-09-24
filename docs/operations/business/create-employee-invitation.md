@@ -32,6 +32,28 @@ jobs](../scheduled-jobs.md)), so its unique index only ever has to stay
 collision-free across invitations that are still `PENDING`, not every
 invitation ever issued.
 
+A business can hold at most `CreateEmployeeInvitation.MAX_PENDING_INVITATIONS`
+(20) `PENDING` invitations at once; redeemed, revoked and expired ones do not
+count, so revoking an unused code or letting the daily expiry job run frees a
+slot. To keep two concurrent requests from both passing the check, the
+operation first takes a row lock on the business
+(`BusinessDataSource.lockBusiness`, `SELECT … FOR UPDATE`, which also serves
+as the existence check) and only then counts, so creations for the same
+business are serialized until the transaction commits.
+
+The pending cap alone does not stop a create → revoke → create loop, since
+each revoke frees a slot. A second, rolling quota closes that: a business can
+create at most `CreateEmployeeInvitation.MAX_INVITATIONS_PER_DAY` (50)
+invitations in any 24-hour window, counted over every invitation created in
+that window regardless of status
+(`EmployeeInvitationDataSource.countInvitationsCreatedSince`, backed by the
+composite `(business_id, createdAt)` index), so revoking returns no quota.
+Processed invitations are hard-deleted 30 days after their last update by the
+`deleteProcessedEmployeeInvitations` job in [Scheduled (recurring)
+jobs](../scheduled-jobs.md), which keeps the table bounded; that retention is
+longer than the quota window, so the rows the quota counts are never deleted
+early.
+
 ```mermaid
 flowchart TD
     Start([POST /api/business/businessId/employee_invitation]) --> Auth{JWT valid?}
@@ -39,9 +61,13 @@ flowchart TD
     Auth -- Yes --> Tx[[Begin transaction]]
     Tx --> Perm{caller EMPLOYEES.update?}
     Perm -- No --> R404a([404 Error.OperationNotAllowed])
-    Perm -- Yes --> GetBiz[BusinessDataSource.getBusinessById businessId]
-    GetBiz -- not found --> R404b([404 Error.NotFound])
-    GetBiz -- found --> GenCode[Generate random 8-char invite code, plaintext kept in memory only]
+    Perm -- Yes --> LockBiz[BusinessDataSource.lockBusiness businessId, SELECT FOR UPDATE]
+    LockBiz -- not found --> R404b([404 Error.NotFound])
+    LockBiz -- locked --> Count[EmployeeInvitationDataSource.countPendingInvitations businessId]
+    Count -- ">= MAX_PENDING_INVITATIONS 20" --> R422([422 PendingInvitationsLimitReached, BUSINESS_EMPLOYEE_PENDING_INVITATIONS_LIMIT_REACHED 200028])
+    Count -- below limit --> CountToday[EmployeeInvitationDataSource.countInvitationsCreatedSince businessId, now - 24h, any status]
+    CountToday -- ">= MAX_INVITATIONS_PER_DAY 50" --> R422b([422 DailyInvitationsLimitReached, BUSINESS_EMPLOYEE_DAILY_INVITATIONS_LIMIT_REACHED 200029])
+    CountToday -- below limit --> GenCode[Generate random 8-char invite code, plaintext kept in memory only]
     GenCode --> HashCode[EmployeeInvitationCode.hash the code]
     HashCode --> CreateInvite[EmployeeInvitationDataSource.createInvitation businessId invitedBy code_hash]
     CreateInvite -- unique constraint violated, hash collision --> GenCode

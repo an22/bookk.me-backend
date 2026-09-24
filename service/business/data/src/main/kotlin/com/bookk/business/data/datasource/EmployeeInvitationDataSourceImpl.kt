@@ -8,7 +8,12 @@ import com.bookk.business.domain.datasource.EmployeeInvitationDataSource
 import com.bookk.core.data.DataSource
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.greaterEq
+import org.jetbrains.exposed.v1.core.isNull
 import org.jetbrains.exposed.v1.core.less
+import org.jetbrains.exposed.v1.core.neq
+import org.jetbrains.exposed.v1.core.or
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import org.jetbrains.exposed.v1.jdbc.update
 import kotlin.time.Clock
@@ -40,6 +45,20 @@ internal class EmployeeInvitationDataSourceImpl : DataSource(), EmployeeInvitati
         EmployeeInvitationEntity.find { EmployeeInvitationTable.codeHash eq codeHash }
             .firstOrNull()
             ?.toDomain()
+    }
+
+    override suspend fun countPendingInvitations(businessId: Uuid): Long = dbQuery {
+        EmployeeInvitationEntity.count(
+            (EmployeeInvitationTable.businessId eq businessId) and
+                (EmployeeInvitationTable.status eq EmployeeInvitationStatus.PENDING)
+        )
+    }
+
+    override suspend fun countInvitationsCreatedSince(businessId: Uuid, since: Instant): Long = dbQuery {
+        EmployeeInvitationEntity.count(
+            (EmployeeInvitationTable.businessId eq businessId) and
+                (EmployeeInvitationTable.createdAt greaterEq since)
+        )
     }
 
     override suspend fun getInvitationsByInviter(businessId: Uuid, invitedBy: Uuid): List<EmployeeInvitation> =
@@ -89,6 +108,18 @@ internal class EmployeeInvitationDataSourceImpl : DataSource(), EmployeeInvitati
                 it[status] = EmployeeInvitationStatus.EXPIRED
                 it[codeHash] = null
                 it[updatedAt] = Clock.System.now()
+            }
+        }
+    }
+
+    override suspend fun deleteProcessedInvitations(before: Instant) {
+        dbQuery {
+            EmployeeInvitationTable.deleteWhere {
+                val processed = EmployeeInvitationTable.status neq EmployeeInvitationStatus.PENDING
+                val updatedBeforeCutoff = EmployeeInvitationTable.updatedAt less before
+                val neverUpdatedAndCreatedBeforeCutoff = EmployeeInvitationTable.updatedAt.isNull() and
+                    (EmployeeInvitationTable.createdAt less before)
+                processed and (updatedBeforeCutoff or neverUpdatedAndCreatedBeforeCutoff)
             }
         }
     }

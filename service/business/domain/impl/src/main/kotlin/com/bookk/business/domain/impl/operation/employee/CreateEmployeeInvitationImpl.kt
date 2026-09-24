@@ -12,6 +12,7 @@ import com.bookk.core.domain.entity.Error
 import library.permissions.PermissionAction
 import library.permissions.assert
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.hours
 import kotlin.uuid.Uuid
 
 internal class CreateEmployeeInvitationImpl(
@@ -24,7 +25,18 @@ internal class CreateEmployeeInvitationImpl(
         return transactionManager.transaction {
             businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES)
                 .assert(PermissionAction.UPDATE)
-            businessDataSource.getBusinessById(businessId) ?: throw Error.NotFound()
+            if (!businessDataSource.lockBusiness(businessId)) throw Error.NotFound()
+            val pendingInvitations = invitationDataSource.countPendingInvitations(businessId)
+            if (pendingInvitations >= CreateEmployeeInvitation.MAX_PENDING_INVITATIONS) {
+                throw CreateEmployeeInvitation.Error.PendingInvitationsLimitReached()
+            }
+            val invitationsToday = invitationDataSource.countInvitationsCreatedSince(
+                businessId,
+                Clock.System.now() - DAILY_QUOTA_WINDOW
+            )
+            if (invitationsToday >= CreateEmployeeInvitation.MAX_INVITATIONS_PER_DAY) {
+                throw CreateEmployeeInvitation.Error.DailyInvitationsLimitReached()
+            }
             createInvitationWithUniqueCode(requestUserId, businessId)
         }
     }
@@ -53,5 +65,6 @@ internal class CreateEmployeeInvitationImpl(
 
     private companion object {
         const val MAX_CODE_ATTEMPTS = 5
+        val DAILY_QUOTA_WINDOW = 24.hours
     }
 }

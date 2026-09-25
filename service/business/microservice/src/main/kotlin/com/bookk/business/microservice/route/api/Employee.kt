@@ -94,13 +94,13 @@ fun Route.employeeCrud() {
 
         /**
          * Summary: Set employee permissions
-         * Description: Grants or revokes view/update/delete access to one or more business resources for an employee in a single request. The body has one optional field per business resource (business, employees, clients, services, appointments); an omitted field keeps that resource's current grant. The caller cannot grant a level of access they do not themselves hold on any provided resource, in which case nothing is changed. A body with every field omitted changes nothing and returns the employee as is
+         * Description: Grants or revokes view/update/delete access to one or more business resources for an employee in a single request. The body has one optional field per business resource (business, employees, clients, services, appointments); an omitted field keeps that resource's current grant. The caller cannot grant a level of access they do not themselves hold on any provided resource, in which case nothing is changed. The business owner always holds full access, so their permissions cannot be changed. A body with every field omitted changes nothing and returns the employee as is
          * Tag: employee
          * Security: jwt
          * Body: application/x-protobuf [com.bookk.business.microservice.route.api.EmployeePermissionsRequest]
          * Response: 200 application/x-protobuf [com.bookk.business.domain.api.employee.entity.Employee] Employee with updated permissions
          * Response: 404 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Employee is not found or the caller has no rights to manage permissions
-         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Set employee permissions errors<br>BUSINESS_INSUFFICIENT_GRANT_PERMISSION (200027) Cannot grant a permission level you do not hold
+         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Set employee permissions errors<br>BUSINESS_INSUFFICIENT_GRANT_PERMISSION (200027) Cannot grant a permission level you do not hold<br>BUSINESS_OWNER_PERMISSIONS_IMMUTABLE (200030) Business owner always has full permissions
          * See: docs/operations/business/set-employee-permissions.md
          */
         put<Api.Employee.Id.Permissions> {

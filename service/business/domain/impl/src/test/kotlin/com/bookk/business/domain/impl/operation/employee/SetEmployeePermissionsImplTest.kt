@@ -4,6 +4,7 @@ import com.bookk.business.domain.api.business.entity.BusinessPermissions
 import com.bookk.business.domain.api.business.entity.BusinessResource
 import com.bookk.business.domain.api.employee.entity.Employee
 import com.bookk.business.domain.api.employee.operation.SetEmployeePermissions
+import com.bookk.business.domain.datasource.BusinessDataSource
 import com.bookk.business.domain.datasource.BusinessPermissionDataSource
 import com.bookk.business.domain.datasource.EmployeeDataSource
 import com.bookk.core.data.eventstreaming.StandardEventProducer
@@ -31,13 +32,15 @@ internal class SetEmployeePermissionsImplTest {
 
     private class SutFixture {
         val employeeDataSource = mockk<EmployeeDataSource>()
+        val businessDataSource = mockk<BusinessDataSource>()
         val businessPermissionDataSource = mockk<BusinessPermissionDataSource>()
         val transactionManager = mockk<TransactionManager>()
         val eventProducer = mockk<StandardEventProducer>(relaxed = true)
-        val sut = SetEmployeePermissionsImpl(employeeDataSource, businessPermissionDataSource, transactionManager, eventProducer)
+        val sut = SetEmployeePermissionsImpl(employeeDataSource, businessDataSource, businessPermissionDataSource, transactionManager, eventProducer)
 
         init {
             coEvery { businessPermissionDataSource.getPermission(any(), any(), BusinessResource.EMPLOYEES) } returns ResourcePermission(view = false, update = true, delete = false)
+            coEvery { businessDataSource.isOwner(any(), any()) } returns false
         }
     }
 
@@ -174,6 +177,27 @@ internal class SetEmployeePermissionsImplTest {
 
         then()
         assertTrue(result.exceptionOrNull() is SetEmployeePermissions.Error.InsufficientGrant)
+        coVerify(exactly = 0) { fixture.businessPermissionDataSource.setPermissions(any(), any()) }
+        coVerify(exactly = 0) { fixture.eventProducer.send(any(BusinessEvent.EmployeePermissionsChanged::class), any()) }
+    }
+
+    @Test
+    fun `should reject changing permissions of the business owner`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val owner = Employee.stub(businessId = businessId, permissions = BusinessPermissions.FULL)
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { employeeDataSource.getEmployee(businessId, owner.id) } returns owner
+            coEvery { businessDataSource.isOwner(owner.userId, businessId) } returns true
+            coEvery { businessPermissionDataSource.getPermissions(requestUserId, businessId) } returns BusinessPermissions.FULL
+        }
+
+        whenn()
+        val result = fixture.sut(requestUserId, businessId, owner.id, mapOf(BusinessResource.CLIENTS to ResourcePermission.NONE))
+
+        then()
+        assertTrue(result.exceptionOrNull() is SetEmployeePermissions.Error.OwnerPermissionsImmutable)
         coVerify(exactly = 0) { fixture.businessPermissionDataSource.setPermissions(any(), any()) }
         coVerify(exactly = 0) { fixture.eventProducer.send(any(BusinessEvent.EmployeePermissionsChanged::class), any()) }
     }

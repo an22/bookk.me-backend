@@ -62,6 +62,13 @@ internal class BusinessDataSourceImpl : DataSource(), BusinessDataSource {
             .not()
     }
 
+    override suspend fun isOwner(userId: Uuid, businessId: Uuid): Boolean = dbQuery {
+        BusinessTable.select(BusinessTable.id)
+            .where { (BusinessTable.id eq businessId) and (BusinessTable.userId eq userId) }
+            .empty()
+            .not()
+    }
+
     override suspend fun deleteUserBusinesses(userId: Uuid) = dbQuery {
         BusinessTable.deleteReturning(listOf(BusinessTable.id)) {
             BusinessTable.userId eq userId

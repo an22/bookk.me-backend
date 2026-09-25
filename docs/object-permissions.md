@@ -105,7 +105,10 @@ Body: EmployeePermissionsRequest(business?, employees?, clients?, services?, app
 ```
 
 `SetEmployeePermissionsImpl` requires the caller to hold `EMPLOYEES.update`,
-looks up the target employee, and additionally requires the caller's own
+looks up the target employee, rejects the request with
+`BUSINESS_OWNER_PERMISSIONS_IMMUTABLE` (200030) if that employee is the
+business owner (`BusinessDataSource.isOwner`) — the owner always keeps `FULL`
+on every resource — and additionally requires the caller's own
 grant on **every listed resource** to `.covers()` the permission being
 handed out — you cannot grant delegate access you don't hold yourself
 (`SetEmployeePermissions.Error.InsufficientGrant`, 422). The check is

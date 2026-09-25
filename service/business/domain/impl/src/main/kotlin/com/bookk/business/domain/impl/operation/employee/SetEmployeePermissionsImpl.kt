@@ -3,6 +3,7 @@ package com.bookk.business.domain.impl.operation.employee
 import com.bookk.business.domain.api.business.entity.BusinessResource
 import com.bookk.business.domain.api.employee.entity.Employee
 import com.bookk.business.domain.api.employee.operation.SetEmployeePermissions
+import com.bookk.business.domain.datasource.BusinessDataSource
 import com.bookk.business.domain.datasource.BusinessPermissionDataSource
 import com.bookk.business.domain.datasource.EmployeeDataSource
 import com.bookk.core.data.eventstreaming.StandardEventProducer
@@ -17,6 +18,7 @@ import kotlin.uuid.Uuid
 
 internal class SetEmployeePermissionsImpl(
     private val employeeDataSource: EmployeeDataSource,
+    private val businessDataSource: BusinessDataSource,
     private val businessPermissionDataSource: BusinessPermissionDataSource,
     private val transactionManager: TransactionManager,
     private val eventProducer: StandardEventProducer
@@ -30,6 +32,9 @@ internal class SetEmployeePermissionsImpl(
         businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES)
             .assert(PermissionAction.UPDATE)
         val employee = employeeDataSource.getEmployee(businessId, employeeId) ?: throw Error.NotFound()
+        if (businessDataSource.isOwner(employee.userId, businessId)) {
+            throw SetEmployeePermissions.Error.OwnerPermissionsImmutable()
+        }
         if (grants.isEmpty()) return@transaction employee
         val callersOwnPermissions = businessPermissionDataSource.getPermissions(requestUserId, businessId)
         if (grants.any { (resource, permission) -> !callersOwnPermissions[resource].covers(permission) }) {

@@ -156,6 +156,51 @@ internal class BusinessDataSourceImplTest {
     }
 
     @Test
+    fun `should report user as owner of the business they created`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+        val business = suspendTransaction { fixture.sut.createBusiness(userId, "Salon", "USD", TimeZone.UTC) }
+
+        whenn()
+        val isOwner = suspendTransaction { fixture.sut.isOwner(userId, business.id) }
+
+        then()
+        assertTrue(isOwner)
+    }
+
+    @Test
+    fun `should not report user as owner of another users business`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val ownerId = Uuid.random()
+        val otherUserId = Uuid.random()
+        val business = suspendTransaction { fixture.sut.createBusiness(ownerId, "Salon", "USD", TimeZone.UTC) }
+        suspendTransaction { fixture.sut.createBusiness(otherUserId, "Barber", "USD", TimeZone.UTC) }
+
+        whenn()
+        val isOwner = suspendTransaction { fixture.sut.isOwner(otherUserId, business.id) }
+
+        then()
+        assertFalse(isOwner)
+    }
+
+    @Test
+    fun `should expose the creating user as the business owner`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+        val created = suspendTransaction { fixture.sut.createBusiness(userId, "Salon", "USD", TimeZone.UTC) }
+
+        whenn()
+        val business = suspendTransaction { fixture.sut.getBusinessById(created.id) }
+
+        then()
+        assertEquals(userId, created.ownerId)
+        assertEquals(userId, business?.ownerId)
+    }
+
+    @Test
     fun `should create business with default working schedule`() = runUnitTest {
         given()
         val fixture = SutFixture()

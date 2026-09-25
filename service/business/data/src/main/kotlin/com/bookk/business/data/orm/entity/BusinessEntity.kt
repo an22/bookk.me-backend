@@ -38,6 +38,7 @@ internal class BusinessEntity(id: EntityID<Uuid>) : UuidEntity(id) {
 
     fun toDomain(): Business = Business(
         id = id.value,
+        ownerId = userId,
         name = name,
         description = description,
         location = if (latitude != null && longitude != null) {

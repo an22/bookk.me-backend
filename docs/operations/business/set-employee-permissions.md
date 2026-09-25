@@ -15,7 +15,10 @@ operation takes (`EmployeePermissionsRequest.grants()`). The caller needs
 hand out more access to any listed resource than they themselves hold
 (`.covers()`) — you cannot delegate what you don't have. The check is
 all-or-nothing: if a single grant exceeds the caller's own, nothing is
-written and no event is sent. A body with every field omitted (an empty map) is a no-op that returns the
+written and no event is sent. The business owner's permissions are
+immutable — the owner always holds `FULL` on every resource — so targeting
+the owner's employee record is rejected before anything else is checked
+about the grants. A body with every field omitted (an empty map) is a no-op that returns the
 employee unchanged. The `Employee` row itself is unchanged; the response is
 the `Employee` with its merged `permissions`, computed in memory as
 `employee.permissions.with(grants)` rather than re-read. See [Resource
@@ -31,7 +34,9 @@ flowchart TD
     PermCheck -- Yes --> Lookup[EmployeeDataSource.getEmployee businessId, id]
     Lookup --> Found{employee found?}
     Found -- No --> R404b([404 Error.NotFound])
-    Found -- Yes --> Empty{grants empty?}
+    Found -- Yes --> Owner{BusinessDataSource.isOwner employee.userId, businessId?}
+    Owner -- Yes --> R422o([422 BUSINESS_OWNER_PERMISSIONS_IMMUTABLE 200030])
+    Owner -- No --> Empty{grants empty?}
     Empty -- Yes --> R200a([200 Employee unchanged])
     Empty -- No --> OwnGrants[BusinessPermissionDataSource.getPermissions caller, businessId]
     OwnGrants --> Covers{caller's grant covers every requested resource's permission?}

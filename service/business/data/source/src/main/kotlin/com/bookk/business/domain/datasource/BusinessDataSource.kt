@@ -13,6 +13,7 @@ interface BusinessDataSource {
     suspend fun getBusinessById(id: Uuid): Business?
     suspend fun lockBusiness(id: Uuid): Boolean
     suspend fun isBusinessExist(userId: Uuid): Boolean
+    suspend fun isOwner(userId: Uuid, businessId: Uuid): Boolean
     suspend fun deleteUserBusinesses(userId: Uuid): List<Uuid>
     suspend fun getDashboardBusiness(userId: Uuid): Business?
     suspend fun setDashboardBusiness(userId: Uuid, businessId: Uuid)

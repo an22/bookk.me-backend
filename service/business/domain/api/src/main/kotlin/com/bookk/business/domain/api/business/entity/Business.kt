@@ -17,7 +17,8 @@ data class Business(
     @ProtoNumber(7) val currencyCode: String,
     @ProtoNumber(8) val socials: List<Social>,
     @ProtoNumber(9) val schedule: Schedule,
-    @ProtoNumber(10) val permissions: BusinessPermissions
+    @ProtoNumber(10) val permissions: BusinessPermissions,
+    @ProtoNumber(11) val ownerId: Uuid
 ) {
     @Serializable
     class Location(
@@ -56,7 +57,8 @@ data class Business(
             currencyCode: String = "USD",
             socials: List<Social> = emptyList(),
             schedule: Schedule = Schedule(),
-            permissions: BusinessPermissions = BusinessPermissions.NONE
+            permissions: BusinessPermissions = BusinessPermissions.NONE,
+            ownerId: Uuid = Uuid.random()
         ) = Business(
             id = id,
             name = name,
@@ -67,7 +69,8 @@ data class Business(
             currencyCode = currencyCode,
             socials = socials,
             schedule = schedule,
-            permissions = permissions
+            permissions = permissions,
+            ownerId = ownerId
         )
     }
 }

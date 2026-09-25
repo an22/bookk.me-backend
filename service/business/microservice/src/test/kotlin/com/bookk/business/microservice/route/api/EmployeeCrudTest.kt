@@ -360,6 +360,27 @@ internal class EmployeeCrudTest {
     }
 
     @Test
+    fun `should return unprocessable entity when setting permissions for the business owner`() = routeTest {
+        given()
+        val useCase: SetEmployeePermissions = mockk()
+        val id = Uuid.random()
+        val grants = mapOf(BusinessResource.CLIENTS to ResourcePermission.NONE)
+        coEvery { useCase.invoke(userId, businessId, id, grants) } returns
+            Result.failure(SetEmployeePermissions.Error.OwnerPermissionsImmutable())
+        authenticatedApplication(useCase)
+
+        whenn()
+        val client = createTestClient()
+        val response = client.put(permissionsResource(id)) {
+            setBody(permissionsRequest(clients = grants.getValue(BusinessResource.CLIENTS)))
+        }
+
+        then()
+        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
+        assertEquals(BusinessErrorCodes.BUSINESS_OWNER_PERMISSIONS_IMMUTABLE, response.body<SimpleServerError>().errorCode)
+    }
+
+    @Test
     fun `should return not found when setting permissions for an unknown employee`() = routeTest {
         given()
         val useCase: SetEmployeePermissions = mockk()

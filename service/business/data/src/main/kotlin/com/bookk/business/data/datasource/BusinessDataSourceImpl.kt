@@ -22,7 +22,6 @@ import org.jetbrains.exposed.v1.core.less
 import org.jetbrains.exposed.v1.core.or
 import org.jetbrains.exposed.v1.jdbc.deleteReturning
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
-import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.upsert
 import kotlin.time.Clock
@@ -32,7 +31,7 @@ import kotlin.uuid.Uuid
 internal class BusinessDataSourceImpl : DataSource(), BusinessDataSource {
     override suspend fun createBusiness(userId: Uuid, name: String, currencyCode: String, timeZone: TimeZone): Business = dbQuery {
         val entity = BusinessEntity.new(userId, name, currencyCode, timeZone)
-        BusinessDashboardTable.insert {
+        BusinessDashboardTable.upsert {
             it[this.userId] = userId
             it[businessId] = entity.id
         }

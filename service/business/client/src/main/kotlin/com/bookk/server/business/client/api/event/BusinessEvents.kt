@@ -12,9 +12,10 @@ interface BusinessEvent : EventStreaming.Event<String> {
 
     @Serializable
     data class Deleted(
-        val businessId: Uuid,
-        override val idempotencyKey: String = Uuid.random().toString()
+        @ProtoNumber(1) val businessId: Uuid,
+        @ProtoNumber(2) override val idempotencyKey: String = Uuid.random().toString()
     ) : BusinessEvent {
+        @ProtoNumber(3)
         override val topic: String = TOPIC
         override val partitionKey: String get() = businessId.toString()
 
@@ -25,10 +26,11 @@ interface BusinessEvent : EventStreaming.Event<String> {
 
     @Serializable
     data class Updated(
-        val business: BusinessDTO,
-        val updatedAt: Instant,
-        override val idempotencyKey: String = Uuid.random().toString()
+        @ProtoNumber(1) val business: BusinessDTO,
+        @ProtoNumber(2) val updatedAt: Instant,
+        @ProtoNumber(3) override val idempotencyKey: String = Uuid.random().toString()
     ) : BusinessEvent {
+        @ProtoNumber(4)
         override val topic: String = TOPIC
         override val partitionKey: String get() = business.id.toString()
 
@@ -39,13 +41,14 @@ interface BusinessEvent : EventStreaming.Event<String> {
 
     @Serializable
     data class EmployeeInvitationRedeemed(
-        val inviterUserId: Uuid,
-        val employeeUserId: Uuid,
-        val employeeName: String,
-        val businessId: Uuid,
-        val businessName: String,
-        override val idempotencyKey: String = Uuid.random().toString()
+        @ProtoNumber(1) val inviterUserId: Uuid,
+        @ProtoNumber(2) val employeeUserId: Uuid,
+        @ProtoNumber(3) val employeeName: String,
+        @ProtoNumber(4) val businessId: Uuid,
+        @ProtoNumber(5) val businessName: String,
+        @ProtoNumber(6) override val idempotencyKey: String = Uuid.random().toString()
     ) : BusinessEvent {
+        @ProtoNumber(7)
         override val topic: String = TOPIC
 
         companion object {
@@ -55,10 +58,10 @@ interface BusinessEvent : EventStreaming.Event<String> {
 
     @Serializable
     data class EmployeePermissionsChanged(
-        val employeeUserId: Uuid,
-        val businessId: Uuid,
-        val permissions: BusinessPermissions,
-        override val idempotencyKey: String = Uuid.random().toString(),
+        @ProtoNumber(1) val employeeUserId: Uuid,
+        @ProtoNumber(2) val businessId: Uuid,
+        @ProtoNumber(3) val permissions: BusinessPermissions,
+        @ProtoNumber(4) override val idempotencyKey: String = Uuid.random().toString(),
         @ProtoNumber(6) val suspended: Boolean = false
     ) : BusinessEvent {
         @ProtoNumber(5)

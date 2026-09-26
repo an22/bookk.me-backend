@@ -1,15 +1,16 @@
 package com.bookk.core.data.eventstreaming
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.protobuf.ProtoNumber
 import kotlin.uuid.Uuid
 
 @Serializable
 data class DltEvent(
-    val payload: ByteArray,
-    val originalTopic: String,
-    val attempt: Int = 0,
-    override val topic: String,
-    override val idempotencyKey: String = Uuid.random().toString()
+    @ProtoNumber(1) val payload: ByteArray,
+    @ProtoNumber(2) val originalTopic: String,
+    @ProtoNumber(3) val attempt: Int = 0,
+    @ProtoNumber(4) override val topic: String,
+    @ProtoNumber(5) override val idempotencyKey: String = Uuid.random().toString()
 ) : EventStreaming.Event<String> {
 
     override fun equals(other: Any?): Boolean {

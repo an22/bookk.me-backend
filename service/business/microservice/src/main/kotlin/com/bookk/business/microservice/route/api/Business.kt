@@ -51,6 +51,7 @@ fun Route.businessCrud() {
          * Response: 400 application/x-protobuf Path id does not match body id, or the working schedule does not cover all 7 days
          * Response: 404 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] User is not allowed to update the business
          * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Update business errors<br>BUSINESS_ACTIVE_DAY_WITHOUT_WORK_HOURS (200019) Active day must have at least one work hour<br>BUSINESS_INVALID_DAY_OFF_RANGE (200020) Day off range start date must not be after end date
+         * Response: 403 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Caller is a suspended employee of this business<br>BUSINESS_EMPLOYEE_ACCESS_SUSPENDED (200034) Your access to this business is suspended
          * See: docs/operations/business/update-business.md
          */
         put<Api.Business.Id> {
@@ -96,6 +97,7 @@ fun Route.businessCrud() {
          * Security: jwt
          * Response: 204 application/x-protobuf No content
          * Response: 404 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] User is not allowed to select this business as their dashboard business
+         * Response: 403 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Caller is a suspended employee of this business<br>BUSINESS_EMPLOYEE_ACCESS_SUSPENDED (200034) Your access to this business is suspended
          * See: docs/operations/business/set-dashboard-business.md
          */
         put<Api.Business.Id.Dashboard> { path ->

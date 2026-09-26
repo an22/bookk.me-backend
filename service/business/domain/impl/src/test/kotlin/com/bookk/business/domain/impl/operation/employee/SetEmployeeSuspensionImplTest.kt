@@ -62,7 +62,7 @@ internal class SetEmployeeSuspensionImplTest {
     }
 
     @Test
-    fun `should publish no permissions when the employee is suspended`() = runUnitTest {
+    fun `should publish the stored permissions flagged as suspended when the employee is suspended`() = runUnitTest {
         given()
         val fixture = SutFixture(requestUserId, businessId)
         val employee = Employee.stub(businessId = businessId, permissions = BusinessPermissions.FULL)
@@ -79,7 +79,7 @@ internal class SetEmployeeSuspensionImplTest {
         coVerify(exactly = 1) {
             fixture.eventProducer.send(
                 match<BusinessEvent.EmployeePermissionsChanged> {
-                    it.employeeUserId == employee.userId && it.businessId == businessId && it.permissions == BusinessPermissions.NONE
+                    it.employeeUserId == employee.userId && it.businessId == businessId && it.permissions == BusinessPermissions.FULL && it.suspended
                 },
                 any()
             )
@@ -124,7 +124,7 @@ internal class SetEmployeeSuspensionImplTest {
         coVerify(exactly = 1) {
             fixture.eventProducer.send(
                 match<BusinessEvent.EmployeePermissionsChanged> {
-                    it.employeeUserId == employee.userId && it.permissions == BusinessPermissions.VIEW_ONLY
+                    it.employeeUserId == employee.userId && it.permissions == BusinessPermissions.VIEW_ONLY && !it.suspended
                 },
                 any()
             )

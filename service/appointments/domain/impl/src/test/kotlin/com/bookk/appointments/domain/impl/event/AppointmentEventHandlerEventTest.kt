@@ -202,7 +202,7 @@ internal class AppointmentEventHandlerEventTest {
         val permissions = BusinessPermissions.stub(appointments = ResourcePermission(view = true, update = false, delete = false))
         val arrived = CountDownLatch(1)
         coEvery {
-            fixture.syncEmployeePermission(employeeUserId, businessId, permissions.appointments)
+            fixture.syncEmployeePermission(employeeUserId, businessId, permissions.appointments, false)
         } answers { arrived.countDown(); Result.success(Unit) }
 
         whenn()
@@ -214,6 +214,30 @@ internal class AppointmentEventHandlerEventTest {
         fixture.stop()
 
         then()
-        coVerify(exactly = 1) { fixture.syncEmployeePermission(employeeUserId, businessId, permissions.appointments) }
+        coVerify(exactly = 1) { fixture.syncEmployeePermission(employeeUserId, businessId, permissions.appointments, false) }
+    }
+
+    @Test
+    fun `should sync the suspension when the business service publishes a suspended employee`() = runIntegrationTest {
+        given()
+        val fixture = SutFixture()
+        val employeeUserId = Uuid.random()
+        val businessId = Uuid.random()
+        val permissions = BusinessPermissions.NONE
+        val arrived = CountDownLatch(1)
+        coEvery {
+            fixture.syncEmployeePermission(employeeUserId, businessId, permissions.appointments, true)
+        } answers { arrived.countDown(); Result.success(Unit) }
+
+        whenn()
+        withContext(Dispatchers.IO) {
+            fixture.start()
+            producer().send(BusinessEvent.EmployeePermissionsChanged(employeeUserId, businessId, permissions, suspended = true))
+            arrived.await(20, TimeUnit.SECONDS)
+        }
+        fixture.stop()
+
+        then()
+        coVerify(exactly = 1) { fixture.syncEmployeePermission(employeeUserId, businessId, permissions.appointments, true) }
     }
 }

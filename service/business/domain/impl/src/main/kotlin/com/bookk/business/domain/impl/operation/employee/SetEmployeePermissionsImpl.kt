@@ -39,7 +39,8 @@ internal class SetEmployeePermissionsImpl(
             BusinessEvent.EmployeePermissionsChanged(
                 employeeUserId = employee.userId,
                 businessId = businessId,
-                permissions = updated.effectivePermissions()
+                permissions = updated.permissions,
+                suspended = updated.isSuspended
             )
         )
         updated

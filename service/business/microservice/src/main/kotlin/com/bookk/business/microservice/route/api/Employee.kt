@@ -9,6 +9,7 @@ import com.bookk.business.domain.api.employee.operation.SetEmployeeSuspension
 import com.bookk.business.domain.api.employee.operation.UpdateEmployee
 import com.bookk.business.domain.impl.di.BusinessScope
 import com.bookk.business.microservice.route.BusinessRouting.Api
+import com.bookk.core.domain.entity.SimpleServerError
 import com.bookk.core.service.di.injectScoped
 import com.bookk.core.service.enity.respondWith
 import com.bookk.server.auth.client.AppPrincipal
@@ -70,6 +71,11 @@ fun Route.employeeCrud() {
                     description = "List of employees"
                     ContentType.Application.ProtoBuf()
                 }
+                response(HttpStatusCode.Forbidden.value) {
+                    schema = jsonSchema<SimpleServerError>()
+                    description = "Caller is a suspended employee of this business - BUSINESS_EMPLOYEE_ACCESS_SUSPENDED (200034)"
+                    ContentType.Application.ProtoBuf()
+                }
             }
         }
 
@@ -82,6 +88,7 @@ fun Route.employeeCrud() {
          * Response: 200 application/x-protobuf [com.bookk.business.domain.api.employee.entity.Employee] Updated employee
          * Response: 404 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Employee is not found or the caller has no rights to edit it
          * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Update employee errors<br>BUSINESS_EMPLOYEE_VALIDATION_ERROR (200021) Invalid employee name, last name, phone or email<br>BUSINESS_EMPLOYEE_ACTIVE_DAY_WITHOUT_WORK_HOURS (200022) Active day must have at least one work hour<br>BUSINESS_EMPLOYEE_INVALID_DAY_OFF_RANGE (200023) Day off range start date must not be after end date
+         * Response: 403 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Caller is a suspended employee of this business<br>BUSINESS_EMPLOYEE_ACCESS_SUSPENDED (200034) Your access to this business is suspended
          * See: docs/operations/business/update-employee.md
          */
         put<Api.Employee.Id> {

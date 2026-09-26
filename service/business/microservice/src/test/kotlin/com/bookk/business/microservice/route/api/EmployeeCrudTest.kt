@@ -31,6 +31,7 @@ import io.ktor.server.auth.bearer
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.mockk.coEvery
 import io.mockk.mockk
+import library.permissions.EmployeeAccessSuspended
 import library.permissions.ResourcePermission
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -566,6 +567,22 @@ internal class EmployeeCrudTest {
 
         then()
         assertEquals(HttpStatusCode.NotFound, response.status)
+    }
+
+    @Test
+    fun `should return forbidden with a distinct code when the caller is suspended`() = routeTest {
+        given()
+        val useCase: GetEmployees = mockk()
+        coEvery { useCase.invoke(userId, businessId) } returns Result.failure(EmployeeAccessSuspended())
+        authenticatedApplication(useCase)
+
+        whenn()
+        val client = createTestClient()
+        val response = client.get(BusinessRouting.Api.Employee(businessId = businessId))
+
+        then()
+        assertEquals(HttpStatusCode.Forbidden, response.status)
+        assertEquals(BusinessErrorCodes.BUSINESS_EMPLOYEE_ACCESS_SUSPENDED, response.body<SimpleServerError>().errorCode)
     }
 
     @Test

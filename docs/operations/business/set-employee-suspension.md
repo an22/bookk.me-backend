@@ -7,10 +7,16 @@ Suspends an employee (`suspended = true`) or reinstates a suspended one
 `suspended` field (proto field 1). Suspension is stored as
 `employee.suspended_at` (`Employee.suspendedAt`, stamped with the current
 time, cleared on reinstatement). The employee's grants in
-`business_permission_grants` are **not** touched: `getPermission` /
-`getPermissions` join the employee row and treat a suspended employee as
-holding `NONE`, so every permission-gated operation rejects them with no
-change of its own, and reinstating restores exactly the grants they had.
+`business_permission_grants` are **not** touched: `getPermission` joins
+the employee row and throws `403 BUSINESS_EMPLOYEE_ACCESS_SUSPENDED
+(200034)` for a suspended caller, so every permission-gated operation
+rejects them with a code the client can detect, with no change of its own.
+`getPermissions` (which only fills in `Business.permissions`) reports
+`NONE` instead. Reinstating restores exactly the grants they had. See
+[Suspending an employee](../../object-permissions.md#suspending-an-employee).
+The business also disappears from the employee's own business list
+(`BusinessDataSource.getUserBusinesses` skips suspended employments and
+returns a null `dashboardId` if it pointed there) until they are reinstated.
 A suspended employee also cannot be booked by clients — see [Get
 appointment booking context](#booking) below.
 
@@ -22,10 +28,12 @@ publishes nothing.
 
 The appointments service keeps its own copy of the appointments grant, so
 the change is published as the existing
-`BusinessEvent.EmployeePermissionsChanged` carrying the employee's
-**effective** permissions (`Employee.effectivePermissions()`): `NONE` on
-suspension, the stored grants on reinstatement. No dedicated suspension
-event or handler exists.
+`BusinessEvent.EmployeePermissionsChanged` carrying the employee's stored
+permissions plus `suspended = employee.isSuspended`, which appointments
+stores so its own routes answer 403 `BUSINESS_EMPLOYEE_ACCESS_SUSPENDED`
+too. No dedicated suspension event
+or handler exists. The employee's dashboard (`GET dashboard`) also stops
+resolving to the business while suspended (404, as with no dashboard set).
 
 ```mermaid
 flowchart TD
@@ -42,7 +50,7 @@ flowchart TD
     Owner -- No --> Same{employee.isSuspended == suspended?}
     Same -- Yes --> R200a([200 Employee unchanged])
     Same -- No --> Set[EmployeeDataSource.setSuspendedAt id, now or null - findByIdAndUpdate row lock]
-    Set --> Event[eventProducer.send BusinessEvent.EmployeePermissionsChanged updated.effectivePermissions - NONE when suspended, stored grants when reinstated]
+    Set --> Event[eventProducer.send BusinessEvent.EmployeePermissionsChanged updated.permissions, suspended = updated.isSuspended]
     Event --> R200([200 Employee with updated suspendedAt])
 ```
 

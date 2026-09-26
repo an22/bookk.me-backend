@@ -8,6 +8,7 @@ import com.bookk.appointments.domain.api.operation.DeclineAppointmentRequest
 import com.bookk.appointments.domain.api.operation.GetPendingAppointmentRequests
 import com.bookk.appointments.domain.impl.di.AppointmentsScope
 import com.bookk.appointments.microservice.route.AppointmentsRouting.Api
+import com.bookk.core.domain.entity.SimpleServerError
 import com.bookk.core.service.di.injectScoped
 import com.bookk.core.service.enity.respondWith
 import com.bookk.server.auth.client.AppPrincipal
@@ -41,6 +42,11 @@ fun Routing.requests() {
                response(HttpStatusCode.OK.value) {
                    schema = jsonSchema<List<AppointmentRequest>>()
                    description = "List of appointment requests"
+                   ContentType.Application.ProtoBuf()
+               }
+               response(HttpStatusCode.Forbidden.value) {
+                   schema = jsonSchema<SimpleServerError>()
+                   description = "Caller is a suspended employee of this business - BUSINESS_EMPLOYEE_ACCESS_SUSPENDED (200034)"
                    ContentType.Application.ProtoBuf()
                }
             }
@@ -79,6 +85,7 @@ fun Routing.requests() {
          * Body: application/x-protobuf [com.bookk.appointments.domain.api.entity.AppointmentCancellation]
          * Response: 204 application/x-protobuf Appointment request canceled
          * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Cancel appointment request errors<br>REQUEST_ALREADY_DECLINED (300007) Appointment request already declined<br>REQUEST_ALREADY_APPROVED (300008) Appointment request already approved
+         * Response: 403 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Caller is a suspended employee of this business<br>BUSINESS_EMPLOYEE_ACCESS_SUSPENDED (200034) Your access to this business is suspended
          * See: docs/operations/appointments/decline-appointment-request.md
          */
         post<Api.Appointment.RequestCancel> {

@@ -20,6 +20,7 @@ import com.bookk.core.test.runUnitTest
 import com.bookk.core.test.then
 import com.bookk.core.test.whenn
 import kotlinx.datetime.TimeZone
+import library.permissions.EmployeeAccessSuspended
 import library.permissions.ResourcePermission
 import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -204,7 +205,7 @@ internal class BusinessPermissionDataSourceImplTest {
     }
 
     @Test
-    fun `should return none permission while the employee is suspended`() = runUnitTest {
+    fun `should reject a permission check while the employee is suspended`() = runUnitTest {
         given()
         val fixture = SutFixture()
         val employee = fixture.employee(Uuid.random())
@@ -214,10 +215,12 @@ internal class BusinessPermissionDataSourceImplTest {
         }
 
         whenn()
-        val stored = suspendTransaction { fixture.sut.getPermission(employee.userId, employee.businessId, BusinessResource.CLIENTS) }
+        val result = runCatching {
+            suspendTransaction { fixture.sut.getPermission(employee.userId, employee.businessId, BusinessResource.CLIENTS) }
+        }
 
         then()
-        assertEquals(ResourcePermission.NONE, stored)
+        assertTrue(result.exceptionOrNull() is EmployeeAccessSuspended)
     }
 
     @Test

@@ -9,6 +9,7 @@ object AppointmentPermissionGrantsTable : BaseUUIDTable("appointment_permission_
     val canView = bool("can_view")
     val canUpdate = bool("can_update")
     val canDelete = bool("can_delete")
+    val suspended = bool("suspended").default(false)
 
     init {
         index(true, userId, businessId)

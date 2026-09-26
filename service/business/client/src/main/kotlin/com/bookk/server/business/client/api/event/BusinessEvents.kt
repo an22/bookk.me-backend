@@ -4,6 +4,7 @@ import com.bookk.business.domain.api.business.entity.BusinessPermissions
 import com.bookk.core.data.eventstreaming.EventStreaming
 import com.bookk.server.business.client.api.BusinessDTO
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.protobuf.ProtoNumber
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
@@ -57,8 +58,10 @@ interface BusinessEvent : EventStreaming.Event<String> {
         val employeeUserId: Uuid,
         val businessId: Uuid,
         val permissions: BusinessPermissions,
-        override val idempotencyKey: String = Uuid.random().toString()
+        override val idempotencyKey: String = Uuid.random().toString(),
+        @ProtoNumber(6) val suspended: Boolean = false
     ) : BusinessEvent {
+        @ProtoNumber(5)
         override val topic: String = TOPIC
         override val partitionKey: String get() = businessId.toString()
 

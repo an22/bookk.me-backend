@@ -71,7 +71,7 @@ internal class JoinBusinessImpl(
                 BusinessEvent.EmployeePermissionsChanged(
                     employeeUserId = employee.userId,
                     businessId = business.id,
-                    permissions = employee.effectivePermissions()
+                    permissions = employee.permissions
                 )
             )
             employee

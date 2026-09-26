@@ -25,8 +25,6 @@ data class Employee(
 ) {
     val isSuspended: Boolean get() = suspendedAt != null
 
-    fun effectivePermissions(): BusinessPermissions = if (isSuspended) BusinessPermissions.NONE else permissions
-
     companion object {
         fun stub(
             id: Uuid = Uuid.random(),

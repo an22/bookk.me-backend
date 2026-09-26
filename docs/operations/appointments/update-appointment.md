@@ -22,7 +22,9 @@ flowchart TD
     Tx --> Settings[AppointmentSettingsDataSource.getForUpdate businessId]
     Settings -- not found --> R404a([404 Error.NotFound])
     Settings -- found --> GetExisting[AppointmentDataSource.get appointment.id]
-    GetExisting --> Perm{caller update permission, or view permission and existing.employee.userId == userId?}
+    GetExisting --> Suspended{AppointmentPermissionDataSource.getPermission - grant row marked suspended?}
+    Suspended -- Yes --> R403s([403 BUSINESS_EMPLOYEE_ACCESS_SUSPENDED 200034])
+    Suspended -- No --> Perm{caller update permission, or view permission and existing.employee.userId == userId?}
     Perm -- No --> R404b([404 Error.OperationNotAllowed])
     Perm -- Yes --> PastCheck{appointment.date < now?}
     PastCheck -- Yes --> R422a([422 DATE_IN_PAST 300012])

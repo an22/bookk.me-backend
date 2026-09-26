@@ -107,7 +107,7 @@ internal class SetEmployeePermissionsImplTest {
         coVerify(exactly = 1) {
             fixture.eventProducer.send(
                 match<BusinessEvent.EmployeePermissionsChanged> {
-                    it.employeeUserId == employee.userId && it.businessId == businessId && it.permissions == expected
+                    it.employeeUserId == employee.userId && it.businessId == businessId && it.permissions == expected && !it.suspended
                 },
                 any()
             )
@@ -115,7 +115,7 @@ internal class SetEmployeePermissionsImplTest {
     }
 
     @Test
-    fun `should store the grants but publish no permissions while the employee is suspended`() = runUnitTest {
+    fun `should publish the updated grants flagged as suspended while the employee is suspended`() = runUnitTest {
         given()
         val fixture = SutFixture(requestUserId, businessId)
         val employee = Employee.stub(businessId = businessId, suspendedAt = Instant.fromEpochMilliseconds(1))
@@ -134,7 +134,9 @@ internal class SetEmployeePermissionsImplTest {
         coVerify(exactly = 1) { fixture.businessPermissionDataSource.setPermissions(employee, grants) }
         coVerify(exactly = 1) {
             fixture.eventProducer.send(
-                match<BusinessEvent.EmployeePermissionsChanged> { it.permissions == BusinessPermissions.NONE },
+                match<BusinessEvent.EmployeePermissionsChanged> {
+                    it.permissions == BusinessPermissions.stub(appointments = ResourcePermission.FULL) && it.suspended
+                },
                 any()
             )
         }

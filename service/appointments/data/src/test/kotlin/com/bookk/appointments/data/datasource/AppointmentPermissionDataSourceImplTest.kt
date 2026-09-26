@@ -10,6 +10,7 @@ import com.bookk.core.test.given
 import com.bookk.core.test.runUnitTest
 import com.bookk.core.test.then
 import com.bookk.core.test.whenn
+import library.permissions.EmployeeAccessSuspended
 import library.permissions.ResourcePermission
 import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -54,7 +55,7 @@ internal class AppointmentPermissionDataSourceImplTest {
         val permission = ResourcePermission(view = true, update = true, delete = false)
 
         whenn()
-        suspendTransaction { fixture.sut.setPermission(userId, fixture.businessId, permission) }
+        suspendTransaction { fixture.sut.setPermission(userId, fixture.businessId, permission, suspended = false) }
         val stored = suspendTransaction { fixture.sut.getPermission(userId, fixture.businessId) }
 
         then()
@@ -67,10 +68,10 @@ internal class AppointmentPermissionDataSourceImplTest {
         val fixture = SutFixture()
         fixture.setup()
         val userId = Uuid.random()
-        suspendTransaction { fixture.sut.setPermission(userId, fixture.businessId, ResourcePermission(view = true, update = false, delete = false)) }
+        suspendTransaction { fixture.sut.setPermission(userId, fixture.businessId, ResourcePermission(view = true, update = false, delete = false), suspended = false) }
 
         whenn()
-        suspendTransaction { fixture.sut.setPermission(userId, fixture.businessId, ResourcePermission.FULL) }
+        suspendTransaction { fixture.sut.setPermission(userId, fixture.businessId, ResourcePermission.FULL, suspended = false) }
         val stored = suspendTransaction { fixture.sut.getPermission(userId, fixture.businessId) }
 
         then()
@@ -83,7 +84,7 @@ internal class AppointmentPermissionDataSourceImplTest {
         val fixture = SutFixture()
         fixture.setup()
         val userId = Uuid.random()
-        suspendTransaction { fixture.sut.setPermission(userId, fixture.businessId, ResourcePermission.FULL) }
+        suspendTransaction { fixture.sut.setPermission(userId, fixture.businessId, ResourcePermission.FULL, suspended = false) }
 
         whenn()
         suspendTransaction { fixture.sut.deleteForUser(userId) }
@@ -104,5 +105,36 @@ internal class AppointmentPermissionDataSourceImplTest {
 
         then()
         assertTrue(result.isSuccess)
+    }
+
+    @Test
+    fun `should reject a permission check while the employee is suspended`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val userId = Uuid.random()
+        suspendTransaction { fixture.sut.setPermission(userId, fixture.businessId, ResourcePermission.NONE, suspended = true) }
+
+        whenn()
+        val result = runCatching { suspendTransaction { fixture.sut.getPermission(userId, fixture.businessId) } }
+
+        then()
+        assertTrue(result.exceptionOrNull() is EmployeeAccessSuspended)
+    }
+
+    @Test
+    fun `should grant the stored permission again once the employee is reinstated`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val userId = Uuid.random()
+        suspendTransaction { fixture.sut.setPermission(userId, fixture.businessId, ResourcePermission.NONE, suspended = true) }
+
+        whenn()
+        suspendTransaction { fixture.sut.setPermission(userId, fixture.businessId, ResourcePermission.FULL, suspended = false) }
+        val stored = suspendTransaction { fixture.sut.getPermission(userId, fixture.businessId) }
+
+        then()
+        assertEquals(ResourcePermission.FULL, stored)
     }
 }

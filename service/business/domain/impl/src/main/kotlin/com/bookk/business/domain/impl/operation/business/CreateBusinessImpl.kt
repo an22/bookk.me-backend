@@ -42,7 +42,8 @@ internal class CreateBusinessImpl(
                 services = emptyList(),
                 schedule = Schedule.empty(),
                 createdAt = Clock.System.now(),
-                permissions = BusinessPermissions.FULL
+                permissions = BusinessPermissions.FULL,
+                suspendedAt = null
             )
         )
         business.copy(permissions = BusinessPermissions.FULL)

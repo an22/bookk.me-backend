@@ -133,6 +133,38 @@ one that changed), which the appointments service consumes to keep its own
 local copy of the `APPOINTMENTS` grant in sync — see
 [Storage](#storage).
 
+## Suspending an employee
+
+Suspension is a separate state, not an all-`false` grant set: an employee
+with no grants (`BusinessPermissions.NONE`) is still active and bookable.
+The owner suspends or reinstates an employee with
+
+```
+PUT /api/business/{businessId}/employee/{id}/suspension
+Body: EmployeeSuspensionRequest(suspended: Boolean)
+```
+
+which sets or clears `employee.suspended_at` (`Employee.suspendedAt`).
+The stored grants are left untouched. Enforcement lives in the
+permission reads, not in the operations: `BusinessPermissionDataSource.getPermission`
+and `getPermissions` inner-join `employee` on
+`business_permission_grants.employee_id` and filter
+`suspended_at IS NULL`, so a suspended employee resolves to
+`ResourcePermission.NONE` / `BusinessPermissions.NONE` and every existing
+`.assert(...)` / `.assertOrSelf(...)` rejects them. Reinstating restores
+exactly the grants they had. `Employee.permissions` still reports the stored
+grants (so a management UI can show what reinstatement will restore);
+`Employee.effectivePermissions()` is what they can actually do.
+
+Every producer of `BusinessEvent.EmployeePermissionsChanged` publishes
+`effectivePermissions()`, so the appointments copy is `NONE` for the whole
+suspension — including when the owner edits a suspended employee's grants —
+and gets the stored grants back on reinstatement. The owner cannot be
+suspended (`BUSINESS_OWNER_SUSPENSION_NOT_ALLOWED`, 200032). Client booking is
+not permission-gated, so `GetAppointmentBookingContext` checks
+`employee.isSuspended` explicitly (`BUSINESS_EMPLOYEE_SUSPENDED`, 200033). See
+[Set employee suspension](operations/business/set-employee-suspension.md).
+
 ## Cross-service checks
 
 A service that needs to check another business's grant without fetching

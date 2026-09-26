@@ -35,6 +35,10 @@ internal class EmployeeDataSourceImpl : DataSource(), EmployeeDataSource {
         (EmployeeEntity.findByIdAndUpdate(model) ?: throw Error.NotFound()).toDomain()
     }
 
+    override suspend fun setSuspendedAt(id: Uuid, suspendedAt: Instant?): Employee = dbQuery {
+        (EmployeeEntity.findByIdAndUpdateSuspension(id, suspendedAt) ?: throw Error.NotFound()).toDomain()
+    }
+
     override suspend fun getEmployees(businessId: Uuid): List<Employee> = dbQuery {
         EmployeeEntity.find {
             EmployeeTable.businessId eq businessId

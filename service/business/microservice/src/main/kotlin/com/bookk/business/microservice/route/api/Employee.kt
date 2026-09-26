@@ -5,6 +5,7 @@ import com.bookk.business.domain.api.employee.entity.Employee
 import com.bookk.business.domain.api.employee.entity.EmployeeUpdateModel
 import com.bookk.business.domain.api.employee.operation.GetEmployees
 import com.bookk.business.domain.api.employee.operation.SetEmployeePermissions
+import com.bookk.business.domain.api.employee.operation.SetEmployeeSuspension
 import com.bookk.business.domain.api.employee.operation.UpdateEmployee
 import com.bookk.business.domain.impl.di.BusinessScope
 import com.bookk.business.microservice.route.BusinessRouting.Api
@@ -43,6 +44,11 @@ internal class EmployeePermissionsRequest(
         appointments?.let { put(BusinessResource.APPOINTMENTS, it) }
     }
 }
+
+@Serializable
+internal class EmployeeSuspensionRequest(
+    @ProtoNumber(1) val suspended: Boolean
+)
 
 fun Route.employeeCrud() {
     authenticate {
@@ -114,6 +120,32 @@ fun Route.employeeCrud() {
                     businessId = it.parent.parent.businessId,
                     employeeId = it.parent.id,
                     grants = body.grants()
+                )
+            )
+        }
+
+        /**
+         * Summary: Suspend or reinstate employee
+         * Description: Suspends an employee, or reinstates a suspended one. A suspended employee keeps their stored permissions but is treated as having none, and cannot be booked by clients, until reinstated. Only the business owner can suspend employees, and the business owner cannot be suspended. Requesting the state the employee is already in changes nothing and returns the employee as is
+         * Tag: employee
+         * Security: jwt
+         * Body: application/x-protobuf [com.bookk.business.microservice.route.api.EmployeeSuspensionRequest]
+         * Response: 200 application/x-protobuf [com.bookk.business.domain.api.employee.entity.Employee] Employee with updated suspension state
+         * Response: 404 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Employee is not found or the caller is not the business owner
+         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Set employee suspension errors<br>BUSINESS_OWNER_SUSPENSION_NOT_ALLOWED (200032) Business owner cannot be suspended
+         * See: docs/operations/business/set-employee-suspension.md
+         */
+        put<Api.Employee.Id.Suspension> {
+            val principal = requireNotNull(call.principal<AppPrincipal>())
+            val body = call.receive<EmployeeSuspensionRequest>()
+            val setEmployeeSuspension by application.injectScoped<SetEmployeeSuspension>(BusinessScope)
+
+            call.respondWith(
+                setEmployeeSuspension(
+                    requestUserId = principal.userId,
+                    businessId = it.parent.parent.businessId,
+                    employeeId = it.parent.id,
+                    suspended = body.suspended
                 )
             )
         }

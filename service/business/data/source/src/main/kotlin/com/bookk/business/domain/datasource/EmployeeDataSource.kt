@@ -10,6 +10,7 @@ interface EmployeeDataSource {
     suspend fun updateEmployee(model: EmployeeUpdateModel): Employee
     suspend fun getEmployees(businessId: Uuid): List<Employee>
     suspend fun getEmployee(businessId: Uuid, id: Uuid): Employee?
+    suspend fun setSuspendedAt(id: Uuid, suspendedAt: Instant?): Employee
     suspend fun getEmployeeByUserId(businessId: Uuid, userId: Uuid): Employee?
     suspend fun deleteEmployee(businessId: Uuid, id: Uuid): Boolean
     suspend fun updateIntegratedEmployees(

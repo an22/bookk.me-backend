@@ -23,6 +23,7 @@ import library.permissions.ResourcePermission
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
 internal class SetEmployeePermissionsImplTest {
@@ -108,6 +109,32 @@ internal class SetEmployeePermissionsImplTest {
                 match<BusinessEvent.EmployeePermissionsChanged> {
                     it.employeeUserId == employee.userId && it.businessId == businessId && it.permissions == expected
                 },
+                any()
+            )
+        }
+    }
+
+    @Test
+    fun `should store the grants but publish no permissions while the employee is suspended`() = runUnitTest {
+        given()
+        val fixture = SutFixture(requestUserId, businessId)
+        val employee = Employee.stub(businessId = businessId, suspendedAt = Instant.fromEpochMilliseconds(1))
+        val grants = mapOf(BusinessResource.APPOINTMENTS to ResourcePermission.FULL)
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { employeeDataSource.getEmployee(businessId, employee.id) } returns employee
+            coEvery { businessPermissionDataSource.setPermissions(employee, grants) } returns Unit
+        }
+
+        whenn()
+        val result = fixture.sut(requestUserId, businessId, employee.id, grants)
+
+        then()
+        assertEquals(BusinessPermissions.stub(appointments = ResourcePermission.FULL), result.getOrNull()?.permissions)
+        coVerify(exactly = 1) { fixture.businessPermissionDataSource.setPermissions(employee, grants) }
+        coVerify(exactly = 1) {
+            fixture.eventProducer.send(
+                match<BusinessEvent.EmployeePermissionsChanged> { it.permissions == BusinessPermissions.NONE },
                 any()
             )
         }

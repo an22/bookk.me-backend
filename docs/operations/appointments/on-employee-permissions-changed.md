@@ -6,7 +6,10 @@ Produced by [Join business](../business/join-business.md) (grants
 view-only on every resource) and [Set employee
 permissions](../business/set-employee-permissions.md) (grants whatever
 `ResourcePermission`s were requested, for one or more resources, in one
-event). Keeps the
+event), and [Set employee suspension](../business/set-employee-suspension.md)
+(`NONE` on suspension, the stored grants on reinstatement — every producer
+publishes the employee's effective permissions, so a suspended employee's
+copy here stays `NONE`). Keeps the
 appointments service's own copy of the grant
 (`appointment_permission_grants`) in sync with the business service's
 source of truth, reading just the `appointments` field off the published

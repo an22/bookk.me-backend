@@ -16,6 +16,12 @@ interface GetAppointmentBookingContext {
             message = "Employee with this id is missing"
         ), Error
 
+        class EmployeeSuspended : BusinessError(
+            statusCode = HttpStatusCode.UnprocessableEntity.value,
+            code = BusinessErrorCodes.BUSINESS_EMPLOYEE_SUSPENDED,
+            message = "Employee is suspended and cannot be booked"
+        ), Error
+
         class ServiceNotFound : BusinessError(
             statusCode = HttpStatusCode.UnprocessableEntity.value,
             code = BusinessErrorCodes.BUSINESS_QUOTE_SERVICE_NOT_FOUND,

@@ -105,6 +105,7 @@ erDiagram
         uuid user_id "logical FK -> user.profile.id"
         timestamp source_updated_at
         byte working_days
+        timestamp suspended_at "nullable; set = suspended, grants read as NONE"
         timestamp created_at
         timestamp updated_at
     }

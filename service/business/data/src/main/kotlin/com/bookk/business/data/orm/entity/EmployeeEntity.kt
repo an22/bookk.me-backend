@@ -21,6 +21,7 @@ import org.jetbrains.exposed.v1.dao.UuidEntity
 import org.jetbrains.exposed.v1.jdbc.batchInsert
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import kotlin.time.Clock
+import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
 internal class EmployeeEntity(id: EntityID<Uuid>) : UuidEntity(id) {
@@ -34,6 +35,7 @@ internal class EmployeeEntity(id: EntityID<Uuid>) : UuidEntity(id) {
     var createdAt by EmployeeTable.createdAt
     var updatedAt by EmployeeTable.updatedAt
     var workingDays by EmployeeTable.workingDays
+    var suspendedAt by EmployeeTable.suspendedAt
 
     val services by ServiceEntity via EmployeeCanProvideServiceTable
     val workingHours by EmployeeWorkingHourEntity referrersOn EmployeeWorkingHoursTable.employeeId
@@ -56,7 +58,8 @@ internal class EmployeeEntity(id: EntityID<Uuid>) : UuidEntity(id) {
                 dayOffs = dayOffs.map { it.domain() }
             ),
             createdAt = createdAt,
-            permissions = BusinessPermissions.from(grants.associate { it.resource to it.permission() })
+            permissions = BusinessPermissions.from(grants.associate { it.resource to it.permission() }),
+            suspendedAt = suspendedAt
         )
     }
 
@@ -110,5 +113,9 @@ internal class EmployeeEntity(id: EntityID<Uuid>) : UuidEntity(id) {
             it.updatedAt = Clock.System.now()
         }
 
+        fun findByIdAndUpdateSuspension(id: Uuid, suspendedAt: Instant?): EmployeeEntity? = findByIdAndUpdate(id) {
+            it.suspendedAt = suspendedAt
+            it.updatedAt = Clock.System.now()
+        }
     }
 }

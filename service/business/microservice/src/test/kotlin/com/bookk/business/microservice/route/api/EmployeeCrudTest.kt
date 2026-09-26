@@ -6,6 +6,7 @@ import com.bookk.business.domain.api.employee.entity.Employee
 import com.bookk.business.domain.api.employee.entity.EmployeeUpdateModel
 import com.bookk.business.domain.api.employee.operation.GetEmployees
 import com.bookk.business.domain.api.employee.operation.SetEmployeePermissions
+import com.bookk.business.domain.api.employee.operation.SetEmployeeSuspension
 import com.bookk.business.domain.api.employee.operation.UpdateEmployee
 import com.bookk.business.domain.api.error.BusinessErrorCodes
 import com.bookk.business.microservice.route.BusinessRouting
@@ -30,10 +31,12 @@ import io.ktor.server.auth.bearer
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.mockk.coEvery
 import io.mockk.mockk
+import library.permissions.EmployeeAccessSuspended
 import library.permissions.ResourcePermission
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.koin.dsl.module
+import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
 internal class EmployeeCrudTest {
@@ -67,6 +70,16 @@ internal class EmployeeCrudTest {
         extension = jwtAuthentication(),
         diModule = module { single { useCase } },
         routeUnderTest = { employeeCrud() }
+    )
+
+    private fun ApplicationTestBuilder.authenticatedApplication(useCase: SetEmployeeSuspension) = setupApplication(
+        extension = jwtAuthentication(),
+        diModule = module { single { useCase } },
+        routeUnderTest = { employeeCrud() }
+    )
+
+    private fun suspensionResource(id: Uuid) = BusinessRouting.Api.Employee.Id.Suspension(
+        BusinessRouting.Api.Employee.Id(BusinessRouting.Api.Employee(businessId = businessId), id)
     )
 
     private fun permissionsResource(id: Uuid) = BusinessRouting.Api.Employee.Id.Permissions(
@@ -419,6 +432,109 @@ internal class EmployeeCrudTest {
     }
 
     @Test
+    fun `should suspend employee`() = routeTest {
+        given()
+        val useCase: SetEmployeeSuspension = mockk()
+        val employee = createTestEmployee().copy(suspendedAt = Instant.fromEpochMilliseconds(1))
+        coEvery { useCase.invoke(userId, businessId, employee.id, true) } returns Result.success(employee)
+        authenticatedApplication(useCase)
+
+        whenn()
+        val client = createTestClient()
+        val response = client.put(suspensionResource(employee.id)) { setBody(EmployeeSuspensionRequest(suspended = true)) }
+
+        then()
+        assertEquals(HttpStatusCode.OK, response.status)
+        assertEquals(employee, response.body<Employee>())
+    }
+
+    @Test
+    fun `should reinstate employee`() = routeTest {
+        given()
+        val useCase: SetEmployeeSuspension = mockk()
+        val employee = createTestEmployee()
+        coEvery { useCase.invoke(userId, businessId, employee.id, false) } returns Result.success(employee)
+        authenticatedApplication(useCase)
+
+        whenn()
+        val client = createTestClient()
+        val response = client.put(suspensionResource(employee.id)) { setBody(EmployeeSuspensionRequest(suspended = false)) }
+
+        then()
+        assertEquals(HttpStatusCode.OK, response.status)
+        assertEquals(employee, response.body<Employee>())
+    }
+
+    @Test
+    fun `should return unprocessable entity when suspending the business owner`() = routeTest {
+        given()
+        val useCase: SetEmployeeSuspension = mockk()
+        val id = Uuid.random()
+        coEvery { useCase.invoke(userId, businessId, id, true) } returns
+            Result.failure(SetEmployeeSuspension.Error.OwnerSuspensionNotAllowed())
+        authenticatedApplication(useCase)
+
+        whenn()
+        val client = createTestClient()
+        val response = client.put(suspensionResource(id)) { setBody(EmployeeSuspensionRequest(suspended = true)) }
+
+        then()
+        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
+        assertEquals(BusinessErrorCodes.BUSINESS_OWNER_SUSPENSION_NOT_ALLOWED, response.body<SimpleServerError>().errorCode)
+    }
+
+    @Test
+    fun `should return not found when suspending an unknown employee`() = routeTest {
+        given()
+        val useCase: SetEmployeeSuspension = mockk()
+        val id = Uuid.random()
+        coEvery { useCase.invoke(userId, businessId, id, true) } returns Result.failure(Error.NotFound())
+        authenticatedApplication(useCase)
+
+        whenn()
+        val client = createTestClient()
+        val response = client.put(suspensionResource(id)) { setBody(EmployeeSuspensionRequest(suspended = true)) }
+
+        then()
+        assertEquals(HttpStatusCode.NotFound, response.status)
+    }
+
+    @Test
+    fun `should return not found when a non owner suspends an employee`() = routeTest {
+        given()
+        val useCase: SetEmployeeSuspension = mockk()
+        val id = Uuid.random()
+        coEvery { useCase.invoke(userId, businessId, id, true) } returns Result.failure(Error.OperationNotAllowed())
+        authenticatedApplication(useCase)
+
+        whenn()
+        val client = createTestClient()
+        val response = client.put(suspensionResource(id)) { setBody(EmployeeSuspensionRequest(suspended = true)) }
+
+        then()
+        assertEquals(HttpStatusCode.NotFound, response.status)
+    }
+
+    @Test
+    fun `should return unauthorized when suspending without authentication`() = routeTest {
+        given()
+        val useCase: SetEmployeeSuspension = mockk()
+
+        setupApplication(
+            extension = { install(Authentication) { bearer { authenticate { null } } } },
+            diModule = module { single { useCase } },
+            routeUnderTest = { employeeCrud() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.put(suspensionResource(Uuid.random())) { setBody(EmployeeSuspensionRequest(suspended = true)) }
+
+        then()
+        assertEquals(HttpStatusCode.Unauthorized, response.status)
+    }
+
+    @Test
     fun `should return employees of the business`() = routeTest {
         given()
         val useCase: GetEmployees = mockk()
@@ -451,6 +567,22 @@ internal class EmployeeCrudTest {
 
         then()
         assertEquals(HttpStatusCode.NotFound, response.status)
+    }
+
+    @Test
+    fun `should return forbidden with a distinct code when the caller is suspended`() = routeTest {
+        given()
+        val useCase: GetEmployees = mockk()
+        coEvery { useCase.invoke(userId, businessId) } returns Result.failure(EmployeeAccessSuspended())
+        authenticatedApplication(useCase)
+
+        whenn()
+        val client = createTestClient()
+        val response = client.get(BusinessRouting.Api.Employee(businessId = businessId))
+
+        then()
+        assertEquals(HttpStatusCode.Forbidden, response.status)
+        assertEquals(BusinessErrorCodes.BUSINESS_EMPLOYEE_ACCESS_SUSPENDED, response.body<SimpleServerError>().errorCode)
     }
 
     @Test

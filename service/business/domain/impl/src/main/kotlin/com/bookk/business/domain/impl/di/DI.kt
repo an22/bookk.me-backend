@@ -25,6 +25,7 @@ import com.bookk.business.domain.api.employee.operation.GetEmployees
 import com.bookk.business.domain.api.employee.operation.JoinBusiness
 import com.bookk.business.domain.api.employee.operation.RevokeEmployeeInvitation
 import com.bookk.business.domain.api.employee.operation.SetEmployeePermissions
+import com.bookk.business.domain.api.employee.operation.SetEmployeeSuspension
 import com.bookk.business.domain.api.employee.operation.UpdateEmployee
 import com.bookk.business.domain.api.service.operation.CreateService
 import com.bookk.business.domain.api.service.operation.CreateServiceGroup
@@ -60,6 +61,7 @@ import com.bookk.business.domain.impl.operation.employee.GetEmployeesImpl
 import com.bookk.business.domain.impl.operation.employee.JoinBusinessImpl
 import com.bookk.business.domain.impl.operation.employee.RevokeEmployeeInvitationImpl
 import com.bookk.business.domain.impl.operation.employee.SetEmployeePermissionsImpl
+import com.bookk.business.domain.impl.operation.employee.SetEmployeeSuspensionImpl
 import com.bookk.business.domain.impl.operation.employee.UpdateEmployeeImpl
 import com.bookk.business.domain.impl.operation.service.CreateServiceGroupImpl
 import com.bookk.business.domain.impl.operation.service.CreateServiceImpl
@@ -115,6 +117,7 @@ fun businessDomainModule() = module {
         scopedOf(::GetEmployeesImpl) bind GetEmployees::class
         scopedOf(::UpdateEmployeeImpl) bind UpdateEmployee::class
         scopedOf(::SetEmployeePermissionsImpl) bind SetEmployeePermissions::class
+        scopedOf(::SetEmployeeSuspensionImpl) bind SetEmployeeSuspension::class
         scopedOf(::RevokeEmployeeInvitationImpl) bind RevokeEmployeeInvitation::class
         scopedOf(::ExpireEmployeeInvitationsImpl) bind ExpireEmployeeInvitations::class
         scopedOf(::DeleteProcessedEmployeeInvitationsImpl) bind DeleteProcessedEmployeeInvitations::class

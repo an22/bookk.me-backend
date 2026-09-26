@@ -17,7 +17,9 @@ flowchart TD
     Auth -- Yes --> Tx[[Begin transaction]]
     Tx --> GetRequest[AppointmentRequestDataSource.get appointmentRequestId]
     GetRequest -- not found --> R404a([404 Error.NotFound])
-    GetRequest -- found --> Perm{caller update permission, or view permission and request.employee.userId == userId?}
+    GetRequest -- found --> Suspended{AppointmentPermissionDataSource.getPermission - grant row marked suspended?}
+    Suspended -- Yes --> R403s([403 BUSINESS_EMPLOYEE_ACCESS_SUSPENDED 200034])
+    Suspended -- No --> Perm{caller update permission, or view permission and request.employee.userId == userId?}
     Perm -- No --> R404b([404 Error.OperationNotAllowed])
     Perm -- Yes --> Settings[AppointmentSettingsDataSource.getForUpdate businessId]
     Settings -- not found --> R404c([404 Error.NotFound])

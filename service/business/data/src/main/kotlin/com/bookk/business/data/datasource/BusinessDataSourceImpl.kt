@@ -16,6 +16,8 @@ import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.inList
+import org.jetbrains.exposed.v1.core.isNotNull
+import org.jetbrains.exposed.v1.core.isNull
 import org.jetbrains.exposed.v1.core.less
 import org.jetbrains.exposed.v1.core.or
 import org.jetbrains.exposed.v1.jdbc.deleteReturning
@@ -29,10 +31,9 @@ import kotlin.uuid.Uuid
 
 internal class BusinessDataSourceImpl : DataSource(), BusinessDataSource {
     override suspend fun createBusiness(userId: Uuid, name: String, currencyCode: String, timeZone: TimeZone): Business = dbQuery {
-        val javaUserId = userId
-        val entity = BusinessEntity.new(javaUserId, name, currencyCode, timeZone)
+        val entity = BusinessEntity.new(userId, name, currencyCode, timeZone)
         BusinessDashboardTable.insert {
-            it[this.userId] = javaUserId
+            it[this.userId] = userId
             it[businessId] = entity.id
         }
         entity.toDomain()
@@ -82,8 +83,20 @@ internal class BusinessDataSourceImpl : DataSource(), BusinessDataSource {
             .singleOrNull()
             ?.get(BusinessDashboardTable.businessId)
             ?.value
-        businessId?.let { BusinessEntity.findById(it)?.toDomain() }
+        businessId
+            ?.takeUnless { isSuspendedEmployee(userId, it) }
+            ?.let { BusinessEntity.findById(it)?.toDomain() }
     }
+
+    private fun isSuspendedEmployee(userId: Uuid, businessId: Uuid): Boolean =
+        EmployeeTable.select(EmployeeTable.id)
+            .where {
+                (EmployeeTable.userId eq userId) and
+                    (EmployeeTable.businessId eq businessId) and
+                    EmployeeTable.suspendedAt.isNotNull()
+            }
+            .empty()
+            .not()
 
     override suspend fun setDashboardBusiness(userId: Uuid, businessId: Uuid): Unit = dbQuery {
         BusinessDashboardTable.upsert {
@@ -100,15 +113,15 @@ internal class BusinessDataSourceImpl : DataSource(), BusinessDataSource {
             .singleOrNull()
             ?.getOrNull(BusinessDashboardTable.businessId)
             ?.value
-        val employeeBusinessIds = EmployeeTable
+        val activeEmployeeBusinessIds = EmployeeTable
             .select(EmployeeTable.businessId)
-            .where { EmployeeTable.userId eq userId }
+            .where { (EmployeeTable.userId eq userId) and EmployeeTable.suspendedAt.isNull() }
             .map { it[EmployeeTable.businessId].value }
         val businesses = BusinessEntity
-            .find { (BusinessTable.userId eq userId) or (BusinessTable.id inList employeeBusinessIds) }
+            .find { (BusinessTable.userId eq userId) or (BusinessTable.id inList activeEmployeeBusinessIds) }
             .map { it.toDomain() }
         UserBusinesses(
-            dashboardId = dashboardId,
+            dashboardId = dashboardId?.takeIf { id -> businesses.any { it.id == id } },
             businesses = businesses
         )
     }

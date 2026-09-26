@@ -20,11 +20,13 @@ import com.bookk.core.test.runUnitTest
 import com.bookk.core.test.then
 import com.bookk.core.test.whenn
 import kotlinx.datetime.TimeZone
+import library.permissions.EmployeeAccessSuspended
 import library.permissions.ResourcePermission
 import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
 internal class BusinessPermissionDataSourceImplTest {
@@ -200,6 +202,80 @@ internal class BusinessPermissionDataSourceImplTest {
 
         then()
         assertEquals(ResourcePermission.NONE, stored)
+    }
+
+    @Test
+    fun `should reject a permission check while the employee is suspended`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val employee = fixture.employee(Uuid.random())
+        suspendTransaction {
+            fixture.sut.setPermissions(employee, mapOf(BusinessResource.CLIENTS to ResourcePermission.FULL))
+            fixture.employeeDataSource.setSuspendedAt(employee.id, Instant.fromEpochMilliseconds(1))
+        }
+
+        whenn()
+        val result = runCatching {
+            suspendTransaction { fixture.sut.getPermission(employee.userId, employee.businessId, BusinessResource.CLIENTS) }
+        }
+
+        then()
+        assertTrue(result.exceptionOrNull() is EmployeeAccessSuspended)
+    }
+
+    @Test
+    fun `should return no permissions snapshot while the employee is suspended`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val employee = fixture.employee(Uuid.random())
+        suspendTransaction {
+            fixture.sut.setPermissions(employee, mapOf(BusinessResource.CLIENTS to ResourcePermission.FULL))
+            fixture.employeeDataSource.setSuspendedAt(employee.id, Instant.fromEpochMilliseconds(1))
+        }
+
+        whenn()
+        val permissions = suspendTransaction { fixture.sut.getPermissions(employee.userId, employee.businessId) }
+
+        then()
+        assertEquals(BusinessPermissions.NONE, permissions)
+    }
+
+    @Test
+    fun `should restore the stored permission once the employee is reinstated`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val employee = fixture.employee(Uuid.random())
+        suspendTransaction {
+            fixture.sut.setPermissions(employee, mapOf(BusinessResource.CLIENTS to ResourcePermission.FULL))
+            fixture.employeeDataSource.setSuspendedAt(employee.id, Instant.fromEpochMilliseconds(1))
+        }
+
+        whenn()
+        suspendTransaction { fixture.employeeDataSource.setSuspendedAt(employee.id, null) }
+        val stored = suspendTransaction { fixture.sut.getPermission(employee.userId, employee.businessId, BusinessResource.CLIENTS) }
+
+        then()
+        assertEquals(ResourcePermission.FULL, stored)
+    }
+
+    @Test
+    fun `should keep the same user's grants in another business when suspended in one`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+        val suspended = fixture.employee(userId, businessName = "Salon")
+        val active = fixture.employee(userId, businessName = "Other Salon")
+        suspendTransaction {
+            fixture.sut.setPermissions(suspended, mapOf(BusinessResource.CLIENTS to ResourcePermission.FULL))
+            fixture.sut.setPermissions(active, mapOf(BusinessResource.CLIENTS to ResourcePermission.FULL))
+            fixture.employeeDataSource.setSuspendedAt(suspended.id, Instant.fromEpochMilliseconds(1))
+        }
+
+        whenn()
+        val stored = suspendTransaction { fixture.sut.getPermission(userId, active.businessId, BusinessResource.CLIENTS) }
+
+        then()
+        assertEquals(ResourcePermission.FULL, stored)
     }
 
     @Test

@@ -13,4 +13,5 @@ object EmployeeTable : BaseUUIDTable("employee") {
     val userId = uuid("user_id").index()
     val sourceUpdatedAt = timestamp("source_updated_at").nullable()
     val workingDays = byte("working_days").default(0)
+    val suspendedAt = timestamp("suspended_at").nullable()
 }

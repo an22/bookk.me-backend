@@ -35,15 +35,15 @@ internal class SyncEmployeePermissionTest {
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { subscriptionDataSource.isBusinessEnabled(businessId) } returns true
-            coEvery { appointmentPermissionDataSource.setPermission(userId, businessId, permission) } returns Unit
+            coEvery { appointmentPermissionDataSource.setPermission(userId, businessId, permission, false) } returns Unit
         }
 
         whenn()
-        val result = fixture.sut.invoke(userId, businessId, permission)
+        val result = fixture.sut.invoke(userId, businessId, permission, suspended = false)
 
         then()
         assertTrue(result.isSuccess)
-        coVerify(exactly = 1) { fixture.appointmentPermissionDataSource.setPermission(userId, businessId, permission) }
+        coVerify(exactly = 1) { fixture.appointmentPermissionDataSource.setPermission(userId, businessId, permission, false) }
     }
 
     @Test
@@ -58,10 +58,30 @@ internal class SyncEmployeePermissionTest {
         }
 
         whenn()
-        val result = fixture.sut.invoke(userId, businessId, ResourcePermission(view = false, update = true, delete = false))
+        val result = fixture.sut.invoke(userId, businessId, ResourcePermission(view = false, update = true, delete = false), suspended = false)
 
         then()
         assertTrue(result.isSuccess)
-        coVerify(exactly = 0) { fixture.appointmentPermissionDataSource.setPermission(any(), any(), any()) }
+        coVerify(exactly = 0) { fixture.appointmentPermissionDataSource.setPermission(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `should store the suspension together with the permission`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+        val businessId = Uuid.random()
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { subscriptionDataSource.isBusinessEnabled(businessId) } returns true
+            coEvery { appointmentPermissionDataSource.setPermission(userId, businessId, ResourcePermission.NONE, true) } returns Unit
+        }
+
+        whenn()
+        val result = fixture.sut.invoke(userId, businessId, ResourcePermission.NONE, suspended = true)
+
+        then()
+        assertTrue(result.isSuccess)
+        coVerify(exactly = 1) { fixture.appointmentPermissionDataSource.setPermission(userId, businessId, ResourcePermission.NONE, true) }
     }
 }

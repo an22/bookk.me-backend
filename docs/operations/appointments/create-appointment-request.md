@@ -79,7 +79,9 @@ flowchart TD
     EmptyListCheck -- Yes --> R422h([422 BUSINESS_QUOTE_EMPTY_SERVICE_LIST 200014 - unreachable here, ServicesCheck already rejects an empty list])
     EmptyListCheck -- No --> EmployeeLookup[EmployeeDataSource.getEmployee businessId employeeId]
     EmployeeLookup -- missing --> R404b([404 BUSINESS_EMPLOYEE_NOT_EXISTS 200024])
-    EmployeeLookup -- found --> ClientLookup{ClientDataSource.getClientByUserId businessId userId}
+    EmployeeLookup -- found --> SuspendedCheck{employee.isSuspended?}
+    SuspendedCheck -- Yes --> R422s([422 BUSINESS_EMPLOYEE_SUSPENDED 200033 - see business/set-employee-suspension.md])
+    SuspendedCheck -- No --> ClientLookup{ClientDataSource.getClientByUserId businessId userId}
     ClientLookup -- none yet --> ClientCreate[UserClient.getUserById userId then ClientDataSource.getOrCreateIntegratedClient]
     ClientLookup -- found --> ServicesResolve
     ClientCreate --> ServicesResolve[ServiceDataSource.getServicesByIds distinct serviceIds]

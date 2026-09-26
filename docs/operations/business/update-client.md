@@ -16,7 +16,9 @@ flowchart TD
     Auth -- Yes --> IdCheck{path id == body id?}
     IdCheck -- No --> R400([400 Invalid request])
     IdCheck -- Yes --> Tx[[Begin transaction]]
-    Tx --> Perm{caller CLIENTS.update?}
+    Tx --> Suspended{BusinessPermissionDataSource.getPermission - caller is a suspended employee of the business?}
+    Suspended -- Yes --> R403s([403 BUSINESS_EMPLOYEE_ACCESS_SUSPENDED 200034])
+    Suspended -- No --> Perm{caller CLIENTS.update?}
     Perm -- No --> R404a([404 Error.OperationNotAllowed])
     Perm -- Yes --> Fetch[ClientDataSource.getClientById businessId id]
     Fetch --> Found{client found?}

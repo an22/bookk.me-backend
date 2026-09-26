@@ -20,8 +20,11 @@ data class Employee(
     @ProtoNumber(8) val services: List<Service>,
     @ProtoNumber(9) val schedule: Schedule,
     @ProtoNumber(10) val createdAt: Instant,
-    @ProtoNumber(11) val permissions: BusinessPermissions
+    @ProtoNumber(11) val permissions: BusinessPermissions,
+    @ProtoNumber(12) val suspendedAt: Instant?
 ) {
+    val isSuspended: Boolean get() = suspendedAt != null
+
     companion object {
         fun stub(
             id: Uuid = Uuid.random(),
@@ -34,7 +37,8 @@ data class Employee(
             services: List<Service> = emptyList(),
             schedule: Schedule = Schedule.empty(),
             createdAt: Instant = Instant.fromEpochMilliseconds(0),
-            permissions: BusinessPermissions = BusinessPermissions.NONE
+            permissions: BusinessPermissions = BusinessPermissions.NONE,
+            suspendedAt: Instant? = null
         ) = Employee(
             id = id,
             businessId = businessId,
@@ -46,7 +50,8 @@ data class Employee(
             services = services,
             schedule = schedule,
             createdAt = createdAt,
-            permissions = permissions
+            permissions = permissions,
+            suspendedAt = suspendedAt
         )
     }
 }

@@ -826,6 +826,81 @@ internal class EmployeeDataSourceImplTest {
         assertEquals(listOf(permissions), employees.map { it.permissions })
     }
 
+    @Test
+    fun `should be active by default`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+
+        whenn()
+        val created = suspendTransaction { fixture.sut.createEmployee(Employee.stub(businessId = fixture.businessId)) }
+
+        then()
+        assertNull(created.suspendedAt)
+    }
+
+    @Test
+    fun `should persist the suspension time`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val created = suspendTransaction { fixture.sut.createEmployee(Employee.stub(businessId = fixture.businessId)) }
+        val suspendedAt = Instant.fromEpochMilliseconds(1_700_000_000_000)
+
+        whenn()
+        val updated = suspendTransaction { fixture.sut.setSuspendedAt(created.id, suspendedAt) }
+        val found = suspendTransaction { fixture.sut.getEmployee(fixture.businessId, created.id) }
+
+        then()
+        assertEquals(suspendedAt, updated.suspendedAt)
+        assertEquals(suspendedAt, found?.suspendedAt)
+    }
+
+    @Test
+    fun `should clear the suspension time on reinstatement`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val created = suspendTransaction { fixture.sut.createEmployee(Employee.stub(businessId = fixture.businessId)) }
+        suspendTransaction { fixture.sut.setSuspendedAt(created.id, Instant.fromEpochMilliseconds(1_700_000_000_000)) }
+
+        whenn()
+        suspendTransaction { fixture.sut.setSuspendedAt(created.id, null) }
+        val found = suspendTransaction { fixture.sut.getEmployee(fixture.businessId, created.id) }
+
+        then()
+        assertNull(found?.suspendedAt)
+    }
+
+    @Test
+    fun `should keep stored permissions while suspended`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val created = suspendTransaction {
+            fixture.sut.createEmployee(Employee.stub(businessId = fixture.businessId, permissions = BusinessPermissions.VIEW_ONLY))
+        }
+
+        whenn()
+        val updated = suspendTransaction { fixture.sut.setSuspendedAt(created.id, Instant.fromEpochMilliseconds(1_700_000_000_000)) }
+
+        then()
+        assertEquals(BusinessPermissions.VIEW_ONLY, updated.permissions)
+    }
+
+    @Test
+    fun `should throw not found when suspending employee that does not exist`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+
+        whenn()
+        val result = runCatching { suspendTransaction { fixture.sut.setSuspendedAt(Uuid.random(), Instant.fromEpochMilliseconds(1)) } }
+
+        then()
+        assertTrue(result.exceptionOrNull() is Error.NotFound)
+    }
+
     private fun updateModel(employee: Employee) = EmployeeUpdateModel(
         id = employee.id,
         businessId = employee.businessId,

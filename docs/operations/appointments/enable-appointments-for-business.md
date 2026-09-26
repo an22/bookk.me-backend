@@ -16,6 +16,7 @@ flowchart TD
     Auth -- No --> R401([401 Unauthorized])
     Auth -- Yes --> GetPerm[BusinessClient.getPermission userId businessId BUSINESS]
     GetPerm -- request failed --> RErr([Propagate business-service error])
+    GetPerm -- caller suspended in the business --> R403s([403 BUSINESS_EMPLOYEE_ACCESS_SUSPENDED 200034 - propagated from the business service])
     GetPerm -- ok --> GetBiz[BusinessClient.getBusinessById businessId]
     GetBiz -- request failed --> RErr
     GetBiz -- ok --> Tx[[Begin transaction]]

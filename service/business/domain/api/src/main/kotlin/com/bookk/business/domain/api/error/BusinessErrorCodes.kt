@@ -1,5 +1,7 @@
 package com.bookk.business.domain.api.error
 
+import library.permissions.PermissionErrorCodes
+
 object BusinessErrorCodes {
     private const val BASE = 200000
 
@@ -44,4 +46,8 @@ object BusinessErrorCodes {
     const val BUSINESS_OWNER_PERMISSIONS_IMMUTABLE = BASE + 30
 
     const val BUSINESS_EMPLOYEE_INVITATION_CODE_EMPTY = BASE + 31
+
+    const val BUSINESS_OWNER_SUSPENSION_NOT_ALLOWED = BASE + 32
+    const val BUSINESS_EMPLOYEE_SUSPENDED = BASE + 33
+    const val BUSINESS_EMPLOYEE_ACCESS_SUSPENDED = PermissionErrorCodes.EMPLOYEE_ACCESS_SUSPENDED
 }

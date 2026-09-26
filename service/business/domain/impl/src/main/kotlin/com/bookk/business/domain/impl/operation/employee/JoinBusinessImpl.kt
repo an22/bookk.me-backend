@@ -54,7 +54,8 @@ internal class JoinBusinessImpl(
                     services = emptyList(),
                     schedule = Schedule.empty(),
                     createdAt = Clock.System.now(),
-                    permissions = BusinessPermissions.VIEW_ONLY
+                    permissions = BusinessPermissions.VIEW_ONLY,
+                    suspendedAt = null
                 )
             )
             eventProducer.send(

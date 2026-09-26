@@ -39,6 +39,7 @@ fun Route.employeeInvitationCrud() {
          * Response: 200 application/x-protobuf [com.bookk.business.domain.api.employee.entity.EmployeeInvitation] Created invitation
          * Response: 404 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Business is not found or the caller has no rights to invite
          * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Create invitation errors<br>BUSINESS_EMPLOYEE_PENDING_INVITATIONS_LIMIT_REACHED (200028) Business already has the maximum number of pending invitations<br>BUSINESS_EMPLOYEE_DAILY_INVITATIONS_LIMIT_REACHED (200029) Business already created the maximum number of invitations in the last 24 hours
+         * Response: 403 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Caller is a suspended employee of this business<br>BUSINESS_EMPLOYEE_ACCESS_SUSPENDED (200034) Your access to this business is suspended
          * See: docs/operations/business/create-employee-invitation.md
          */
         post<Api.EmployeeInvitation> {
@@ -96,6 +97,7 @@ fun Route.employeeInvitationCrud() {
          * Response: 204 application/x-protobuf Invitation revoked
          * Response: 404 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Invitation is not found or the caller has no rights to revoke it
          * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Revoke invitation errors<br>BUSINESS_EMPLOYEE_INVITATION_ALREADY_PROCESSED (200017) Invitation is already processed
+         * Response: 403 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Caller is a suspended employee of this business<br>BUSINESS_EMPLOYEE_ACCESS_SUSPENDED (200034) Your access to this business is suspended
          * See: docs/operations/business/revoke-employee-invitation.md
          */
         post<Api.EmployeeInvitation.Revoke> {

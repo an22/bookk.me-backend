@@ -133,6 +133,72 @@ one that changed), which the appointments service consumes to keep its own
 local copy of the `APPOINTMENTS` grant in sync — see
 [Storage](#storage).
 
+## Suspending an employee
+
+Suspension is a separate state, not an all-`false` grant set: an employee
+with no grants (`BusinessPermissions.NONE`) is still active and bookable.
+The owner suspends or reinstates an employee with
+
+```
+PUT /api/business/{businessId}/employee/{id}/suspension
+Body: EmployeeSuspensionRequest(suspended: Boolean)
+```
+
+which sets or clears `employee.suspended_at` (`Employee.suspendedAt`).
+The stored grants are left untouched. Enforcement lives in the
+permission reads, not in the operations. Both inner-join `employee` on
+`business_permission_grants.employee_id`:
+
+- `BusinessPermissionDataSource.getPermission` — the gate every
+  permission-checked operation calls before `.assert(...)` — throws
+  `library.permissions.EmployeeAccessSuspended` for a suspended caller. It is a
+  `BusinessError` with **403** and `BUSINESS_EMPLOYEE_ACCESS_SUSPENDED`
+  (200034), unlike an ordinary permission failure (404), so a client can
+  tell "you were suspended" apart from "not found / not allowed". The
+  error is thrown *after* `dbQuery { }` returns: `dbQuery` maps any
+  throwable that is not a core `Error` to `Error.UnknownError` (500), so a
+  `BusinessError` thrown inside it would never reach the client. The
+  internal `GET /api/internal/business/{id}/permissions/...` route returns
+  the same 403, and `BusinessClient.getPermission` decodes it back into a
+  `BusinessError`, so appointments' `EnableAppointmentsForBusiness` passes
+  it through unchanged.
+- `getPermissions` — used only to attach the requesting user's grants to a
+  returned `Business` (business by id, dashboard, business list), never as
+  a gate — filters `suspended_at IS NULL` and returns
+  `BusinessPermissions.NONE` rather than failing the read.
+
+The appointments service enforces the same thing against its own copy:
+`BusinessEvent.EmployeePermissionsChanged` carries a `suspended` flag that
+`SyncEmployeePermission` stores on `appointment_permission_grants.suspended`,
+and `AppointmentPermissionDataSource.getPermission` throws the same
+`EmployeeAccessSuspended` while it is set. The error class and its code
+(`library.permissions.PermissionErrorCodes.EMPLOYEE_ACCESS_SUSPENDED`,
+aliased as `BusinessErrorCodes.BUSINESS_EMPLOYEE_ACCESS_SUSPENDED`) live in
+`library/permissions` so both services throw the identical error. The
+dashboard (`BusinessDataSource.getDashboardBusiness`) treats a dashboard
+pointing at a suspended employment as unset, so `GET dashboard` returns its
+usual 404.
+
+Owner-only operations (`SetEmployeePermissions`, `SetEmployeeSuspension`)
+gate on `BusinessDataSource.isOwner`, not on grants, so a suspended caller
+still gets their ordinary 404 there. Reinstating restores exactly the
+grants they had. `Employee.permissions` always reports the stored grants
+(so a management UI can show what reinstatement will restore), and
+`Employee.isSuspended` says whether they apply.
+
+Every producer of `BusinessEvent.EmployeePermissionsChanged` publishes the
+stored `permissions` together with `suspended = employee.isSuspended`, so the
+appointments copy mirrors the real grants at all times — including when the
+owner edits a suspended employee's grants — and the flag alone decides
+whether they apply. The owner cannot be
+suspended (`BUSINESS_OWNER_SUSPENSION_NOT_ALLOWED`, 200032). Client booking is
+not permission-gated, so `GetAppointmentBookingContext` checks
+`employee.isSuspended` explicitly (`BUSINESS_EMPLOYEE_SUSPENDED`, 200033). A
+suspended employee's business is also left out of their own business list
+(`BusinessDataSource.getUserBusinesses`, which drops a `dashboardId` pointing
+at it too). See
+[Set employee suspension](operations/business/set-employee-suspension.md).
+
 ## Cross-service checks
 
 A service that needs to check another business's grant without fetching

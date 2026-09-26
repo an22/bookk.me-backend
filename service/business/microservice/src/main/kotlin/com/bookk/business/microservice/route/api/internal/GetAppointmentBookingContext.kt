@@ -19,7 +19,7 @@ internal fun Route.getAppointmentBookingContext() {
      * Body: application/x-protobuf [com.bookk.business.domain.api.appointment.entity.AppointmentBookingContextRequest]
      * Response: 200 application/x-protobuf [com.bookk.business.domain.api.appointment.entity.AppointmentBookingContext] Resolved employee, client and services
      * Response: 404 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Get appointment booking context errors<br>BUSINESS_EMPLOYEE_NOT_EXISTS (200024) Employee with this id is missing
-     * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Get appointment booking context errors<br>BUSINESS_QUOTE_SERVICE_NOT_FOUND (200013) One or more services not found<br>BUSINESS_QUOTE_EMPTY_SERVICE_LIST (200014) Service list must not be empty
+     * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Get appointment booking context errors<br>BUSINESS_QUOTE_SERVICE_NOT_FOUND (200013) One or more services not found<br>BUSINESS_QUOTE_EMPTY_SERVICE_LIST (200014) Service list must not be empty<br>BUSINESS_EMPLOYEE_SUSPENDED (200033) Employee is suspended and cannot be booked
      */
     post<Api.Internal.Business.Id.AppointmentBookingContext> { resource ->
         val body = call.receive<AppointmentBookingContextRequest>()

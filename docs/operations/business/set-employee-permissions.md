@@ -19,8 +19,11 @@ the owner's employee record is rejected before anything else is checked
 about the grants. A body with every field omitted (an empty map) is a no-op that returns the
 employee unchanged. The `Employee` row itself is unchanged; the response is
 the `Employee` with its merged `permissions`, computed in memory as
-`employee.permissions.with(grants)` rather than re-read. See [Resource
-permissions](../../object-permissions.md) for the full model.
+`employee.permissions.with(grants)` rather than re-read. Grants can be
+changed while the employee is [suspended](set-employee-suspension.md): they
+are stored, returned and published as usual, with `suspended = true` on
+the event, so the appointments copy stays blocked until reinstatement. See [Resource permissions](../../object-permissions.md) for
+the full model.
 
 ```mermaid
 flowchart TD
@@ -38,7 +41,7 @@ flowchart TD
     Empty -- Yes --> R200a([200 Employee unchanged])
     Empty -- No --> Set[BusinessPermissionDataSource.setPermissions employee, grants - one batch upsert keyed by employee_id/user_id/business_id]
     Set --> Merge[employee.copy permissions = employee.permissions.with grants]
-    Merge --> Event[eventProducer.send BusinessEvent.EmployeePermissionsChanged updated.permissions - once per request]
+    Merge --> Event[eventProducer.send BusinessEvent.EmployeePermissionsChanged updated.permissions, suspended = updated.isSuspended - once per request]
     Event --> R200([200 Employee with updated permissions])
 ```
 

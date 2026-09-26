@@ -21,13 +21,18 @@ a code that never existed — `getInvitationByCodeHash` simply won't find
 it, so the caller gets 404 rather than the 422 `ALREADY_PROCESSED` error.
 That error is still reached for the genuine race: two requests fetching
 the same still-`PENDING` invitation before either commits, where the
-loser's `redeemInvitation` call matches zero rows.
+loser's `redeemInvitation` call matches zero rows. An empty or
+whitespace-only code is rejected up front with 422
+`BUSINESS_EMPLOYEE_INVITATION_CODE_EMPTY`, before any transaction or
+database lookup is started.
 
 ```mermaid
 flowchart TD
     Start([POST /api/business/employee_invitation/redeem]) --> Auth{JWT valid?}
     Auth -- No --> R401([401 Unauthorized])
-    Auth -- Yes --> Tx[[Begin transaction]]
+    Auth -- Yes --> Blank{code.isBlank?}
+    Blank -- Yes --> R422c([422 BUSINESS_EMPLOYEE_INVITATION_CODE_EMPTY 200031])
+    Blank -- No --> Tx[[Begin transaction]]
     Tx --> HashCode[EmployeeInvitationCode.hash the submitted code]
     HashCode --> GetInvite[EmployeeInvitationDataSource.getInvitationByCodeHash code_hash]
     GetInvite -- not found or hash already cleared --> R404a([404 Error.NotFound])

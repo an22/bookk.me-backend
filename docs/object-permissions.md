@@ -95,7 +95,7 @@ is keyed by `(userId, businessId)` alone.
 ## Granting and revoking permissions
 
 There is no fixed role (the old `EMPLOYEE`/`MANAGER` split is gone).
-Instead, an owner (or anyone holding `EMPLOYEES.update`) grants or revokes
+Instead, the business owner — and only the owner — grants or revokes
 the `view`/`update`/`delete` bits of one or more resources for one
 employee in a single request:
 
@@ -104,16 +104,12 @@ PUT /api/business/{businessId}/employee/{id}/permissions
 Body: EmployeePermissionsRequest(business?, employees?, clients?, services?, appointments?: ResourcePermission)
 ```
 
-`SetEmployeePermissionsImpl` requires the caller to hold `EMPLOYEES.update`,
-looks up the target employee, rejects the request with
-`BUSINESS_OWNER_PERMISSIONS_IMMUTABLE` (200030) if that employee is the
-business owner (`BusinessDataSource.isOwner`) — the owner always keeps `FULL`
-on every resource — and additionally requires the caller's own
-grant on **every listed resource** to `.covers()` the permission being
-handed out — you cannot grant delegate access you don't hold yourself
-(`SetEmployeePermissions.Error.InsufficientGrant`, 422). The check is
-all-or-nothing, so one uncovered grant rejects the whole request and
-nothing is written. Resources not listed keep their grants. It responds with
+`SetEmployeePermissionsImpl` requires the caller to be the business owner
+(`BusinessDataSource.isOwner`; `EMPLOYEES.update` alone is not enough —
+`Error.OperationNotAllowed`, 404), looks up the target employee, and rejects
+the request with `BUSINESS_OWNER_PERMISSIONS_IMMUTABLE` (200030) if that
+employee is the owner themselves — the owner always keeps `FULL` on every
+resource. Resources not listed keep their grants. It responds with
 the updated `Employee`. There is no separate read endpoint: every
 `Employee` the business service returns carries that employee's current
 grants across all five resources as `Employee.permissions`
@@ -127,7 +123,7 @@ grants.
 |---|---|---|
 | Business creator | `CreateBusinessImpl` (via the owner's `Employee.permissions`, written by `createEmployee`) | `ResourcePermission.FULL` on all five resources |
 | Employee who joined | `JoinBusinessImpl` (via the new `Employee.permissions`, written by `createEmployee`) | `view = true` (nothing else) on all five resources — customizable afterward via `SetEmployeePermissions` |
-| Employee's permissions changed by an authorized caller | `SetEmployeePermissionsImpl` | Whatever `ResourcePermission` was requested, for each listed resource (one event per request) |
+| Employee's permissions changed by the business owner | `SetEmployeePermissionsImpl` | Whatever `ResourcePermission` was requested, for each listed resource (one event per request) |
 
 Every row above that changes an **existing** employee's grants (join, or an
 explicit set) publishes `BusinessEvent.EmployeePermissionsChanged`

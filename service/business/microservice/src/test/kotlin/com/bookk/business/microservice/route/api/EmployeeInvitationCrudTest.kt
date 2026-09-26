@@ -281,6 +281,33 @@ internal class EmployeeInvitationCrudTest {
     }
 
     @Test
+    fun `should return unprocessable entity when redeeming an empty code`() = routeTest {
+        given()
+        val useCase: JoinBusiness = mockk()
+        coEvery { useCase.invoke(userId, "") } returns
+            Result.failure(JoinBusiness.Error.EmptyInvitationCode())
+
+        setupApplication(
+            extension = jwtAuthentication(),
+            diModule = module { single { useCase } },
+            routeUnderTest = { employeeInvitationCrud() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.post(BusinessRouting.Api.RedeemEmployeeInvitation()) {
+            setBody(EmployeeInvitationRedeemRequest(code = ""))
+        }
+
+        then()
+        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
+        assertEquals(
+            BusinessErrorCodes.BUSINESS_EMPLOYEE_INVITATION_CODE_EMPTY,
+            response.body<SimpleServerError>().errorCode
+        )
+    }
+
+    @Test
     fun `should return unprocessable entity when redeeming user is already an employee`() = routeTest {
         given()
         val useCase: JoinBusiness = mockk()

@@ -200,6 +200,33 @@ internal class JoinBusinessImplTest {
     }
 
     @Test
+    fun `should reject empty invite code without touching the database`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+
+        whenn()
+        val result = fixture.sut(Uuid.random(), "")
+
+        then()
+        assertTrue(result.exceptionOrNull() is JoinBusiness.Error.EmptyInvitationCode)
+        coVerify(exactly = 0) { fixture.transactionManager.transaction<Any>(any()) }
+        coVerify(exactly = 0) { fixture.invitationDataSource.getInvitationByCodeHash(any()) }
+    }
+
+    @Test
+    fun `should reject blank invite code`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+
+        whenn()
+        val result = fixture.sut(Uuid.random(), "   ")
+
+        then()
+        assertTrue(result.exceptionOrNull() is JoinBusiness.Error.EmptyInvitationCode)
+        coVerify(exactly = 0) { fixture.invitationDataSource.getInvitationByCodeHash(any()) }
+    }
+
+    @Test
     fun `should return failure when invite code is unknown`() = runUnitTest {
         given()
         val fixture = SutFixture()

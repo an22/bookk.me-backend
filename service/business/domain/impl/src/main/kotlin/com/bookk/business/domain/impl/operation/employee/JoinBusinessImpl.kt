@@ -25,8 +25,9 @@ internal class JoinBusinessImpl(
     private val transactionManager: TransactionManager,
     private val eventProducer: StandardEventProducer
 ) : JoinBusiness {
-    override suspend fun invoke(requestUserId: Uuid, code: String): Result<Employee> =
-        transactionManager.transaction {
+    override suspend fun invoke(requestUserId: Uuid, code: String): Result<Employee> {
+        if (code.isBlank()) return Result.failure(JoinBusiness.Error.EmptyInvitationCode())
+        return transactionManager.transaction {
             val invitation = invitationDataSource.getInvitationByCodeHash(EmployeeInvitationCode.hash(code))
                 ?: throw Error.NotFound()
             if (invitation.status != EmployeeInvitationStatus.PENDING) {
@@ -74,4 +75,5 @@ internal class JoinBusinessImpl(
             )
             employee
         }
+    }
 }

@@ -339,27 +339,6 @@ internal class EmployeeCrudTest {
     }
 
     @Test
-    fun `should return unprocessable entity when caller cannot grant a permission level they do not hold`() = routeTest {
-        given()
-        val useCase: SetEmployeePermissions = mockk()
-        val id = Uuid.random()
-        val grants = mapOf(BusinessResource.CLIENTS to ResourcePermission.FULL)
-        coEvery { useCase.invoke(userId, businessId, id, grants) } returns
-            Result.failure(SetEmployeePermissions.Error.InsufficientGrant())
-        authenticatedApplication(useCase)
-
-        whenn()
-        val client = createTestClient()
-        val response = client.put(permissionsResource(id)) {
-            setBody(permissionsRequest(clients = grants.getValue(BusinessResource.CLIENTS)))
-        }
-
-        then()
-        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
-        assertEquals(BusinessErrorCodes.BUSINESS_INSUFFICIENT_GRANT_PERMISSION, response.body<SimpleServerError>().errorCode)
-    }
-
-    @Test
     fun `should return unprocessable entity when setting permissions for the business owner`() = routeTest {
         given()
         val useCase: SetEmployeePermissions = mockk()
@@ -400,7 +379,7 @@ internal class EmployeeCrudTest {
     }
 
     @Test
-    fun `should return not found when caller has no rights to manage permissions`() = routeTest {
+    fun `should return not found when caller is not the business owner`() = routeTest {
         given()
         val useCase: SetEmployeePermissions = mockk()
         val id = Uuid.random()

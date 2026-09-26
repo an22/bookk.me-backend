@@ -5,8 +5,8 @@
 A full-record replace covering profile fields, schedule and provided
 services in one write. The body is `EmployeeUpdateModel`, not `Employee`:
 permissions are not editable here (they change only through [Set employee
-permissions](set-employee-permissions.md), which enforces the `.covers()`
-delegation rule and publishes `EmployeePermissionsChanged`). Its proto field
+permissions](set-employee-permissions.md), which is restricted to the
+business owner and publishes `EmployeePermissionsChanged`). Its proto field
 numbers match `Employee`'s, so a client still sending a full `Employee`
 decodes cleanly and the extra fields are ignored. The target employee is
 looked up by `(businessId, id)` before the write, so a caller holding

@@ -10,12 +10,10 @@ resource — `business` (1), `employees` (2), `clients` (3), `services` (4),
 the OpenAPI schema instead of being a bare enum ordinal inside a map. An
 omitted field keeps that resource's current grant; the route turns the
 present fields into the `Map<BusinessResource, ResourcePermission>` the
-operation takes (`EmployeePermissionsRequest.grants()`). The caller needs
-`EMPLOYEES.update` to manage permissions at all, and additionally cannot
-hand out more access to any listed resource than they themselves hold
-(`.covers()`) — you cannot delegate what you don't have. The check is
-all-or-nothing: if a single grant exceeds the caller's own, nothing is
-written and no event is sent. The business owner's permissions are
+operation takes (`EmployeePermissionsRequest.grants()`). Only the business
+owner (`BusinessDataSource.isOwner`) can manage permissions — holding
+`EMPLOYEES.update` (even `FULL` on every resource) is not enough, and a
+non-owner caller gets 404 like any other permission failure. The business owner's permissions are
 immutable — the owner always holds `FULL` on every resource — so targeting
 the owner's employee record is rejected before anything else is checked
 about the grants. A body with every field omitted (an empty map) is a no-op that returns the
@@ -29,7 +27,7 @@ flowchart TD
     Start([PUT /api/business/businessId/employee/id/permissions]) --> Auth{JWT valid?}
     Auth -- No --> R401([401 Unauthorized])
     Auth -- Yes --> Tx[[Begin transaction]]
-    Tx --> PermCheck{caller EMPLOYEES.update?}
+    Tx --> PermCheck{BusinessDataSource.isOwner caller, businessId?}
     PermCheck -- No --> R404a([404 Error.OperationNotAllowed])
     PermCheck -- Yes --> Lookup[EmployeeDataSource.getEmployee businessId, id]
     Lookup --> Found{employee found?}
@@ -38,10 +36,7 @@ flowchart TD
     Owner -- Yes --> R422o([422 BUSINESS_OWNER_PERMISSIONS_IMMUTABLE 200030])
     Owner -- No --> Empty{grants empty?}
     Empty -- Yes --> R200a([200 Employee unchanged])
-    Empty -- No --> OwnGrants[BusinessPermissionDataSource.getPermissions caller, businessId]
-    OwnGrants --> Covers{caller's grant covers every requested resource's permission?}
-    Covers -- No --> R422([422 BUSINESS_INSUFFICIENT_GRANT_PERMISSION 200027])
-    Covers -- Yes --> Set[BusinessPermissionDataSource.setPermissions employee, grants - one batch upsert keyed by employee_id/user_id/business_id]
+    Empty -- No --> Set[BusinessPermissionDataSource.setPermissions employee, grants - one batch upsert keyed by employee_id/user_id/business_id]
     Set --> Merge[employee.copy permissions = employee.permissions.with grants]
     Merge --> Event[eventProducer.send BusinessEvent.EmployeePermissionsChanged updated.permissions - once per request]
     Event --> R200([200 Employee with updated permissions])

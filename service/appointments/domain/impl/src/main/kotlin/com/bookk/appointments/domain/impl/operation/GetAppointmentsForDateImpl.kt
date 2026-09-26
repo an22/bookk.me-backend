@@ -14,7 +14,7 @@ import library.permissions.assert
 import kotlin.time.Duration.Companion.days
 import kotlin.uuid.Uuid
 
-internal class GetAppointmentsForDataImpl(
+internal class GetAppointmentsForDateImpl(
     private val appointmentDataSource: AppointmentDataSource,
     private val appointmentPermissionDataSource: AppointmentPermissionDataSource,
     private val settingsDataSource: AppointmentSettingsDataSource,

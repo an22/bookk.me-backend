@@ -17,12 +17,6 @@ interface SetEmployeePermissions {
     ): Result<Employee>
 
     sealed interface Error {
-        class InsufficientGrant : BusinessError(
-            statusCode = HttpStatusCode.UnprocessableEntity.value,
-            code = BusinessErrorCodes.BUSINESS_INSUFFICIENT_GRANT_PERMISSION,
-            message = "Cannot grant a permission level you do not hold"
-        ), Error
-
         class OwnerPermissionsImmutable : BusinessError(
             statusCode = HttpStatusCode.UnprocessableEntity.value,
             code = BusinessErrorCodes.BUSINESS_OWNER_PERMISSIONS_IMMUTABLE,

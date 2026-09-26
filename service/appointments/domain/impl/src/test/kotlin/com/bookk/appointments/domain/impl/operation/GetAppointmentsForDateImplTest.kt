@@ -30,7 +30,7 @@ internal class GetAppointmentsForDateImplTest {
         val appointmentPermissionDataSource = mockk<AppointmentPermissionDataSource>()
         val settingsDataSource = mockk<AppointmentSettingsDataSource>()
         val transactionManager = mockk<TransactionManager>()
-        val sut = GetAppointmentsForDataImpl(appointmentDataSource, appointmentPermissionDataSource, settingsDataSource, transactionManager)
+        val sut = GetAppointmentsForDateImpl(appointmentDataSource, appointmentPermissionDataSource, settingsDataSource, transactionManager)
     }
 
     @Test

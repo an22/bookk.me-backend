@@ -13,7 +13,9 @@ flowchart TD
     PathCheck -- Yes --> Auth{JWT valid?}
     Auth -- No --> R401([401 Unauthorized])
     Auth -- Yes --> Tx[[Begin transaction]]
-    Tx --> Perm{caller update permission?}
+    Tx --> Suspended{AppointmentPermissionDataSource.getPermission - grant row marked suspended?}
+    Suspended -- Yes --> R403s([403 BUSINESS_EMPLOYEE_ACCESS_SUSPENDED 200034])
+    Suspended -- No --> Perm{caller update permission?}
     Perm -- No --> R404([404 Error.OperationNotAllowed])
     Perm -- Yes --> Update[AppointmentSettingsDataSource.update update]
     Update --> Attach[Attach caller's permission onto the returned settings]

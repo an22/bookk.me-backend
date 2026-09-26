@@ -3,6 +3,7 @@ package com.bookk.server.appointments.client.api.event
 import com.bookk.core.data.eventstreaming.EventStreaming
 import kotlinx.datetime.TimeZone
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.protobuf.ProtoNumber
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
@@ -10,18 +11,19 @@ interface AppointmentEvent : EventStreaming.Event<String> {
 
     @Serializable
     data class RequestCreated(
-        val clientUserId: Uuid,
-        val clientName: String,
-        val employeeUserId: Uuid,
-        val employeeName: String,
-        val from: Instant,
-        val to: Instant,
-        val timeZone: TimeZone,
-        val businessName: String,
-        val address: String,
-        val price: String,
-        override val idempotencyKey: String = Uuid.random().toString()
+        @ProtoNumber(1) val clientUserId: Uuid,
+        @ProtoNumber(2) val clientName: String,
+        @ProtoNumber(3) val employeeUserId: Uuid,
+        @ProtoNumber(4) val employeeName: String,
+        @ProtoNumber(5) val from: Instant,
+        @ProtoNumber(6) val to: Instant,
+        @ProtoNumber(7) val timeZone: TimeZone,
+        @ProtoNumber(8) val businessName: String,
+        @ProtoNumber(9) val address: String,
+        @ProtoNumber(10) val price: String,
+        @ProtoNumber(11) override val idempotencyKey: String = Uuid.random().toString()
     ) : AppointmentEvent {
+        @ProtoNumber(12)
         override val topic: String = TOPIC
 
         companion object {
@@ -31,18 +33,19 @@ interface AppointmentEvent : EventStreaming.Event<String> {
 
     @Serializable
     data class RequestApproved(
-        val clientUserId: Uuid,
-        val clientName: String,
-        val employeeUserId: Uuid,
-        val employeeName: String,
-        val from: Instant,
-        val to: Instant,
-        val timeZone: TimeZone,
-        val businessName: String,
-        val address: String,
-        val price: String,
-        override val idempotencyKey: String = Uuid.random().toString()
+        @ProtoNumber(1) val clientUserId: Uuid,
+        @ProtoNumber(2) val clientName: String,
+        @ProtoNumber(3) val employeeUserId: Uuid,
+        @ProtoNumber(4) val employeeName: String,
+        @ProtoNumber(5) val from: Instant,
+        @ProtoNumber(6) val to: Instant,
+        @ProtoNumber(7) val timeZone: TimeZone,
+        @ProtoNumber(8) val businessName: String,
+        @ProtoNumber(9) val address: String,
+        @ProtoNumber(10) val price: String,
+        @ProtoNumber(11) override val idempotencyKey: String = Uuid.random().toString()
     ) : AppointmentEvent {
+        @ProtoNumber(12)
         override val topic: String = TOPIC
 
         companion object {
@@ -52,19 +55,20 @@ interface AppointmentEvent : EventStreaming.Event<String> {
 
     @Serializable
     data class RequestRejected(
-        val clientUserId: Uuid,
-        val clientName: String,
-        val employeeUserId: Uuid,
-        val employeeName: String,
-        val from: Instant,
-        val to: Instant,
-        val timeZone: TimeZone,
-        val address: String,
-        val businessName: String,
-        val price: String,
-        val declineReason: String,
-        override val idempotencyKey: String = Uuid.random().toString()
+        @ProtoNumber(1) val clientUserId: Uuid,
+        @ProtoNumber(2) val clientName: String,
+        @ProtoNumber(3) val employeeUserId: Uuid,
+        @ProtoNumber(4) val employeeName: String,
+        @ProtoNumber(5) val from: Instant,
+        @ProtoNumber(6) val to: Instant,
+        @ProtoNumber(7) val timeZone: TimeZone,
+        @ProtoNumber(8) val address: String,
+        @ProtoNumber(9) val businessName: String,
+        @ProtoNumber(10) val price: String,
+        @ProtoNumber(11) val declineReason: String,
+        @ProtoNumber(12) override val idempotencyKey: String = Uuid.random().toString()
     ) : AppointmentEvent {
+        @ProtoNumber(13)
         override val topic: String = TOPIC
 
         companion object {
@@ -74,19 +78,20 @@ interface AppointmentEvent : EventStreaming.Event<String> {
 
     @Serializable
     data class Cancelled(
-        val clientUserId: Uuid,
-        val clientName: String,
-        val employeeUserId: Uuid,
-        val employeeName: String,
-        val from: Instant,
-        val to: Instant,
-        val timeZone: TimeZone,
-        val address: String,
-        val businessName: String,
-        val price: String,
-        val reason: String,
-        override val idempotencyKey: String = Uuid.random().toString()
+        @ProtoNumber(1) val clientUserId: Uuid,
+        @ProtoNumber(2) val clientName: String,
+        @ProtoNumber(3) val employeeUserId: Uuid,
+        @ProtoNumber(4) val employeeName: String,
+        @ProtoNumber(5) val from: Instant,
+        @ProtoNumber(6) val to: Instant,
+        @ProtoNumber(7) val timeZone: TimeZone,
+        @ProtoNumber(8) val address: String,
+        @ProtoNumber(9) val businessName: String,
+        @ProtoNumber(10) val price: String,
+        @ProtoNumber(11) val reason: String,
+        @ProtoNumber(12) override val idempotencyKey: String = Uuid.random().toString()
     ) : AppointmentEvent {
+        @ProtoNumber(13)
         override val topic: String = TOPIC
 
         companion object {

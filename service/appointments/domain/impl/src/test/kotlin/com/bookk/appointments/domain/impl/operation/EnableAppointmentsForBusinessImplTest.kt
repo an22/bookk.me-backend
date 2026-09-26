@@ -64,7 +64,7 @@ internal class EnableAppointmentsForBusinessImplTest {
 
     private fun SutFixture.acceptAttach() {
         coEvery { subscriptionSource.attachBusiness(any()) } returns Unit
-        coEvery { appointmentPermissionDataSource.setPermission(testUserId, testBusinessId, ResourcePermission.FULL) } returns Unit
+        coEvery { appointmentPermissionDataSource.setPermission(testUserId, testBusinessId, ResourcePermission.FULL, false) } returns Unit
         coEvery { settingsDataSource.create(any()) } returns AppointmentSettings.stub(testBusinessId)
         coEvery { businessClient.getPermission(testUserId, testBusinessId, BusinessResource.BUSINESS) } returns
             Result.success(ResourcePermission.FULL)
@@ -86,7 +86,7 @@ internal class EnableAppointmentsForBusinessImplTest {
         then()
         assertTrue(result.isSuccess)
         coVerify(exactly = 1) {
-            fixture.appointmentPermissionDataSource.setPermission(testUserId, testBusinessId, ResourcePermission.FULL)
+            fixture.appointmentPermissionDataSource.setPermission(testUserId, testBusinessId, ResourcePermission.FULL, false)
         }
     }
 
@@ -147,7 +147,7 @@ internal class EnableAppointmentsForBusinessImplTest {
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { businessClient.getPermission(testUserId, testBusinessId, BusinessResource.BUSINESS) } returns
-                Result.success(ResourcePermission(view = true, update = true))
+                Result.success(ResourcePermission(view = true, update = true, delete = false))
             coEvery { businessClient.getBusinessById(testBusinessId) } returns Result.success(businessDto())
         }
 
@@ -157,7 +157,7 @@ internal class EnableAppointmentsForBusinessImplTest {
         then()
         assertTrue(result.exceptionOrNull() is Error.OperationNotAllowed)
         coVerify(exactly = 0) { fixture.subscriptionSource.attachBusiness(any()) }
-        coVerify(exactly = 0) { fixture.appointmentPermissionDataSource.setPermission(any(), any(), any()) }
+        coVerify(exactly = 0) { fixture.appointmentPermissionDataSource.setPermission(any(), any(), any(), any()) }
     }
 
     @Test

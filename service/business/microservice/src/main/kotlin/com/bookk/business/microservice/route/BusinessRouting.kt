@@ -73,8 +73,8 @@ object BusinessRouting {
                 @Resource("/permissions")
                 class Permissions(val parent: Id)
 
-                @Resource("/permissions/{resource}")
-                class Permission(val parent: Id, val resource: BusinessResource)
+                @Resource("/suspension")
+                class Suspension(val parent: Id)
             }
         }
 

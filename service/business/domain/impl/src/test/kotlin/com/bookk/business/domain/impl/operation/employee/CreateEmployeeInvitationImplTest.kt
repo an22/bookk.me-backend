@@ -49,7 +49,7 @@ internal class CreateEmployeeInvitationImplTest {
         val persisted = slot<EmployeeInvitation>()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(update = true)
+            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(view = false, update = true, delete = false)
             coEvery { businessDataSource.lockBusiness(businessId) } returns true
             coEvery { invitationDataSource.countPendingInvitations(businessId) } returns 0L
             coEvery { invitationDataSource.countInvitationsCreatedSince(businessId, any()) } returns 0L
@@ -77,7 +77,7 @@ internal class CreateEmployeeInvitationImplTest {
         val persisted = slot<EmployeeInvitation>()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(update = true)
+            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(view = false, update = true, delete = false)
             coEvery { businessDataSource.lockBusiness(businessId) } returns true
             coEvery { invitationDataSource.countPendingInvitations(businessId) } returns 0L
             coEvery { invitationDataSource.countInvitationsCreatedSince(businessId, any()) } returns 0L
@@ -104,7 +104,7 @@ internal class CreateEmployeeInvitationImplTest {
         val invitations = mutableListOf<EmployeeInvitation>()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(update = true)
+            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(view = false, update = true, delete = false)
             coEvery { businessDataSource.lockBusiness(businessId) } returns true
             coEvery { invitationDataSource.countPendingInvitations(businessId) } returns 0L
             coEvery { invitationDataSource.countInvitationsCreatedSince(businessId, any()) } returns 0L
@@ -133,7 +133,7 @@ internal class CreateEmployeeInvitationImplTest {
         val businessId = Uuid.random()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(update = true)
+            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(view = false, update = true, delete = false)
             coEvery { businessDataSource.lockBusiness(businessId) } returns true
             coEvery { invitationDataSource.countPendingInvitations(businessId) } returns 0L
             coEvery { invitationDataSource.countInvitationsCreatedSince(businessId, any()) } returns 0L
@@ -158,7 +158,7 @@ internal class CreateEmployeeInvitationImplTest {
         val businessId = Uuid.random()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(view = true)
+            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(view = true, update = false, delete = false)
         }
 
         whenn()
@@ -178,7 +178,7 @@ internal class CreateEmployeeInvitationImplTest {
         val businessId = Uuid.random()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(update = true)
+            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(view = false, update = true, delete = false)
             coEvery { businessDataSource.lockBusiness(businessId) } returns false
         }
 
@@ -198,7 +198,7 @@ internal class CreateEmployeeInvitationImplTest {
         val businessId = Uuid.random()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(update = true)
+            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(view = false, update = true, delete = false)
             coEvery { businessDataSource.lockBusiness(businessId) } returns true
             coEvery { invitationDataSource.countPendingInvitations(businessId) } returns CreateEmployeeInvitation.MAX_PENDING_INVITATIONS.toLong()
         }
@@ -219,7 +219,7 @@ internal class CreateEmployeeInvitationImplTest {
         val businessId = Uuid.random()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(update = true)
+            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(view = false, update = true, delete = false)
             coEvery { businessDataSource.lockBusiness(businessId) } returns true
             coEvery { invitationDataSource.countPendingInvitations(businessId) } returns CreateEmployeeInvitation.MAX_PENDING_INVITATIONS.toLong() - 1
             coEvery { invitationDataSource.countInvitationsCreatedSince(businessId, any()) } returns 0L
@@ -242,7 +242,7 @@ internal class CreateEmployeeInvitationImplTest {
         val businessId = Uuid.random()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(update = true)
+            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(view = false, update = true, delete = false)
             coEvery { businessDataSource.lockBusiness(businessId) } returns true
             coEvery { invitationDataSource.countPendingInvitations(businessId) } returns 0L
             coEvery { invitationDataSource.countInvitationsCreatedSince(businessId, any()) } returns 0L
@@ -267,7 +267,7 @@ internal class CreateEmployeeInvitationImplTest {
         val businessId = Uuid.random()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(update = true)
+            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(view = false, update = true, delete = false)
             coEvery { businessDataSource.lockBusiness(businessId) } returns true
             coEvery { invitationDataSource.countPendingInvitations(businessId) } returns 0L
             coEvery { invitationDataSource.countInvitationsCreatedSince(businessId, any()) } returns CreateEmployeeInvitation.MAX_INVITATIONS_PER_DAY.toLong()
@@ -289,7 +289,7 @@ internal class CreateEmployeeInvitationImplTest {
         val businessId = Uuid.random()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(update = true)
+            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(view = false, update = true, delete = false)
             coEvery { businessDataSource.lockBusiness(businessId) } returns true
             coEvery { invitationDataSource.countPendingInvitations(businessId) } returns 0L
             coEvery { invitationDataSource.countInvitationsCreatedSince(businessId, any()) } returns CreateEmployeeInvitation.MAX_INVITATIONS_PER_DAY.toLong() - 1
@@ -312,7 +312,7 @@ internal class CreateEmployeeInvitationImplTest {
         val since = slot<Instant>()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(update = true)
+            coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(view = false, update = true, delete = false)
             coEvery { businessDataSource.lockBusiness(businessId) } returns true
             coEvery { invitationDataSource.countPendingInvitations(businessId) } returns 0L
             coEvery { invitationDataSource.countInvitationsCreatedSince(businessId, capture(since)) } returns 0L

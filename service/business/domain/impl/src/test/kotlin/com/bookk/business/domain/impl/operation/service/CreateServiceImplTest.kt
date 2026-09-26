@@ -52,7 +52,7 @@ internal class CreateServiceImplTest {
         val service = createTestService()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { businessPermissionDataSource.getPermission(userId, service.businessId, BusinessResource.SERVICES) } returns ResourcePermission(update = true)
+            coEvery { businessPermissionDataSource.getPermission(userId, service.businessId, BusinessResource.SERVICES) } returns ResourcePermission(view = false, update = true, delete = false)
             coEvery { serviceDataSource.createService(service) } returns service
         }
 
@@ -87,7 +87,7 @@ internal class CreateServiceImplTest {
         val service = createTestService()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { businessPermissionDataSource.getPermission(userId, service.businessId, BusinessResource.SERVICES) } returns ResourcePermission(view = true)
+            coEvery { businessPermissionDataSource.getPermission(userId, service.businessId, BusinessResource.SERVICES) } returns ResourcePermission(view = true, update = false, delete = false)
         }
 
         whenn()
@@ -106,7 +106,7 @@ internal class CreateServiceImplTest {
         val service = createTestService()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { businessPermissionDataSource.getPermission(userId, service.businessId, BusinessResource.SERVICES) } returns ResourcePermission(update = true)
+            coEvery { businessPermissionDataSource.getPermission(userId, service.businessId, BusinessResource.SERVICES) } returns ResourcePermission(view = false, update = true, delete = false)
             coEvery { serviceDataSource.createService(service) } throws Error.UniqueConstraintFailed("", RuntimeException())
         }
 

@@ -33,7 +33,7 @@ internal class IsAppointmentsEnabledImplTest {
         val businessId = Uuid.random()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { appointmentPermissionDataSource.getPermission(userId, businessId) } returns ResourcePermission(view = true)
+            coEvery { appointmentPermissionDataSource.getPermission(userId, businessId) } returns ResourcePermission(view = true, update = false, delete = false)
             coEvery { subscriptionDataSource.isBusinessEnabled(businessId) } returns true
         }
 
@@ -53,7 +53,7 @@ internal class IsAppointmentsEnabledImplTest {
         val businessId = Uuid.random()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { appointmentPermissionDataSource.getPermission(userId, businessId) } returns ResourcePermission(view = true)
+            coEvery { appointmentPermissionDataSource.getPermission(userId, businessId) } returns ResourcePermission(view = true, update = false, delete = false)
             coEvery { subscriptionDataSource.isBusinessEnabled(businessId) } returns false
         }
 

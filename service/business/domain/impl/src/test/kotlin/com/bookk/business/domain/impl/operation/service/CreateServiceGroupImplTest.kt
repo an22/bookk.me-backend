@@ -45,7 +45,7 @@ internal class CreateServiceGroupImplTest {
         val group = createTestGroup()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { businessPermissionDataSource.getPermission(userId, group.businessId, BusinessResource.SERVICES) } returns ResourcePermission(update = true)
+            coEvery { businessPermissionDataSource.getPermission(userId, group.businessId, BusinessResource.SERVICES) } returns ResourcePermission(view = false, update = true, delete = false)
             coEvery { serviceDataSource.createServiceGroup(group) } returns group
         }
 
@@ -80,7 +80,7 @@ internal class CreateServiceGroupImplTest {
         val group = createTestGroup()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { businessPermissionDataSource.getPermission(userId, group.businessId, BusinessResource.SERVICES) } returns ResourcePermission(update = true)
+            coEvery { businessPermissionDataSource.getPermission(userId, group.businessId, BusinessResource.SERVICES) } returns ResourcePermission(view = false, update = true, delete = false)
             coEvery { serviceDataSource.createServiceGroup(group) } throws Error.UniqueConstraintFailed("", RuntimeException())
         }
 
@@ -100,7 +100,7 @@ internal class CreateServiceGroupImplTest {
         val group = createTestGroup()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { businessPermissionDataSource.getPermission(userId, group.businessId, BusinessResource.SERVICES) } returns ResourcePermission(view = true)
+            coEvery { businessPermissionDataSource.getPermission(userId, group.businessId, BusinessResource.SERVICES) } returns ResourcePermission(view = true, update = false, delete = false)
         }
 
         whenn()

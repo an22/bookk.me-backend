@@ -296,7 +296,7 @@ internal class UpdateClientImplTest {
         val fixture = SutFixture()
         with(fixture) {
             transactionManager.mockTransaction()
-            grantPermission(ResourcePermission(view = true))
+            grantPermission(ResourcePermission(view = true, update = false, delete = false))
         }
 
         whenn()

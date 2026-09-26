@@ -36,7 +36,7 @@ internal class GetPendingAppointmentRequestsImplTest {
         val requests = listOf(AppointmentRequest.stub(userId = userId, businessId = businessId))
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { appointmentPermissionDataSource.getPermission(userId, businessId) } returns ResourcePermission(view = true)
+            coEvery { appointmentPermissionDataSource.getPermission(userId, businessId) } returns ResourcePermission(view = true, update = false, delete = false)
             coEvery { requestsDataSource.getPending(businessId) } returns requests
         }
 
@@ -76,7 +76,7 @@ internal class GetPendingAppointmentRequestsImplTest {
         val exception = RuntimeException("Database error")
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { appointmentPermissionDataSource.getPermission(userId, businessId) } returns ResourcePermission(view = true)
+            coEvery { appointmentPermissionDataSource.getPermission(userId, businessId) } returns ResourcePermission(view = true, update = false, delete = false)
             coEvery { requestsDataSource.getPending(businessId) } throws exception
         }
 

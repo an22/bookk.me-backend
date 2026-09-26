@@ -3,7 +3,9 @@ package com.bookk.business.microservice.route.api.internal
 import com.bookk.business.domain.api.appointment.entity.AppointmentBookingContext
 import com.bookk.business.domain.api.appointment.entity.AppointmentBookingContextRequest
 import com.bookk.business.domain.api.appointment.operation.GetAppointmentBookingContext
+import com.bookk.business.domain.api.error.BusinessErrorCodes
 import com.bookk.business.microservice.route.BusinessRouting
+import com.bookk.core.domain.entity.SimpleServerError
 import com.bookk.core.service.test.createTestClient
 import com.bookk.core.service.test.routeTest
 import com.bookk.core.service.test.setupApplication
@@ -58,6 +60,29 @@ internal class GetAppointmentBookingContextTest {
         assertEquals(context.client.lastName, received.client.lastName)
         assertEquals(context.client.phone, received.client.phone)
         assertEquals(context.client.email, received.client.email)
+    }
+
+    @Test
+    fun `should return unprocessable entity when employee is suspended`() = routeTest {
+        given()
+        val useCase: GetAppointmentBookingContext = mockk()
+        val body = AppointmentBookingContextRequest.stub()
+        coEvery {
+            useCase.invoke(businessId, body.employeeId, body.userId, body.serviceIds)
+        } returns Result.failure(GetAppointmentBookingContext.Error.EmployeeSuspended())
+
+        setupApplication(
+            diModule = module { single { useCase } },
+            routeUnderTest = { getAppointmentBookingContext() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.post(resource()) { setBody(body) }
+
+        then()
+        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
+        assertEquals(BusinessErrorCodes.BUSINESS_EMPLOYEE_SUSPENDED, response.body<SimpleServerError>().errorCode)
     }
 
     @Test

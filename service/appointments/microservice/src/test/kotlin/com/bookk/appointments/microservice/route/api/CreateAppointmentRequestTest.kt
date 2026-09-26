@@ -392,6 +392,39 @@ internal class CreateAppointmentRequestTest {
     }
 
     @Test
+    fun `should return unprocessable entity when the employee is suspended`() = routeTest {
+        given()
+        val useCase: CreateAppointmentRequest = mockk()
+        val userId = Uuid.random()
+        val draft = AppointmentRequestDraft.stub()
+        coEvery { useCase.invoke(userId, any()) } returns Result.failure(GetAppointmentBookingContext.Error.EmployeeSuspended())
+
+        setupApplication(
+            extension = {
+                install(Authentication) {
+                    provider {
+                        authenticate { context ->
+                            context.principal(AppPrincipal(Uuid.random(), userId, Uuid.random()))
+                        }
+                    }
+                }
+            },
+            diModule = module { single { useCase } },
+            routeUnderTest = { requests() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.post(Api.Appointment.Request()) {
+            setBody(draft)
+        }
+
+        then()
+        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
+        assertEquals(BusinessErrorCodes.BUSINESS_EMPLOYEE_SUSPENDED, response.body<SimpleServerError>().errorCode)
+    }
+
+    @Test
     fun `should return unauthorized when creating appointment request without authentication`() = routeTest {
         given()
         val useCase: CreateAppointmentRequest = mockk()

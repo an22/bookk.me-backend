@@ -19,6 +19,7 @@ erDiagram
     EMPLOYEE ||--o{ EMPLOYEE_CAN_PROVIDE_SERVICE : "can provide"
     SERVICE ||--o{ EMPLOYEE_CAN_PROVIDE_SERVICE : "provided via"
     EMPLOYEE ||--o{ EMPLOYEE_DAY_OFFS : "has"
+    EMPLOYEE ||--o{ BUSINESS_PERMISSION_GRANTS : "holds (cascade delete)"
     EMPLOYEE ||--o{ EMPLOYEE_WORKING_HOURS : "has"
     SERVICE_GROUP ||--o{ SERVICE : "groups"
 
@@ -63,6 +64,7 @@ erDiagram
         uuid id PK
         uuid user_id "logical FK -> user.profile.id; UK with business_id, resource"
         uuid business_id FK
+        uuid employee_id FK "indexed; same employee as (user_id, business_id)"
         enum resource "BUSINESS | EMPLOYEES | CLIENTS | SERVICES | APPOINTMENTS; UK with user_id, business_id"
         bool can_view
         bool can_update
@@ -103,6 +105,7 @@ erDiagram
         uuid user_id "logical FK -> user.profile.id"
         timestamp source_updated_at
         byte working_days
+        timestamp suspended_at "nullable; set = suspended, grants read as NONE"
         timestamp created_at
         timestamp updated_at
     }

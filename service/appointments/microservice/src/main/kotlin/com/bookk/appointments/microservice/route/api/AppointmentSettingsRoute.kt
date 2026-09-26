@@ -27,6 +27,7 @@ fun Routing.settings() {
          * Security: jwt
          * Response: 200 application/x-protobuf [com.bookk.appointments.domain.api.entity.AppointmentSettings] Settings entity
          * Response: 404 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Settings not found or user is not allowed to read them
+         * Response: 403 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Caller is a suspended employee of this business<br>BUSINESS_EMPLOYEE_ACCESS_SUSPENDED (200034) Your access to this business is suspended
          */
         get<Api.Appointment.Settings> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
@@ -49,6 +50,7 @@ fun Routing.settings() {
          * Response: 200 application/x-protobuf [com.bookk.appointments.domain.api.entity.AppointmentSettings] Updated settings entity
          * Response: 400 application/x-protobuf Path business id does not match body business id
          * Response: 404 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Settings not found or user is not allowed to update them
+         * Response: 403 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Caller is a suspended employee of this business<br>BUSINESS_EMPLOYEE_ACCESS_SUSPENDED (200034) Your access to this business is suspended
          * See: docs/operations/appointments/edit-appointment-settings.md
          */
         put<Api.Appointment.Settings> {

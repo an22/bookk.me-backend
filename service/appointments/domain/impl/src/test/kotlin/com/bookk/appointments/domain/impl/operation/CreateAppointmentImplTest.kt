@@ -479,7 +479,7 @@ internal class CreateAppointmentImplTest {
             coEvery { settingsDataSource.getForUpdate(request.businessId) } returns settings
             coEvery { settings.isInWorkday(request.date) } returns true
             coEvery { settings.isInWorktime(request.date, request.dateEnd) } returns true
-            coEvery { appointmentPermissionDataSource.getPermission(userId, request.businessId) } returns ResourcePermission(update = true)
+            coEvery { appointmentPermissionDataSource.getPermission(userId, request.businessId) } returns ResourcePermission(view = false, update = true, delete = false)
             coEvery { appointmentDataSource.hasOverlapsWith(request) } returns false
             coEvery { appointmentDataSource.create(request) } returns appointment
             coEvery { requestDataSource.approve(request) } returns Unit
@@ -505,7 +505,7 @@ internal class CreateAppointmentImplTest {
 
         with(fixture) {
             coEvery { requestDataSource.get(request.id) } returns request
-            coEvery { appointmentPermissionDataSource.getPermission(userId, request.businessId) } returns ResourcePermission(view = true)
+            coEvery { appointmentPermissionDataSource.getPermission(userId, request.businessId) } returns ResourcePermission(view = true, update = false, delete = false)
             transactionManager.mockTransaction()
         }
 
@@ -532,7 +532,7 @@ internal class CreateAppointmentImplTest {
             coEvery { settingsDataSource.getForUpdate(request.businessId) } returns settings
             coEvery { settings.isInWorkday(request.date) } returns true
             coEvery { settings.isInWorktime(request.date, request.dateEnd) } returns true
-            coEvery { appointmentPermissionDataSource.getPermission(userId, request.businessId) } returns ResourcePermission(view = true)
+            coEvery { appointmentPermissionDataSource.getPermission(userId, request.businessId) } returns ResourcePermission(view = true, update = false, delete = false)
             coEvery { appointmentDataSource.hasOverlapsWith(request) } returns false
             coEvery { appointmentDataSource.create(request) } returns appointment
             coEvery { requestDataSource.approve(request) } returns Unit

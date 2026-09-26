@@ -15,10 +15,11 @@ internal class SyncEmployeePermission(
     suspend operator fun invoke(
         userId: Uuid,
         businessId: Uuid,
-        permission: ResourcePermission
+        permission: ResourcePermission,
+        suspended: Boolean
     ) = transactionManager.transaction {
         if (subscriptionDataSource.isBusinessEnabled(businessId)) {
-            appointmentPermissionDataSource.setPermission(userId, businessId, permission)
+            appointmentPermissionDataSource.setPermission(userId, businessId, permission, suspended)
         }
     }
 }

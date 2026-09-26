@@ -36,7 +36,7 @@ internal class DeleteServiceGroupImplTest {
         val id = Uuid.random()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { businessPermissionDataSource.getPermission(userId, businessId, BusinessResource.SERVICES) } returns ResourcePermission(delete = true)
+            coEvery { businessPermissionDataSource.getPermission(userId, businessId, BusinessResource.SERVICES) } returns ResourcePermission(view = false, update = false, delete = true)
         }
 
         whenn()
@@ -56,7 +56,7 @@ internal class DeleteServiceGroupImplTest {
         val id = Uuid.random()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { businessPermissionDataSource.getPermission(userId, businessId, BusinessResource.SERVICES) } returns ResourcePermission(view = true)
+            coEvery { businessPermissionDataSource.getPermission(userId, businessId, BusinessResource.SERVICES) } returns ResourcePermission(view = true, update = false, delete = false)
         }
 
         whenn()

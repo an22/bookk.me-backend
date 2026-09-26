@@ -1,5 +1,6 @@
 package com.bookk.business.domain.api.employee.entity
 
+import com.bookk.business.domain.api.business.entity.BusinessPermissions
 import com.bookk.business.domain.api.service.entity.Service
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.protobuf.ProtoNumber
@@ -18,8 +19,12 @@ data class Employee(
     @ProtoNumber(7) val userId: Uuid,
     @ProtoNumber(8) val services: List<Service>,
     @ProtoNumber(9) val schedule: Schedule,
-    @ProtoNumber(10) val createdAt: Instant
+    @ProtoNumber(10) val createdAt: Instant,
+    @ProtoNumber(11) val permissions: BusinessPermissions,
+    @ProtoNumber(12) val suspendedAt: Instant?
 ) {
+    val isSuspended: Boolean get() = suspendedAt != null
+
     companion object {
         fun stub(
             id: Uuid = Uuid.random(),
@@ -31,7 +36,9 @@ data class Employee(
             userId: Uuid = Uuid.random(),
             services: List<Service> = emptyList(),
             schedule: Schedule = Schedule.empty(),
-            createdAt: Instant = Instant.fromEpochMilliseconds(0)
+            createdAt: Instant = Instant.fromEpochMilliseconds(0),
+            permissions: BusinessPermissions = BusinessPermissions.NONE,
+            suspendedAt: Instant? = null
         ) = Employee(
             id = id,
             businessId = businessId,
@@ -42,7 +49,9 @@ data class Employee(
             userId = userId,
             services = services,
             schedule = schedule,
-            createdAt = createdAt
+            createdAt = createdAt,
+            permissions = permissions,
+            suspendedAt = suspendedAt
         )
     }
 }

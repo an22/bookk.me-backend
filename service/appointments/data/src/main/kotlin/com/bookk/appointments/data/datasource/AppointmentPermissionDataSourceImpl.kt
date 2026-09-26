@@ -3,6 +3,7 @@ package com.bookk.appointments.data.datasource
 import com.bookk.appointments.data.orm.table.AppointmentPermissionGrantsTable
 import com.bookk.appointments.domain.datasource.AppointmentPermissionDataSource
 import com.bookk.core.data.DataSource
+import library.permissions.EmployeeAccessSuspended
 import library.permissions.ResourcePermission
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
@@ -16,7 +17,8 @@ internal class AppointmentPermissionDataSourceImpl : DataSource(), AppointmentPe
     override suspend fun setPermission(
         userId: Uuid,
         businessId: Uuid,
-        permission: ResourcePermission
+        permission: ResourcePermission,
+        suspended: Boolean
     ) {
         dbQuery {
             AppointmentPermissionGrantsTable.upsert {
@@ -25,22 +27,29 @@ internal class AppointmentPermissionDataSourceImpl : DataSource(), AppointmentPe
                 it[this.canView] = permission.view
                 it[this.canUpdate] = permission.update
                 it[this.canDelete] = permission.delete
+                it[this.suspended] = suspended
             }
         }
     }
 
-    override suspend fun getPermission(userId: Uuid, businessId: Uuid): ResourcePermission = dbQuery {
-        AppointmentPermissionGrantsTable
-            .select(AppointmentPermissionGrantsTable.canView, AppointmentPermissionGrantsTable.canUpdate, AppointmentPermissionGrantsTable.canDelete)
-            .where { (AppointmentPermissionGrantsTable.userId eq userId) and (AppointmentPermissionGrantsTable.businessId eq businessId) }
-            .singleOrNull()
-            ?.let {
-                ResourcePermission(
-                    view = it[AppointmentPermissionGrantsTable.canView],
-                    update = it[AppointmentPermissionGrantsTable.canUpdate],
-                    delete = it[AppointmentPermissionGrantsTable.canDelete]
+    override suspend fun getPermission(userId: Uuid, businessId: Uuid): ResourcePermission {
+        val grant = dbQuery {
+            AppointmentPermissionGrantsTable
+                .select(
+                    AppointmentPermissionGrantsTable.canView,
+                    AppointmentPermissionGrantsTable.canUpdate,
+                    AppointmentPermissionGrantsTable.canDelete,
+                    AppointmentPermissionGrantsTable.suspended
                 )
-            } ?: ResourcePermission.NONE
+                .where { (AppointmentPermissionGrantsTable.userId eq userId) and (AppointmentPermissionGrantsTable.businessId eq businessId) }
+                .singleOrNull()
+        } ?: return ResourcePermission.NONE
+        if (grant[AppointmentPermissionGrantsTable.suspended]) throw EmployeeAccessSuspended()
+        return ResourcePermission(
+            view = grant[AppointmentPermissionGrantsTable.canView],
+            update = grant[AppointmentPermissionGrantsTable.canUpdate],
+            delete = grant[AppointmentPermissionGrantsTable.canDelete]
+        )
     }
 
     override suspend fun deleteForUser(userId: Uuid) = dbQuery<Unit> {

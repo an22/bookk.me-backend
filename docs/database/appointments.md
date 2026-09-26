@@ -139,6 +139,7 @@ erDiagram
         bool can_view
         bool can_update
         bool can_delete
+        bool suspended "mirrors business employee.suspended_at; set = 403 on every check"
         timestamp createdAt
         timestamp updatedAt
     }

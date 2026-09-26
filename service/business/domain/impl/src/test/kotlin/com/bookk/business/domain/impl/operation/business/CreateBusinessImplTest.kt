@@ -3,11 +3,9 @@ package com.bookk.business.domain.impl.operation.business
 import com.bookk.business.domain.api.business.entity.Business
 import com.bookk.business.domain.api.business.entity.BusinessCreateRequest
 import com.bookk.business.domain.api.business.entity.BusinessPermissions
-import com.bookk.business.domain.api.business.entity.BusinessResource
 import com.bookk.business.domain.api.business.operation.CreateBusiness
 import com.bookk.business.domain.api.employee.entity.Employee
 import com.bookk.business.domain.datasource.BusinessDataSource
-import com.bookk.business.domain.datasource.BusinessPermissionDataSource
 import com.bookk.business.domain.datasource.EmployeeDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.datasource.transaction.mockTransaction
@@ -21,7 +19,6 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.datetime.TimeZone
-import library.permissions.ResourcePermission
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -31,11 +28,10 @@ internal class CreateBusinessImplTest {
 
     private class SutFixture {
         val businessDataSource = mockk<BusinessDataSource>()
-        val businessPermissionDataSource = mockk<BusinessPermissionDataSource>()
         val employeeDataSource = mockk<EmployeeDataSource>()
         val userClient = mockk<UserClient>()
         val transactionManager = mockk<TransactionManager>()
-        val sut = CreateBusinessImpl(businessDataSource, businessPermissionDataSource, employeeDataSource, userClient, transactionManager)
+        val sut = CreateBusinessImpl(businessDataSource, employeeDataSource, userClient, transactionManager)
     }
 
     @Test
@@ -49,7 +45,6 @@ internal class CreateBusinessImplTest {
             transactionManager.mockTransaction()
             coEvery { businessDataSource.isBusinessExist(userId) } returns false
             coEvery { businessDataSource.createBusiness(userId, "Name", "USD", TimeZone.UTC) } returns business
-            coEvery { businessPermissionDataSource.setPermission(userId, business.id, any(), any()) } returns Unit
             coEvery { userClient.getUserById(userId) } returns Result.success(user)
             coEvery { employeeDataSource.createEmployee(any()) } returns Employee.stub(businessId = business.id, userId = userId)
         }
@@ -60,11 +55,6 @@ internal class CreateBusinessImplTest {
         then()
         assertTrue(result.isSuccess)
         assertEquals(business.copy(permissions = BusinessPermissions.FULL), result.getOrNull())
-        BusinessResource.entries.forEach { resource ->
-            coVerify(exactly = 1) {
-                fixture.businessPermissionDataSource.setPermission(userId, business.id, resource, ResourcePermission.FULL)
-            }
-        }
         coVerify(exactly = 1) {
             fixture.employeeDataSource.createEmployee(
                 match {
@@ -73,7 +63,8 @@ internal class CreateBusinessImplTest {
                         it.name == user.name &&
                         it.lastName == user.lastName &&
                         it.email == user.email &&
-                        it.phone == user.phone
+                        it.phone == user.phone &&
+                        it.permissions == BusinessPermissions.FULL
                 }
             )
         }

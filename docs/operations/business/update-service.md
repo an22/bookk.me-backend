@@ -11,7 +11,9 @@ flowchart TD
     Auth -- Yes --> NameCheck{service.name blank?}
     NameCheck -- Yes --> R422a([422 BUSINESS_SERVICE_NAME_VALIDATION_ERROR 200008])
     NameCheck -- No --> Tx[[Begin transaction]]
-    Tx --> Perm{caller SERVICES.update?}
+    Tx --> Suspended{BusinessPermissionDataSource.getPermission - caller is a suspended employee of the business?}
+    Suspended -- Yes --> R403s([403 BUSINESS_EMPLOYEE_ACCESS_SUSPENDED 200034])
+    Suspended -- No --> Perm{caller SERVICES.update?}
     Perm -- No --> R404([404 Error.OperationNotAllowed])
     Perm -- Yes --> Edit[ServiceDataSource.editService service]
     Edit --> Constraint{Unique constraint violated - name exists?}

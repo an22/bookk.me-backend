@@ -31,7 +31,7 @@ import com.bookk.appointments.domain.impl.operation.EditSettingsImpl
 import com.bookk.appointments.domain.impl.operation.EnableAppointmentsForBusinessImpl
 import com.bookk.appointments.domain.impl.operation.GetAppointmentHistoryImpl
 import com.bookk.appointments.domain.impl.operation.GetAppointmentRequestsImpl
-import com.bookk.appointments.domain.impl.operation.GetAppointmentsForDataImpl
+import com.bookk.appointments.domain.impl.operation.GetAppointmentsForDateImpl
 import com.bookk.appointments.domain.impl.operation.GetClientBusinessesAppointmentsStatusImpl
 import com.bookk.appointments.domain.impl.operation.GetPendingAppointmentRequestsImpl
 import com.bookk.appointments.domain.impl.operation.GetSettingsImpl
@@ -60,7 +60,7 @@ fun appointmentsDomainModule() = module {
         scopedOf(::CreateAppointmentRequestImpl) bind CreateAppointmentRequest::class
         scopedOf(::GetAppointmentRequestsImpl) bind GetAppointmentRequests::class
         scopedOf(::GetPendingAppointmentRequestsImpl) bind GetPendingAppointmentRequests::class
-        scopedOf(::GetAppointmentsForDataImpl) bind GetAppointmentsForDate::class
+        scopedOf(::GetAppointmentsForDateImpl) bind GetAppointmentsForDate::class
         scopedOf(::GetAppointmentHistoryImpl) bind GetAppointmentHistory::class
         scopedOf(::UpdateAppointmentImpl) bind UpdateAppointment::class
         scopedOf(::CancelAppointmentImpl) bind CancelAppointment::class

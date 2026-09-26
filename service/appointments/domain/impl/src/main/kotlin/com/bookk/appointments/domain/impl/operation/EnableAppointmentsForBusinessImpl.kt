@@ -36,7 +36,7 @@ internal class EnableAppointmentsForBusinessImpl(
                     schedule = business.schedule
                 )
             )
-            appointmentPermissionDataSource.setPermission(userId, businessId, ResourcePermission.FULL)
+            appointmentPermissionDataSource.setPermission(userId, businessId, ResourcePermission.FULL, suspended = false)
             settingsDataSource.create(AppointmentSettings(businessId, business.timeZone))
         }.onConstraintFailure {
             throw EnableAppointmentsForBusiness.Error.AlreadyEnabled()

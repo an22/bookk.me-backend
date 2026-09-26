@@ -2,6 +2,7 @@ package com.bookk.business.data.datasource
 
 import com.bookk.business.data.orm.table.BusinessDashboardTable
 import com.bookk.business.data.orm.table.BusinessDayOffTable
+import com.bookk.business.data.orm.table.BusinessPermissionGrantsTable
 import com.bookk.business.data.orm.table.BusinessTable
 import com.bookk.business.data.orm.table.BusinessWorkingHoursTable
 import com.bookk.business.data.orm.table.EmployeeCanProvideServiceTable
@@ -42,6 +43,7 @@ internal class BusinessDataSourceImplTest {
         val db = createTestDatabase(
             BusinessTable,
             BusinessDashboardTable,
+            BusinessPermissionGrantsTable,
             BusinessWorkingHoursTable,
             BusinessDayOffTable,
             EmployeeTable,
@@ -151,6 +153,51 @@ internal class BusinessDataSourceImplTest {
 
         then()
         assertFalse(exists)
+    }
+
+    @Test
+    fun `should report user as owner of the business they created`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+        val business = suspendTransaction { fixture.sut.createBusiness(userId, "Salon", "USD", TimeZone.UTC) }
+
+        whenn()
+        val isOwner = suspendTransaction { fixture.sut.isOwner(userId, business.id) }
+
+        then()
+        assertTrue(isOwner)
+    }
+
+    @Test
+    fun `should not report user as owner of another users business`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val ownerId = Uuid.random()
+        val otherUserId = Uuid.random()
+        val business = suspendTransaction { fixture.sut.createBusiness(ownerId, "Salon", "USD", TimeZone.UTC) }
+        suspendTransaction { fixture.sut.createBusiness(otherUserId, "Barber", "USD", TimeZone.UTC) }
+
+        whenn()
+        val isOwner = suspendTransaction { fixture.sut.isOwner(otherUserId, business.id) }
+
+        then()
+        assertFalse(isOwner)
+    }
+
+    @Test
+    fun `should expose the creating user as the business owner`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+        val created = suspendTransaction { fixture.sut.createBusiness(userId, "Salon", "USD", TimeZone.UTC) }
+
+        whenn()
+        val business = suspendTransaction { fixture.sut.getBusinessById(created.id) }
+
+        then()
+        assertEquals(userId, created.ownerId)
+        assertEquals(userId, business?.ownerId)
     }
 
     @Test
@@ -372,6 +419,105 @@ internal class BusinessDataSourceImplTest {
 
         then()
         assertEquals(listOf(business.id), result.businesses.map { it.id })
+    }
+
+    @Test
+    fun `should exclude businesses where the user is a suspended employee`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+        val ownBusiness = suspendTransaction { fixture.sut.createBusiness(userId, "Own Salon", "USD", TimeZone.UTC) }
+        val activeBusiness = suspendTransaction { fixture.sut.createBusiness(Uuid.random(), "Active Salon", "USD", TimeZone.UTC) }
+        val suspendedBusiness = suspendTransaction { fixture.sut.createBusiness(Uuid.random(), "Suspended Salon", "USD", TimeZone.UTC) }
+        suspendTransaction {
+            fixture.employeeSut.createEmployee(Employee.stub(businessId = activeBusiness.id, userId = userId))
+            val suspended = fixture.employeeSut.createEmployee(Employee.stub(businessId = suspendedBusiness.id, userId = userId))
+            fixture.employeeSut.setSuspendedAt(suspended.id, Instant.fromEpochMilliseconds(1))
+        }
+
+        whenn()
+        val result = suspendTransaction { fixture.sut.getUserBusinesses(userId) }
+
+        then()
+        assertEquals(setOf(ownBusiness.id, activeBusiness.id), result.businesses.map { it.id }.toSet())
+    }
+
+    @Test
+    fun `should include a business again once the employee is reinstated`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+        val business = suspendTransaction { fixture.sut.createBusiness(Uuid.random(), "Salon", "USD", TimeZone.UTC) }
+        suspendTransaction {
+            val employee = fixture.employeeSut.createEmployee(Employee.stub(businessId = business.id, userId = userId))
+            fixture.employeeSut.setSuspendedAt(employee.id, Instant.fromEpochMilliseconds(1))
+            fixture.employeeSut.setSuspendedAt(employee.id, null)
+        }
+
+        whenn()
+        val result = suspendTransaction { fixture.sut.getUserBusinesses(userId) }
+
+        then()
+        assertEquals(listOf(business.id), result.businesses.map { it.id })
+    }
+
+    @Test
+    fun `should not return a dashboard id pointing at a business where the user is suspended`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+        val business = suspendTransaction { fixture.sut.createBusiness(Uuid.random(), "Salon", "USD", TimeZone.UTC) }
+        suspendTransaction {
+            val employee = fixture.employeeSut.createEmployee(Employee.stub(businessId = business.id, userId = userId))
+            fixture.sut.setDashboardBusiness(userId, business.id)
+            fixture.employeeSut.setSuspendedAt(employee.id, Instant.fromEpochMilliseconds(1))
+        }
+
+        whenn()
+        val result = suspendTransaction { fixture.sut.getUserBusinesses(userId) }
+
+        then()
+        assertTrue(result.businesses.isEmpty())
+        assertNull(result.dashboardId)
+    }
+
+    @Test
+    fun `should return no dashboard business when the user is suspended there`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+        val business = suspendTransaction { fixture.sut.createBusiness(Uuid.random(), "Salon", "USD", TimeZone.UTC) }
+        suspendTransaction {
+            val employee = fixture.employeeSut.createEmployee(Employee.stub(businessId = business.id, userId = userId))
+            fixture.sut.setDashboardBusiness(userId, business.id)
+            fixture.employeeSut.setSuspendedAt(employee.id, Instant.fromEpochMilliseconds(1))
+        }
+
+        whenn()
+        val dashboard = suspendTransaction { fixture.sut.getDashboardBusiness(userId) }
+
+        then()
+        assertNull(dashboard)
+    }
+
+    @Test
+    fun `should return the dashboard business again once the employee is reinstated`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+        val business = suspendTransaction { fixture.sut.createBusiness(Uuid.random(), "Salon", "USD", TimeZone.UTC) }
+        suspendTransaction {
+            val employee = fixture.employeeSut.createEmployee(Employee.stub(businessId = business.id, userId = userId))
+            fixture.sut.setDashboardBusiness(userId, business.id)
+            fixture.employeeSut.setSuspendedAt(employee.id, Instant.fromEpochMilliseconds(1))
+            fixture.employeeSut.setSuspendedAt(employee.id, null)
+        }
+
+        whenn()
+        val dashboard = suspendTransaction { fixture.sut.getDashboardBusiness(userId) }
+
+        then()
+        assertEquals(business.id, dashboard?.id)
     }
 
     // deleteUserBusinesses uses deleteReturning which is not supported by Exposed's H2 dialect

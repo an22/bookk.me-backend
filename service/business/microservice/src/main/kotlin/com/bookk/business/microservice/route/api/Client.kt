@@ -39,6 +39,7 @@ fun Route.clientCrud() {
          * Response: 200 application/x-protobuf [com.bookk.business.domain.api.client.entity.ClientRemote] Created client entity
          * Response: 404 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] User is not allowed to create clients for this business
          * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Create client errors<br>BUSINESS_CLIENT_EXISTS (200004) Client with this phone already exists<br>BUSINESS_CLIENT_NAME_VALIDATION_ERROR (200005) Client name, last name, phone or email is invalid<br>BUSINESS_CLIENT_MISSING_CONTACT_INFO (200025) Client must have at least a phone or an email
+         * Response: 403 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Caller is a suspended employee of this business<br>BUSINESS_EMPLOYEE_ACCESS_SUSPENDED (200034) Your access to this business is suspended
          * See: docs/operations/business/create-client.md
          */
         post<Api.Clients> {
@@ -73,6 +74,11 @@ fun Route.clientCrud() {
                     description = "List of clients"
                     ContentType.Application.ProtoBuf()
                 }
+                response(HttpStatusCode.Forbidden.value) {
+                    schema = jsonSchema<SimpleServerError>()
+                    description = "Caller is a suspended employee of this business - BUSINESS_EMPLOYEE_ACCESS_SUSPENDED (200034)"
+                    ContentType.Application.ProtoBuf()
+                }
                 response(HttpStatusCode.NotFound.value) {
                     schema = jsonSchema<SimpleServerError>()
                     description = "User is not allowed to read clients of this business"
@@ -88,6 +94,7 @@ fun Route.clientCrud() {
          * Security: jwt
          * Response: 204 application/x-protobuf Entity deleted
          * Response: 404 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Client not found or user is not allowed to delete it
+         * Response: 403 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Caller is a suspended employee of this business<br>BUSINESS_EMPLOYEE_ACCESS_SUSPENDED (200034) Your access to this business is suspended
          * See: docs/operations/business/delete-client.md
          */
         delete<Api.Clients.Id> {
@@ -113,6 +120,7 @@ fun Route.clientCrud() {
          * Response: 400 application/x-protobuf Path id does not match body id
          * Response: 404 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Client not found or user is not allowed to update it
          * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Update client errors<br>BUSINESS_CLIENT_EXISTS (200004) Client with this phone already exists<br>BUSINESS_CLIENT_NAME_VALIDATION_ERROR (200005) Client name, last name, phone or email is invalid<br>BUSINESS_CLIENT_PERSONAL_INFO_NOT_EDITABLE (200026) Personal info of an integrated client cannot be edited, only its description can
+         * Response: 403 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Caller is a suspended employee of this business<br>BUSINESS_EMPLOYEE_ACCESS_SUSPENDED (200034) Your access to this business is suspended
          * See: docs/operations/business/update-client.md
          */
         patch<Api.Clients.Id> {

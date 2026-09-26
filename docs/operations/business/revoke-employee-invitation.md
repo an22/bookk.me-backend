@@ -17,7 +17,9 @@ flowchart TD
     Start([POST .../employee_invitation/id/revoke]) --> Auth{JWT valid?}
     Auth -- No --> R401([401 Unauthorized])
     Auth -- Yes --> Tx[[Begin transaction]]
-    Tx --> Perm{caller EMPLOYEES.update?}
+    Tx --> Suspended{BusinessPermissionDataSource.getPermission - caller is a suspended employee of the business?}
+    Suspended -- Yes --> R403s([403 BUSINESS_EMPLOYEE_ACCESS_SUSPENDED 200034])
+    Suspended -- No --> Perm{caller EMPLOYEES.update?}
     Perm -- No --> R404a([404 Error.OperationNotAllowed])
     Perm -- Yes --> GetInvite[EmployeeInvitationDataSource.getInvitation businessId id]
     GetInvite -- not found --> R404b([404 Error.NotFound])

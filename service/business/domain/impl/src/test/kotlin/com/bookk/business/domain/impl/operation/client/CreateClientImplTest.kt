@@ -195,7 +195,7 @@ internal class CreateClientImplTest {
         val client = Client.Detached.stub()
         with(fixture) {
             transactionManager.mockTransaction()
-            grantPermission(ResourcePermission(view = true))
+            grantPermission(ResourcePermission(view = true, update = false, delete = false))
         }
 
         whenn()

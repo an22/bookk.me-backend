@@ -3,14 +3,16 @@ package com.bookk.server.auth.client
 import com.bookk.core.data.eventstreaming.EventStreaming
 import com.bookk.core.domain.entity.Language
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.protobuf.ProtoNumber
 import kotlin.uuid.Uuid
 
 interface AuthEvent : EventStreaming.Event<String> {
     @Serializable
     data class UserDeleted(
-        val userId: Uuid,
-        override val idempotencyKey: String = Uuid.random().toString()
+        @ProtoNumber(1) val userId: Uuid,
+        @ProtoNumber(2) override val idempotencyKey: String = Uuid.random().toString()
     ) : AuthEvent {
+        @ProtoNumber(3)
         override val topic: String = TOPIC
 
         companion object {
@@ -20,12 +22,13 @@ interface AuthEvent : EventStreaming.Event<String> {
 
     @Serializable
     data class DeviceCreated(
-        val authId: Uuid,
-        val userId: Uuid,
-        val deviceUuid: Uuid,
-        val language: Language,
-        override val idempotencyKey: String = Uuid.random().toString()
+        @ProtoNumber(1) val authId: Uuid,
+        @ProtoNumber(2) val userId: Uuid,
+        @ProtoNumber(3) val deviceUuid: Uuid,
+        @ProtoNumber(4) val language: Language,
+        @ProtoNumber(5) override val idempotencyKey: String = Uuid.random().toString()
     ) : AuthEvent {
+        @ProtoNumber(6)
         override val topic: String = TOPIC
 
         companion object {
@@ -35,10 +38,11 @@ interface AuthEvent : EventStreaming.Event<String> {
 
     @Serializable
     data class DeviceLanguageUpdated(
-        val deviceUuid: Uuid,
-        val language: Language,
-        override val idempotencyKey: String = Uuid.random().toString()
+        @ProtoNumber(1) val deviceUuid: Uuid,
+        @ProtoNumber(2) val language: Language,
+        @ProtoNumber(3) override val idempotencyKey: String = Uuid.random().toString()
     ) : AuthEvent {
+        @ProtoNumber(4)
         override val topic: String = TOPIC
         override val partitionKey: String get() = deviceUuid.toString()
 
@@ -49,9 +53,10 @@ interface AuthEvent : EventStreaming.Event<String> {
 
     @Serializable
     data class DeviceDeleted(
-        val deviceUuid: Uuid,
-        override val idempotencyKey: String = Uuid.random().toString()
+        @ProtoNumber(1) val deviceUuid: Uuid,
+        @ProtoNumber(2) override val idempotencyKey: String = Uuid.random().toString()
     ) : AuthEvent {
+        @ProtoNumber(3)
         override val topic: String = TOPIC
 
         companion object {

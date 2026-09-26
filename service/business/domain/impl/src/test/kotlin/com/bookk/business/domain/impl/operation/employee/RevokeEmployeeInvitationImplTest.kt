@@ -33,7 +33,7 @@ internal class RevokeEmployeeInvitationImplTest {
         val sut = RevokeEmployeeInvitationImpl(invitationDataSource, businessPermissionDataSource, transactionManager)
 
         init {
-            coEvery { businessPermissionDataSource.getPermission(any(), any(), BusinessResource.EMPLOYEES) } returns ResourcePermission(update = true)
+            coEvery { businessPermissionDataSource.getPermission(any(), any(), BusinessResource.EMPLOYEES) } returns ResourcePermission(view = false, update = true, delete = false)
         }
 
         fun grantPermission(permission: ResourcePermission) {
@@ -63,7 +63,7 @@ internal class RevokeEmployeeInvitationImplTest {
         given()
         val fixture = SutFixture()
         fixture.transactionManager.mockTransaction()
-        fixture.grantPermission(ResourcePermission(view = true))
+        fixture.grantPermission(ResourcePermission(view = true, update = false, delete = false))
         val id = Uuid.random()
 
         whenn()

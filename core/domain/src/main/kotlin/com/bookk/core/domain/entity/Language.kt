@@ -1,11 +1,12 @@
 package com.bookk.core.domain.entity
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.protobuf.ProtoNumber
 
 @Serializable
 enum class Language {
-    EN,
-    UK;
+    @ProtoNumber(0) EN,
+    @ProtoNumber(1) UK;
 
     companion object
 }

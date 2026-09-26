@@ -62,7 +62,7 @@ internal class CancelAppointmentImplTest {
         val appointment = Appointment.stub(id = testCancellation.id, businessId = testBusinessId)
             .copy(status = AppointmentStatus.SCHEDULED)
 
-        coEvery { fixture.appointmentPermissionDataSource.getPermission(testUserId, testBusinessId) } returns ResourcePermission(update = true)
+        coEvery { fixture.appointmentPermissionDataSource.getPermission(testUserId, testBusinessId) } returns ResourcePermission(view = false, update = true, delete = false)
         coEvery { fixture.appointmentDataSource.get(testCancellation.id) } returns appointment
         coEvery { fixture.appointmentDataSource.cancel(testCancellation.id, testCancellation.reason) } returns appointment.copy(status = AppointmentStatus.CANCELLED)
         coEvery { fixture.subscriptionDataSource.getBusinessSnapshot(testBusinessId) } returns mockk(relaxed = true)
@@ -82,7 +82,7 @@ internal class CancelAppointmentImplTest {
         val appointment = Appointment.stub(id = testCancellation.id, businessId = testBusinessId)
             .copy(status = AppointmentStatus.CANCELLED)
 
-        coEvery { fixture.appointmentPermissionDataSource.getPermission(testUserId, testBusinessId) } returns ResourcePermission(update = true)
+        coEvery { fixture.appointmentPermissionDataSource.getPermission(testUserId, testBusinessId) } returns ResourcePermission(view = false, update = true, delete = false)
         coEvery { fixture.appointmentDataSource.get(testCancellation.id) } returns appointment
 
         whenn()
@@ -101,7 +101,7 @@ internal class CancelAppointmentImplTest {
         val appointment = Appointment.stub(id = testCancellation.id, businessId = testBusinessId)
             .copy(status = AppointmentStatus.COMPLETED)
 
-        coEvery { fixture.appointmentPermissionDataSource.getPermission(testUserId, testBusinessId) } returns ResourcePermission(update = true)
+        coEvery { fixture.appointmentPermissionDataSource.getPermission(testUserId, testBusinessId) } returns ResourcePermission(view = false, update = true, delete = false)
         coEvery { fixture.appointmentDataSource.get(testCancellation.id) } returns appointment
 
         whenn()
@@ -120,7 +120,7 @@ internal class CancelAppointmentImplTest {
         val appointment = Appointment.stub(id = testCancellation.id, businessId = testBusinessId)
             .copy(status = AppointmentStatus.SCHEDULED)
 
-        coEvery { fixture.appointmentPermissionDataSource.getPermission(testUserId, testBusinessId) } returns ResourcePermission(view = true)
+        coEvery { fixture.appointmentPermissionDataSource.getPermission(testUserId, testBusinessId) } returns ResourcePermission(view = true, update = false, delete = false)
         coEvery { fixture.appointmentDataSource.get(testCancellation.id) } returns appointment
 
         whenn()
@@ -139,7 +139,7 @@ internal class CancelAppointmentImplTest {
         val appointment = Appointment.stub(id = testCancellation.id, businessId = testBusinessId)
             .copy(status = AppointmentStatus.SCHEDULED, employee = EmployeeSnapshot.stub(userId = testUserId))
 
-        coEvery { fixture.appointmentPermissionDataSource.getPermission(testUserId, testBusinessId) } returns ResourcePermission(view = true)
+        coEvery { fixture.appointmentPermissionDataSource.getPermission(testUserId, testBusinessId) } returns ResourcePermission(view = true, update = false, delete = false)
         coEvery { fixture.appointmentDataSource.get(testCancellation.id) } returns appointment
         coEvery { fixture.appointmentDataSource.cancel(testCancellation.id, testCancellation.reason) } returns appointment.copy(status = AppointmentStatus.CANCELLED)
         coEvery { fixture.subscriptionDataSource.getBusinessSnapshot(testBusinessId) } returns mockk(relaxed = true)
@@ -159,7 +159,7 @@ internal class CancelAppointmentImplTest {
         val appointment = Appointment.stub(id = testCancellation.id, businessId = testBusinessId)
             .copy(status = AppointmentStatus.SCHEDULED)
 
-        coEvery { fixture.appointmentPermissionDataSource.getPermission(testUserId, testBusinessId) } returns ResourcePermission(update = true)
+        coEvery { fixture.appointmentPermissionDataSource.getPermission(testUserId, testBusinessId) } returns ResourcePermission(view = false, update = true, delete = false)
         coEvery { fixture.appointmentDataSource.get(testCancellation.id) } returns appointment
         coEvery { fixture.appointmentDataSource.cancel(testCancellation.id, testCancellation.reason) } returns appointment.copy(status = AppointmentStatus.CANCELLED)
         coEvery { fixture.subscriptionDataSource.getBusinessSnapshot(testBusinessId) } returns mockk(relaxed = true)
@@ -181,7 +181,7 @@ internal class CancelAppointmentImplTest {
         val businessSnapshot = BusinessSnapshot.stub().copy(timeZone = TimeZone.of("Europe/Kyiv"))
         val eventSlot = slot<AppointmentEvent.Cancelled>()
 
-        coEvery { fixture.appointmentPermissionDataSource.getPermission(testUserId, testBusinessId) } returns ResourcePermission(update = true)
+        coEvery { fixture.appointmentPermissionDataSource.getPermission(testUserId, testBusinessId) } returns ResourcePermission(view = false, update = true, delete = false)
         coEvery { fixture.appointmentDataSource.get(testCancellation.id) } returns appointment
         coEvery { fixture.appointmentDataSource.cancel(testCancellation.id, testCancellation.reason) } returns appointment.copy(status = AppointmentStatus.CANCELLED)
         coEvery { fixture.subscriptionDataSource.getBusinessSnapshot(testBusinessId) } returns businessSnapshot

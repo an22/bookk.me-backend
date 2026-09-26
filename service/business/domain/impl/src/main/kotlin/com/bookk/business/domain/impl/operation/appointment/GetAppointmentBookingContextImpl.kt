@@ -29,6 +29,7 @@ internal class GetAppointmentBookingContextImpl(
         if (serviceIds.isEmpty()) return Result.failure(Error.EmptyServiceList())
         return transactionManager.transaction {
             val employee = employeeDataSource.getEmployee(businessId, employeeId) ?: throw Error.EmployeeNotFound()
+            if (employee.isSuspended) throw Error.EmployeeSuspended()
             val client = clientDataSource.getClientByUserId(businessId, userId) ?: createAndAttachClientToBusiness(businessId, userId)
             val requestedServices = serviceDataSource.getServicesExpanded(businessId, serviceIds) ?: throw Error.ServiceNotFound()
 

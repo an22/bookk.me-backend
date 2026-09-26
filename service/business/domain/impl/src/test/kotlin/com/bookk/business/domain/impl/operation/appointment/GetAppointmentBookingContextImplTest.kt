@@ -21,6 +21,7 @@ import io.mockk.mockk
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
 internal class GetAppointmentBookingContextImplTest {
@@ -184,6 +185,26 @@ internal class GetAppointmentBookingContextImplTest {
         assertTrue(result.isFailure)
         assertTrue(result.exceptionOrNull() is GetAppointmentBookingContext.Error.EmptyServiceList)
         coVerify(exactly = 0) { fixture.employeeDataSource.getEmployee(any(), any()) }
+    }
+
+    @Test
+    fun `should return failure when employee is suspended`() = runUnitTest {
+        given()
+        val businessId = Uuid.random()
+        val userId = Uuid.random()
+        val employee = Employee.stub(businessId = businessId, suspendedAt = Instant.fromEpochMilliseconds(1))
+        val fixture = SutFixture()
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { employeeDataSource.getEmployee(businessId, employee.id) } returns employee
+        }
+
+        whenn()
+        val result = fixture.sut.invoke(businessId, employee.id, userId, listOf(Uuid.random()))
+
+        then()
+        assertTrue(result.exceptionOrNull() is GetAppointmentBookingContext.Error.EmployeeSuspended)
+        coVerify(exactly = 0) { fixture.clientDataSource.getClientByUserId(any(), any()) }
     }
 
     @Test

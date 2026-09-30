@@ -202,6 +202,178 @@ internal class UpdateAppointmentTest {
     }
 
     @Test
+    fun `should return unprocessable entity when appointment is cancelled`() = routeTest {
+        given()
+        val useCase: UpdateAppointment = mockk()
+        val userId = Uuid.random()
+
+        coEvery {
+            useCase.invoke(
+                userId,
+                any()
+            )
+        } returns Result.failure(UpdateAppointment.Error.AlreadyCancelled())
+
+        setupApplication(
+            extension = {
+                install(Authentication) {
+                    provider {
+                        authenticate { context ->
+                            context.principal(AppPrincipal(Uuid.random(), userId, Uuid.random()))
+                        }
+                    }
+                }
+            },
+            diModule = module {
+                single { useCase }
+            },
+            routeUnderTest = {
+                appointment()
+            }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.put(Api.Appointment.Id(id = testAppointment.id)) {
+            setBody(testAppointment)
+        }
+
+        then()
+        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
+        val body = response.body<SimpleServerError>()
+        assertEquals(AppointmentErrorCodes.APPOINTMENT_ALREADY_CANCELED, body.errorCode)
+    }
+
+    @Test
+    fun `should return unprocessable entity when appointment is completed`() = routeTest {
+        given()
+        val useCase: UpdateAppointment = mockk()
+        val userId = Uuid.random()
+
+        coEvery {
+            useCase.invoke(
+                userId,
+                any()
+            )
+        } returns Result.failure(UpdateAppointment.Error.AlreadyCompleted())
+
+        setupApplication(
+            extension = {
+                install(Authentication) {
+                    provider {
+                        authenticate { context ->
+                            context.principal(AppPrincipal(Uuid.random(), userId, Uuid.random()))
+                        }
+                    }
+                }
+            },
+            diModule = module {
+                single { useCase }
+            },
+            routeUnderTest = {
+                appointment()
+            }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.put(Api.Appointment.Id(id = testAppointment.id)) {
+            setBody(testAppointment)
+        }
+
+        then()
+        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
+        val body = response.body<SimpleServerError>()
+        assertEquals(AppointmentErrorCodes.APPOINTMENT_ALREADY_COMPLETED, body.errorCode)
+    }
+
+    @Test
+    fun `should return unprocessable entity when appointment is marked as no-show`() = routeTest {
+        given()
+        val useCase: UpdateAppointment = mockk()
+        val userId = Uuid.random()
+
+        coEvery {
+            useCase.invoke(
+                userId,
+                any()
+            )
+        } returns Result.failure(UpdateAppointment.Error.MarkedNoShow())
+
+        setupApplication(
+            extension = {
+                install(Authentication) {
+                    provider {
+                        authenticate { context ->
+                            context.principal(AppPrincipal(Uuid.random(), userId, Uuid.random()))
+                        }
+                    }
+                }
+            },
+            diModule = module {
+                single { useCase }
+            },
+            routeUnderTest = {
+                appointment()
+            }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.put(Api.Appointment.Id(id = testAppointment.id)) {
+            setBody(testAppointment)
+        }
+
+        then()
+        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
+        val body = response.body<SimpleServerError>()
+        assertEquals(AppointmentErrorCodes.APPOINTMENT_MARKED_NO_SHOW, body.errorCode)
+    }
+
+    @Test
+    fun `should return unprocessable entity when request changes the status`() = routeTest {
+        given()
+        val useCase: UpdateAppointment = mockk()
+        val userId = Uuid.random()
+
+        coEvery {
+            useCase.invoke(
+                userId,
+                any()
+            )
+        } returns Result.failure(UpdateAppointment.Error.StatusChangeNotAllowed())
+
+        setupApplication(
+            extension = {
+                install(Authentication) {
+                    provider {
+                        authenticate { context ->
+                            context.principal(AppPrincipal(Uuid.random(), userId, Uuid.random()))
+                        }
+                    }
+                }
+            },
+            diModule = module {
+                single { useCase }
+            },
+            routeUnderTest = {
+                appointment()
+            }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.put(Api.Appointment.Id(id = testAppointment.id)) {
+            setBody(testAppointment)
+        }
+
+        then()
+        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
+        val body = response.body<SimpleServerError>()
+        assertEquals(AppointmentErrorCodes.APPOINTMENT_STATUS_CHANGE_NOT_ALLOWED, body.errorCode)
+    }
+
+    @Test
     fun `should return unprocessable entity when date not allowed`() = routeTest {
         given()
         val useCase: UpdateAppointment = mockk()

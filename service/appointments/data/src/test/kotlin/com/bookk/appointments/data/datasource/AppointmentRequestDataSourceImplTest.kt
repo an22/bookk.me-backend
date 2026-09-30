@@ -68,6 +68,23 @@ internal class AppointmentRequestDataSourceImplTest {
     }
 
     @Test
+    fun `should create request at the start of a declined one for the same client`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val userId = Uuid.random()
+        val declined = suspendTransaction { fixture.sut.create(fixture.buildRequest(userId = userId)) }
+        suspendTransaction { fixture.sut.decline(declined.id, "Fully booked") }
+
+        whenn()
+        val result = runCatching { suspendTransaction { fixture.sut.create(fixture.buildRequest(userId = userId)) } }
+
+        then()
+        assertTrue(result.isSuccess)
+        assertEquals(AppointmentRequestStatus.PENDING, result.getOrThrow().status)
+    }
+
+    @Test
     fun `should return null when request not found`() = runUnitTest {
         given()
         val fixture = SutFixture()

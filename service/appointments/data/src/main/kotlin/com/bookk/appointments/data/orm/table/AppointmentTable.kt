@@ -24,6 +24,6 @@ object AppointmentTable: BaseUUIDTable("appointment") {
     val completedBy = enumeration("completed_by", AppointmentCompletedBy::class).nullable()
 
     init {
-        index(true, userId, businessId, dateStart)
+        index(false, userId, businessId, dateStart)
     }
 }

@@ -125,8 +125,6 @@ internal class AppointmentEntity(id: EntityID<Uuid>) : UuidEntity(id) {
             it.dateStart = appointment.date
             it.dateEnd = appointment.dateEnd
             it.note = appointment.note
-            it.status = appointment.status
-            it.cancellationReason = appointment.cancellationReason
             it.updatedAt = Clock.System.now()
         }
     }

@@ -12,6 +12,7 @@ import com.bookk.appointments.domain.api.entity.AppointmentRequest
 import com.bookk.appointments.domain.api.entity.AppointmentSettings
 import com.bookk.appointments.domain.api.entity.AppointmentStatus
 import com.bookk.appointments.domain.api.entity.BusinessSnapshot
+import com.bookk.appointments.domain.api.entity.ServiceSnapshot
 import com.bookk.core.data.test.createTestDatabase
 import com.bookk.core.domain.entity.Error
 import com.bookk.core.test.given
@@ -80,6 +81,53 @@ internal class AppointmentDataSourceImplTest {
     }
 
     @Test
+    fun `should retrieve appointment for update by id`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val created = suspendTransaction { fixture.sut.create(fixture.buildRequest()) }
+
+        whenn()
+        val found = suspendTransaction { fixture.sut.getForUpdate(created.id) }
+
+        then()
+        assertEquals(created.id, found.id)
+        assertEquals(AppointmentStatus.SCHEDULED, found.status)
+    }
+
+    @Test
+    fun `should lock the appointment row when retrieving it for update`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val created = suspendTransaction { fixture.sut.create(fixture.buildRequest()) }
+        val capturedSql = CapturingSqlLogger()
+
+        whenn()
+        suspendTransaction {
+            addLogger(capturedSql)
+            fixture.sut.getForUpdate(created.id)
+        }
+
+        then()
+        val selects = capturedSql.statements.filter { it.startsWith("SELECT", ignoreCase = true) }
+        assertTrue(selects.any { it.contains("FOR UPDATE", ignoreCase = true) })
+    }
+
+    @Test
+    fun `should throw not found when retrieving missing appointment for update`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+
+        whenn()
+        val result = runCatching { suspendTransaction { fixture.sut.getForUpdate(Uuid.random()) } }
+
+        then()
+        assertTrue(result.exceptionOrNull() is Error.NotFound)
+    }
+
+    @Test
     fun `should create appointment from appointment entity`() = runUnitTest {
         given()
         val fixture = SutFixture()
@@ -134,6 +182,107 @@ internal class AppointmentDataSourceImplTest {
 
         then()
         assertEquals("Updated note", updated.note)
+    }
+
+    @Test
+    fun `should ignore status when updating appointment`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val created = suspendTransaction { fixture.sut.create(fixture.buildRequest()) }
+
+        whenn()
+        val updated = suspendTransaction {
+            fixture.sut.update(created.copy(note = "Updated note", status = AppointmentStatus.COMPLETED))
+        }
+
+        then()
+        assertEquals(AppointmentStatus.SCHEDULED, updated.status)
+        assertEquals("Updated note", updated.note)
+        assertEquals(AppointmentStatus.SCHEDULED, suspendTransaction { fixture.sut.get(created.id) }.status)
+    }
+
+    @Test
+    fun `should return the stored services after updating appointment`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val created = suspendTransaction { fixture.sut.create(fixture.buildRequest()) }
+        val newServices = listOf(ServiceSnapshot.stub(), ServiceSnapshot.stub())
+
+        whenn()
+        val updated = suspendTransaction { fixture.sut.update(created.copy(services = newServices)) }
+
+        then()
+        assertEquals(newServices.map { it.id }.toSet(), updated.services.map { it.id }.toSet())
+        assertEquals(newServices.map { it.id }.toSet(), suspendTransaction { fixture.sut.get(created.id) }.services.map { it.id }.toSet())
+    }
+
+    @Test
+    fun `should return the latest services when updating twice in one transaction`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val created = suspendTransaction { fixture.sut.create(fixture.buildRequest()) }
+        val latestServices = listOf(ServiceSnapshot.stub(), ServiceSnapshot.stub())
+
+        whenn()
+        val updated = suspendTransaction {
+            fixture.sut.update(created.copy(services = listOf(ServiceSnapshot.stub())))
+            fixture.sut.update(created.copy(services = latestServices))
+        }
+
+        then()
+        assertEquals(latestServices.map { it.id }.toSet(), updated.services.map { it.id }.toSet())
+    }
+
+    @Test
+    fun `should throw not found when updating missing appointment`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+
+        whenn()
+        val result = runCatching { suspendTransaction { fixture.sut.update(Appointment.stub(businessId = fixture.businessId)) } }
+
+        then()
+        assertTrue(result.exceptionOrNull() is Error.NotFound)
+    }
+
+    @Test
+    fun `should create appointment at the start of a cancelled one for the same client`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val userId = Uuid.random()
+        val cancelled = suspendTransaction { fixture.sut.create(fixture.buildRequest(userId = userId)) }
+        suspendTransaction { fixture.sut.cancel(cancelled.id, "Reason") }
+
+        whenn()
+        val result = runCatching { suspendTransaction { fixture.sut.create(fixture.buildRequest(userId = userId)) } }
+
+        then()
+        assertTrue(result.isSuccess)
+        assertEquals(AppointmentStatus.SCHEDULED, result.getOrThrow().status)
+    }
+
+    @Test
+    fun `should reschedule appointment to the start of a cancelled one for the same client`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val userId = Uuid.random()
+        val cancelledStart = Instant.fromEpochMilliseconds(0)
+        val cancelled = suspendTransaction { fixture.sut.create(fixture.buildRequest(userId = userId, date = cancelledStart)) }
+        suspendTransaction { fixture.sut.cancel(cancelled.id, "Reason") }
+        val scheduled = suspendTransaction { fixture.sut.create(fixture.buildRequest(userId = userId, date = cancelledStart + 2.hours)) }
+
+        whenn()
+        val result = runCatching { suspendTransaction { fixture.sut.update(scheduled.copy(date = cancelledStart)) } }
+
+        then()
+        assertTrue(result.isSuccess)
+        assertEquals(cancelledStart, suspendTransaction { fixture.sut.get(scheduled.id) }.date)
     }
 
     @Test

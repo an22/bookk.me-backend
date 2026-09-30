@@ -33,5 +33,29 @@ interface UpdateAppointment {
             code = AppointmentErrorCodes.DATE_IN_PAST,
             message = "Appointment date is in the past"
         ), Error
+
+        class AlreadyCancelled : BusinessError(
+            statusCode = HttpStatusCode.UnprocessableEntity.value,
+            code = AppointmentErrorCodes.APPOINTMENT_ALREADY_CANCELED,
+            message = "Appointment already cancelled"
+        ), Error
+
+        class AlreadyCompleted : BusinessError(
+            statusCode = HttpStatusCode.UnprocessableEntity.value,
+            code = AppointmentErrorCodes.APPOINTMENT_ALREADY_COMPLETED,
+            message = "Appointment already completed"
+        ), Error
+
+        class MarkedNoShow : BusinessError(
+            statusCode = HttpStatusCode.UnprocessableEntity.value,
+            code = AppointmentErrorCodes.APPOINTMENT_MARKED_NO_SHOW,
+            message = "Appointment is marked as no-show"
+        ), Error
+
+        class StatusChangeNotAllowed : BusinessError(
+            statusCode = HttpStatusCode.UnprocessableEntity.value,
+            code = AppointmentErrorCodes.APPOINTMENT_STATUS_CHANGE_NOT_ALLOWED,
+            message = "Appointment status cannot be changed by an update"
+        ), Error
     }
 }

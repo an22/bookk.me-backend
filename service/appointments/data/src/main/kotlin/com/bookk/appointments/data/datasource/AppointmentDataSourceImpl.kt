@@ -42,6 +42,13 @@ internal class AppointmentDataSourceImpl : DataSource(), AppointmentDataSource {
             ?.domain() ?: throw Error.NotFound()
     }
 
+    override suspend fun getForUpdate(id: Uuid): Appointment = dbQuery {
+        AppointmentEntity.find { AppointmentTable.id eq id }
+            .forUpdate()
+            .singleOrNull()
+            ?.domain() ?: throw Error.NotFound()
+    }
+
     override suspend fun getAll(businessId: Uuid): List<Appointment> = dbQuery {
         AppointmentEntity
             .find { AppointmentTable.businessId eq businessId }
@@ -145,7 +152,7 @@ internal class AppointmentDataSourceImpl : DataSource(), AppointmentDataSource {
         appointment.services.forEach {
             AppointmentServiceEntity.new(appointmentEntity.id, it)
         }
-        appointment
+        appointmentEntity.domain()
     }
 
     override suspend fun delete(id: Uuid) = dbQuery<Unit> {

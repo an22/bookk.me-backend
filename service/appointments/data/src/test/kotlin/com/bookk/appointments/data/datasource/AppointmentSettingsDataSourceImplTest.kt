@@ -18,9 +18,6 @@ import kotlinx.datetime.LocalTime
 import library.schedule.DayOffRange
 import library.schedule.Schedule
 import library.schedule.WorkHour
-import org.jetbrains.exposed.v1.core.SqlLogger
-import org.jetbrains.exposed.v1.core.Transaction
-import org.jetbrains.exposed.v1.core.statements.StatementContext
 import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -29,14 +26,6 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import kotlin.uuid.Uuid
-
-private class CapturingSqlLogger : SqlLogger {
-    val statements = mutableListOf<String>()
-
-    override fun log(context: StatementContext, transaction: Transaction) {
-        statements += context.sql(transaction)
-    }
-}
 
 internal class AppointmentSettingsDataSourceImplTest {
 

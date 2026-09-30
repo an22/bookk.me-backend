@@ -37,7 +37,7 @@ erDiagram
 
     APPOINTMENT {
         uuid id PK
-        uuid user_id "logical FK -> user.profile.id; UK with business_id, date_start"
+        uuid user_id "logical FK -> user.profile.id; non-unique index with business_id, date_start (overlap checks)"
         uuid business_id FK
         uuid employee_id "logical FK -> business.employee.id"
         uuid employee_user_id "logical FK -> user.profile.id (employee's own userId)"
@@ -72,7 +72,7 @@ erDiagram
 
     APPOINTMENT_REQUEST {
         uuid id PK
-        uuid user_id "logical FK -> user.profile.id; UK with business_id, date_start"
+        uuid user_id "logical FK -> user.profile.id; non-unique index with business_id, date_start (overlap checks)"
         uuid business_id FK
         uuid employee_id "logical FK -> business.employee.id"
         uuid employee_user_id "logical FK -> user.profile.id (employee's own userId)"

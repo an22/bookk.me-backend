@@ -12,6 +12,7 @@ interface AppointmentDataSource {
     suspend fun create(request: AppointmentRequest): Appointment
     suspend fun create(appointment: Appointment): Appointment
     suspend fun get(id: Uuid): Appointment
+    suspend fun getForUpdate(id: Uuid): Appointment
     suspend fun getAll(businessId: Uuid): List<Appointment>
     suspend fun getAllForDate(businessId: Uuid, range: ClosedRange<Instant>): List<Appointment>
     suspend fun getAllPaginated(

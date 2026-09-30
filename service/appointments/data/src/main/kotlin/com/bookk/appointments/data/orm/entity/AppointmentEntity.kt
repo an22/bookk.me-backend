@@ -37,6 +37,7 @@ internal class AppointmentEntity(id: EntityID<Uuid>) : UuidEntity(id) {
     var note by AppointmentTable.note
     var status by AppointmentTable.status
     var cancellationReason by AppointmentTable.cancellationReason
+    var completedBy by AppointmentTable.completedBy
     var updatedAt by AppointmentTable.updatedAt
 
     fun domain(): Appointment {
@@ -70,7 +71,8 @@ internal class AppointmentEntity(id: EntityID<Uuid>) : UuidEntity(id) {
             date = dateStart,
             note = note,
             status = status,
-            cancellationReason = cancellationReason
+            cancellationReason = cancellationReason,
+            completedBy = completedBy
         )
     }
 

@@ -57,7 +57,8 @@ internal class CreateAppointmentTest {
             date = Instant.fromEpochMilliseconds(0),
             note = "test",
             status = AppointmentStatus.SCHEDULED,
-            cancellationReason = ""
+            cancellationReason = "",
+            completedBy = null
         )
 
         coEvery { useCase.invoke(userId, requestId) } returns Result.success(appointment)

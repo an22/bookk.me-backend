@@ -5,7 +5,10 @@
 Records that the client missed the appointment. Only an appointment that has
 already started can be marked, and it may be either still `SCHEDULED` or
 already `COMPLETED` — the `MarkAppointmentsCompleted` job flips every past
-appointment to `COMPLETED`, so a no-show is usually recorded after that.
+appointment of a business with `automaticCompletion` on to `COMPLETED`, and
+staff can [complete](complete-appointment.md) one by hand, so a no-show is
+often recorded after that. Marking a `COMPLETED` appointment as no-show clears
+its `completedBy`.
 Marking an appointment that is already `NO_SHOW` succeeds unchanged. The
 eligibility check and the status write share the `SELECT … FOR UPDATE` row
 lock of `findByIdAndUpdate`, so a concurrent cancel cannot slip in between.
@@ -27,7 +30,7 @@ flowchart TD
     Suspended -- Yes --> R403s([403 BUSINESS_EMPLOYEE_ACCESS_SUSPENDED 200034])
     Suspended -- No --> Perm{caller update permission, or view permission and appointment.employee.userId == userId?}
     Perm -- No --> R404b([404 Error.OperationNotAllowed])
-    Perm -- Yes --> Mark[AppointmentDataSource.markNoShow id eligibleStatuses = SCHEDULED, COMPLETED startedBefore = now - sets NO_SHOW only when status is in eligibleStatuses and date_start is not after now]
+    Perm -- Yes --> Mark[AppointmentDataSource.markNoShow id eligibleStatuses = SCHEDULED, COMPLETED startedBefore = now - sets NO_SHOW and clears completedBy only when status is in eligibleStatuses and date_start is not after now]
     Mark --> Status{resulting status}
     Status -- NO_SHOW --> R200([200 No-show Appointment])
     Status -- CANCELLED --> R422a([422 ALREADY_CANCELLED 300005])

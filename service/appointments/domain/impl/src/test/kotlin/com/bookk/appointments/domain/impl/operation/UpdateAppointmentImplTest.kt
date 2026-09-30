@@ -42,7 +42,8 @@ internal class UpdateAppointmentImplTest {
         date = Instant.parse("2099-01-01T00:00:00Z"),
         note = "Note",
         status = AppointmentStatus.SCHEDULED,
-        cancellationReason = ""
+        cancellationReason = "",
+        completedBy = null
     )
 
     @Test

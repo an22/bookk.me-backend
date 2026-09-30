@@ -16,6 +16,7 @@ internal class SettingsEntity(id: EntityID<Uuid>) : UuidEntity(id) {
 
     var business by AppointmentBusinessEntity referencedOn SettingsTable.businessId
     var automaticApproval by SettingsTable.automaticApproval
+    var automaticCompletion by SettingsTable.automaticCompletion
     var inBetweenBreakInMinutes by SettingsTable.inBetweenBreakInMinutes
     var appointmentNote by SettingsTable.appointmentNote
     var updatedAt by SettingsTable.updatedAt
@@ -28,7 +29,8 @@ internal class SettingsEntity(id: EntityID<Uuid>) : UuidEntity(id) {
         automaticApproval = automaticApproval,
         inBetweenBreakInMinutes = inBetweenBreakInMinutes,
         appointmentNote = appointmentNote,
-        permissions = ResourcePermission.NONE
+        permissions = ResourcePermission.NONE,
+        automaticCompletion = automaticCompletion
     )
 
     companion object : DecoratorUuidEntityClass<SettingsEntity>(SettingsTable) {
@@ -37,6 +39,7 @@ internal class SettingsEntity(id: EntityID<Uuid>) : UuidEntity(id) {
             inBetweenBreakInMinutes = settings.inBetweenBreakInMinutes
             appointmentNote = settings.appointmentNote
             automaticApproval = settings.automaticApproval
+            automaticCompletion = settings.automaticCompletion
         }
 
         fun findByBusinessIdAndUpdate(update: AppointmentSettingsUpdate): SettingsEntity? =
@@ -44,6 +47,7 @@ internal class SettingsEntity(id: EntityID<Uuid>) : UuidEntity(id) {
                 it.inBetweenBreakInMinutes = update.inBetweenBreakInMinutes
                 it.appointmentNote = update.appointmentNote
                 it.automaticApproval = update.automaticApproval
+                update.automaticCompletion?.let { automaticCompletion -> it.automaticCompletion = automaticCompletion }
                 it.updatedAt = Clock.System.now()
             }
     }

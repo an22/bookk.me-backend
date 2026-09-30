@@ -2,6 +2,7 @@ package com.bookk.appointments.domain.impl.di
 
 import com.bookk.appointments.domain.api.APPOINTMENTS_SCHEMA
 import com.bookk.appointments.domain.api.operation.CancelAppointment
+import com.bookk.appointments.domain.api.operation.CompleteAppointment
 import com.bookk.appointments.domain.api.operation.CreateAppointment
 import com.bookk.appointments.domain.api.operation.CreateAppointmentRequest
 import com.bookk.appointments.domain.api.operation.DeclineAppointmentRequest
@@ -22,6 +23,7 @@ import com.bookk.appointments.domain.api.operation.MarkAppointmentsCompleted
 import com.bookk.appointments.domain.api.operation.UpdateAppointment
 import com.bookk.appointments.domain.impl.event.AppointmentEventHandler
 import com.bookk.appointments.domain.impl.operation.CancelAppointmentImpl
+import com.bookk.appointments.domain.impl.operation.CompleteAppointmentImpl
 import com.bookk.appointments.domain.impl.operation.CreateAppointmentImpl
 import com.bookk.appointments.domain.impl.operation.CreateAppointmentRequestImpl
 import com.bookk.appointments.domain.impl.operation.DeclineAppointmentRequestImpl
@@ -67,6 +69,7 @@ fun appointmentsDomainModule() = module {
         scopedOf(::UpdateAppointmentImpl) bind UpdateAppointment::class
         scopedOf(::CancelAppointmentImpl) bind CancelAppointment::class
         scopedOf(::MarkAppointmentNoShowImpl) bind MarkAppointmentNoShow::class
+        scopedOf(::CompleteAppointmentImpl) bind CompleteAppointment::class
         scopedOf(::UpdateBusinessInformation)
         scopedOf(::SyncEmployeePermission)
         scopedOf(::DeclineAppointmentRequestImpl) bind DeclineAppointmentRequest::class

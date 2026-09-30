@@ -22,6 +22,7 @@ import io.ktor.server.auth.bearer
 import io.mockk.coEvery
 import io.mockk.mockk
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Test
 import org.koin.dsl.module
 import kotlin.uuid.Uuid
@@ -62,6 +63,40 @@ internal class EditSettingsTest {
         then()
         assertEquals(HttpStatusCode.OK, response.status)
         assertEquals(appointmentSettings, response.body<AppointmentSettings>())
+    }
+
+    @Test
+    fun `should pass disabled automatic completion to the operation`() = routeTest {
+        given()
+        val useCase: EditSettings = mockk()
+        val userId = Uuid.random()
+        val update = AppointmentSettingsUpdate.stub(businessId = testBusinessId, automaticCompletion = false)
+        val appointmentSettings = AppointmentSettings.stub(businessId = testBusinessId).copy(automaticCompletion = false)
+        coEvery { useCase.invoke(userId, update) } returns Result.success(appointmentSettings)
+
+        setupApplication(
+            extension = {
+                install(Authentication) {
+                    provider {
+                        authenticate { context ->
+                            context.principal(AppPrincipal(Uuid.random(), userId, Uuid.random()))
+                        }
+                    }
+                }
+            },
+            diModule = module { single { useCase } },
+            routeUnderTest = { settings() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.put(Api.Appointment.Settings(businessId = testBusinessId)) {
+            setBody(update)
+        }
+
+        then()
+        assertEquals(HttpStatusCode.OK, response.status)
+        assertFalse(response.body<AppointmentSettings>().automaticCompletion)
     }
 
     @Test

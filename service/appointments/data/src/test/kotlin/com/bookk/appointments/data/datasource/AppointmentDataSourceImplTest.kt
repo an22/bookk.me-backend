@@ -4,9 +4,12 @@ import com.bookk.appointments.data.orm.table.AppointmentBusinessTable
 import com.bookk.appointments.data.orm.table.AppointmentServicesTable
 import com.bookk.appointments.data.orm.table.AppointmentTable
 import com.bookk.appointments.data.orm.table.DayOffsTable
+import com.bookk.appointments.data.orm.table.SettingsTable
 import com.bookk.appointments.data.orm.table.WorkingHoursTable
 import com.bookk.appointments.domain.api.entity.Appointment
+import com.bookk.appointments.domain.api.entity.AppointmentCompletedBy
 import com.bookk.appointments.domain.api.entity.AppointmentRequest
+import com.bookk.appointments.domain.api.entity.AppointmentSettings
 import com.bookk.appointments.domain.api.entity.AppointmentStatus
 import com.bookk.appointments.domain.api.entity.BusinessSnapshot
 import com.bookk.core.data.test.createTestDatabase
@@ -33,15 +36,25 @@ internal class AppointmentDataSourceImplTest {
     private val eligibleStatuses = setOf(AppointmentStatus.SCHEDULED, AppointmentStatus.COMPLETED)
 
     private class SutFixture {
-        val db = createTestDatabase(AppointmentBusinessTable, WorkingHoursTable, DayOffsTable, AppointmentTable, AppointmentServicesTable)
+        val db = createTestDatabase(
+            AppointmentBusinessTable, WorkingHoursTable, DayOffsTable, SettingsTable, AppointmentTable, AppointmentServicesTable
+        )
         val sut = AppointmentDataSourceImpl()
         val subscriptionSut = AppointmentSubscriptionDataSourceImpl()
+        val settingsSut = AppointmentSettingsDataSourceImpl()
         lateinit var businessId: Uuid
 
-        suspend fun setup() {
+        suspend fun setup(automaticCompletion: Boolean = true) {
+            businessId = attachBusiness(automaticCompletion)
+        }
+
+        suspend fun attachBusiness(automaticCompletion: Boolean): Uuid {
             val snapshot = BusinessSnapshot.stub()
-            suspendTransaction { subscriptionSut.attachBusiness(snapshot) }
-            businessId = snapshot.id
+            suspendTransaction {
+                subscriptionSut.attachBusiness(snapshot)
+                settingsSut.create(AppointmentSettings.stub(snapshot.id).copy(automaticCompletion = automaticCompletion))
+            }
+            return snapshot.id
         }
 
         fun buildRequest(userId: Uuid = Uuid.random(), date: Instant = Instant.fromEpochMilliseconds(0)) =
@@ -302,6 +315,147 @@ internal class AppointmentDataSourceImplTest {
     }
 
     @Test
+    fun `should record the system as the completer of automatically completed appointments`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val created = suspendTransaction { fixture.sut.create(fixture.buildRequest()) }
+
+        whenn()
+        suspendTransaction { fixture.sut.markCompleted(Clock.System.now()) }
+
+        then()
+        assertEquals(AppointmentCompletedBy.SYSTEM, suspendTransaction { fixture.sut.get(created.id) }.completedBy)
+    }
+
+    @Test
+    fun `should not mark past appointments as completed when the business disabled automatic completion`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup(automaticCompletion = false)
+        val created = suspendTransaction { fixture.sut.create(fixture.buildRequest()) }
+
+        whenn()
+        suspendTransaction { fixture.sut.markCompleted(Clock.System.now()) }
+
+        then()
+        val found = suspendTransaction { fixture.sut.get(created.id) }
+        assertEquals(AppointmentStatus.SCHEDULED, found.status)
+        assertNull(found.completedBy)
+    }
+
+    @Test
+    fun `should only mark appointments of businesses with automatic completion enabled`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup(automaticCompletion = true)
+        val disabledBusinessId = fixture.attachBusiness(automaticCompletion = false)
+        val enabledAppointment = suspendTransaction { fixture.sut.create(fixture.buildRequest()) }
+        val disabledAppointment = suspendTransaction {
+            fixture.sut.create(AppointmentRequest.stub(businessId = disabledBusinessId, date = Instant.fromEpochMilliseconds(0)))
+        }
+
+        whenn()
+        suspendTransaction { fixture.sut.markCompleted(Clock.System.now()) }
+
+        then()
+        assertEquals(AppointmentStatus.COMPLETED, suspendTransaction { fixture.sut.get(enabledAppointment.id) }.status)
+        assertEquals(AppointmentStatus.SCHEDULED, suspendTransaction { fixture.sut.get(disabledAppointment.id) }.status)
+    }
+
+    @Test
+    fun `should not create appointments as completed`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+
+        whenn()
+        val created = suspendTransaction { fixture.sut.create(fixture.buildRequest()) }
+
+        then()
+        assertNull(suspendTransaction { fixture.sut.get(created.id) }.completedBy)
+    }
+
+    @Test
+    fun `should mark started scheduled appointment as completed by user`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup(automaticCompletion = false)
+        val created = suspendTransaction { fixture.sut.create(fixture.buildRequest()) }
+
+        whenn()
+        val completed = suspendTransaction { fixture.sut.markCompletedByUser(created.id, Clock.System.now()) }
+
+        then()
+        assertEquals(AppointmentStatus.COMPLETED, completed.status)
+        assertEquals(AppointmentCompletedBy.USER, completed.completedBy)
+        val found = suspendTransaction { fixture.sut.get(created.id) }
+        assertEquals(AppointmentStatus.COMPLETED, found.status)
+        assertEquals(AppointmentCompletedBy.USER, found.completedBy)
+    }
+
+    @Test
+    fun `should not complete appointment by user when it has not started yet`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val created = suspendTransaction { fixture.sut.create(fixture.buildRequest(date = Clock.System.now() + 24.hours)) }
+
+        whenn()
+        val result = suspendTransaction { fixture.sut.markCompletedByUser(created.id, Clock.System.now()) }
+
+        then()
+        assertEquals(AppointmentStatus.SCHEDULED, result.status)
+        assertNull(result.completedBy)
+        assertEquals(AppointmentStatus.SCHEDULED, suspendTransaction { fixture.sut.get(created.id) }.status)
+    }
+
+    @Test
+    fun `should not complete cancelled appointment by user`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val created = suspendTransaction { fixture.sut.create(fixture.buildRequest()) }
+        suspendTransaction { fixture.sut.cancel(created.id, "Reason") }
+
+        whenn()
+        val result = suspendTransaction { fixture.sut.markCompletedByUser(created.id, Clock.System.now()) }
+
+        then()
+        assertEquals(AppointmentStatus.CANCELLED, result.status)
+        assertNull(result.completedBy)
+    }
+
+    @Test
+    fun `should keep the system as completer when user completes an already completed appointment`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val created = suspendTransaction { fixture.sut.create(fixture.buildRequest()) }
+        suspendTransaction { fixture.sut.markCompleted(Clock.System.now()) }
+
+        whenn()
+        val result = suspendTransaction { fixture.sut.markCompletedByUser(created.id, Clock.System.now()) }
+
+        then()
+        assertEquals(AppointmentStatus.COMPLETED, result.status)
+        assertEquals(AppointmentCompletedBy.SYSTEM, result.completedBy)
+    }
+
+    @Test
+    fun `should throw not found when user completes missing appointment`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+
+        whenn()
+        val result = runCatching { suspendTransaction { fixture.sut.markCompletedByUser(Uuid.random(), Clock.System.now()) } }
+
+        then()
+        assertTrue(result.exceptionOrNull() is Error.NotFound)
+    }
+
+    @Test
     fun `should not mark future appointments as completed`() = runUnitTest {
         given()
         val fixture = SutFixture()
@@ -360,6 +514,7 @@ internal class AppointmentDataSourceImplTest {
 
         then()
         assertEquals(AppointmentStatus.NO_SHOW, marked.status)
+        assertNull(marked.completedBy)
     }
 
     @Test

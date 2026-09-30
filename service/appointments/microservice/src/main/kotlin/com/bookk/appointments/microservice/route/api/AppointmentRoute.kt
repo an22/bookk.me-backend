@@ -3,6 +3,7 @@ package com.bookk.appointments.microservice.route.api
 import com.bookk.appointments.domain.api.entity.Appointment
 import com.bookk.appointments.domain.api.entity.AppointmentCancellation
 import com.bookk.appointments.domain.api.operation.CancelAppointment
+import com.bookk.appointments.domain.api.operation.CompleteAppointment
 import com.bookk.appointments.domain.api.operation.CreateAppointment
 import com.bookk.appointments.domain.api.operation.GetAppointmentHistory
 import com.bookk.appointments.domain.api.operation.GetAppointmentsForDate
@@ -205,6 +206,23 @@ fun Routing.appointment() {
             val markAppointmentNoShow by application.injectScoped<MarkAppointmentNoShow>(AppointmentsScope)
 
             call.respondWith(markAppointmentNoShow(userId = principal.userId, appointmentId = it.id))
+        }
+
+        /**
+         * Summary: Complete appointment
+         * Description: Mark a started scheduled appointment as completed by the caller. An already completed appointment is returned unchanged
+         * Tag: appointment
+         * Security: jwt
+         * Response: 200 application/x-protobuf [com.bookk.appointments.domain.api.entity.Appointment] Completed appointment
+         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Complete appointment errors<br>ALREADY_CANCELLED (300005) Appointment already cancelled<br>NOT_STARTED (300018) Appointment has not started yet<br>MARKED_NO_SHOW (300019) Appointment is marked as no-show
+         * Response: 403 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Caller is a suspended employee of this business<br>BUSINESS_EMPLOYEE_ACCESS_SUSPENDED (200034) Your access to this business is suspended
+         * See: docs/operations/appointments/complete-appointment.md
+         */
+        post<Api.Appointment.Complete> {
+            val principal = requireNotNull(call.principal<AppPrincipal>())
+            val completeAppointment by application.injectScoped<CompleteAppointment>(AppointmentsScope)
+
+            call.respondWith(completeAppointment(userId = principal.userId, appointmentId = it.id))
         }
     }
 }

@@ -37,7 +37,7 @@ Registered in `registerAppointmentsJobs` (`AppointmentsMicroservice.kt`).
 
 | Job | Interval | Operation | What it does |
 |---|---|---|---|
-| `markAppointmentsAsCompleted` | 5 minutes | `MarkAppointmentsCompleted` | `AppointmentDataSource.markCompleted(now)` — marks every appointment with `dateEnd < now` as completed. |
+| `markAppointmentsAsCompleted` | 5 minutes | `MarkAppointmentsCompleted` | `AppointmentDataSource.markCompleted(now)` — marks every `SCHEDULED` appointment with `dateEnd < now` as completed with `completedBy = SYSTEM`, but only for businesses whose `appointment_settings.automatic_completion` is on. Businesses with it off complete appointments themselves via [Complete appointment](appointments/complete-appointment.md) (`completedBy = USER`). |
 | `deleteOutdatedRequests` | 1 hour | `DeleteOutdatedRequests` | `AppointmentRequestDataSource.cancelOutdated(now)` — cancels pending appointment requests whose slot has passed (`dateEnd < now`). |
 
 ## Authorization service

@@ -51,6 +51,7 @@ erDiagram
         string note
         enum status
         string cancellation_reason
+        enum completed_by "nullable; SYSTEM (MarkAppointmentsCompleted job) or USER (CompleteAppointment); set only while status = COMPLETED"
         timestamp createdAt
         timestamp updatedAt
     }
@@ -118,6 +119,7 @@ erDiagram
         int in_between_break_in_minutes
         string appointment_note
         bool automatic_approval
+        bool automatic_completion "default true; gates the MarkAppointmentsCompleted job for this business"
         timestamp createdAt
         timestamp updatedAt
     }

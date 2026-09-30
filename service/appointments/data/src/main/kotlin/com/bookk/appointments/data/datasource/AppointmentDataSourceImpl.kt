@@ -4,7 +4,9 @@ import com.bookk.appointments.data.orm.entity.AppointmentEntity
 import com.bookk.appointments.data.orm.entity.AppointmentServiceEntity
 import com.bookk.appointments.data.orm.table.AppointmentServicesTable
 import com.bookk.appointments.data.orm.table.AppointmentTable
+import com.bookk.appointments.data.orm.table.SettingsTable
 import com.bookk.appointments.domain.api.entity.Appointment
+import com.bookk.appointments.domain.api.entity.AppointmentCompletedBy
 import com.bookk.appointments.domain.api.entity.AppointmentPagination
 import com.bookk.appointments.domain.api.entity.AppointmentRepresentation
 import com.bookk.appointments.domain.api.entity.AppointmentRequest
@@ -161,15 +163,31 @@ internal class AppointmentDataSourceImpl : DataSource(), AppointmentDataSource {
     }
 
     override suspend fun markCompleted(before: Instant) = dbQuery<Unit> {
+        val autoCompletingBusinessIds = SettingsTable
+            .select(SettingsTable.businessId)
+            .where { SettingsTable.automaticCompletion eq true }
         AppointmentTable.update(
             where = {
                 AppointmentTable.status.eq(AppointmentStatus.SCHEDULED)
                     .and(AppointmentTable.dateEnd.less(before))
+                    .and(AppointmentTable.businessId.inSubQuery(autoCompletingBusinessIds))
             }
         ) {
             it[AppointmentTable.status] = AppointmentStatus.COMPLETED
+            it[AppointmentTable.completedBy] = AppointmentCompletedBy.SYSTEM
             it[AppointmentTable.updatedAt] = Clock.System.now()
         }
+    }
+
+    override suspend fun markCompletedByUser(id: Uuid, startedBefore: Instant): Appointment = dbQuery {
+        AppointmentEntity.findByIdAndUpdate(id) {
+            val hasStarted = it.dateStart <= startedBefore
+            if (it.status == AppointmentStatus.SCHEDULED && hasStarted) {
+                it.status = AppointmentStatus.COMPLETED
+                it.completedBy = AppointmentCompletedBy.USER
+                it.updatedAt = Clock.System.now()
+            }
+        }?.domain() ?: throw Error.NotFound()
     }
 
     override suspend fun markNoShow(
@@ -181,6 +199,7 @@ internal class AppointmentDataSourceImpl : DataSource(), AppointmentDataSource {
             val hasStarted = it.dateStart <= startedBefore
             if (it.status in eligibleStatuses && hasStarted) {
                 it.status = AppointmentStatus.NO_SHOW
+                it.completedBy = null
                 it.updatedAt = Clock.System.now()
             }
         }?.domain() ?: throw Error.NotFound()

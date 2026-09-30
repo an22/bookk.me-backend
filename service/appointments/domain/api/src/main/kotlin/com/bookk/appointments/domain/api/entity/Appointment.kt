@@ -19,7 +19,8 @@ data class Appointment(
     @ProtoNumber(7) val status: AppointmentStatus,
     @ProtoNumber(8) override val date: Instant,
     @ProtoNumber(9) val note: String,
-    @ProtoNumber(10) val cancellationReason: String
+    @ProtoNumber(10) val cancellationReason: String,
+    @ProtoNumber(11) val completedBy: AppointmentCompletedBy?
 ) : AppointmentRepresentation {
     @Transient
     override val dateEnd = date + services.fold(0.minutes) { acc, service ->
@@ -45,7 +46,8 @@ data class Appointment(
             status = AppointmentStatus.SCHEDULED,
             date = date,
             note = "Note",
-            cancellationReason = ""
+            cancellationReason = "",
+            completedBy = null
         )
     }
 }

@@ -45,7 +45,8 @@ internal class UpdateAppointmentTest {
         date = Instant.fromEpochMilliseconds(0),
         note = "Note",
         status = AppointmentStatus.SCHEDULED,
-        cancellationReason = ""
+        cancellationReason = "",
+        completedBy = null
     )
 
     @Test

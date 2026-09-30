@@ -36,6 +36,7 @@ jobs](scheduled-jobs.md).
 | `POST /api/appointments` | [Create appointment from a pending request](appointments/create-appointment-from-request.md) |
 | `POST /api/appointments/instant` | [Create instant appointment](appointments/create-appointment-instant.md) |
 | `POST /api/appointments/{id}/cancel` | [Cancel appointment](appointments/cancel-appointment.md) |
+| `POST /api/appointments/{id}/no-show` | [Mark appointment as no-show](appointments/mark-appointment-no-show.md) |
 | `PUT /api/appointments/settings/{businessId}` | [Edit appointment settings](appointments/edit-appointment-settings.md) |
 
 Reactions to cross-service events:

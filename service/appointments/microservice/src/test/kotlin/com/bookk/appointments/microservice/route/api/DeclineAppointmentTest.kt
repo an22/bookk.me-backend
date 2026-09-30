@@ -159,6 +159,44 @@ internal class DeclineAppointmentTest {
     }
 
     @Test
+    fun `should return unprocessable entity when appointment is marked as no-show`() = routeTest {
+        given()
+        val useCase: CancelAppointment = mockk()
+        val userId = Uuid.random()
+        val appointmentId = Uuid.random()
+        val cancellation = AppointmentCancellation(id = appointmentId, businessId = Uuid.random(), reason = "Reason")
+        coEvery { useCase.invoke(userId, cancellation) } returns Result.failure(CancelAppointment.Error.MarkedNoShow())
+
+        setupApplication(
+            extension = {
+                install(Authentication) {
+                    provider {
+                        authenticate { context ->
+                            context.principal(AppPrincipal(Uuid.random(), userId, Uuid.random()))
+                        }
+                    }
+                }
+            },
+            diModule = module {
+                single { useCase }
+            },
+            routeUnderTest = {
+                appointment()
+            }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.post(Api.Appointment.Cancel(id = appointmentId)) {
+            setBody(cancellation)
+        }
+
+        then()
+        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
+        assertEquals(AppointmentErrorCodes.APPOINTMENT_MARKED_NO_SHOW, response.body<SimpleServerError>().errorCode)
+    }
+
+    @Test
     fun `should return unauthorized when cancelling appointment without authentication`() = routeTest {
         given()
         val useCase: CancelAppointment = mockk()

@@ -113,6 +113,24 @@ internal class CancelAppointmentImplTest {
     }
 
     @Test
+    fun `should return failure when appointment is marked as no-show`() = runUnitTest {
+        val fixture = SutFixture()
+        given()
+        fixture.transactionManager.mockTransaction()
+        val appointment = Appointment.stub(id = testCancellation.id, businessId = testBusinessId)
+            .copy(status = AppointmentStatus.NO_SHOW)
+
+        coEvery { fixture.appointmentPermissionDataSource.getPermission(testUserId, testBusinessId) } returns ResourcePermission(view = false, update = true, delete = false)
+        coEvery { fixture.appointmentDataSource.get(testCancellation.id) } returns appointment
+
+        whenn()
+        val result = fixture.sut.invoke(testUserId, testCancellation)
+
+        then()
+        assertTrue(result.exceptionOrNull() is CancelAppointment.Error.MarkedNoShow)
+    }
+
+    @Test
     fun `should return failure when user has read permission but appointment belongs to another employee`() = runUnitTest {
         val fixture = SutFixture()
         given()

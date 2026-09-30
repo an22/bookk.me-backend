@@ -6,6 +6,7 @@ import com.bookk.appointments.domain.api.operation.CancelAppointment
 import com.bookk.appointments.domain.api.operation.CreateAppointment
 import com.bookk.appointments.domain.api.operation.GetAppointmentHistory
 import com.bookk.appointments.domain.api.operation.GetAppointmentsForDate
+import com.bookk.appointments.domain.api.operation.MarkAppointmentNoShow
 import com.bookk.appointments.domain.api.operation.UpdateAppointment
 import com.bookk.appointments.domain.impl.di.AppointmentsScope
 import com.bookk.appointments.microservice.route.AppointmentsRouting.Api
@@ -168,7 +169,7 @@ fun Routing.appointment() {
          * Security: jwt
          * Body: application/x-protobuf [com.bookk.appointments.domain.api.entity.AppointmentCancellation]
          * Response: 200 application/x-protobuf [com.bookk.appointments.domain.api.entity.Appointment] Canceled appointment
-         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Cancel appointment errors<br>ALREADY_CANCELLED (300005) Appointment already canceled<br>ALREADY_COMPLETED (300006) Appointment already completed
+         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Cancel appointment errors<br>ALREADY_CANCELLED (300005) Appointment already canceled<br>ALREADY_COMPLETED (300006) Appointment already completed<br>MARKED_NO_SHOW (300019) Appointment is marked as no-show
          * Response: 403 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Caller is a suspended employee of this business<br>BUSINESS_EMPLOYEE_ACCESS_SUSPENDED (200034) Your access to this business is suspended
          * See: docs/operations/appointments/cancel-appointment.md
          */
@@ -187,6 +188,23 @@ fun Routing.appointment() {
                     )
                 )
             }
+        }
+
+        /**
+         * Summary: Mark appointment as no-show
+         * Description: Mark a started scheduled or completed appointment as missed by the client
+         * Tag: appointment
+         * Security: jwt
+         * Response: 200 application/x-protobuf [com.bookk.appointments.domain.api.entity.Appointment] Appointment marked as no-show
+         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Mark appointment as no-show errors<br>ALREADY_CANCELLED (300005) Appointment already cancelled<br>NOT_STARTED (300018) Appointment has not started yet
+         * Response: 403 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Caller is a suspended employee of this business<br>BUSINESS_EMPLOYEE_ACCESS_SUSPENDED (200034) Your access to this business is suspended
+         * See: docs/operations/appointments/mark-appointment-no-show.md
+         */
+        post<Api.Appointment.NoShow> {
+            val principal = requireNotNull(call.principal<AppPrincipal>())
+            val markAppointmentNoShow by application.injectScoped<MarkAppointmentNoShow>(AppointmentsScope)
+
+            call.respondWith(markAppointmentNoShow(userId = principal.userId, appointmentId = it.id))
         }
     }
 }

@@ -18,4 +18,6 @@ object AppointmentErrorCodes {
     const val INSTANT_APPOINTMENT_TO_OTHER = BASE + 15
     const val QUOTE_TOKEN_ALREADY_USED = BASE + 16
     const val DURATION_CHANGED = BASE + 17
+    const val APPOINTMENT_NOT_STARTED = BASE + 18
+    const val APPOINTMENT_MARKED_NO_SHOW = BASE + 19
 }

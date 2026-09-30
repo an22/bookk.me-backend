@@ -22,5 +22,11 @@ interface CancelAppointment {
             code = AppointmentErrorCodes.APPOINTMENT_ALREADY_COMPLETED,
             message = "Appointment already cancelled",
         )
+
+        class MarkedNoShow: Error, BusinessError(
+            statusCode = HttpStatusCode.UnprocessableEntity.value,
+            code = AppointmentErrorCodes.APPOINTMENT_MARKED_NO_SHOW,
+            message = "Appointment is marked as no-show",
+        )
     }
 }

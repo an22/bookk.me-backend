@@ -172,6 +172,20 @@ internal class AppointmentDataSourceImpl : DataSource(), AppointmentDataSource {
         }
     }
 
+    override suspend fun markNoShow(
+        id: Uuid,
+        eligibleStatuses: Set<AppointmentStatus>,
+        startedBefore: Instant
+    ): Appointment = dbQuery {
+        AppointmentEntity.findByIdAndUpdate(id) {
+            val hasStarted = it.dateStart <= startedBefore
+            if (it.status in eligibleStatuses && hasStarted) {
+                it.status = AppointmentStatus.NO_SHOW
+                it.updatedAt = Clock.System.now()
+            }
+        }?.domain() ?: throw Error.NotFound()
+    }
+
     override suspend fun anonymizeForUser(userId: Uuid) = dbQuery<Unit> {
         AppointmentTable.update(where = { AppointmentTable.clientId eq userId }) {
             it[clientName] = "Deleted User"

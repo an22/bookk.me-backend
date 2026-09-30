@@ -10,6 +10,7 @@ import com.bookk.appointments.domain.api.entity.AppointmentRequest
 import com.bookk.appointments.domain.api.entity.AppointmentStatus
 import com.bookk.appointments.domain.api.entity.BusinessSnapshot
 import com.bookk.core.data.test.createTestDatabase
+import com.bookk.core.domain.entity.Error
 import com.bookk.core.test.given
 import com.bookk.core.test.runUnitTest
 import com.bookk.core.test.then
@@ -28,6 +29,8 @@ import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
 internal class AppointmentDataSourceImplTest {
+
+    private val eligibleStatuses = setOf(AppointmentStatus.SCHEDULED, AppointmentStatus.COMPLETED)
 
     private class SutFixture {
         val db = createTestDatabase(AppointmentBusinessTable, WorkingHoursTable, DayOffsTable, AppointmentTable, AppointmentServicesTable)
@@ -312,6 +315,112 @@ internal class AppointmentDataSourceImplTest {
         then()
         val all = suspendTransaction { fixture.sut.getAll(fixture.businessId) }
         assertEquals(AppointmentStatus.SCHEDULED, all.first { it.id == created.id }.status)
+    }
+
+    @Test
+    fun `should not mark no-show appointments as completed`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val created = suspendTransaction { fixture.sut.create(fixture.buildRequest()) }
+        suspendTransaction { fixture.sut.markNoShow(created.id, eligibleStatuses, Clock.System.now()) }
+
+        whenn()
+        suspendTransaction { fixture.sut.markCompleted(Clock.System.now()) }
+
+        then()
+        assertEquals(AppointmentStatus.NO_SHOW, suspendTransaction { fixture.sut.get(created.id) }.status)
+    }
+
+    @Test
+    fun `should mark started scheduled appointment as no-show`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val created = suspendTransaction { fixture.sut.create(fixture.buildRequest()) }
+
+        whenn()
+        val marked = suspendTransaction { fixture.sut.markNoShow(created.id, eligibleStatuses, Clock.System.now()) }
+
+        then()
+        assertEquals(AppointmentStatus.NO_SHOW, marked.status)
+        assertEquals(AppointmentStatus.NO_SHOW, suspendTransaction { fixture.sut.get(created.id) }.status)
+    }
+
+    @Test
+    fun `should mark completed appointment as no-show`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val created = suspendTransaction { fixture.sut.create(fixture.buildRequest()) }
+        suspendTransaction { fixture.sut.markCompleted(Clock.System.now()) }
+
+        whenn()
+        val marked = suspendTransaction { fixture.sut.markNoShow(created.id, eligibleStatuses, Clock.System.now()) }
+
+        then()
+        assertEquals(AppointmentStatus.NO_SHOW, marked.status)
+    }
+
+    @Test
+    fun `should not mark appointment that has not started yet as no-show`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val created = suspendTransaction { fixture.sut.create(fixture.buildRequest(date = Clock.System.now() + 24.hours)) }
+
+        whenn()
+        val result = suspendTransaction { fixture.sut.markNoShow(created.id, eligibleStatuses, Clock.System.now()) }
+
+        then()
+        assertEquals(AppointmentStatus.SCHEDULED, result.status)
+        assertEquals(AppointmentStatus.SCHEDULED, suspendTransaction { fixture.sut.get(created.id) }.status)
+    }
+
+    @Test
+    fun `should not mark cancelled appointment as no-show`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val created = suspendTransaction { fixture.sut.create(fixture.buildRequest()) }
+        suspendTransaction { fixture.sut.cancel(created.id, "Reason") }
+
+        whenn()
+        val result = suspendTransaction { fixture.sut.markNoShow(created.id, eligibleStatuses, Clock.System.now()) }
+
+        then()
+        assertEquals(AppointmentStatus.CANCELLED, result.status)
+        assertEquals(AppointmentStatus.CANCELLED, suspendTransaction { fixture.sut.get(created.id) }.status)
+    }
+
+    @Test
+    fun `should not mark appointment with status outside eligible statuses as no-show`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val created = suspendTransaction { fixture.sut.create(fixture.buildRequest()) }
+        suspendTransaction { fixture.sut.markCompleted(Clock.System.now()) }
+
+        whenn()
+        val result = suspendTransaction {
+            fixture.sut.markNoShow(created.id, setOf(AppointmentStatus.SCHEDULED), Clock.System.now())
+        }
+
+        then()
+        assertEquals(AppointmentStatus.COMPLETED, result.status)
+    }
+
+    @Test
+    fun `should throw not found when marking missing appointment as no-show`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+
+        whenn()
+        val result = runCatching { suspendTransaction { fixture.sut.markNoShow(Uuid.random(), eligibleStatuses, Clock.System.now()) } }
+
+        then()
+        assertTrue(result.exceptionOrNull() is Error.NotFound)
     }
 
     @Test

@@ -35,6 +35,7 @@ internal class CancelAppointmentImpl(
         val cancelled = when (appointment.status) {
             AppointmentStatus.COMPLETED -> throw CancelAppointment.Error.AlreadyCompleted()
             AppointmentStatus.CANCELLED -> throw CancelAppointment.Error.AlreadyCancelled()
+            AppointmentStatus.NO_SHOW -> throw CancelAppointment.Error.MarkedNoShow()
             AppointmentStatus.SCHEDULED -> appointmentDataSource.cancel(cancellation.id, cancellation.reason)
         }
         sendAppointmentCancelledEvent(cancelled)

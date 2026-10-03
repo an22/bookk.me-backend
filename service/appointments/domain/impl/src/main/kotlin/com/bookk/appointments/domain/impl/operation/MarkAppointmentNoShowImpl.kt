@@ -8,7 +8,6 @@ import com.bookk.appointments.domain.datasource.AppointmentPermissionDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import library.permissions.PermissionAction
 import library.permissions.assertOrSelf
-import kotlin.time.Clock
 import kotlin.uuid.Uuid
 
 internal class MarkAppointmentNoShowImpl(
@@ -18,22 +17,13 @@ internal class MarkAppointmentNoShowImpl(
 ) : MarkAppointmentNoShow {
 
     override suspend fun invoke(userId: Uuid, appointmentId: Uuid): Result<Appointment> = transactionManager.transaction {
-        val appointment = appointmentDataSource.get(appointmentId)
+        val appointment = appointmentDataSource.getForUpdate(appointmentId)
         appointmentPermissionDataSource.getPermission(userId, appointment.businessId)
             .assertOrSelf(PermissionAction.UPDATE, actorId = userId, assigneeId = appointment.employee.userId)
-        val marked = appointmentDataSource.markNoShow(
-            appointmentId,
-            eligibleStatuses = noShowEligibleStatuses,
-            startedBefore = Clock.System.now()
-        )
-        when (marked.status) {
-            AppointmentStatus.NO_SHOW -> marked
-            AppointmentStatus.CANCELLED -> throw MarkAppointmentNoShow.Error.AlreadyCancelled()
-            AppointmentStatus.SCHEDULED, AppointmentStatus.COMPLETED -> throw MarkAppointmentNoShow.Error.NotStarted()
+        appointment.requireNoShowMarkable()
+        when (appointment.status) {
+            AppointmentStatus.NO_SHOW -> appointment
+            else -> appointmentDataSource.markNoShow(appointmentId)
         }
-    }
-
-    private companion object {
-        val noShowEligibleStatuses = setOf(AppointmentStatus.SCHEDULED, AppointmentStatus.COMPLETED)
     }
 }

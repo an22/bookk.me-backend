@@ -2,6 +2,7 @@ package com.bookk.appointments.microservice.route.api
 
 import com.bookk.appointments.domain.api.entity.Appointment
 import com.bookk.appointments.domain.api.entity.AppointmentErrorCodes
+import com.bookk.appointments.domain.api.entity.AppointmentRequestStatusError
 import com.bookk.appointments.domain.api.entity.AppointmentStatus
 import com.bookk.appointments.domain.api.entity.ClientSnapshot
 import com.bookk.appointments.domain.api.entity.EmployeeSnapshot
@@ -58,7 +59,8 @@ internal class CreateAppointmentTest {
             note = "test",
             status = AppointmentStatus.SCHEDULED,
             cancellationReason = "",
-            completedBy = null
+            completedBy = null,
+            priceAdjustment = null
         )
 
         coEvery { useCase.invoke(userId, requestId) } returns Result.success(appointment)
@@ -250,5 +252,71 @@ internal class CreateAppointmentTest {
 
         then()
         assertEquals(HttpStatusCode.Unauthorized, response.status)
+    }
+
+    @Test
+    fun `should return unprocessable entity when request is already declined`() = routeTest {
+        given()
+        val useCase: CreateAppointment = mockk()
+        val requestId = Uuid.random()
+        val userId = Uuid.random()
+        coEvery { useCase.invoke(userId, requestId) } returns Result.failure(AppointmentRequestStatusError.AlreadyDeclined())
+
+        setupApplication(
+            extension = {
+                install(Authentication) {
+                    provider {
+                        authenticate { context ->
+                            context.principal(AppPrincipal(Uuid.random(), userId, Uuid.random()))
+                        }
+                    }
+                }
+            },
+            diModule = module { single { useCase } },
+            routeUnderTest = { appointment() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.post(AppointmentsRouting.Api.Appointment()) {
+            setBody(AppointmentRequestId(requestId))
+        }
+
+        then()
+        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
+        assertEquals(AppointmentErrorCodes.REQUEST_ALREADY_DECLINED, response.body<SimpleServerError>().errorCode)
+    }
+
+    @Test
+    fun `should return unprocessable entity when request is already approved`() = routeTest {
+        given()
+        val useCase: CreateAppointment = mockk()
+        val requestId = Uuid.random()
+        val userId = Uuid.random()
+        coEvery { useCase.invoke(userId, requestId) } returns Result.failure(AppointmentRequestStatusError.AlreadyApproved())
+
+        setupApplication(
+            extension = {
+                install(Authentication) {
+                    provider {
+                        authenticate { context ->
+                            context.principal(AppPrincipal(Uuid.random(), userId, Uuid.random()))
+                        }
+                    }
+                }
+            },
+            diModule = module { single { useCase } },
+            routeUnderTest = { appointment() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.post(AppointmentsRouting.Api.Appointment()) {
+            setBody(AppointmentRequestId(requestId))
+        }
+
+        then()
+        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
+        assertEquals(AppointmentErrorCodes.REQUEST_ALREADY_APPROVED, response.body<SimpleServerError>().errorCode)
     }
 }

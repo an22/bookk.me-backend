@@ -29,15 +29,11 @@ internal class CancelAppointmentImpl(
 ) : CancelAppointment {
 
     override suspend fun invoke(userId: Uuid, cancellation: AppointmentCancellation): Result<Appointment> = transactionManager.transaction {
-        val appointment = appointmentDataSource.get(cancellation.id)
-        appointmentPermissionDataSource.getPermission(userId, cancellation.businessId)
+        val appointment = appointmentDataSource.getForUpdate(cancellation.id)
+        appointmentPermissionDataSource.getPermission(userId, appointment.businessId)
             .assertOrSelf(PermissionAction.UPDATE, actorId = userId, assigneeId = appointment.employee.userId)
-        val cancelled = when (appointment.status) {
-            AppointmentStatus.COMPLETED -> throw CancelAppointment.Error.AlreadyCompleted()
-            AppointmentStatus.CANCELLED -> throw CancelAppointment.Error.AlreadyCancelled()
-            AppointmentStatus.NO_SHOW -> throw CancelAppointment.Error.MarkedNoShow()
-            AppointmentStatus.SCHEDULED -> appointmentDataSource.cancel(cancellation.id, cancellation.reason)
-        }
+        appointment.requireScheduled()
+        val cancelled = appointmentDataSource.cancel(cancellation.id, cancellation.reason)
         sendAppointmentCancelledEvent(cancelled)
         appointment.copy(
             status = AppointmentStatus.CANCELLED,

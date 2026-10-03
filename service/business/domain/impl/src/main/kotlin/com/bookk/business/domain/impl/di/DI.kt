@@ -3,6 +3,7 @@ package com.bookk.business.domain.impl.di
 import com.bookk.business.domain.api.BUSINESS_SCHEMA
 import com.bookk.business.domain.api.BUSINESS_SERVICE_NAME
 import com.bookk.business.domain.api.appointment.operation.GetAppointmentBookingContext
+import com.bookk.business.domain.api.appointment.operation.GetAppointmentRescheduleContext
 import com.bookk.business.domain.api.business.operation.CreateBusiness
 import com.bookk.business.domain.api.business.operation.DeleteBusiness
 import com.bookk.business.domain.api.business.operation.DeleteDayOffsInThePast
@@ -33,12 +34,14 @@ import com.bookk.business.domain.api.service.operation.DeleteService
 import com.bookk.business.domain.api.service.operation.DeleteServiceGroup
 import com.bookk.business.domain.api.service.operation.GetServiceGroups
 import com.bookk.business.domain.api.service.operation.GetServices
+import com.bookk.business.domain.api.service.operation.GetServicesByIds
 import com.bookk.business.domain.api.service.operation.IssueServiceQuote
 import com.bookk.business.domain.api.service.operation.UpdateService
 import com.bookk.business.domain.api.user.operation.AnonymizeUserProfile
 import com.bookk.business.domain.api.user.operation.SyncUserProfile
 import com.bookk.business.domain.impl.event.BusinessEventHandlerImpl
 import com.bookk.business.domain.impl.operation.appointment.GetAppointmentBookingContextImpl
+import com.bookk.business.domain.impl.operation.appointment.GetAppointmentRescheduleContextImpl
 import com.bookk.business.domain.impl.operation.business.CreateBusinessImpl
 import com.bookk.business.domain.impl.operation.business.DeleteBusinessImpl
 import com.bookk.business.domain.impl.operation.business.DeleteDayOffsInThePastImpl
@@ -68,6 +71,7 @@ import com.bookk.business.domain.impl.operation.service.CreateServiceImpl
 import com.bookk.business.domain.impl.operation.service.DeleteServiceGroupImpl
 import com.bookk.business.domain.impl.operation.service.DeleteServiceImpl
 import com.bookk.business.domain.impl.operation.service.GetServiceGroupsImpl
+import com.bookk.business.domain.impl.operation.service.GetServicesByIdsImpl
 import com.bookk.business.domain.impl.operation.service.GetServicesImpl
 import com.bookk.business.domain.impl.operation.service.IssueQuoteImpl
 import com.bookk.business.domain.impl.operation.service.UpdateServiceImpl
@@ -109,6 +113,7 @@ fun businessDomainModule() = module {
         scopedOf(::DeleteServiceImpl) bind DeleteService::class
         scopedOf(::UpdateServiceImpl) bind UpdateService::class
         scopedOf(::GetServicesImpl) bind GetServices::class
+        scopedOf(::GetServicesByIdsImpl) bind GetServicesByIds::class
         scopedOf(::GetServiceGroupsImpl) bind GetServiceGroups::class
         scopedOf(::IssueQuoteImpl) bind IssueServiceQuote::class
         scopedOf(::CreateEmployeeInvitationImpl) bind CreateEmployeeInvitation::class
@@ -122,5 +127,6 @@ fun businessDomainModule() = module {
         scopedOf(::ExpireEmployeeInvitationsImpl) bind ExpireEmployeeInvitations::class
         scopedOf(::DeleteProcessedEmployeeInvitationsImpl) bind DeleteProcessedEmployeeInvitations::class
         scopedOf(::GetAppointmentBookingContextImpl) bind GetAppointmentBookingContext::class
+        scopedOf(::GetAppointmentRescheduleContextImpl) bind GetAppointmentRescheduleContext::class
     }
 }

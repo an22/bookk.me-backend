@@ -10,18 +10,29 @@ request](create-appointment-request.md). A `view`-only employee can
 convert their own request; see [Managing your own resource on a `view`
 grant](../../object-permissions.md#managing-your-own-resource-on-a-view-grant).
 
+The request is read with `AppointmentRequestDataSource.getForUpdate`
+(`SELECT … FOR UPDATE`) as the first read and must still be `PENDING`
+(`AppointmentRequest.requirePending()`). That row lock is what serializes an
+approval against a concurrent [decline](decline-appointment-request.md), a
+second approval, or the `cancelOutdated` job: the loser waits for the winner
+to commit and then sees the new status instead of overwriting it. The request
+lock is taken before the settings lock.
+
 ```mermaid
 flowchart TD
     Start([POST /api/appointments body AppointmentRequestId]) --> Auth{JWT valid?}
     Auth -- No --> R401([401 Unauthorized])
     Auth -- Yes --> Tx[[Begin transaction]]
-    Tx --> GetRequest[AppointmentRequestDataSource.get appointmentRequestId]
+    Tx --> GetRequest[AppointmentRequestDataSource.getForUpdate appointmentRequestId - row lock]
     GetRequest -- not found --> R404a([404 Error.NotFound])
-    GetRequest -- found --> Suspended{AppointmentPermissionDataSource.getPermission - grant row marked suspended?}
+    GetRequest -- found --> Suspended{AppointmentPermissionDataSource.getPermission request.businessId - grant row marked suspended?}
     Suspended -- Yes --> R403s([403 BUSINESS_EMPLOYEE_ACCESS_SUSPENDED 200034])
     Suspended -- No --> Perm{caller update permission, or view permission and request.employee.userId == userId?}
     Perm -- No --> R404b([404 Error.OperationNotAllowed])
-    Perm -- Yes --> Settings[AppointmentSettingsDataSource.getForUpdate businessId]
+    Perm -- Yes --> Pending{AppointmentRequest.requirePending - request.status}
+    Pending -- APPROVED --> R422e([422 REQUEST_ALREADY_APPROVED 300008])
+    Pending -- DECLINED or CANCELLED --> R422f([422 REQUEST_ALREADY_DECLINED 300007])
+    Pending -- PENDING --> Settings[AppointmentSettingsDataSource.getForUpdate businessId]
     Settings -- not found --> R404c([404 Error.NotFound])
     Settings -- found --> PastCheck{request.date < now?}
     PastCheck -- Yes --> R422a([422 DATE_IN_PAST 300012])

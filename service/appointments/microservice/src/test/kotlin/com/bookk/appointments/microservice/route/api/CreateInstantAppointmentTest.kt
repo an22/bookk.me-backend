@@ -54,7 +54,8 @@ internal class CreateInstantAppointmentTest {
         note = "test",
         status = AppointmentStatus.SCHEDULED,
         cancellationReason = "",
-        completedBy = null
+        completedBy = null,
+        priceAdjustment = null
     )
 
     @Test

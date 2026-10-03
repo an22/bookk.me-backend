@@ -3,9 +3,9 @@ package com.bookk.appointments.domain.impl.operation
 import com.bookk.appointments.domain.api.entity.AppointmentCancellation
 import com.bookk.appointments.domain.api.entity.AppointmentRequest
 import com.bookk.appointments.domain.api.entity.AppointmentRequestStatus
+import com.bookk.appointments.domain.api.entity.AppointmentRequestStatusError
 import com.bookk.appointments.domain.api.entity.BusinessSnapshot
 import com.bookk.appointments.domain.api.entity.EmployeeSnapshot
-import com.bookk.appointments.domain.api.operation.DeclineAppointmentRequest
 import com.bookk.appointments.domain.datasource.AppointmentPermissionDataSource
 import com.bookk.appointments.domain.datasource.AppointmentRequestDataSource
 import com.bookk.appointments.domain.datasource.AppointmentSubscriptionDataSource
@@ -50,7 +50,6 @@ internal class DeclineAppointmentRequestImplTest {
     private val testBusinessId = Uuid.random()
     private val testCancellation = AppointmentCancellation(
         id = Uuid.random(),
-        businessId = testBusinessId,
         reason = "User declined"
     )
 
@@ -63,7 +62,7 @@ internal class DeclineAppointmentRequestImplTest {
             .copy(status = AppointmentRequestStatus.PENDING)
 
         coEvery { fixture.appointmentPermissionDataSource.getPermission(testUserId, testBusinessId) } returns ResourcePermission(view = false, update = true, delete = false)
-        coEvery { fixture.requestDataSource.get(testCancellation.id) } returns request
+        coEvery { fixture.requestDataSource.getForUpdate(testCancellation.id) } returns request
         coEvery { fixture.requestDataSource.decline(testCancellation.id, testCancellation.reason) } returns request.copy(status = AppointmentRequestStatus.DECLINED)
         coEvery { fixture.subscriptionDataSource.getBusinessSnapshot(testBusinessId) } returns mockk(relaxed = true)
 
@@ -83,7 +82,7 @@ internal class DeclineAppointmentRequestImplTest {
             .copy(status = AppointmentRequestStatus.PENDING)
 
         coEvery { fixture.appointmentPermissionDataSource.getPermission(testUserId, testBusinessId) } returns ResourcePermission(view = true, update = false, delete = false)
-        coEvery { fixture.requestDataSource.get(testCancellation.id) } returns request
+        coEvery { fixture.requestDataSource.getForUpdate(testCancellation.id) } returns request
 
         whenn()
         val result = fixture.sut.invoke(testUserId, testCancellation)
@@ -102,7 +101,7 @@ internal class DeclineAppointmentRequestImplTest {
             .copy(status = AppointmentRequestStatus.PENDING, employee = EmployeeSnapshot.stub(userId = testUserId))
 
         coEvery { fixture.appointmentPermissionDataSource.getPermission(testUserId, testBusinessId) } returns ResourcePermission(view = true, update = false, delete = false)
-        coEvery { fixture.requestDataSource.get(testCancellation.id) } returns request
+        coEvery { fixture.requestDataSource.getForUpdate(testCancellation.id) } returns request
         coEvery { fixture.requestDataSource.decline(testCancellation.id, testCancellation.reason) } returns request.copy(status = AppointmentRequestStatus.DECLINED)
         coEvery { fixture.subscriptionDataSource.getBusinessSnapshot(testBusinessId) } returns mockk(relaxed = true)
 
@@ -122,14 +121,14 @@ internal class DeclineAppointmentRequestImplTest {
             .copy(status = AppointmentRequestStatus.DECLINED)
 
         coEvery { fixture.appointmentPermissionDataSource.getPermission(testUserId, testBusinessId) } returns ResourcePermission(view = false, update = true, delete = false)
-        coEvery { fixture.requestDataSource.get(testCancellation.id) } returns request
+        coEvery { fixture.requestDataSource.getForUpdate(testCancellation.id) } returns request
 
         whenn()
         val result = fixture.sut.invoke(testUserId, testCancellation)
 
         then()
         assertTrue(result.isFailure)
-        assertTrue(result.exceptionOrNull() is DeclineAppointmentRequest.Error.AlreadyDeclined)
+        assertTrue(result.exceptionOrNull() is AppointmentRequestStatusError.AlreadyDeclined)
     }
 
     @Test
@@ -141,14 +140,14 @@ internal class DeclineAppointmentRequestImplTest {
             .copy(status = AppointmentRequestStatus.APPROVED)
 
         coEvery { fixture.appointmentPermissionDataSource.getPermission(testUserId, testBusinessId) } returns ResourcePermission(view = false, update = true, delete = false)
-        coEvery { fixture.requestDataSource.get(testCancellation.id) } returns request
+        coEvery { fixture.requestDataSource.getForUpdate(testCancellation.id) } returns request
 
         whenn()
         val result = fixture.sut.invoke(testUserId, testCancellation)
 
         then()
         assertTrue(result.isFailure)
-        assertTrue(result.exceptionOrNull() is DeclineAppointmentRequest.Error.AlreadyApproved)
+        assertTrue(result.exceptionOrNull() is AppointmentRequestStatusError.AlreadyApproved)
     }
 
     @Test
@@ -160,7 +159,7 @@ internal class DeclineAppointmentRequestImplTest {
             .copy(status = AppointmentRequestStatus.PENDING)
 
         coEvery { fixture.appointmentPermissionDataSource.getPermission(testUserId, testBusinessId) } returns ResourcePermission(view = false, update = true, delete = false)
-        coEvery { fixture.requestDataSource.get(testCancellation.id) } returns request
+        coEvery { fixture.requestDataSource.getForUpdate(testCancellation.id) } returns request
         coEvery { fixture.requestDataSource.decline(testCancellation.id, testCancellation.reason) } returns request.copy(status = AppointmentRequestStatus.DECLINED)
         coEvery { fixture.subscriptionDataSource.getBusinessSnapshot(testBusinessId) } returns mockk(relaxed = true)
 
@@ -182,7 +181,7 @@ internal class DeclineAppointmentRequestImplTest {
         val eventSlot = slot<AppointmentEvent.RequestRejected>()
 
         coEvery { fixture.appointmentPermissionDataSource.getPermission(testUserId, testBusinessId) } returns ResourcePermission(view = false, update = true, delete = false)
-        coEvery { fixture.requestDataSource.get(testCancellation.id) } returns request
+        coEvery { fixture.requestDataSource.getForUpdate(testCancellation.id) } returns request
         coEvery { fixture.requestDataSource.decline(testCancellation.id, testCancellation.reason) } returns request.copy(status = AppointmentRequestStatus.DECLINED)
         coEvery { fixture.subscriptionDataSource.getBusinessSnapshot(testBusinessId) } returns businessSnapshot
         coEvery { fixture.eventProducer.send(capture(eventSlot), any()) } returns Unit
@@ -192,5 +191,61 @@ internal class DeclineAppointmentRequestImplTest {
 
         then()
         assertEquals(TimeZone.of("Europe/Kyiv"), eventSlot.captured.timeZone)
+    }
+
+    @Test
+    fun `should check permission against the stored request business`() = runUnitTest {
+        val fixture = SutFixture()
+        given()
+        fixture.transactionManager.mockTransaction()
+        val requestBusinessId = Uuid.random()
+        val request = AppointmentRequest.stub(id = testCancellation.id, businessId = requestBusinessId)
+            .copy(status = AppointmentRequestStatus.PENDING)
+
+        coEvery { fixture.requestDataSource.getForUpdate(testCancellation.id) } returns request
+        coEvery { fixture.appointmentPermissionDataSource.getPermission(testUserId, requestBusinessId) } returns ResourcePermission.NONE
+
+        whenn()
+        val result = fixture.sut.invoke(testUserId, testCancellation)
+
+        then()
+        assertTrue(result.exceptionOrNull() is com.bookk.core.domain.entity.Error.OperationNotAllowed)
+        coVerify(exactly = 0) { fixture.requestDataSource.decline(any(), any()) }
+    }
+
+    @Test
+    fun `should read the request with a row lock`() = runUnitTest {
+        val fixture = SutFixture()
+        given()
+        fixture.transactionManager.mockTransaction()
+        val request = AppointmentRequest.stub(id = testCancellation.id, businessId = testBusinessId)
+            .copy(status = AppointmentRequestStatus.PENDING)
+
+        coEvery { fixture.appointmentPermissionDataSource.getPermission(testUserId, testBusinessId) } returns ResourcePermission(view = false, update = true, delete = false)
+        coEvery { fixture.requestDataSource.getForUpdate(testCancellation.id) } returns request
+        coEvery { fixture.requestDataSource.decline(testCancellation.id, testCancellation.reason) } returns request.copy(status = AppointmentRequestStatus.DECLINED)
+        coEvery { fixture.subscriptionDataSource.getBusinessSnapshot(testBusinessId) } returns mockk(relaxed = true)
+
+        whenn()
+        fixture.sut.invoke(testUserId, testCancellation)
+
+        then()
+        coVerify(exactly = 1) { fixture.requestDataSource.getForUpdate(testCancellation.id) }
+        coVerify(exactly = 0) { fixture.requestDataSource.get(any()) }
+    }
+
+    @Test
+    fun `should return failure when request does not exist`() = runUnitTest {
+        val fixture = SutFixture()
+        given()
+        fixture.transactionManager.mockTransaction()
+        coEvery { fixture.requestDataSource.getForUpdate(testCancellation.id) } returns null
+
+        whenn()
+        val result = fixture.sut.invoke(testUserId, testCancellation)
+
+        then()
+        assertTrue(result.exceptionOrNull() is com.bookk.core.domain.entity.Error.NotFound)
+        coVerify(exactly = 0) { fixture.requestDataSource.decline(any(), any()) }
     }
 }

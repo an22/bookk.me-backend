@@ -3,15 +3,20 @@ package com.bookk.appointments.data.orm.entity
 import com.bookk.appointments.data.orm.table.AppointmentBusinessTable
 import com.bookk.appointments.data.orm.table.AppointmentServicesTable
 import com.bookk.appointments.data.orm.table.AppointmentTable
+import com.bookk.appointments.data.orm.table.PriceAdjustmentTable
 import com.bookk.appointments.domain.api.entity.Appointment
 import com.bookk.appointments.domain.api.entity.AppointmentRequest
 import com.bookk.appointments.domain.api.entity.AppointmentStatus
 import com.bookk.appointments.domain.api.entity.ClientSnapshot
 import com.bookk.appointments.domain.api.entity.EmployeeSnapshot
+import com.bookk.appointments.domain.api.entity.PriceAdjustment
 import com.bookk.appointments.domain.api.entity.ServiceSnapshot
 import com.bookk.core.data.DecoratorUuidEntityClass
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
+import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.dao.UuidEntity
+import org.jetbrains.exposed.v1.dao.with
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.joda.money.CurrencyUnit
 import org.joda.money.Money
 import java.math.BigDecimal
@@ -32,6 +37,7 @@ internal class AppointmentEntity(id: EntityID<Uuid>) : UuidEntity(id) {
     var clientPhone by AppointmentTable.clientPhone
     var clientEmail by AppointmentTable.clientEmail
     val services by AppointmentServiceEntity referrersOn AppointmentServicesTable.appointmentId
+    val priceAdjustments by PriceAdjustmentEntity referrersOn PriceAdjustmentTable.appointmentId
     var dateStart by AppointmentTable.dateStart
     var dateEnd by AppointmentTable.dateEnd
     var note by AppointmentTable.note
@@ -72,8 +78,15 @@ internal class AppointmentEntity(id: EntityID<Uuid>) : UuidEntity(id) {
             note = note,
             status = status,
             cancellationReason = cancellationReason,
-            completedBy = completedBy
+            completedBy = completedBy,
+            priceAdjustment = priceAdjustments.singleOrNull()?.domain()
         )
+    }
+
+    fun replacePriceAdjustment(adjustment: PriceAdjustment) {
+        val entityId = id
+        PriceAdjustmentTable.deleteWhere { PriceAdjustmentTable.appointmentId eq entityId }
+        PriceAdjustmentEntity.new(entityId, adjustment)
     }
 
     companion object : DecoratorUuidEntityClass<AppointmentEntity>(AppointmentTable) {
@@ -129,3 +142,6 @@ internal class AppointmentEntity(id: EntityID<Uuid>) : UuidEntity(id) {
         }
     }
 }
+
+internal fun List<AppointmentEntity>.withDetails(): List<AppointmentEntity> =
+    this.with(AppointmentEntity::services, AppointmentEntity::priceAdjustments, PriceAdjustmentEntity::additionalServices)

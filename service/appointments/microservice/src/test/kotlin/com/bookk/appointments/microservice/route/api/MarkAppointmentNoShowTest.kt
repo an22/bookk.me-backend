@@ -3,6 +3,7 @@ package com.bookk.appointments.microservice.route.api
 import com.bookk.appointments.domain.api.entity.Appointment
 import com.bookk.appointments.domain.api.entity.AppointmentErrorCodes
 import com.bookk.appointments.domain.api.entity.AppointmentStatus
+import com.bookk.appointments.domain.api.entity.AppointmentStatusError
 import com.bookk.appointments.domain.api.operation.MarkAppointmentNoShow
 import com.bookk.appointments.microservice.route.AppointmentsRouting.Api
 import com.bookk.core.domain.entity.Error
@@ -68,7 +69,7 @@ internal class MarkAppointmentNoShowTest {
         val useCase: MarkAppointmentNoShow = mockk()
         val userId = Uuid.random()
         val appointmentId = Uuid.random()
-        coEvery { useCase.invoke(userId, appointmentId) } returns Result.failure(MarkAppointmentNoShow.Error.AlreadyCancelled())
+        coEvery { useCase.invoke(userId, appointmentId) } returns Result.failure(AppointmentStatusError.AlreadyCancelled())
 
         setupApplication(
             extension = {
@@ -99,7 +100,7 @@ internal class MarkAppointmentNoShowTest {
         val useCase: MarkAppointmentNoShow = mockk()
         val userId = Uuid.random()
         val appointmentId = Uuid.random()
-        coEvery { useCase.invoke(userId, appointmentId) } returns Result.failure(MarkAppointmentNoShow.Error.NotStarted())
+        coEvery { useCase.invoke(userId, appointmentId) } returns Result.failure(AppointmentStatusError.NotStarted())
 
         setupApplication(
             extension = {

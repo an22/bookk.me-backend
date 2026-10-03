@@ -4,6 +4,8 @@ import com.bookk.appointments.data.orm.table.AppointmentBusinessTable
 import com.bookk.appointments.data.orm.table.AppointmentServicesTable
 import com.bookk.appointments.data.orm.table.AppointmentTable
 import com.bookk.appointments.data.orm.table.DayOffsTable
+import com.bookk.appointments.data.orm.table.PriceAdjustmentServicesTable
+import com.bookk.appointments.data.orm.table.PriceAdjustmentTable
 import com.bookk.appointments.data.orm.table.SettingsTable
 import com.bookk.appointments.data.orm.table.WorkingHoursTable
 import com.bookk.appointments.domain.api.entity.Appointment
@@ -12,6 +14,7 @@ import com.bookk.appointments.domain.api.entity.AppointmentRequest
 import com.bookk.appointments.domain.api.entity.AppointmentSettings
 import com.bookk.appointments.domain.api.entity.AppointmentStatus
 import com.bookk.appointments.domain.api.entity.BusinessSnapshot
+import com.bookk.appointments.domain.api.entity.PriceAdjustment
 import com.bookk.appointments.domain.api.entity.ServiceSnapshot
 import com.bookk.core.data.test.createTestDatabase
 import com.bookk.core.domain.entity.Error
@@ -20,6 +23,7 @@ import com.bookk.core.test.runUnitTest
 import com.bookk.core.test.then
 import com.bookk.core.test.whenn
 import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
+import org.joda.money.Money
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -34,11 +38,10 @@ import kotlin.uuid.Uuid
 
 internal class AppointmentDataSourceImplTest {
 
-    private val eligibleStatuses = setOf(AppointmentStatus.SCHEDULED, AppointmentStatus.COMPLETED)
-
     private class SutFixture {
         val db = createTestDatabase(
-            AppointmentBusinessTable, WorkingHoursTable, DayOffsTable, SettingsTable, AppointmentTable, AppointmentServicesTable
+            AppointmentBusinessTable, WorkingHoursTable, DayOffsTable, SettingsTable, AppointmentTable, AppointmentServicesTable,
+            PriceAdjustmentTable, PriceAdjustmentServicesTable
         )
         val sut = AppointmentDataSourceImpl()
         val subscriptionSut = AppointmentSubscriptionDataSourceImpl()
@@ -415,6 +418,26 @@ internal class AppointmentDataSourceImplTest {
     }
 
     @Test
+    fun `should keep paginated query results within the requested business`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val otherBusinessId = fixture.attachBusiness(automaticCompletion = true)
+        val own = suspendTransaction { fixture.sut.create(fixture.buildRequest()) }
+        suspendTransaction { fixture.sut.create(AppointmentRequest.stub(businessId = otherBusinessId, date = Instant.fromEpochMilliseconds(0))) }
+
+        whenn()
+        val byService = suspendTransaction { fixture.sut.getAllPaginated(fixture.businessId, 10, 0, "service") }
+        val byClient = suspendTransaction { fixture.sut.getAllPaginated(fixture.businessId, 10, 0, "client") }
+
+        then()
+        assertEquals(listOf(own.id), byService.data.map { it.id })
+        assertEquals(1L, byService.metadata.total)
+        assertEquals(listOf(own.id), byClient.data.map { it.id })
+        assertEquals(1L, byClient.metadata.total)
+    }
+
+    @Test
     fun `should return empty list when paginated query matches nothing`() = runUnitTest {
         given()
         val fixture = SutFixture()
@@ -526,14 +549,14 @@ internal class AppointmentDataSourceImplTest {
     }
 
     @Test
-    fun `should mark started scheduled appointment as completed by user`() = runUnitTest {
+    fun `should mark appointment as completed by user`() = runUnitTest {
         given()
         val fixture = SutFixture()
         fixture.setup(automaticCompletion = false)
         val created = suspendTransaction { fixture.sut.create(fixture.buildRequest()) }
 
         whenn()
-        val completed = suspendTransaction { fixture.sut.markCompletedByUser(created.id, Clock.System.now()) }
+        val completed = suspendTransaction { fixture.sut.markCompletedByUser(created.id) }
 
         then()
         assertEquals(AppointmentStatus.COMPLETED, completed.status)
@@ -543,53 +566,8 @@ internal class AppointmentDataSourceImplTest {
         assertEquals(AppointmentCompletedBy.USER, found.completedBy)
     }
 
-    @Test
-    fun `should not complete appointment by user when it has not started yet`() = runUnitTest {
-        given()
-        val fixture = SutFixture()
-        fixture.setup()
-        val created = suspendTransaction { fixture.sut.create(fixture.buildRequest(date = Clock.System.now() + 24.hours)) }
 
-        whenn()
-        val result = suspendTransaction { fixture.sut.markCompletedByUser(created.id, Clock.System.now()) }
 
-        then()
-        assertEquals(AppointmentStatus.SCHEDULED, result.status)
-        assertNull(result.completedBy)
-        assertEquals(AppointmentStatus.SCHEDULED, suspendTransaction { fixture.sut.get(created.id) }.status)
-    }
-
-    @Test
-    fun `should not complete cancelled appointment by user`() = runUnitTest {
-        given()
-        val fixture = SutFixture()
-        fixture.setup()
-        val created = suspendTransaction { fixture.sut.create(fixture.buildRequest()) }
-        suspendTransaction { fixture.sut.cancel(created.id, "Reason") }
-
-        whenn()
-        val result = suspendTransaction { fixture.sut.markCompletedByUser(created.id, Clock.System.now()) }
-
-        then()
-        assertEquals(AppointmentStatus.CANCELLED, result.status)
-        assertNull(result.completedBy)
-    }
-
-    @Test
-    fun `should keep the system as completer when user completes an already completed appointment`() = runUnitTest {
-        given()
-        val fixture = SutFixture()
-        fixture.setup()
-        val created = suspendTransaction { fixture.sut.create(fixture.buildRequest()) }
-        suspendTransaction { fixture.sut.markCompleted(Clock.System.now()) }
-
-        whenn()
-        val result = suspendTransaction { fixture.sut.markCompletedByUser(created.id, Clock.System.now()) }
-
-        then()
-        assertEquals(AppointmentStatus.COMPLETED, result.status)
-        assertEquals(AppointmentCompletedBy.SYSTEM, result.completedBy)
-    }
 
     @Test
     fun `should throw not found when user completes missing appointment`() = runUnitTest {
@@ -598,7 +576,7 @@ internal class AppointmentDataSourceImplTest {
         fixture.setup()
 
         whenn()
-        val result = runCatching { suspendTransaction { fixture.sut.markCompletedByUser(Uuid.random(), Clock.System.now()) } }
+        val result = runCatching { suspendTransaction { fixture.sut.markCompletedByUser(Uuid.random()) } }
 
         then()
         assertTrue(result.exceptionOrNull() is Error.NotFound)
@@ -626,7 +604,7 @@ internal class AppointmentDataSourceImplTest {
         val fixture = SutFixture()
         fixture.setup()
         val created = suspendTransaction { fixture.sut.create(fixture.buildRequest()) }
-        suspendTransaction { fixture.sut.markNoShow(created.id, eligibleStatuses, Clock.System.now()) }
+        suspendTransaction { fixture.sut.markNoShow(created.id) }
 
         whenn()
         suspendTransaction { fixture.sut.markCompleted(Clock.System.now()) }
@@ -636,14 +614,14 @@ internal class AppointmentDataSourceImplTest {
     }
 
     @Test
-    fun `should mark started scheduled appointment as no-show`() = runUnitTest {
+    fun `should mark appointment as no-show`() = runUnitTest {
         given()
         val fixture = SutFixture()
         fixture.setup()
         val created = suspendTransaction { fixture.sut.create(fixture.buildRequest()) }
 
         whenn()
-        val marked = suspendTransaction { fixture.sut.markNoShow(created.id, eligibleStatuses, Clock.System.now()) }
+        val marked = suspendTransaction { fixture.sut.markNoShow(created.id) }
 
         then()
         assertEquals(AppointmentStatus.NO_SHOW, marked.status)
@@ -651,7 +629,7 @@ internal class AppointmentDataSourceImplTest {
     }
 
     @Test
-    fun `should mark completed appointment as no-show`() = runUnitTest {
+    fun `should clear the completer when marking completed appointment as no-show`() = runUnitTest {
         given()
         val fixture = SutFixture()
         fixture.setup()
@@ -659,60 +637,15 @@ internal class AppointmentDataSourceImplTest {
         suspendTransaction { fixture.sut.markCompleted(Clock.System.now()) }
 
         whenn()
-        val marked = suspendTransaction { fixture.sut.markNoShow(created.id, eligibleStatuses, Clock.System.now()) }
+        val marked = suspendTransaction { fixture.sut.markNoShow(created.id) }
 
         then()
         assertEquals(AppointmentStatus.NO_SHOW, marked.status)
         assertNull(marked.completedBy)
     }
 
-    @Test
-    fun `should not mark appointment that has not started yet as no-show`() = runUnitTest {
-        given()
-        val fixture = SutFixture()
-        fixture.setup()
-        val created = suspendTransaction { fixture.sut.create(fixture.buildRequest(date = Clock.System.now() + 24.hours)) }
 
-        whenn()
-        val result = suspendTransaction { fixture.sut.markNoShow(created.id, eligibleStatuses, Clock.System.now()) }
 
-        then()
-        assertEquals(AppointmentStatus.SCHEDULED, result.status)
-        assertEquals(AppointmentStatus.SCHEDULED, suspendTransaction { fixture.sut.get(created.id) }.status)
-    }
-
-    @Test
-    fun `should not mark cancelled appointment as no-show`() = runUnitTest {
-        given()
-        val fixture = SutFixture()
-        fixture.setup()
-        val created = suspendTransaction { fixture.sut.create(fixture.buildRequest()) }
-        suspendTransaction { fixture.sut.cancel(created.id, "Reason") }
-
-        whenn()
-        val result = suspendTransaction { fixture.sut.markNoShow(created.id, eligibleStatuses, Clock.System.now()) }
-
-        then()
-        assertEquals(AppointmentStatus.CANCELLED, result.status)
-        assertEquals(AppointmentStatus.CANCELLED, suspendTransaction { fixture.sut.get(created.id) }.status)
-    }
-
-    @Test
-    fun `should not mark appointment with status outside eligible statuses as no-show`() = runUnitTest {
-        given()
-        val fixture = SutFixture()
-        fixture.setup()
-        val created = suspendTransaction { fixture.sut.create(fixture.buildRequest()) }
-        suspendTransaction { fixture.sut.markCompleted(Clock.System.now()) }
-
-        whenn()
-        val result = suspendTransaction {
-            fixture.sut.markNoShow(created.id, setOf(AppointmentStatus.SCHEDULED), Clock.System.now())
-        }
-
-        then()
-        assertEquals(AppointmentStatus.COMPLETED, result.status)
-    }
 
     @Test
     fun `should throw not found when marking missing appointment as no-show`() = runUnitTest {
@@ -721,7 +654,7 @@ internal class AppointmentDataSourceImplTest {
         fixture.setup()
 
         whenn()
-        val result = runCatching { suspendTransaction { fixture.sut.markNoShow(Uuid.random(), eligibleStatuses, Clock.System.now()) } }
+        val result = runCatching { suspendTransaction { fixture.sut.markNoShow(Uuid.random()) } }
 
         then()
         assertTrue(result.exceptionOrNull() is Error.NotFound)
@@ -778,5 +711,200 @@ internal class AppointmentDataSourceImplTest {
 
         then()
         assertTrue(result.isSuccess)
+    }
+    @Test
+    fun `should attach price adjustment with additional services to appointment`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val created = suspendTransaction { fixture.sut.create(fixture.buildRequest()) }
+        val adjustment = PriceAdjustment.stub(
+            additionalServices = listOf(ServiceSnapshot.stub().copy(price = Money.parse("USD 12.50"))),
+            price = Money.parse("USD 99.99"),
+            reason = "Extra wash"
+        )
+
+        whenn()
+        val adjusted = suspendTransaction { fixture.sut.adjustPrice(created.id, adjustment) }
+
+        then()
+        assertEquals(adjustment, adjusted.priceAdjustment)
+        assertEquals(adjustment, suspendTransaction { fixture.sut.get(created.id) }.priceAdjustment)
+    }
+
+    @Test
+    fun `should store price adjustment without reason and additional services`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val created = suspendTransaction { fixture.sut.create(fixture.buildRequest()) }
+        val adjustment = PriceAdjustment.stub(additionalServices = emptyList(), reason = null)
+
+        whenn()
+        suspendTransaction { fixture.sut.adjustPrice(created.id, adjustment) }
+
+        then()
+        assertEquals(adjustment, suspendTransaction { fixture.sut.get(created.id) }.priceAdjustment)
+    }
+
+    @Test
+    fun `should replace previous price adjustment of appointment`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val created = suspendTransaction { fixture.sut.create(fixture.buildRequest()) }
+        suspendTransaction { fixture.sut.adjustPrice(created.id, PriceAdjustment.stub(additionalServices = listOf(ServiceSnapshot.stub(), ServiceSnapshot.stub()))) }
+        val replacement = PriceAdjustment.stub(price = Money.parse("USD 10"), reason = "Corrected")
+
+        whenn()
+        val adjusted = suspendTransaction { fixture.sut.adjustPrice(created.id, replacement) }
+
+        then()
+        assertEquals(replacement, adjusted.priceAdjustment)
+        assertEquals(replacement, suspendTransaction { fixture.sut.get(created.id) }.priceAdjustment)
+    }
+
+    @Test
+    fun `should return price adjustment when completing and adjusting in the same transaction`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val created = suspendTransaction { fixture.sut.create(fixture.buildRequest()) }
+        val adjustment = PriceAdjustment.stub()
+
+        whenn()
+        val adjusted = suspendTransaction {
+            fixture.sut.markCompletedByUser(created.id)
+            fixture.sut.adjustPrice(created.id, adjustment)
+        }
+
+        then()
+        assertEquals(AppointmentStatus.COMPLETED, adjusted.status)
+        assertEquals(adjustment, adjusted.priceAdjustment)
+    }
+
+    @Test
+    fun `should not attach price adjustment to appointment on creation`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+
+        whenn()
+        val created = suspendTransaction { fixture.sut.create(fixture.buildRequest()) }
+
+        then()
+        assertNull(suspendTransaction { fixture.sut.get(created.id) }.priceAdjustment)
+    }
+
+    @Test
+    fun `should fail to adjust price of missing appointment`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+
+        whenn()
+        val result = runCatching { suspendTransaction { fixture.sut.adjustPrice(Uuid.random(), PriceAdjustment.stub()) } }
+
+        then()
+        assertTrue(result.exceptionOrNull() is Error.NotFound)
+    }
+
+    @Test
+    fun `should include price adjustments in paginated appointments`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val adjustedAppointment = suspendTransaction { fixture.sut.create(fixture.buildRequest()) }
+        val plainAppointment = suspendTransaction { fixture.sut.create(fixture.buildRequest()) }
+        val adjustment = PriceAdjustment.stub()
+        suspendTransaction { fixture.sut.adjustPrice(adjustedAppointment.id, adjustment) }
+
+        whenn()
+        val pagination = suspendTransaction { fixture.sut.getAllPaginated(fixture.businessId, 10, 0, null) }
+
+        then()
+        assertEquals(adjustment, pagination.data.first { it.id == adjustedAppointment.id }.priceAdjustment)
+        assertNull(pagination.data.first { it.id == plainAppointment.id }.priceAdjustment)
+    }
+
+    @Test
+    fun `should delete appointment together with its price adjustment`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val created = suspendTransaction { fixture.sut.create(fixture.buildRequest()) }
+        suspendTransaction { fixture.sut.adjustPrice(created.id, PriceAdjustment.stub()) }
+
+        whenn()
+        suspendTransaction { fixture.sut.delete(created.id) }
+
+        then()
+        val result = runCatching { suspendTransaction { fixture.sut.get(created.id) } }
+        assertTrue(result.exceptionOrNull() is Error.NotFound)
+    }
+
+    @Test
+    fun `should load all appointments with a constant number of queries`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val singleBusinessId = fixture.attachBusiness(automaticCompletion = true)
+        val severalBusinessId = fixture.attachBusiness(automaticCompletion = true)
+        seedAdjustedAppointments(fixture, singleBusinessId, count = 1)
+        seedAdjustedAppointments(fixture, severalBusinessId, count = 3)
+
+        whenn()
+        val singleQueries = countStatements { fixture.sut.getAll(singleBusinessId) }
+        val severalQueries = countStatements { fixture.sut.getAll(severalBusinessId) }
+
+        then()
+        assertEquals(singleQueries, severalQueries)
+    }
+
+    @Test
+    fun `should load appointments for a date with a constant number of queries`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val singleBusinessId = fixture.attachBusiness(automaticCompletion = true)
+        val severalBusinessId = fixture.attachBusiness(automaticCompletion = true)
+        seedAdjustedAppointments(fixture, singleBusinessId, count = 1)
+        seedAdjustedAppointments(fixture, severalBusinessId, count = 3)
+        val range = Instant.fromEpochMilliseconds(0)..(Instant.fromEpochMilliseconds(0) + 1.hours)
+
+        whenn()
+        val singleQueries = countStatements { fixture.sut.getAllForDate(singleBusinessId, range) }
+        val severalQueries = countStatements { fixture.sut.getAllForDate(severalBusinessId, range) }
+
+        then()
+        assertEquals(singleQueries, severalQueries)
+    }
+
+    @Test
+    fun `should load paginated appointments with a constant number of queries`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val singleBusinessId = fixture.attachBusiness(automaticCompletion = true)
+        val severalBusinessId = fixture.attachBusiness(automaticCompletion = true)
+        seedAdjustedAppointments(fixture, singleBusinessId, count = 1)
+        seedAdjustedAppointments(fixture, severalBusinessId, count = 3)
+
+        whenn()
+        val singleQueries = countStatements { fixture.sut.getAllPaginated(singleBusinessId, 10, 0, null) }
+        val severalQueries = countStatements { fixture.sut.getAllPaginated(severalBusinessId, 10, 0, null) }
+
+        then()
+        assertEquals(singleQueries, severalQueries)
+    }
+
+    private suspend fun seedAdjustedAppointments(fixture: SutFixture, businessId: Uuid, count: Int) = repeat(count) {
+        val created = suspendTransaction {
+            fixture.sut.create(AppointmentRequest.stub(businessId = businessId, date = Instant.fromEpochMilliseconds(0)))
+        }
+        suspendTransaction { fixture.sut.adjustPrice(created.id, PriceAdjustment.stub()) }
+    }
+
+    private suspend fun countStatements(read: suspend () -> Unit): Int = suspendTransaction {
+        val before = statementCount
+        read()
+        statementCount - before
     }
 }

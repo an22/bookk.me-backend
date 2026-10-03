@@ -2,30 +2,31 @@ package com.bookk.appointments.domain.api.operation
 
 import com.bookk.appointments.domain.api.entity.Appointment
 import com.bookk.appointments.domain.api.entity.AppointmentErrorCodes
+import com.bookk.appointments.domain.api.entity.PriceAdjustmentDraft
 import com.bookk.core.domain.entity.BusinessError
 import io.ktor.http.HttpStatusCode
 import kotlin.uuid.Uuid
 
 interface CompleteAppointment {
-    suspend operator fun invoke(userId: Uuid, appointmentId: Uuid): Result<Appointment>
+    suspend operator fun invoke(userId: Uuid, appointmentId: Uuid, priceAdjustment: PriceAdjustmentDraft?): Result<Appointment>
 
     sealed interface Error {
-        class AlreadyCancelled : Error, BusinessError(
+        class NegativePrice : Error, BusinessError(
             statusCode = HttpStatusCode.UnprocessableEntity.value,
-            code = AppointmentErrorCodes.APPOINTMENT_ALREADY_CANCELED,
-            message = "Appointment already cancelled",
+            code = AppointmentErrorCodes.PRICE_ADJUSTMENT_NEGATIVE_PRICE,
+            message = "Adjusted price must not be negative",
         )
 
-        class MarkedNoShow : Error, BusinessError(
+        class CurrencyMismatch : Error, BusinessError(
             statusCode = HttpStatusCode.UnprocessableEntity.value,
-            code = AppointmentErrorCodes.APPOINTMENT_MARKED_NO_SHOW,
-            message = "Appointment is marked as no-show",
+            code = AppointmentErrorCodes.PRICE_ADJUSTMENT_CURRENCY_MISMATCH,
+            message = "Adjusted price currency must match the appointment currency",
         )
 
-        class NotStarted : Error, BusinessError(
+        class ReasonTooLong : Error, BusinessError(
             statusCode = HttpStatusCode.UnprocessableEntity.value,
-            code = AppointmentErrorCodes.APPOINTMENT_NOT_STARTED,
-            message = "Appointment has not started yet",
+            code = AppointmentErrorCodes.PRICE_ADJUSTMENT_REASON_TOO_LONG,
+            message = "Price adjustment reason is too long",
         )
     }
 }

@@ -2,6 +2,8 @@ package com.bookk.appointments.microservice.route.api
 
 import com.bookk.appointments.domain.api.entity.Appointment
 import com.bookk.appointments.domain.api.entity.AppointmentCancellation
+import com.bookk.appointments.domain.api.entity.AppointmentUpdate
+import com.bookk.appointments.domain.api.entity.PriceAdjustmentDraft
 import com.bookk.appointments.domain.api.operation.CancelAppointment
 import com.bookk.appointments.domain.api.operation.CompleteAppointment
 import com.bookk.appointments.domain.api.operation.CreateAppointment
@@ -21,6 +23,7 @@ import io.ktor.openapi.jsonSchema
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.principal
 import io.ktor.server.request.receive
+import io.ktor.server.request.receiveNullable
 import io.ktor.server.resources.get
 import io.ktor.server.resources.post
 import io.ktor.server.resources.put
@@ -37,22 +40,28 @@ internal class AppointmentRequestId(
     @ProtoNumber(1) val requestId: Uuid,
 )
 
+@Serializable
+internal class CompleteAppointmentRequest(
+    @ProtoNumber(1) val priceAdjustment: PriceAdjustmentDraft?
+)
+
 fun Routing.appointment() {
     authenticate {
         /**
          * Summary: Update appointment
-         * Description: Update a scheduled appointment (reschedule supported). The body status must be SCHEDULED, use the dedicated cancel, complete and no-show routes to change it. Cancellation reason and completion fields in the body are ignored
+         * Description: Reschedule a scheduled appointment - date, note, assigned employee and services. The body carries only ids, the employee and any newly added service are resolved from the business service, a service already on the appointment keeps its stored price. The client and business always stay those of the stored appointment
          * Tag: appointment
          * Security: jwt
-         * Body: application/x-protobuf [com.bookk.appointments.domain.api.entity.Appointment]
+         * Body: application/x-protobuf [com.bookk.appointments.domain.api.entity.AppointmentUpdate]
          * Response: 200 application/x-protobuf [com.bookk.appointments.domain.api.entity.Appointment] Updated appointment entity
-         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Update appointment errors<br>APPOINTMENT_EXISTS (300004) Appointment for this time already exists<br>DATE_NOT_ALLOWED (300003) Request for this date not allowed<br>TIME_NOT_ALLOWED (300002) Request for this time not allowed<br>DATE_IN_PAST (300012) Appointment date is in the past<br>ALREADY_CANCELLED (300005) Appointment already cancelled<br>ALREADY_COMPLETED (300006) Appointment already completed<br>MARKED_NO_SHOW (300019) Appointment is marked as no-show<br>STATUS_CHANGE_NOT_ALLOWED (300020) Appointment status cannot be changed by an update
+         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Update appointment errors<br>APPOINTMENT_EXISTS (300004) Appointment for this time already exists<br>DATE_NOT_ALLOWED (300003) Request for this date not allowed<br>TIME_NOT_ALLOWED (300002) Request for this time not allowed<br>DATE_IN_PAST (300012) Appointment date is in the past<br>ALREADY_CANCELLED (300005) Appointment already cancelled<br>ALREADY_COMPLETED (300006) Appointment already completed<br>MARKED_NO_SHOW (300019) Appointment is marked as no-show<br>SERVICE_SELECTION_INVALID (300024) Services must be a non-empty list of distinct services with positive counts<br>BUSINESS_QUOTE_SERVICE_NOT_FOUND (200013) One or more services not found<br>BUSINESS_EMPLOYEE_SUSPENDED (200033) Employee is suspended and cannot be booked
+         * Response: 404 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Assigned employee not found<br>BUSINESS_EMPLOYEE_NOT_EXISTS (200024) Employee with this id is missing
          * Response: 403 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Caller is a suspended employee of this business<br>BUSINESS_EMPLOYEE_ACCESS_SUSPENDED (200034) Your access to this business is suspended
          * See: docs/operations/appointments/update-appointment.md
          */
         put<Api.Appointment.Id> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
-            val body = call.receive<Appointment>()
+            val body = call.receive<AppointmentUpdate>()
             if (it.id != body.id) {
                 call.respond(HttpStatusCode.BadRequest, "Invalid request")
             } else {
@@ -61,7 +70,7 @@ fun Routing.appointment() {
                 call.respondWith(
                     updateAppointment(
                         userId = principal.userId,
-                        appointment = body
+                        update = body
                     )
                 )
             }
@@ -121,7 +130,7 @@ fun Routing.appointment() {
          * Security: jwt
          * Body: application/x-protobuf [com.bookk.appointments.microservice.route.api.AppointmentRequestId]
          * Response: 200 application/x-protobuf [com.bookk.appointments.domain.api.entity.Appointment] Created appointment entity
-         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Create appointment errors<br>APPOINTMENT_EXISTS (300004) Appointment for this time already exists<br>DATE_NOT_ALLOWED (300003) Request for this date not allowed<br>TIME_NOT_ALLOWED (300002) Request for this time not allowed<br>DATE_IN_PAST (300012) Appointment date is in the past
+         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Create appointment errors<br>APPOINTMENT_EXISTS (300004) Appointment for this time already exists<br>DATE_NOT_ALLOWED (300003) Request for this date not allowed<br>TIME_NOT_ALLOWED (300002) Request for this time not allowed<br>DATE_IN_PAST (300012) Appointment date is in the past<br>REQUEST_ALREADY_DECLINED (300007) Appointment request already declined<br>REQUEST_ALREADY_APPROVED (300008) Appointment request already approved
          * Response: 403 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Caller is a suspended employee of this business<br>BUSINESS_EMPLOYEE_ACCESS_SUSPENDED (200034) Your access to this business is suspended
          * See: docs/operations/appointments/create-appointment-from-request.md
          */
@@ -210,19 +219,21 @@ fun Routing.appointment() {
 
         /**
          * Summary: Complete appointment
-         * Description: Mark a started scheduled appointment as completed by the caller. An already completed appointment is returned unchanged
+         * Description: Mark a started scheduled appointment as completed by the caller. An already completed appointment keeps its status and completer. The optional body attaches a price adjustment (final charged price, additional catalog services resolved by id, optional reason) to the completed appointment, replacing any previous one
          * Tag: appointment
          * Security: jwt
+         * Body: application/x-protobuf [com.bookk.appointments.microservice.route.api.CompleteAppointmentRequest]
          * Response: 200 application/x-protobuf [com.bookk.appointments.domain.api.entity.Appointment] Completed appointment
-         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Complete appointment errors<br>ALREADY_CANCELLED (300005) Appointment already cancelled<br>NOT_STARTED (300018) Appointment has not started yet<br>MARKED_NO_SHOW (300019) Appointment is marked as no-show
+         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Complete appointment errors<br>ALREADY_CANCELLED (300005) Appointment already cancelled<br>NOT_STARTED (300018) Appointment has not started yet<br>MARKED_NO_SHOW (300019) Appointment is marked as no-show<br>PRICE_ADJUSTMENT_NEGATIVE_PRICE (300021) Adjusted price must not be negative<br>PRICE_ADJUSTMENT_CURRENCY_MISMATCH (300022) Adjusted price currency must match the appointment currency<br>PRICE_ADJUSTMENT_REASON_TOO_LONG (300023) Price adjustment reason is too long<br>BUSINESS_QUOTE_SERVICE_NOT_FOUND (200013) One or more additional services not found
          * Response: 403 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Caller is a suspended employee of this business<br>BUSINESS_EMPLOYEE_ACCESS_SUSPENDED (200034) Your access to this business is suspended
          * See: docs/operations/appointments/complete-appointment.md
          */
         post<Api.Appointment.Complete> {
             val principal = requireNotNull(call.principal<AppPrincipal>())
+            val body = call.receiveNullable<CompleteAppointmentRequest>()
             val completeAppointment by application.injectScoped<CompleteAppointment>(AppointmentsScope)
 
-            call.respondWith(completeAppointment(userId = principal.userId, appointmentId = it.id))
+            call.respondWith(completeAppointment(userId = principal.userId, appointmentId = it.id, priceAdjustment = body?.priceAdjustment))
         }
     }
 }

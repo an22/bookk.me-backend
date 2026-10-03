@@ -2,6 +2,8 @@ package com.bookk.appointments.domain.impl.operation
 
 import com.bookk.appointments.domain.api.entity.Appointment
 import com.bookk.appointments.domain.api.entity.AppointmentRequest
+import com.bookk.appointments.domain.api.entity.AppointmentRequestStatus
+import com.bookk.appointments.domain.api.entity.AppointmentRequestStatusError
 import com.bookk.appointments.domain.api.entity.AppointmentSettings
 import com.bookk.appointments.domain.api.entity.BusinessSnapshot
 import com.bookk.appointments.domain.api.entity.EmployeeSnapshot
@@ -475,7 +477,7 @@ internal class CreateAppointmentImplTest {
         val fixture = SutFixture()
 
         with(fixture) {
-            coEvery { requestDataSource.get(request.id) } returns request
+            coEvery { requestDataSource.getForUpdate(request.id) } returns request
             coEvery { settingsDataSource.getForUpdate(request.businessId) } returns settings
             coEvery { settings.isInWorkday(request.date) } returns true
             coEvery { settings.isInWorktime(request.date, request.dateEnd) } returns true
@@ -504,7 +506,7 @@ internal class CreateAppointmentImplTest {
         val fixture = SutFixture()
 
         with(fixture) {
-            coEvery { requestDataSource.get(request.id) } returns request
+            coEvery { requestDataSource.getForUpdate(request.id) } returns request
             coEvery { appointmentPermissionDataSource.getPermission(userId, request.businessId) } returns ResourcePermission(view = true, update = false, delete = false)
             transactionManager.mockTransaction()
         }
@@ -528,7 +530,7 @@ internal class CreateAppointmentImplTest {
         val fixture = SutFixture()
 
         with(fixture) {
-            coEvery { requestDataSource.get(request.id) } returns request
+            coEvery { requestDataSource.getForUpdate(request.id) } returns request
             coEvery { settingsDataSource.getForUpdate(request.businessId) } returns settings
             coEvery { settings.isInWorkday(request.date) } returns true
             coEvery { settings.isInWorktime(request.date, request.dateEnd) } returns true
@@ -556,7 +558,7 @@ internal class CreateAppointmentImplTest {
         val fixture = SutFixture()
 
         with(fixture) {
-            coEvery { requestDataSource.get(requestId) } returns null
+            coEvery { requestDataSource.getForUpdate(requestId) } returns null
             transactionManager.mockTransaction()
         }
 
@@ -566,5 +568,92 @@ internal class CreateAppointmentImplTest {
         then()
         assertTrue(result.isFailure)
         assertTrue(result.exceptionOrNull() is Error.NotFound)
+    }
+
+    @Test
+    fun `should not approve a declined request`() = runUnitTest {
+        given()
+        val userId = Uuid.random()
+        val request = AppointmentRequest.stub(date = futureDate).copy(status = AppointmentRequestStatus.DECLINED)
+        val fixture = SutFixture()
+
+        with(fixture) {
+            coEvery { requestDataSource.getForUpdate(request.id) } returns request
+            coEvery { appointmentPermissionDataSource.getPermission(userId, request.businessId) } returns ResourcePermission(view = false, update = true, delete = false)
+            transactionManager.mockTransaction()
+        }
+
+        whenn()
+        val result = fixture.sut.invoke(userId, request.id)
+
+        then()
+        assertTrue(result.exceptionOrNull() is AppointmentRequestStatusError.AlreadyDeclined)
+        coVerify(exactly = 0) { fixture.appointmentDataSource.create(any<AppointmentRequest>()) }
+        coVerify(exactly = 0) { fixture.requestDataSource.approve(any()) }
+    }
+
+    @Test
+    fun `should not approve a cancelled request`() = runUnitTest {
+        given()
+        val userId = Uuid.random()
+        val request = AppointmentRequest.stub(date = futureDate).copy(status = AppointmentRequestStatus.CANCELLED)
+        val fixture = SutFixture()
+
+        with(fixture) {
+            coEvery { requestDataSource.getForUpdate(request.id) } returns request
+            coEvery { appointmentPermissionDataSource.getPermission(userId, request.businessId) } returns ResourcePermission(view = false, update = true, delete = false)
+            transactionManager.mockTransaction()
+        }
+
+        whenn()
+        val result = fixture.sut.invoke(userId, request.id)
+
+        then()
+        assertTrue(result.exceptionOrNull() is AppointmentRequestStatusError.AlreadyDeclined)
+        coVerify(exactly = 0) { fixture.appointmentDataSource.create(any<AppointmentRequest>()) }
+        coVerify(exactly = 0) { fixture.requestDataSource.approve(any()) }
+    }
+
+    @Test
+    fun `should not approve an already approved request`() = runUnitTest {
+        given()
+        val userId = Uuid.random()
+        val request = AppointmentRequest.stub(date = futureDate).copy(status = AppointmentRequestStatus.APPROVED)
+        val fixture = SutFixture()
+
+        with(fixture) {
+            coEvery { requestDataSource.getForUpdate(request.id) } returns request
+            coEvery { appointmentPermissionDataSource.getPermission(userId, request.businessId) } returns ResourcePermission(view = false, update = true, delete = false)
+            transactionManager.mockTransaction()
+        }
+
+        whenn()
+        val result = fixture.sut.invoke(userId, request.id)
+
+        then()
+        assertTrue(result.exceptionOrNull() is AppointmentRequestStatusError.AlreadyApproved)
+        coVerify(exactly = 0) { fixture.appointmentDataSource.create(any<AppointmentRequest>()) }
+        coVerify(exactly = 0) { fixture.requestDataSource.approve(any()) }
+    }
+
+    @Test
+    fun `should read the request with a row lock when approving`() = runUnitTest {
+        given()
+        val userId = Uuid.random()
+        val request = AppointmentRequest.stub(date = futureDate)
+        val fixture = SutFixture()
+
+        with(fixture) {
+            coEvery { requestDataSource.getForUpdate(request.id) } returns request
+            coEvery { appointmentPermissionDataSource.getPermission(userId, request.businessId) } returns ResourcePermission.NONE
+            transactionManager.mockTransaction()
+        }
+
+        whenn()
+        fixture.sut.invoke(userId, request.id)
+
+        then()
+        coVerify(exactly = 1) { fixture.requestDataSource.getForUpdate(request.id) }
+        coVerify(exactly = 0) { fixture.requestDataSource.get(any()) }
     }
 }

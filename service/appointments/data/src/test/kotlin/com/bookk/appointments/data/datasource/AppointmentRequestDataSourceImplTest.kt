@@ -344,4 +344,50 @@ internal class AppointmentRequestDataSourceImplTest {
         then()
         assertTrue(result.isSuccess)
     }
+
+    @Test
+    fun `should read request with a row lock`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val created = suspendTransaction { fixture.sut.create(fixture.buildRequest()) }
+
+        whenn()
+        val found = suspendTransaction { fixture.sut.getForUpdate(created.id) }
+
+        then()
+        assertEquals(created.id, found?.id)
+        assertEquals(AppointmentRequestStatus.PENDING, found?.status)
+    }
+
+    @Test
+    fun `should return null when locking a missing request`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+
+        whenn()
+        val found = suspendTransaction { fixture.sut.getForUpdate(Uuid.random()) }
+
+        then()
+        assertNull(found)
+    }
+
+    @Test
+    fun `should decline a request locked in the same transaction`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val created = suspendTransaction { fixture.sut.create(fixture.buildRequest()) }
+
+        whenn()
+        val declined = suspendTransaction {
+            fixture.sut.getForUpdate(created.id)
+            fixture.sut.decline(created.id, "Fully booked")
+        }
+
+        then()
+        assertEquals(AppointmentRequestStatus.DECLINED, declined.status)
+        assertEquals(AppointmentRequestStatus.DECLINED, suspendTransaction { fixture.sut.get(created.id) }?.status)
+    }
 }

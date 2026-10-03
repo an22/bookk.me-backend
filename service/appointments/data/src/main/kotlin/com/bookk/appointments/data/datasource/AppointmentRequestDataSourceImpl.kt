@@ -34,6 +34,13 @@ internal class AppointmentRequestDataSourceImpl(
             ?.domain()
     }
 
+    override suspend fun getForUpdate(id: Uuid): AppointmentRequest? = dbQuery {
+        AppointmentRequestEntity.find { AppointmentRequestTable.id eq id }
+            .forUpdate()
+            .singleOrNull()
+            ?.domain()
+    }
+
     override suspend fun getAll(businessId: Uuid): List<AppointmentRequest> = dbQuery {
         AppointmentRequestEntity
             .find { AppointmentRequestTable.businessId eq businessId }

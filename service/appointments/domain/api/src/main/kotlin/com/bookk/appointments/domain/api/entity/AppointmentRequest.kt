@@ -29,6 +29,15 @@ data class AppointmentRequest(
     @Transient
     val totalAmount = services.map { it.price }.reduce { acc, price -> acc + price }
 
+    fun requirePending() {
+        when (status) {
+            AppointmentRequestStatus.PENDING -> Unit
+            AppointmentRequestStatus.APPROVED -> throw AppointmentRequestStatusError.AlreadyApproved()
+            AppointmentRequestStatus.DECLINED,
+            AppointmentRequestStatus.CANCELLED -> throw AppointmentRequestStatusError.AlreadyDeclined()
+        }
+    }
+
     companion object {
         fun stub(
             id: Uuid = Uuid.random(),

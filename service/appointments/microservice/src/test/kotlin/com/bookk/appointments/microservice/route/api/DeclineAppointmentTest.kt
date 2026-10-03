@@ -3,6 +3,7 @@ package com.bookk.appointments.microservice.route.api
 import com.bookk.appointments.domain.api.entity.Appointment
 import com.bookk.appointments.domain.api.entity.AppointmentCancellation
 import com.bookk.appointments.domain.api.entity.AppointmentErrorCodes
+import com.bookk.appointments.domain.api.entity.AppointmentStatusError
 import com.bookk.appointments.domain.api.operation.CancelAppointment
 import com.bookk.appointments.microservice.route.AppointmentsRouting.Api
 import com.bookk.core.domain.entity.SimpleServerError
@@ -22,6 +23,8 @@ import io.ktor.server.auth.Authentication
 import io.ktor.server.auth.bearer
 import io.mockk.coEvery
 import io.mockk.mockk
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.protobuf.ProtoNumber
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.koin.dsl.module
@@ -36,7 +39,7 @@ internal class DeclineAppointmentTest {
         val userId = Uuid.random()
         val businessId = Uuid.random()
         val appointmentId = Uuid.random()
-        val cancellation = AppointmentCancellation(id = appointmentId, businessId = businessId, reason = "Reason")
+        val cancellation = AppointmentCancellation(id = appointmentId, reason = "Reason")
 
         coEvery { useCase.invoke(userId, cancellation) } returns Result.success(Appointment.stub(id = appointmentId))
 
@@ -74,14 +77,14 @@ internal class DeclineAppointmentTest {
         val useCase: CancelAppointment = mockk()
         val userId = Uuid.random()
         val appointmentId = Uuid.random()
-        val cancellation = AppointmentCancellation(id = appointmentId, businessId = Uuid.random(), reason = "Reason")
+        val cancellation = AppointmentCancellation(id = appointmentId, reason = "Reason")
 
         coEvery {
             useCase.invoke(
                 userId,
                 cancellation
             )
-        } returns Result.failure(CancelAppointment.Error.AlreadyCancelled())
+        } returns Result.failure(AppointmentStatusError.AlreadyCancelled())
 
         setupApplication(
             extension = {
@@ -119,14 +122,14 @@ internal class DeclineAppointmentTest {
         val useCase: CancelAppointment = mockk()
         val userId = Uuid.random()
         val appointmentId = Uuid.random()
-        val cancellation = AppointmentCancellation(id = appointmentId, businessId = Uuid.random(), reason = "Reason")
+        val cancellation = AppointmentCancellation(id = appointmentId, reason = "Reason")
 
         coEvery {
             useCase.invoke(
                 userId,
                 cancellation
             )
-        } returns Result.failure(CancelAppointment.Error.AlreadyCompleted())
+        } returns Result.failure(AppointmentStatusError.AlreadyCompleted())
 
         setupApplication(
             extension = {
@@ -164,8 +167,8 @@ internal class DeclineAppointmentTest {
         val useCase: CancelAppointment = mockk()
         val userId = Uuid.random()
         val appointmentId = Uuid.random()
-        val cancellation = AppointmentCancellation(id = appointmentId, businessId = Uuid.random(), reason = "Reason")
-        coEvery { useCase.invoke(userId, cancellation) } returns Result.failure(CancelAppointment.Error.MarkedNoShow())
+        val cancellation = AppointmentCancellation(id = appointmentId, reason = "Reason")
+        coEvery { useCase.invoke(userId, cancellation) } returns Result.failure(AppointmentStatusError.MarkedNoShow())
 
         setupApplication(
             extension = {
@@ -219,10 +222,49 @@ internal class DeclineAppointmentTest {
         val client = createTestClient()
         val response =
             client.post(Api.Appointment.Cancel(parent = Api.Appointment(parent = Api()), id = Uuid.random())) {
-                setBody(AppointmentCancellation(id = Uuid.random(), businessId = Uuid.random(), reason = "Reason"))
+                setBody(AppointmentCancellation(id = Uuid.random(), reason = "Reason"))
             }
 
         then()
         assertEquals(HttpStatusCode.Unauthorized, response.status)
     }
+
+    @Test
+    fun `should accept a cancellation from an older client that still sends a business id`() = routeTest {
+        given()
+        val useCase: CancelAppointment = mockk()
+        val userId = Uuid.random()
+        val appointmentId = Uuid.random()
+        coEvery { useCase.invoke(userId, AppointmentCancellation(id = appointmentId, reason = "Reason")) } returns Result.success(Appointment.stub(id = appointmentId))
+
+        setupApplication(
+            extension = {
+                install(Authentication) {
+                    provider {
+                        authenticate { context ->
+                            context.principal(AppPrincipal(Uuid.random(), userId, Uuid.random()))
+                        }
+                    }
+                }
+            },
+            diModule = module { single { useCase } },
+            routeUnderTest = { appointment() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.post(Api.Appointment.Cancel(id = appointmentId)) {
+            setBody(LegacyCancelAppointmentBody(id = appointmentId, businessId = Uuid.random(), reason = "Reason"))
+        }
+
+        then()
+        assertEquals(HttpStatusCode.OK, response.status)
+    }
 }
+
+@Serializable
+private class LegacyCancelAppointmentBody(
+    @ProtoNumber(1) val id: Uuid,
+    @ProtoNumber(2) val businessId: Uuid,
+    @ProtoNumber(3) val reason: String
+)

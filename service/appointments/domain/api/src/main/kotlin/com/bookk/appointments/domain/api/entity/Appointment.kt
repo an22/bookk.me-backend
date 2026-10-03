@@ -4,6 +4,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import kotlinx.serialization.protobuf.ProtoNumber
 import org.joda.money.Money
+import kotlin.time.Clock
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
@@ -20,7 +21,8 @@ data class Appointment(
     @ProtoNumber(8) override val date: Instant,
     @ProtoNumber(9) val note: String,
     @ProtoNumber(10) val cancellationReason: String,
-    @ProtoNumber(11) val completedBy: AppointmentCompletedBy?
+    @ProtoNumber(11) val completedBy: AppointmentCompletedBy?,
+    @ProtoNumber(12) val priceAdjustment: PriceAdjustment?
 ) : AppointmentRepresentation {
     @Transient
     override val dateEnd = date + services.fold(0.minutes) { acc, service ->
@@ -29,6 +31,38 @@ data class Appointment(
 
     @Transient
     val totalAmount: Money = services.map { it.price }.reduce { acc, price -> acc + price }
+
+    fun hasStarted(now: Instant = Clock.System.now()): Boolean = date <= now
+
+    fun requireScheduled() {
+        when (status) {
+            AppointmentStatus.SCHEDULED -> Unit
+            AppointmentStatus.CANCELLED -> throw AppointmentStatusError.AlreadyCancelled()
+            AppointmentStatus.COMPLETED -> throw AppointmentStatusError.AlreadyCompleted()
+            AppointmentStatus.NO_SHOW -> throw AppointmentStatusError.MarkedNoShow()
+        }
+    }
+
+    fun requireCompletable(now: Instant = Clock.System.now()) {
+        when (status) {
+            AppointmentStatus.COMPLETED -> Unit
+            AppointmentStatus.SCHEDULED -> requireStarted(now)
+            AppointmentStatus.CANCELLED -> throw AppointmentStatusError.AlreadyCancelled()
+            AppointmentStatus.NO_SHOW -> throw AppointmentStatusError.MarkedNoShow()
+        }
+    }
+
+    fun requireNoShowMarkable(now: Instant = Clock.System.now()) {
+        when (status) {
+            AppointmentStatus.NO_SHOW -> Unit
+            AppointmentStatus.SCHEDULED, AppointmentStatus.COMPLETED -> requireStarted(now)
+            AppointmentStatus.CANCELLED -> throw AppointmentStatusError.AlreadyCancelled()
+        }
+    }
+
+    private fun requireStarted(now: Instant) {
+        if (!hasStarted(now)) throw AppointmentStatusError.NotStarted()
+    }
 
     companion object {
         fun stub(
@@ -47,7 +81,8 @@ data class Appointment(
             date = date,
             note = "Note",
             cancellationReason = "",
-            completedBy = null
+            completedBy = null,
+            priceAdjustment = null
         )
     }
 }

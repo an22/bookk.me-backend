@@ -23,6 +23,8 @@ erDiagram
     CLIENT ||--o{ APPOINTMENT : "client_id"
     SERVICE ||--o{ APPOINTMENT_SERVICES : "service_id"
     SERVICE_GROUP ||--o{ APPOINTMENT_SERVICES : "service_group_id"
+    SERVICE ||--o{ APPOINTMENT_PRICE_ADJUSTMENT_SERVICES : "service_id"
+    SERVICE_GROUP ||--o{ APPOINTMENT_PRICE_ADJUSTMENT_SERVICES : "service_group_id"
 
     PROFILE {
         uuid id PK
@@ -49,6 +51,9 @@ erDiagram
         uuid id PK
     }
     SERVICE_GROUP {
+        uuid id PK
+    }
+    APPOINTMENT_PRICE_ADJUSTMENT_SERVICES {
         uuid id PK
     }
     BUSINESS_PERMISSION_GRANTS {

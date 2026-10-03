@@ -4,6 +4,7 @@ import com.bookk.business.domain.api.appointment.entity.AppointmentBookingContex
 import com.bookk.business.domain.api.appointment.entity.AppointmentBookingContextRequest
 import com.bookk.business.domain.api.appointment.operation.GetAppointmentBookingContext
 import com.bookk.core.client.bodyOrThrow
+import com.bookk.core.domain.entity.runSuspendCatching
 import com.bookk.server.business.client.impl.BusinessRouting
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.resources.post
@@ -19,7 +20,7 @@ internal class GetAppointmentBookingContextClientImpl(
         employeeId: Uuid,
         userId: Uuid,
         serviceIds: List<Uuid>
-    ): Result<AppointmentBookingContext> = runCatching {
+    ): Result<AppointmentBookingContext> = runSuspendCatching {
         httpClient.post(
             BusinessRouting.Api.Internal.Business.Id.AppointmentBookingContext(
                 parent = BusinessRouting.Api.Internal.Business.Id(id = businessId)

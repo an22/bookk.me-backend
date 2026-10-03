@@ -9,6 +9,7 @@ import com.bookk.appointments.domain.api.operation.CompleteAppointment
 import com.bookk.appointments.domain.datasource.AppointmentDataSource
 import com.bookk.appointments.domain.datasource.AppointmentPermissionDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
+import com.bookk.core.domain.entity.runSuspendCatching
 import com.bookk.server.business.client.api.BusinessClient
 import library.permissions.PermissionAction
 import library.permissions.assertOrSelf
@@ -25,7 +26,7 @@ internal class CompleteAppointmentImpl(
         userId: Uuid,
         appointmentId: Uuid,
         priceAdjustment: PriceAdjustmentDraft?
-    ): Result<Appointment> = runCatching {
+    ): Result<Appointment> = runSuspendCatching {
         priceAdjustment?.throwIfInvalid()
         return transactionManager.transaction {
             val appointment = appointmentDataSource.getForUpdate(appointmentId)

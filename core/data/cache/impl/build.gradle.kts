@@ -15,4 +15,8 @@ dependencies {
     testFixturesImplementation(projects.core.data.cache.api)
     testFixturesImplementation(libs.ktor.protobuf)
     testFixturesImplementation(libs.memcache)
+
+    testImplementation(testFixtures(projects.core))
+    testImplementation(libs.testcontainers.junit)
+    testImplementation(libs.kotlin.coroutines.test)
 }

@@ -22,6 +22,7 @@ import com.bookk.business.domain.api.service.entity.Service
 import com.bookk.core.data.eventstreaming.StandardEventProducer
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.datasource.transaction.mockTransaction
+import com.bookk.core.domain.entity.Error
 import com.bookk.core.test.given
 import com.bookk.core.test.runUnitTest
 import com.bookk.core.test.then
@@ -34,9 +35,14 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.datetime.TimeZone
 import library.signing.TokenValidator
 import library.signing.TokenValidatorFactory
+import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
@@ -91,8 +97,8 @@ internal class CreateAppointmentRequestImplTest {
             val businessIdClaim = mockk<Claim>()
             val validator = mockk<TokenValidator>()
 
-            coEvery { requestDataSource.isTokenInCache("token") } returns false
-            coEvery { requestDataSource.cacheOfferToken("token") } returns Unit
+            coEvery { requestDataSource.reserveOfferToken("token") } returns true
+            coEvery { requestDataSource.releaseOfferToken("token") } returns Unit
             every { validator.verifier } returns jwtVerifier
             every { tokenValidatorFactory.forType(any()) } returns validator
             every { jwtVerifier.verify("token") } returns decodedJwt
@@ -241,7 +247,8 @@ internal class CreateAppointmentRequestImplTest {
             services = listOf(RequestedService(Uuid.random(), 0)),
             date = futureDate
         )
-        coEvery { fixture.requestDataSource.isTokenInCache("token") } returns false
+        coEvery { fixture.requestDataSource.reserveOfferToken("token") } returns true
+        coEvery { fixture.requestDataSource.releaseOfferToken("token") } returns Unit
 
         whenn()
         val result = fixture.sut.invoke(userId, draft)
@@ -264,7 +271,8 @@ internal class CreateAppointmentRequestImplTest {
             services = listOf(RequestedService(serviceId, 2), RequestedService(serviceId, 3)),
             date = futureDate
         )
-        coEvery { fixture.requestDataSource.isTokenInCache("token") } returns false
+        coEvery { fixture.requestDataSource.reserveOfferToken("token") } returns true
+        coEvery { fixture.requestDataSource.releaseOfferToken("token") } returns Unit
 
         whenn()
         val result = fixture.sut.invoke(userId, draft)
@@ -584,7 +592,8 @@ internal class CreateAppointmentRequestImplTest {
         val draft = draftFor(context, businessId, futureDate)
 
         with(fixture) {
-            coEvery { requestDataSource.isTokenInCache("token") } returns false
+            coEvery { requestDataSource.reserveOfferToken("token") } returns true
+            coEvery { requestDataSource.releaseOfferToken("token") } returns Unit
             val jwtVerifier = mockk<JWTVerifier>()
             val decodedJwt = mockk<DecodedJWT>()
             val servicesClaim = mockk<Claim>()
@@ -613,6 +622,7 @@ internal class CreateAppointmentRequestImplTest {
         assertTrue(result.isFailure)
         assertTrue(result.exceptionOrNull() is CreateAppointmentRequest.Error.ServicesSignatureMiss)
         coVerify(exactly = 0) { fixture.businessClient.getAppointmentBookingContext(any(), any(), any(), any()) }
+        coVerify(exactly = 1) { fixture.requestDataSource.releaseOfferToken("token") }
     }
 
     @Test
@@ -625,7 +635,8 @@ internal class CreateAppointmentRequestImplTest {
         val draft = draftFor(context, businessId, futureDate)
 
         with(fixture) {
-            coEvery { requestDataSource.isTokenInCache("token") } returns false
+            coEvery { requestDataSource.reserveOfferToken("token") } returns true
+            coEvery { requestDataSource.releaseOfferToken("token") } returns Unit
             val jwtVerifier = mockk<JWTVerifier>()
             val decodedJwt = mockk<DecodedJWT>()
             val servicesClaim = mockk<Claim>()
@@ -657,14 +668,14 @@ internal class CreateAppointmentRequestImplTest {
     }
 
     @Test
-    fun `should return TokenAlreadyUsed when offer token is already in cache`() = runUnitTest {
+    fun `should return TokenAlreadyUsed without releasing the reservation when offer token is already reserved`() = runUnitTest {
         given()
         val fixture = SutFixture()
         val userId = Uuid.random()
         val draft = AppointmentRequestDraft.stub(date = futureDate)
 
         with(fixture) {
-            coEvery { requestDataSource.isTokenInCache("token") } returns true
+            coEvery { requestDataSource.reserveOfferToken("token") } returns false
         }
 
         whenn()
@@ -673,12 +684,12 @@ internal class CreateAppointmentRequestImplTest {
         then()
         assertTrue(result.isFailure)
         assertTrue(result.exceptionOrNull() is CreateAppointmentRequest.Error.TokenAlreadyUsed)
-        coVerify(exactly = 0) { fixture.requestDataSource.cacheOfferToken(any()) }
+        coVerify(exactly = 0) { fixture.requestDataSource.releaseOfferToken(any()) }
         coVerify(exactly = 0) { fixture.transactionManager.transaction<Any>(any()) }
     }
 
     @Test
-    fun `should cache token after successful claim validation`() = runUnitTest {
+    fun `should keep the offer token reserved after the request is created`() = runUnitTest {
         given()
         val fixture = SutFixture()
         val userId = Uuid.random()
@@ -710,7 +721,8 @@ internal class CreateAppointmentRequestImplTest {
 
         then()
         assertTrue(result.isSuccess)
-        coVerify(exactly = 1) { fixture.requestDataSource.cacheOfferToken("token") }
+        coVerify(exactly = 1) { fixture.requestDataSource.reserveOfferToken("token") }
+        coVerify(exactly = 0) { fixture.requestDataSource.releaseOfferToken(any()) }
     }
 
     @Test
@@ -798,5 +810,96 @@ internal class CreateAppointmentRequestImplTest {
         assertTrue(result.isFailure)
         assertTrue(result.exceptionOrNull() is GetAppointmentBookingContext.Error.ServiceNotFound)
         coVerify(exactly = 0) { fixture.requestDataSource.create(any()) }
+    }
+
+    @Test
+    fun `should return failure when reserving the offer token fails`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val businessId = Uuid.random()
+        val context = bookingContext(businessId, Uuid.random(), Uuid.random(), Uuid.random())
+        val draft = draftFor(context, businessId, futureDate)
+        val cacheFailure = Error.UnknownError(IllegalStateException("cache unavailable"))
+        coEvery { fixture.requestDataSource.reserveOfferToken("token") } throws cacheFailure
+
+        whenn()
+        val result = fixture.sut.invoke(Uuid.random(), draft)
+
+        then()
+        assertSame(cacheFailure, result.exceptionOrNull())
+        coVerify(exactly = 0) { fixture.requestDataSource.releaseOfferToken(any()) }
+    }
+
+    @Test
+    fun `should return failure when booking context misses a requested service`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+        val businessId = Uuid.random()
+        val context = bookingContext(businessId, Uuid.random(), Uuid.random(), Uuid.random())
+        val draft = draftFor(context, businessId, futureDate)
+        with(fixture) {
+            mockValidToken(draft, totalOf(context.services), durationOf(context.services))
+            coEvery {
+                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, userId, distinctIds(draft))
+            } returns Result.success(context.copy(services = emptyList()))
+        }
+
+        whenn()
+        val result = fixture.sut.invoke(userId, draft)
+
+        then()
+        assertTrue(result.isFailure)
+        coVerify(exactly = 0) { fixture.requestDataSource.create(any()) }
+        coVerify(exactly = 1) { fixture.requestDataSource.releaseOfferToken("token") }
+    }
+
+    @Test
+    fun `should return the original failure when releasing the offer token fails`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+        val businessId = Uuid.random()
+        val context = bookingContext(businessId, Uuid.random(), Uuid.random(), Uuid.random())
+        val draft = draftFor(context, businessId, futureDate)
+        val bookingFailure = GetAppointmentBookingContext.Error.EmployeeSuspended()
+        with(fixture) {
+            mockValidToken(draft, totalOf(context.services), durationOf(context.services))
+            coEvery {
+                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, userId, distinctIds(draft))
+            } returns Result.failure(bookingFailure)
+            coEvery { requestDataSource.releaseOfferToken("token") } throws Error.UnknownError(IllegalStateException("cache unavailable"))
+        }
+
+        whenn()
+        val result = fixture.sut.invoke(userId, draft)
+
+        then()
+        assertSame(bookingFailure, result.exceptionOrNull())
+        coVerify(exactly = 1) { fixture.requestDataSource.releaseOfferToken("token") }
+    }
+
+    @Test
+    fun `should release the offer token when the call is cancelled`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+        val businessId = Uuid.random()
+        val context = bookingContext(businessId, Uuid.random(), Uuid.random(), Uuid.random())
+        val draft = draftFor(context, businessId, futureDate)
+        with(fixture) {
+            mockValidToken(draft, totalOf(context.services), durationOf(context.services))
+            coEvery {
+                businessClient.getAppointmentBookingContext(businessId, draft.employeeId, userId, distinctIds(draft))
+            } coAnswers { awaitCancellation() }
+        }
+        val call = launch { fixture.sut.invoke(userId, draft) }
+        runCurrent()
+
+        whenn()
+        call.cancelAndJoin()
+
+        then()
+        coVerify(exactly = 1) { fixture.requestDataSource.releaseOfferToken("token") }
     }
 }

@@ -58,15 +58,27 @@ top of this, since the caller is the client booking with the business, not
 a staff member. If the business has `automaticApproval` on, the request is
 approved immediately by delegating into [Create appointment from a pending
 request](create-appointment-from-request.md)'s shared verify/persist logic
-instead of being stored as pending.
+instead of being stored as pending. The `offerToken` is reserved up front
+with one atomic `CacheClient.setIfAbsent` (Redis `SET NX EX`, 10 minutes, the
+same as the quote's own TTL), so two concurrent requests carrying the same
+token cannot both get past it: the loser gets `TOKEN_ALREADY_USED` and does
+not touch the winner's reservation. A cache outage at this step fails the
+request rather than booking without replay protection. On success the
+reservation is simply kept. On **any** failure after the reservation, every
+error node below the reservation, an unexpected error, or the call being
+cancelled, the token is released again (`releaseOfferToken`, run
+`NonCancellable`, best effort), so a rejected request does not burn the
+client's quote. If that release itself fails it is only logged and the
+original error is returned; the token then stays unusable until it expires
+and the client has to request a new quote.
 
 ```mermaid
 flowchart TD
     Start([POST /api/appointments/request]) --> Auth{JWT valid?}
     Auth -- No --> R401([401 Unauthorized])
-    Auth -- Yes --> TokenCached{offerToken already used?}
-    TokenCached -- Yes --> R422a([422 TOKEN_ALREADY_USED 300016])
-    TokenCached -- No --> CountCheck{every RequestedService.count > 0?}
+    Auth -- Yes --> Reserve{requestDataSource.reserveOfferToken offerToken - atomic SET NX EX 10m}
+    Reserve -- already reserved --> R422a([422 TOKEN_ALREADY_USED 300016 - reservation left untouched])
+    Reserve -- reserved --> CountCheck{every RequestedService.count > 0?}
     CountCheck -- No --> R422i([422 SERVICES_VALIDATION_FAILED 300014])
     CountCheck -- Yes --> DistinctCheck{draft.services has no duplicate serviceId?}
     DistinctCheck -- No --> R422j([422 SERVICES_VALIDATION_FAILED 300014])
@@ -98,7 +110,7 @@ flowchart TD
     Settings -- found --> AutoApproval{settings.automaticApproval?}
     AutoApproval -- Yes --> Delegate[Delegate to CreateAppointment userId request]
     Delegate --> DelegateFlow[[See create-appointment-from-request.md verify and persist flow]]
-    DelegateFlow --> R200a([200 Appointment - created directly])
+    DelegateFlow --> Commit
     AutoApproval -- No --> PastCheck{request.date < now?}
     PastCheck -- Yes --> R422c([422 DATE_IN_PAST 300012])
     PastCheck -- No --> WorkdayCheck{date within business workday?}
@@ -113,8 +125,8 @@ flowchart TD
     Create --> Snapshot[AppointmentSubscriptionDataSource.getBusinessSnapshot businessId]
     Snapshot -- missing --> R404d([404 Error.NotFound - logged as data inconsistency])
     Snapshot -- found --> Event[eventProducer.send AppointmentEvent.RequestCreated]
-    Event --> CacheToken[requestDataSource.cacheOfferToken offerToken]
-    CacheToken --> R204([204 No Content])
+    Event --> Commit[[Commit transaction]]
+    Commit --> R204([204 No Content - offerToken stays reserved])
 ```
 
 **Consumed by:** `AppointmentEvent.RequestCreated` → [notifications: notify the

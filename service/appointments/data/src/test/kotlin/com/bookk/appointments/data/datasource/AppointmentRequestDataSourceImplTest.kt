@@ -254,28 +254,43 @@ internal class AppointmentRequestDataSourceImplTest {
     }
 
     @Test
-    fun `should cache offer token and detect it in cache`() = runUnitTest {
+    fun `should reserve an offer token that is not reserved yet`() = runUnitTest {
         given()
         val fixture = SutFixture()
-        val token = "offer-token-abc"
 
         whenn()
-        fixture.sut.cacheOfferToken(token)
+        val reserved = fixture.sut.reserveOfferToken("offer-token-abc")
 
         then()
-        assertTrue(fixture.sut.isTokenInCache(token))
+        assertTrue(reserved)
     }
 
     @Test
-    fun `should return false from isTokenInCache for missing token`() = runUnitTest {
+    fun `should refuse to reserve an offer token that is already reserved`() = runUnitTest {
         given()
         val fixture = SutFixture()
+        val token = "offer-token-abc"
+        fixture.sut.reserveOfferToken(token)
 
         whenn()
-        val inCache = fixture.sut.isTokenInCache("nonexistent-token")
+        val reservedAgain = fixture.sut.reserveOfferToken(token)
 
         then()
-        assertFalse(inCache)
+        assertFalse(reservedAgain)
+    }
+
+    @Test
+    fun `should reserve an offer token again after it is released`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val token = "offer-token-abc"
+        fixture.sut.reserveOfferToken(token)
+
+        whenn()
+        fixture.sut.releaseOfferToken(token)
+
+        then()
+        assertTrue(fixture.sut.reserveOfferToken(token))
     }
 
     @Test

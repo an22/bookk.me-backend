@@ -7,6 +7,7 @@ import com.bookk.core.data.eventstreaming.EventStreaming
 import com.bookk.core.data.eventstreaming.EventStreaming.Event
 import com.bookk.core.data.eventstreaming.ExhaustedEventDataSource
 import com.bookk.core.data.eventstreaming.send
+import com.bookk.core.domain.entity.runSuspendCatching
 import io.ktor.util.collections.ConcurrentMap
 import io.ktor.util.logging.KtorSimpleLogger
 import kotlinx.coroutines.CoroutineScope
@@ -69,7 +70,7 @@ class KafkaEventConsumer(
                 logger.debug("Received unprocessable event, Topic: {}. Error: {}", topic, it.message)
             }.onSuccess { event ->
                 if (!eventIdempotencyStorage.isEventProcessed(event.topic, event.idempotencyKey)) {
-                    runCatching {
+                    runSuspendCatching {
                         logger.debug("Received event, Topic: {}. Event: {}", event.topic, event)
                         onEvent(event)
                     }.onSuccess {
@@ -137,7 +138,7 @@ class KafkaEventConsumer(
     }
 
     private suspend fun persistOrRequeue(dltEvent: DltEvent) {
-        runCatching { exhaustedEventDataSource.save(dltEvent) }
+        runSuspendCatching { exhaustedEventDataSource.save(dltEvent) }
             .onFailure {
                 logger.error("Failed to persist exhausted event for topic: {}. Retrying. Error: {}", dltEvent.originalTopic, it.message)
                 dltProducer.send(dltEvent.copy(attempt = dltEvent.attempt + 1))

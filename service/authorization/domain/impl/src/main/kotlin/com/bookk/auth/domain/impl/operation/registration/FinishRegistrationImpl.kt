@@ -14,6 +14,7 @@ import com.bookk.core.data.eventstreaming.StandardEventProducer
 import com.bookk.core.data.eventstreaming.send
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.entity.Language
+import com.bookk.core.domain.entity.runSuspendCatching
 import com.bookk.server.auth.client.AuthEvent
 import com.bookk.server.user.client.UserClient
 import com.bookk.server.user.client.api.CreateUserRequest
@@ -29,7 +30,7 @@ internal class FinishRegistrationImpl(
     private val finishPasskeyRegistration: FinishPasskeyRegistration
 ) : FinishRegistration {
 
-    override suspend fun invoke(request: VerifyAccountCreationRequest, language: Language): Result<AuthTokens> = runCatching {
+    override suspend fun invoke(request: VerifyAccountCreationRequest, language: Language): Result<AuthTokens> = runSuspendCatching {
         val verifiedPasskey = finishPasskeyRegistration.verifyRequest(request).getOrThrow()
         val userId = userClient.createUser(createUserFrom(request.userInfo)).getOrThrow()
         val deviceName = request.deviceInfo.deviceName

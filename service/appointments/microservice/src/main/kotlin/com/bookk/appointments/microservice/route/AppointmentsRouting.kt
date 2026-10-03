@@ -49,7 +49,12 @@ object AppointmentsRouting {
         }
 
         @Resource("/appointments/list/{businessId}")
-        class Appointments(val parent: Api = Api(), val businessId: Uuid, val date: LocalDate)
+        class Appointments(
+            val parent: Api = Api(),
+            val businessId: Uuid,
+            val date: LocalDate,
+            val employeeId: Uuid? = null
+        )
 
         @Resource("/appointments/history/{businessId}")
         class AppointmentHistory(

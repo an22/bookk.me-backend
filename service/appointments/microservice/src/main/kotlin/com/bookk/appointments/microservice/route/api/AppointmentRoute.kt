@@ -77,6 +77,7 @@ fun Routing.appointment() {
         }
         /**
          * Summary: Get appointments for specific date
+         * Description: Get appointments of a business for a date, optionally only those assigned to the employee with the given employeeId
          * Tag: appointment
          * Security: jwt
          */
@@ -84,7 +85,7 @@ fun Routing.appointment() {
             val principal = requireNotNull(call.principal<AppPrincipal>())
             val getAppointments by application.injectScoped<GetAppointmentsForDate>(AppointmentsScope)
 
-            call.respondWith(getAppointments(principal.userId, it.businessId, it.date))
+            call.respondWith(getAppointments(principal.userId, it.businessId, it.date, it.employeeId))
         }.describe {
             responses {
                 response(HttpStatusCode.OK.value) {

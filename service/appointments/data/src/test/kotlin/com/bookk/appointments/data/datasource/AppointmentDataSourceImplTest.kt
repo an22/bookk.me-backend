@@ -14,6 +14,7 @@ import com.bookk.appointments.domain.api.entity.AppointmentRequest
 import com.bookk.appointments.domain.api.entity.AppointmentSettings
 import com.bookk.appointments.domain.api.entity.AppointmentStatus
 import com.bookk.appointments.domain.api.entity.BusinessSnapshot
+import com.bookk.appointments.domain.api.entity.EmployeeSnapshot
 import com.bookk.appointments.domain.api.entity.PriceAdjustment
 import com.bookk.appointments.domain.api.entity.ServiceSnapshot
 import com.bookk.core.data.test.createTestDatabase
@@ -61,8 +62,11 @@ internal class AppointmentDataSourceImplTest {
             return snapshot.id
         }
 
-        fun buildRequest(userId: Uuid = Uuid.random(), date: Instant = Instant.fromEpochMilliseconds(0)) =
-            AppointmentRequest.stub(userId = userId, businessId = businessId, date = date)
+        fun buildRequest(
+            userId: Uuid = Uuid.random(),
+            date: Instant = Instant.fromEpochMilliseconds(0),
+            employee: EmployeeSnapshot = EmployeeSnapshot.stub()
+        ) = AppointmentRequest.stub(userId = userId, businessId = businessId, date = date, employee = employee)
     }
 
     @Test
@@ -361,10 +365,28 @@ internal class AppointmentDataSourceImplTest {
 
         whenn()
         val range = baseDate..(baseDate + 1.hours)
-        val found = suspendTransaction { fixture.sut.getAllForDate(fixture.businessId, range) }
+        val found = suspendTransaction { fixture.sut.getAllForDate(fixture.businessId, range, employeeId = null) }
 
         then()
         assertEquals(1, found.size)
+    }
+
+    @Test
+    fun `should retrieve only appointments of given employee for date range`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val baseDate = Instant.fromEpochMilliseconds(1_000_000_000_000L)
+        val employee = EmployeeSnapshot.stub()
+        val employeeAppointment = suspendTransaction { fixture.sut.create(fixture.buildRequest(date = baseDate, employee = employee)) }
+        suspendTransaction { fixture.sut.create(fixture.buildRequest(date = baseDate + 30.minutes)) }
+
+        whenn()
+        val range = baseDate..(baseDate + 2.hours)
+        val found = suspendTransaction { fixture.sut.getAllForDate(fixture.businessId, range, employeeId = employee.id) }
+
+        then()
+        assertEquals(listOf(employeeAppointment.id), found.map { it.id })
     }
 
     @Test
@@ -871,8 +893,8 @@ internal class AppointmentDataSourceImplTest {
         val range = Instant.fromEpochMilliseconds(0)..(Instant.fromEpochMilliseconds(0) + 1.hours)
 
         whenn()
-        val singleQueries = countStatements { fixture.sut.getAllForDate(singleBusinessId, range) }
-        val severalQueries = countStatements { fixture.sut.getAllForDate(severalBusinessId, range) }
+        val singleQueries = countStatements { fixture.sut.getAllForDate(singleBusinessId, range, employeeId = null) }
+        val severalQueries = countStatements { fixture.sut.getAllForDate(severalBusinessId, range, employeeId = null) }
 
         then()
         assertEquals(singleQueries, severalQueries)

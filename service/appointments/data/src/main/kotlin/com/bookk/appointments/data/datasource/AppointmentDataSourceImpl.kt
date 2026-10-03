@@ -58,13 +58,14 @@ internal class AppointmentDataSourceImpl : DataSource(), AppointmentDataSource {
             .map { it.domain() }
     }
 
-    override suspend fun getAllForDate(businessId: Uuid, range: ClosedRange<Instant>): List<Appointment> {
+    override suspend fun getAllForDate(businessId: Uuid, range: ClosedRange<Instant>, employeeId: Uuid?): List<Appointment> {
         return dbQuery {
+            val withinRange = AppointmentTable.businessId.eq(businessId)
+                .and(AppointmentTable.dateStart.greaterEq(range.start))
+                .and(AppointmentTable.dateEnd.lessEq(range.endInclusive))
             AppointmentEntity
                 .find {
-                    AppointmentTable.businessId.eq(businessId)
-                        .and(AppointmentTable.dateStart.greaterEq(range.start))
-                        .and(AppointmentTable.dateEnd.lessEq(range.endInclusive))
+                    employeeId?.let { withinRange.and(AppointmentTable.employeeId.eq(it)) } ?: withinRange
                 }
                 .orderBy(AppointmentTable.dateStart to SortOrder.ASC)
                 .toList()

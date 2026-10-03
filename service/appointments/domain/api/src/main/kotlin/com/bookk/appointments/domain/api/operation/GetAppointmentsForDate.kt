@@ -9,5 +9,6 @@ interface GetAppointmentsForDate {
         userId: Uuid,
         businessId: Uuid,
         date: LocalDate,
+        employeeId: Uuid?,
     ): Result<List<Appointment>>
 }

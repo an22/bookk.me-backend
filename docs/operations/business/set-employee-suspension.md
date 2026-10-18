@@ -11,8 +11,8 @@ time, cleared on reinstatement). The employee's grants in
 the employee row and throws `403 BUSINESS_EMPLOYEE_ACCESS_SUSPENDED
 (200034)` for a suspended caller, so every permission-gated operation
 rejects them with a code the client can detect, with no change of its own.
-`getPermissions` (which only fills in `Business.permissions`) reports
-`NONE` instead. Reinstating restores exactly the grants they had. See
+`getViewer` (which only fills in `Business.permissions` / `employeeId` /
+`clientId`) reports `NONE` permissions and a null `employeeId` instead. Reinstating restores exactly the grants they had. See
 [Suspending an employee](../../object-permissions.md#suspending-an-employee).
 The business also disappears from the employee's own business list
 (`BusinessDataSource.getUserBusinesses` skips suspended employments and

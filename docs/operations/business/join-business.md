@@ -26,6 +26,14 @@ whitespace-only code is rejected up front with 422
 `BUSINESS_EMPLOYEE_INVITATION_CODE_EMPTY`, before any transaction or
 database lookup is started.
 
+The `getEmployeeByUserId` check is not a lock: one user redeeming two
+different pending codes of the same business at once passes it in both
+requests. The `employee_business_id_user_id_unique` index on
+`(business_id, user_id)` stops the second insert, and
+`.onConstraintFailure { }` turns it into the same 422
+`BUSINESS_EMPLOYEE_EXISTS` the check returns. The losing transaction rolls
+back, its invitation stays `PENDING`, and no events are sent.
+
 ```mermaid
 flowchart TD
     Start([POST /api/business/employee_invitation/redeem]) --> Auth{JWT valid?}
@@ -47,7 +55,8 @@ flowchart TD
     GetUser -- ok --> GetBiz[BusinessDataSource.getBusinessById businessId]
     GetBiz -- not found --> R404b([404 Error.NotFound])
     GetBiz -- found --> CreateEmployee[EmployeeDataSource.createEmployee from requestUser, permissions = BusinessPermissions.VIEW_ONLY - also upserts the five business_permission_grants rows]
-    CreateEmployee --> Event[eventProducer.send BusinessEvent.EmployeeInvitationRedeemed]
+    CreateEmployee -- employee_business_id_user_id_unique violated, concurrent join --> R422b
+    CreateEmployee -- ok --> Event[eventProducer.send BusinessEvent.EmployeeInvitationRedeemed]
     Event --> PermEvent[eventProducer.send BusinessEvent.EmployeePermissionsChanged employee.permissions]
     PermEvent --> R200([200 Created Employee])
 ```

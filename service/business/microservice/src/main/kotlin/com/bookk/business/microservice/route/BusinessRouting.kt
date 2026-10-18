@@ -41,6 +41,9 @@ object BusinessRouting {
             @Resource("/healthcheck")
             class HealthCheck(val parent: Business = Business())
 
+            @Resource("/mine")
+            class Mine(val parent: Business = Business())
+
             @Resource("/{id}")
             class Id(val parent: Business = Business(), val id: Uuid) {
                 @Resource("/dashboard")

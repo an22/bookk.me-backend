@@ -8,6 +8,7 @@ import com.bookk.business.domain.api.business.operation.CreateBusiness
 import com.bookk.business.domain.api.business.operation.DeleteBusiness
 import com.bookk.business.domain.api.business.operation.DeleteDayOffsInThePast
 import com.bookk.business.domain.api.business.operation.GetBusinessById
+import com.bookk.business.domain.api.business.operation.GetBusinessDetails
 import com.bookk.business.domain.api.business.operation.GetBusinessPermission
 import com.bookk.business.domain.api.business.operation.GetDashboardBusiness
 import com.bookk.business.domain.api.business.operation.GetUserBusinesses
@@ -46,6 +47,7 @@ import com.bookk.business.domain.impl.operation.business.CreateBusinessImpl
 import com.bookk.business.domain.impl.operation.business.DeleteBusinessImpl
 import com.bookk.business.domain.impl.operation.business.DeleteDayOffsInThePastImpl
 import com.bookk.business.domain.impl.operation.business.GetBusinessByIdImpl
+import com.bookk.business.domain.impl.operation.business.GetBusinessDetailsImpl
 import com.bookk.business.domain.impl.operation.business.GetBusinessPermissionImpl
 import com.bookk.business.domain.impl.operation.business.GetDashboardBusinessImpl
 import com.bookk.business.domain.impl.operation.business.GetUserBusinessesImpl
@@ -91,6 +93,7 @@ fun businessDomainModule() = module {
     includes(userClientModule(BusinessScope, BUSINESS_SERVICE_NAME))
     scope(BusinessScope) {
         scopedOf(::GetBusinessByIdImpl) bind GetBusinessById::class
+        scopedOf(::GetBusinessDetailsImpl) bind GetBusinessDetails::class
         scopedOf(::CreateBusinessImpl) bind CreateBusiness::class
         scopedOf(::DeleteBusinessImpl) bind DeleteBusiness::class
         scopedOf(::GetBusinessPermissionImpl) bind GetBusinessPermission::class

@@ -8,7 +8,7 @@ import com.bookk.business.microservice.route.api.employeeInvitationCrud
 import com.bookk.business.microservice.route.api.healthCheck
 import com.bookk.business.microservice.route.api.internal.getAppointmentBookingContext
 import com.bookk.business.microservice.route.api.internal.getAppointmentRescheduleContext
-import com.bookk.business.microservice.route.api.internal.getBusinessById
+import com.bookk.business.microservice.route.api.internal.getBusinessDetails
 import com.bookk.business.microservice.route.api.internal.getBusinessPermission
 import com.bookk.business.microservice.route.api.internal.getClientBusinessIds
 import com.bookk.business.microservice.route.api.internal.getServicesByIds
@@ -23,7 +23,7 @@ fun Routing.businessRoute() {
     healthCheck()
     jwks(BusinessScope)
     businessCrud()
-    getBusinessById()
+    getBusinessDetails()
     getBusinessPermission()
     getAppointmentBookingContext()
     getAppointmentRescheduleContext()

@@ -162,10 +162,12 @@ permission reads, not in the operations. Both inner-join `employee` on
   the same 403, and `BusinessClient.getPermission` decodes it back into a
   `BusinessError`, so appointments' `EnableAppointmentsForBusiness` passes
   it through unchanged.
-- `getPermissions` — used only to attach the requesting user's grants to a
-  returned `Business` (business by id, dashboard, business list), never as
-  a gate — filters `suspended_at IS NULL` and returns
-  `BusinessPermissions.NONE` rather than failing the read.
+- `getViewer` / `getViewers` — used only to attach the requesting user's
+  standing to a returned `Business` (business by id, dashboard, business
+  list), never as a gate — filters `suspended_at IS NULL` and returns
+  `BusinessPermissions.NONE` and a null `employeeId` rather than failing
+  the read. Suspension only takes away the employee side: the business
+  itself stays readable and the caller's `clientId` is still returned.
 
 The appointments service enforces the same thing against its own copy:
 `BusinessEvent.EmployeePermissionsChanged` carries a `suspended` flag that
@@ -224,13 +226,26 @@ grants it needs rather than sharing one table across services.
 - **Business service** owns the source-of-truth grants, in
   `business_permission_grants` (`BusinessPermissionDataSourceImpl`), one row
   per `(userId, businessId, resource)`, with `can_view`/`can_update`/
-  `can_delete` boolean columns. `getPermissions(userId, businessId)`
-  aggregates all five rows into one `BusinessPermissions`; missing rows
-  default to `ResourcePermission.NONE`. This is also what gets embedded in
-  the `Business` entity as `Business.permissions` — `GetBusinessById`,
-  `GetDashboardBusiness`, and `GetUserBusinesses` all attach the requesting
-  user's grants onto the business (or businesses) they return, computed
-  per request rather than stored on the business row itself.
+  `can_delete` boolean columns. `getViewers(userId, businessIds)` resolves
+  the caller's standing in each requested business as a `BusinessViewer`:
+  all five grant rows aggregated into one `BusinessPermissions` (missing
+  rows default to `ResourcePermission.NONE`), plus the caller's own
+  `employee.id` and integrated `client.id` there, or `null` when they have
+  none. It runs three queries (active employees, their grants, clients)
+  however many businesses are asked for; `getViewer(userId, businessId)`
+  is the single-business form. `Business.viewedBy(viewer)` copies the
+  result onto `Business.permissions` / `employeeId` / `clientId` —
+  `GetBusinessById`, `GetDashboardBusiness`, and `GetUserBusinesses`
+  (`GET /api/business/mine`, one `getViewers` call for the whole list) all
+  do this per request rather than storing it on the business row itself.
+  A suspended employee gets `employeeId = null` along with `NONE`
+  permissions, matching the list and dashboard, which skip that business
+  for them. `GetBusinessById` always takes the requesting user; other
+  services read a business through `GetBusinessDetails` instead (the
+  internal `GET /api/internal/business/{id}` route and
+  `BusinessClient.getBusinessById`), which has no caller and leaves all
+  three at their row defaults. `CreateBusiness` returns the owner's
+  freshly created employee id.
   Every grant row also carries an `employee_id` FK to the `employee` it
   belongs to (`ON DELETE CASCADE`), so `Employee.permissions` is an
   ordinary DAO referrer (`EmployeeEntity.grants`,

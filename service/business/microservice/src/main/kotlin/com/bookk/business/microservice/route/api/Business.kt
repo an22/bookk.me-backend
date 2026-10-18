@@ -66,13 +66,13 @@ fun Route.businessCrud() {
             }
         }
         /**
-         * Summary: Get dashboard business info
-         * Description: Get all user business and dashboard business id. Dashboard business is a business that user selected to be displayed as main business
+         * Summary: Get caller's businesses
+         * Description: Get every business the caller owns or is an active employee of, with the caller's permissions, employee id and client id in each, plus the dashboard business id. Dashboard business is a business that user selected to be displayed as main business
          * Tag: business
          * Security: jwt
          * Response: 200 application/x-protobuf [com.bookk.business.domain.api.business.entity.UserBusinesses] User business info
          */
-        get<Api.Business> { path ->
+        get<Api.Business.Mine> { path ->
             val getUserBusinesses by application.injectScoped<GetUserBusinesses>(BusinessScope)
             val principal = requireNotNull(call.principal<AppPrincipal>())
 
@@ -80,6 +80,7 @@ fun Route.businessCrud() {
         }
         /**
          * Summary: Get business by id
+         * Description: Get business info with the caller's permissions, employee id and client id in it. Employee id is empty while the caller's employee access is suspended
          * Tag: business
          * Security: jwt
          * Response: 200 application/x-protobuf [com.bookk.business.domain.api.business.entity.Business] Business info

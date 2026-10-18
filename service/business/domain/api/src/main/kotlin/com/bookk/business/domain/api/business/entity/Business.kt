@@ -18,8 +18,16 @@ data class Business(
     @ProtoNumber(8) val socials: List<Social>,
     @ProtoNumber(9) val schedule: Schedule,
     @ProtoNumber(10) val permissions: BusinessPermissions,
-    @ProtoNumber(11) val ownerId: Uuid
+    @ProtoNumber(11) val ownerId: Uuid,
+    @ProtoNumber(12) val employeeId: Uuid?,
+    @ProtoNumber(13) val clientId: Uuid?
 ) {
+    fun viewedBy(viewer: BusinessViewer): Business = copy(
+        permissions = viewer.permissions,
+        employeeId = viewer.employeeId,
+        clientId = viewer.clientId
+    )
+
     @Serializable
     class Location(
         @ProtoNumber(1) val lat: Double,
@@ -58,7 +66,9 @@ data class Business(
             socials: List<Social> = emptyList(),
             schedule: Schedule = Schedule(),
             permissions: BusinessPermissions = BusinessPermissions.NONE,
-            ownerId: Uuid = Uuid.random()
+            ownerId: Uuid = Uuid.random(),
+            employeeId: Uuid? = null,
+            clientId: Uuid? = null
         ) = Business(
             id = id,
             name = name,
@@ -70,7 +80,9 @@ data class Business(
             socials = socials,
             schedule = schedule,
             permissions = permissions,
-            ownerId = ownerId
+            ownerId = ownerId,
+            employeeId = employeeId,
+            clientId = clientId
         )
     }
 }

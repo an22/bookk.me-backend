@@ -59,7 +59,9 @@ internal class BusinessEntity(id: EntityID<Uuid>) : UuidEntity(id) {
             Business.Social(Business.SocialKind.WHATSAPP, whatsapp.orEmpty()),
             Business.Social(Business.SocialKind.VIBER, viber.orEmpty())
         ),
-        permissions = BusinessPermissions.NONE
+        permissions = BusinessPermissions.NONE,
+        employeeId = null,
+        clientId = null
     )
 
     private fun replaceSchedule(schedule: Schedule) {

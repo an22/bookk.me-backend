@@ -206,7 +206,6 @@ internal class SetEmployeePermissionsImplTest {
             transactionManager.mockTransaction()
             coEvery { businessDataSource.isOwner(requestUserId, businessId) } returns false
             coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, any()) } returns ResourcePermission.FULL
-            coEvery { businessPermissionDataSource.getPermissions(requestUserId, businessId) } returns BusinessPermissions.FULL
         }
 
         whenn()

@@ -14,8 +14,7 @@ internal class GetUserBusinessesImpl(
 ) : GetUserBusinesses {
     override suspend fun invoke(userId: Uuid): Result<UserBusinesses> = transactionManager.transaction {
         val result = businessDataSource.getUserBusinesses(userId = userId)
-        result.copy(
-            businesses = result.businesses.map { it.copy(permissions = businessPermissionDataSource.getPermissions(userId, it.id)) }
-        )
+        val viewers = businessPermissionDataSource.getViewers(userId, result.businesses.map { it.id })
+        result.copy(businesses = result.businesses.map { it.viewedBy(viewers.getValue(it.id)) })
     }
 }

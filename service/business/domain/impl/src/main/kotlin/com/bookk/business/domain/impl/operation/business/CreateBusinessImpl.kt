@@ -30,7 +30,7 @@ internal class CreateBusinessImpl(
         if (businessDataSource.isBusinessExist(userId)) throw CreateBusiness.Error.BusinessExist()
         val business = businessDataSource.createBusiness(userId, request.name, request.currencyCode, request.timeZone)
         val owner = userClient.getUserById(userId).getOrThrow()
-        employeeDataSource.createEmployee(
+        val ownerEmployee = employeeDataSource.createEmployee(
             Employee(
                 id = Uuid.random(),
                 businessId = business.id,
@@ -46,6 +46,6 @@ internal class CreateBusinessImpl(
                 suspendedAt = null
             )
         )
-        business.copy(permissions = BusinessPermissions.FULL)
+        business.copy(permissions = BusinessPermissions.FULL, employeeId = ownerEmployee.id)
     }
 }

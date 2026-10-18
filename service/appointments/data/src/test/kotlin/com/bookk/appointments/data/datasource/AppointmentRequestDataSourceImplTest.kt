@@ -98,18 +98,27 @@ internal class AppointmentRequestDataSourceImplTest {
     }
 
     @Test
-    fun `should retrieve all requests for business`() = runUnitTest {
+    fun `should retrieve only pending requests of the given user in the business`() = runUnitTest {
         given()
         val fixture = SutFixture()
         fixture.setup()
+        val userId = Uuid.random()
+        val otherBusiness = BusinessSnapshot.stub()
+        suspendTransaction { fixture.subscriptionSut.attachBusiness(otherBusiness) }
+        val first = suspendTransaction { fixture.sut.create(fixture.buildRequest(userId = userId)) }
+        val second = suspendTransaction { fixture.sut.create(fixture.buildRequest(userId = userId)) }
+        val approved = suspendTransaction { fixture.sut.create(fixture.buildRequest(userId = userId)) }
+        suspendTransaction { fixture.sut.approve(approved) }
+        val declined = suspendTransaction { fixture.sut.create(fixture.buildRequest(userId = userId)) }
+        suspendTransaction { fixture.sut.decline(declined.id, "Fully booked") }
         suspendTransaction { fixture.sut.create(fixture.buildRequest()) }
-        suspendTransaction { fixture.sut.create(fixture.buildRequest()) }
+        suspendTransaction { fixture.sut.create(AppointmentRequest.stub(userId = userId, businessId = otherBusiness.id)) }
 
         whenn()
-        val all = suspendTransaction { fixture.sut.getAll(fixture.businessId) }
+        val pending = suspendTransaction { fixture.sut.getPendingByUser(userId, fixture.businessId) }
 
         then()
-        assertEquals(2, all.size)
+        assertEquals(setOf(first.id, second.id), pending.map { it.id }.toSet())
     }
 
     @Test
@@ -138,10 +147,10 @@ internal class AppointmentRequestDataSourceImplTest {
 
         whenn()
         suspendTransaction { fixture.sut.approve(created) }
-        val all = suspendTransaction { fixture.sut.getAll(fixture.businessId) }
+        val approved = suspendTransaction { fixture.sut.get(created.id) }
 
         then()
-        assertEquals(AppointmentRequestStatus.APPROVED, all.first().status)
+        assertEquals(AppointmentRequestStatus.APPROVED, approved?.status)
     }
 
     @Test
@@ -170,7 +179,7 @@ internal class AppointmentRequestDataSourceImplTest {
         suspendTransaction { fixture.sut.delete(created) }
 
         then()
-        assertTrue(suspendTransaction { fixture.sut.getAll(fixture.businessId) }.isEmpty())
+        assertNull(suspendTransaction { fixture.sut.get(created.id) })
     }
 
     @Test
@@ -233,8 +242,7 @@ internal class AppointmentRequestDataSourceImplTest {
         suspendTransaction { fixture.sut.cancelOutdated(Clock.System.now()) }
 
         then()
-        val all = suspendTransaction { fixture.sut.getAll(fixture.businessId) }
-        assertEquals(AppointmentRequestStatus.CANCELLED, all.first { it.id == created.id }.status)
+        assertEquals(AppointmentRequestStatus.CANCELLED, suspendTransaction { fixture.sut.get(created.id) }?.status)
     }
 
     @Test
@@ -249,8 +257,7 @@ internal class AppointmentRequestDataSourceImplTest {
         suspendTransaction { fixture.sut.cancelOutdated(Clock.System.now()) }
 
         then()
-        val all = suspendTransaction { fixture.sut.getAll(fixture.businessId) }
-        assertEquals(AppointmentRequestStatus.PENDING, all.first { it.id == created.id }.status)
+        assertEquals(AppointmentRequestStatus.PENDING, suspendTransaction { fixture.sut.get(created.id) }?.status)
     }
 
     @Test

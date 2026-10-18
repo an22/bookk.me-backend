@@ -42,7 +42,11 @@ object AppointmentsRouting {
             class RequestCancel(val parent: Appointment = Appointment(), val id: Uuid)
 
             @Resource("/request/{businessId}")
-            class Requests(val parent: Appointment = Appointment(), val businessId: Uuid)
+            class Requests(val parent: Appointment = Appointment(), val businessId: Uuid) {
+
+                @Resource("/mine")
+                class Own(val parent: Requests)
+            }
 
             @Resource("/settings/{businessId}")
             class Settings(val parent: Appointment = Appointment(), val businessId: Uuid)

@@ -40,16 +40,20 @@ internal class AppointmentRequestDataSourceImpl(
             ?.domain()
     }
 
-    override suspend fun getAll(businessId: Uuid): List<AppointmentRequest> = dbQuery {
-        AppointmentRequestEntity
-            .find { AppointmentRequestTable.businessId eq businessId }
-            .map { it.domain() }
-    }
-
     override suspend fun getPending(businessId: Uuid): List<AppointmentRequest> = dbQuery {
         AppointmentRequestEntity
             .find {
                 AppointmentRequestTable.businessId.eq(businessId)
+                    .and(AppointmentRequestTable.status.eq(AppointmentRequestStatus.PENDING))
+            }
+            .map { it.domain() }
+    }
+
+    override suspend fun getPendingByUser(userId: Uuid, businessId: Uuid): List<AppointmentRequest> = dbQuery {
+        AppointmentRequestEntity
+            .find {
+                AppointmentRequestTable.userId.eq(userId)
+                    .and(AppointmentRequestTable.businessId.eq(businessId))
                     .and(AppointmentRequestTable.status.eq(AppointmentRequestStatus.PENDING))
             }
             .map { it.domain() }

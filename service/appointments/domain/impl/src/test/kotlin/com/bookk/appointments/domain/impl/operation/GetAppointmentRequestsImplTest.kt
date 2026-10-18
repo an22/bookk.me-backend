@@ -1,65 +1,38 @@
 package com.bookk.appointments.domain.impl.operation
 
 import com.bookk.appointments.domain.api.entity.AppointmentRequest
-import com.bookk.appointments.domain.api.entity.AppointmentRequestStatus
-import com.bookk.appointments.domain.api.entity.ClientSnapshot
-import com.bookk.appointments.domain.api.entity.EmployeeSnapshot
-import com.bookk.appointments.domain.api.entity.ServiceSnapshot
-import com.bookk.appointments.domain.datasource.AppointmentPermissionDataSource
 import com.bookk.appointments.domain.datasource.AppointmentRequestDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.datasource.transaction.mockTransaction
-import com.bookk.core.domain.entity.Error
 import com.bookk.core.test.given
 import com.bookk.core.test.runUnitTest
 import com.bookk.core.test.then
 import com.bookk.core.test.whenn
 import io.mockk.coEvery
 import io.mockk.mockk
-import library.permissions.ResourcePermission
-import org.joda.money.CurrencyUnit
-import org.joda.money.Money
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import kotlin.time.Duration.Companion.minutes
-import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
 internal class GetAppointmentRequestsImplTest {
 
     private class SutFixture {
         val requestsDataSource = mockk<AppointmentRequestDataSource>()
-        val appointmentPermissionDataSource = mockk<AppointmentPermissionDataSource>()
         val transactionManager = mockk<TransactionManager>()
-        val sut = GetAppointmentRequestsImpl(requestsDataSource, appointmentPermissionDataSource, transactionManager)
+        val sut = GetAppointmentRequestsImpl(requestsDataSource, transactionManager)
     }
 
     @Test
-    fun `should return appointment requests when user has read permissions`() = runUnitTest {
+    fun `should return pending appointment requests made by the user in the business`() = runUnitTest {
         given()
         val fixture = SutFixture()
         val userId = Uuid.random()
         val businessId = Uuid.random()
-        val requests = listOf(
-            AppointmentRequest(
-                id = Uuid.random(),
-                userId = userId,
-                businessId = businessId,
-                employee = EmployeeSnapshot.stub(),
-                client = ClientSnapshot(Uuid.random(), "Client Name", "phone", "client@example.com"),
-                services = listOf(ServiceSnapshot(Uuid.random(), "Service Name", Uuid.random(), Money.of(CurrencyUnit.of("USD"), 10.0), 30.minutes)),
-                date = Instant.fromEpochMilliseconds(0),
-                note = "Note",
-                status = AppointmentRequestStatus.PENDING,
-                declineReason = ""
-            )
-        )
-
+        val requests = listOf(AppointmentRequest.stub(userId = userId, businessId = businessId))
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { appointmentPermissionDataSource.getPermission(userId, businessId) } returns ResourcePermission(view = true, update = false, delete = false)
-            coEvery { requestsDataSource.getAll(businessId) } returns requests
+            coEvery { requestsDataSource.getPendingByUser(userId, businessId) } returns requests
         }
 
         whenn()
@@ -71,25 +44,6 @@ internal class GetAppointmentRequestsImplTest {
     }
 
     @Test
-    fun `should return failure when user has no permissions`() = runUnitTest {
-        given()
-        val fixture = SutFixture()
-        val userId = Uuid.random()
-        val businessId = Uuid.random()
-        with(fixture) {
-            transactionManager.mockTransaction()
-            coEvery { appointmentPermissionDataSource.getPermission(userId, businessId) } returns ResourcePermission.NONE
-        }
-
-        whenn()
-        val result = fixture.sut(userId, businessId)
-
-        then()
-        assertTrue(result.isFailure)
-        assertTrue(result.exceptionOrNull() is Error.OperationNotAllowed)
-    }
-
-    @Test
     fun `should return failure when data source fails`() = runUnitTest {
         given()
         val fixture = SutFixture()
@@ -98,8 +52,7 @@ internal class GetAppointmentRequestsImplTest {
         val exception = RuntimeException("Database error")
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { appointmentPermissionDataSource.getPermission(userId, businessId) } returns ResourcePermission(view = true, update = false, delete = false)
-            coEvery { requestsDataSource.getAll(businessId) } throws exception
+            coEvery { requestsDataSource.getPendingByUser(userId, businessId) } throws exception
         }
 
         whenn()

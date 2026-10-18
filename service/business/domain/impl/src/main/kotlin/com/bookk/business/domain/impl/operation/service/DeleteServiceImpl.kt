@@ -18,7 +18,7 @@ internal class DeleteServiceImpl(
         return transactionManager.transaction {
             businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.SERVICES)
                 .assert(PermissionAction.DELETE)
-            dataSource.deleteService(id)
+            dataSource.deleteService(id, businessId)
         }
     }
 }

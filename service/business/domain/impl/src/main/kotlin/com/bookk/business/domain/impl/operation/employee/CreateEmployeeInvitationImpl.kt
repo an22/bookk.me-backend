@@ -24,9 +24,9 @@ internal class CreateEmployeeInvitationImpl(
 ) : CreateEmployeeInvitation {
     override suspend fun invoke(requestUserId: Uuid, businessId: Uuid): Result<EmployeeInvitation> {
         return transactionManager.transaction {
+            businessDataSource.lockBusiness(businessId, RowLock.EXCLUSIVE) ?: throw Error.NotFound()
             businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES)
                 .assert(PermissionAction.UPDATE)
-            businessDataSource.lockBusiness(businessId, RowLock.EXCLUSIVE) ?: throw Error.NotFound()
             val pendingInvitations = invitationDataSource.countPendingInvitations(businessId)
             if (pendingInvitations >= CreateEmployeeInvitation.MAX_PENDING_INVITATIONS) {
                 throw CreateEmployeeInvitation.Error.PendingInvitationsLimitReached()

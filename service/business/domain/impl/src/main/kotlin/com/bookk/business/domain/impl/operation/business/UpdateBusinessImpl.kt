@@ -29,6 +29,9 @@ internal class UpdateBusinessImpl(
 ) : UpdateBusiness {
     override suspend fun invoke(requestUserId: Uuid, businessUpdateModel: BusinessUpdateModel): Result<Unit> =
         transactionManager.transaction {
+            val currencyChange = businessUpdateModel.currencyCode?.let { requested ->
+                CurrencyChange(requested = requested, stored = lockStoredCurrencyCode(businessUpdateModel.id))
+            }
             businessPermissionDataSource.getPermission(requestUserId, businessUpdateModel.id, BusinessResource.BUSINESS)
                 .assert(PermissionAction.UPDATE)
             businessUpdateModel.schedule?.let { schedule ->
@@ -39,7 +42,7 @@ internal class UpdateBusinessImpl(
                     throw UpdateBusiness.Error.InvalidDayOffRange()
                 }
             }
-            businessUpdateModel.currencyCode?.let { requireCurrencyChangeAllowed(businessUpdateModel.id, it) }
+            currencyChange?.let { requireCurrencyChangeAllowed(businessUpdateModel.id, it) }
             val name = businessUpdateModel.name?.take(Business.MAX_NAME_LENGTH)
             val description = businessUpdateModel.description?.take(Business.MAX_DESCRIPTION_LENGTH)
             val address = businessUpdateModel.address?.take(Business.MAX_ADDRESS_LENGTH)
@@ -63,13 +66,17 @@ internal class UpdateBusinessImpl(
             }
         }
 
-    private suspend fun requireCurrencyChangeAllowed(businessId: Uuid, currencyCode: String) {
-        val storedCurrencyCode = businessDataSource.lockBusiness(businessId, RowLock.EXCLUSIVE)?.currencyCode ?: throw Error.NotFound()
-        if (currencyCode == storedCurrencyCode) return
-        if (!CurrencyValidator.isValid(currencyCode)) throw UpdateBusiness.Error.InvalidCurrency()
-        val pricesAreDenominatedInStoredCurrency = CurrencyValidator.isValid(storedCurrencyCode)
+    private suspend fun lockStoredCurrencyCode(businessId: Uuid): String =
+        businessDataSource.lockBusiness(businessId, RowLock.EXCLUSIVE)?.currencyCode ?: throw Error.NotFound()
+
+    private suspend fun requireCurrencyChangeAllowed(businessId: Uuid, change: CurrencyChange) {
+        if (change.requested == change.stored) return
+        if (!CurrencyValidator.isValid(change.requested)) throw UpdateBusiness.Error.InvalidCurrency()
+        val pricesAreDenominatedInStoredCurrency = CurrencyValidator.isValid(change.stored)
         if (pricesAreDenominatedInStoredCurrency && serviceDataSource.hasServices(businessId)) {
             throw UpdateBusiness.Error.CurrencyLocked()
         }
     }
 }
+
+private class CurrencyChange(val requested: String, val stored: String)

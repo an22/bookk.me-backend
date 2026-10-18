@@ -159,7 +159,7 @@ internal class ServiceDataSourceImplTest {
         }
 
         whenn()
-        suspendTransaction { fixture.sut.deleteService(created.id) }
+        suspendTransaction { fixture.sut.deleteService(created.id, fixture.businessId) }
         val services = suspendTransaction { fixture.sut.getServices(fixture.businessId) }
 
         then()
@@ -326,7 +326,7 @@ internal class ServiceDataSourceImplTest {
     }
 
     @Test
-    fun `should return the service group when locking it within its business`() = runUnitTest {
+    fun `should return the service group of the business`() = runUnitTest {
         given()
         val fixture = SutFixture()
         fixture.setup()
@@ -335,16 +335,16 @@ internal class ServiceDataSourceImplTest {
         }
 
         whenn()
-        val locked = suspendTransaction { fixture.sut.lockServiceGroup(group.id, fixture.businessId) }
+        val found = suspendTransaction { fixture.sut.getServiceGroup(group.id, fixture.businessId) }
 
         then()
-        assertEquals(group.id, locked?.id)
-        assertEquals("Hair", locked?.name)
-        assertEquals(fixture.businessId, locked?.businessId)
+        assertEquals(group.id, found?.id)
+        assertEquals("Hair", found?.name)
+        assertEquals(fixture.businessId, found?.businessId)
     }
 
     @Test
-    fun `should not lock a service group of another business`() = runUnitTest {
+    fun `should not return a service group of another business`() = runUnitTest {
         given()
         val fixture = SutFixture()
         fixture.setup()
@@ -356,9 +356,32 @@ internal class ServiceDataSourceImplTest {
         }
 
         whenn()
-        val locked = suspendTransaction { fixture.sut.lockServiceGroup(otherGroup.id, fixture.businessId) }
+        val found = suspendTransaction { fixture.sut.getServiceGroup(otherGroup.id, fixture.businessId) }
 
         then()
-        assertNull(locked)
+        assertNull(found)
+    }
+
+    @Test
+    fun `should not delete a service that belongs to another business`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val otherBusinessId = suspendTransaction {
+            fixture.businessSut.createBusiness(Uuid.random(), "Other Business", "USD", TimeZone.UTC)
+        }.id
+        val otherGroup = suspendTransaction {
+            fixture.sut.createServiceGroup(ServiceGroup.stub(businessId = otherBusinessId))
+        }
+        val otherService = suspendTransaction {
+            fixture.sut.createService(Service.stub(businessId = otherBusinessId, group = otherGroup))
+        }
+
+        whenn()
+        suspendTransaction { fixture.sut.deleteService(otherService.id, fixture.businessId) }
+        val otherServices = suspendTransaction { fixture.sut.getServices(otherBusinessId) }
+
+        then()
+        assertEquals(listOf(otherService.id), otherServices.map { it.id })
     }
 }

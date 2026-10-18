@@ -1,5 +1,6 @@
 package com.bookk.business.data.datasource
 
+import com.bookk.business.domain.api.employee.entity.EmployeeInvitation
 import com.bookk.business.domain.api.service.entity.Service
 import com.bookk.business.domain.api.service.entity.ServiceGroup
 import com.bookk.business.domain.datasource.RowLock
@@ -12,17 +13,23 @@ import com.bookk.core.test.whenn
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.TimeZone
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.JdbcTransaction
 import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.containers.wait.strategy.Wait
 import org.testcontainers.utility.DockerImageName
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
 internal class BusinessRowLockMariaDbTest {
@@ -55,10 +62,64 @@ internal class BusinessRowLockMariaDbTest {
     private class SutFixture {
         val businessDataSource = BusinessDataSourceImpl()
         val serviceDataSource = ServiceDataSourceImpl()
+        val invitationDataSource = EmployeeInvitationDataSourceImpl()
 
         suspend fun createBusinessWithGroup(): ServiceGroup = suspendTransaction(db = database) {
             val business = businessDataSource.createBusiness(Uuid.random(), "Salon", "USD", TimeZone.UTC)
             serviceDataSource.createServiceGroup(ServiceGroup.stub(businessId = business.id))
+        }
+
+        suspend fun createService(group: ServiceGroup): Service = suspendTransaction(db = database) {
+            serviceDataSource.createService(Service.stub(businessId = group.businessId, group = group))
+        }
+
+        fun recentInvitation(businessId: Uuid) = EmployeeInvitation.stub(
+            businessId = businessId,
+            code = Uuid.random().toString(),
+            createdAt = Clock.System.now()
+        )
+
+        suspend fun <T> readAfterWaitingForLockHolder(
+            businessId: Uuid,
+            holderLock: RowLock,
+            holderWrite: suspend SutFixture.() -> Unit,
+            read: suspend SutFixture.() -> T
+        ): T {
+            val holderWrote = CompletableDeferred<Unit>()
+            val waiterBlocked = CompletableDeferred<Unit>()
+            return withContext(Dispatchers.IO) {
+                val holder = async {
+                    suspendTransaction(db = database) {
+                        businessDataSource.lockBusiness(businessId, holderLock)
+                        holderWrite()
+                        holderWrote.complete(Unit)
+                        waiterBlocked.await()
+                    }
+                }
+                holderWrote.await()
+                val waiter = async {
+                    suspendTransaction(db = database) {
+                        businessDataSource.lockBusiness(businessId, RowLock.EXCLUSIVE)
+                        businessDataSource.getBusinessById(businessId)
+                        read()
+                    }
+                }
+                awaitTransactionWaitingForLock()
+                waiterBlocked.complete(Unit)
+                holder.await()
+                waiter.await()
+            }
+        }
+
+        private suspend fun awaitTransactionWaitingForLock() {
+            while (transactionsWaitingForLock() == 0L) delay(10.milliseconds)
+        }
+
+        private suspend fun transactionsWaitingForLock(): Long = suspendTransaction(db = database) {
+            exec("SELECT COUNT(*) FROM information_schema.INNODB_TRX WHERE trx_state = 'LOCK WAIT'") { rows ->
+                rows.next()
+                rows.getLong(1)
+            } ?: 0L
         }
 
         fun JdbcTransaction.failFastOnLockWait() {
@@ -67,35 +128,108 @@ internal class BusinessRowLockMariaDbTest {
     }
 
     @Test
-    fun `should see a service committed after the transaction took its snapshot`() = runIntegrationTest {
+    fun `should see a service committed by the service write the currency change waited for`() = runIntegrationTest {
         given()
         val fixture = SutFixture()
         val group = fixture.createBusinessWithGroup()
-        val snapshotTaken = CompletableDeferred<Unit>()
-        val serviceCommitted = CompletableDeferred<Unit>()
 
         whenn()
-        val hasServices = withContext(Dispatchers.IO) {
-            val currencyChange = async {
+        val hasServices = fixture.readAfterWaitingForLockHolder(
+            businessId = group.businessId,
+            holderLock = RowLock.SHARED,
+            holderWrite = { serviceDataSource.createService(Service.stub(businessId = group.businessId, group = group)) },
+            read = { serviceDataSource.hasServices(group.businessId) }
+        )
+
+        then()
+        assertTrue(hasServices)
+    }
+
+    @Test
+    fun `should read an edited service without error after waiting for the edit`() = runIntegrationTest {
+        given()
+        val fixture = SutFixture()
+        val group = fixture.createBusinessWithGroup()
+        val service = fixture.createService(group)
+
+        whenn()
+        val services = fixture.readAfterWaitingForLockHolder(
+            businessId = group.businessId,
+            holderLock = RowLock.SHARED,
+            holderWrite = { serviceDataSource.editService(service.copy(name = "Renamed")) },
+            read = { serviceDataSource.getServices(group.businessId) }
+        )
+
+        then()
+        assertEquals(listOf("Renamed"), services.map { it.name })
+    }
+
+    @Test
+    fun `should count a pending invitation committed by the creation it waited for`() = runIntegrationTest {
+        given()
+        val fixture = SutFixture()
+        val businessId = fixture.createBusinessWithGroup().businessId
+
+        whenn()
+        val pendingInvitations = fixture.readAfterWaitingForLockHolder(
+            businessId = businessId,
+            holderLock = RowLock.EXCLUSIVE,
+            holderWrite = { invitationDataSource.createInvitation(recentInvitation(businessId)) },
+            read = { invitationDataSource.countPendingInvitations(businessId) }
+        )
+
+        then()
+        assertEquals(1, pendingInvitations)
+    }
+
+    @Test
+    fun `should count a recent invitation committed by the creation it waited for`() = runIntegrationTest {
+        given()
+        val fixture = SutFixture()
+        val businessId = fixture.createBusinessWithGroup().businessId
+
+        whenn()
+        val invitationsToday = fixture.readAfterWaitingForLockHolder(
+            businessId = businessId,
+            holderLock = RowLock.EXCLUSIVE,
+            holderWrite = { invitationDataSource.createInvitation(recentInvitation(businessId)) },
+            read = { invitationDataSource.countInvitationsCreatedSince(businessId, Instant.fromEpochMilliseconds(0)) }
+        )
+
+        then()
+        assertEquals(1, invitationsToday)
+    }
+
+    @Test
+    fun `should miss rows committed while waiting when the snapshot was taken before the lock`() = runIntegrationTest {
+        given()
+        val fixture = SutFixture()
+        val businessId = fixture.createBusinessWithGroup().businessId
+        val snapshotTaken = CompletableDeferred<Unit>()
+        val invitationCommitted = CompletableDeferred<Unit>()
+
+        whenn()
+        val pendingInvitations = withContext(Dispatchers.IO) {
+            val lateLocker = async {
                 suspendTransaction(db = database) {
-                    fixture.businessDataSource.getBusinessById(group.businessId)
+                    fixture.businessDataSource.getBusinessById(businessId)
                     snapshotTaken.complete(Unit)
-                    serviceCommitted.await()
-                    fixture.businessDataSource.lockBusiness(group.businessId, RowLock.EXCLUSIVE)
-                    fixture.serviceDataSource.hasServices(group.businessId)
+                    invitationCommitted.await()
+                    fixture.businessDataSource.lockBusiness(businessId, RowLock.EXCLUSIVE)
+                    fixture.invitationDataSource.countPendingInvitations(businessId)
                 }
             }
             snapshotTaken.await()
             suspendTransaction(db = database) {
-                fixture.businessDataSource.lockBusiness(group.businessId, RowLock.SHARED)
-                fixture.serviceDataSource.createService(Service.stub(businessId = group.businessId, group = group))
+                fixture.businessDataSource.lockBusiness(businessId, RowLock.EXCLUSIVE)
+                fixture.invitationDataSource.createInvitation(fixture.recentInvitation(businessId))
             }
-            serviceCommitted.complete(Unit)
-            currencyChange.await()
+            invitationCommitted.complete(Unit)
+            lateLocker.await()
         }
 
         then()
-        assertTrue(hasServices)
+        assertEquals(0, pendingInvitations)
     }
 
     @Test
@@ -130,7 +264,7 @@ internal class BusinessRowLockMariaDbTest {
     }
 
     @Test
-    fun `should make a currency change wait for an in-flight service write`() = runIntegrationTest {
+    fun `should make an exclusive lock wait for an in-flight service write`() = runIntegrationTest {
         given()
         val fixture = SutFixture()
         val group = fixture.createBusinessWithGroup()
@@ -147,47 +281,16 @@ internal class BusinessRowLockMariaDbTest {
                 }
             }
             sharedLockHeld.await()
-            val currencyChange = suspendTransaction(db = database) {
+            val exclusive = suspendTransaction(db = database) {
                 with(fixture) { failFastOnLockWait() }
                 runSuspendCatching { fixture.businessDataSource.lockBusiness(group.businessId, RowLock.EXCLUSIVE) }
             }
             exclusiveAttempted.complete(Unit)
             serviceWrite.await()
-            currencyChange
+            exclusive
         }
 
         then()
-        assertTrue(exclusiveLock.isFailure)
-    }
-
-    @Test
-    fun `should make a service group deletion wait for a service write using the group`() = runIntegrationTest {
-        given()
-        val fixture = SutFixture()
-        val group = fixture.createBusinessWithGroup()
-        val groupLockHeld = CompletableDeferred<Unit>()
-        val deletionAttempted = CompletableDeferred<Unit>()
-
-        whenn()
-        val deletion = withContext(Dispatchers.IO) {
-            val serviceWrite = async {
-                suspendTransaction(db = database) {
-                    fixture.serviceDataSource.lockServiceGroup(group.id, group.businessId)
-                    groupLockHeld.complete(Unit)
-                    deletionAttempted.await()
-                }
-            }
-            groupLockHeld.await()
-            val groupDeletion = suspendTransaction(db = database) {
-                with(fixture) { failFastOnLockWait() }
-                runSuspendCatching { fixture.serviceDataSource.deleteServiceGroup(group.id, group.businessId) }
-            }
-            deletionAttempted.complete(Unit)
-            serviceWrite.await()
-            groupDeletion
-        }
-
-        then()
-        assertTrue(deletion.isFailure)
+        assertFalse(exclusiveLock.isSuccess)
     }
 }

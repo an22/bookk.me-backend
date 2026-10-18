@@ -426,7 +426,7 @@ internal class EmployeeDataSourceImplTest {
         suspendTransaction { fixture.sut.updateEmployee(updateModel(employee).copy(services = listOf(service))) }
 
         whenn()
-        suspendTransaction { fixture.serviceSut.deleteService(service.id) }
+        suspendTransaction { fixture.serviceSut.deleteService(service.id, fixture.businessId) }
         val serviceIds = suspendTransaction { fixture.sut.getServiceIds(employee.id) }
 
         then()

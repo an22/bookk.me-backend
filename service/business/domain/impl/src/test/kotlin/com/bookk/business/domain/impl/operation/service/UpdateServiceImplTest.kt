@@ -19,6 +19,7 @@ import com.bookk.core.test.then
 import com.bookk.core.test.whenn
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.coVerifyOrder
 import io.mockk.mockk
 import library.permissions.ResourcePermission
 import org.joda.money.Money
@@ -52,7 +53,7 @@ internal class UpdateServiceImplTest {
             transactionManager.mockTransaction()
             allowServiceUpdates(userId, service.businessId)
             coEvery { businessDataSource.lockBusiness(service.businessId, RowLock.SHARED) } returns LockedBusiness("USD")
-            coEvery { serviceDataSource.lockServiceGroup(service.group.id, service.businessId) } returns service.group
+            coEvery { serviceDataSource.getServiceGroup(service.group.id, service.businessId) } returns service.group
             coEvery { serviceDataSource.editService(service) } returns service
         }
 
@@ -75,7 +76,7 @@ internal class UpdateServiceImplTest {
             transactionManager.mockTransaction()
             allowServiceUpdates(userId, service.businessId)
             coEvery { businessDataSource.lockBusiness(service.businessId, RowLock.SHARED) } returns LockedBusiness("EUR")
-            coEvery { serviceDataSource.lockServiceGroup(service.group.id, service.businessId) } returns service.group
+            coEvery { serviceDataSource.getServiceGroup(service.group.id, service.businessId) } returns service.group
             coEvery { serviceDataSource.editService(priced) } returns priced
         }
 
@@ -124,6 +125,7 @@ internal class UpdateServiceImplTest {
 
         then()
         assertTrue(result.exceptionOrNull() is Error.NotFound)
+        coVerify(exactly = 0) { fixture.businessPermissionDataSource.getPermission(any(), any(), any()) }
         coVerify(exactly = 0) { fixture.serviceDataSource.editService(any()) }
     }
 
@@ -150,6 +152,7 @@ internal class UpdateServiceImplTest {
         val service = Service.stub()
         with(fixture) {
             transactionManager.mockTransaction()
+            coEvery { businessDataSource.lockBusiness(service.businessId, RowLock.SHARED) } returns LockedBusiness("USD")
             coEvery { businessPermissionDataSource.getPermission(userId, service.businessId, BusinessResource.SERVICES) } returns ResourcePermission(view = true, update = false, delete = false)
         }
 
@@ -159,7 +162,8 @@ internal class UpdateServiceImplTest {
         then()
         assertTrue(result.isFailure)
         assertTrue(result.exceptionOrNull() is Error.OperationNotAllowed)
-        coVerify(exactly = 0) { fixture.businessDataSource.lockBusiness(any(), any()) }
+        coVerify(exactly = 0) { fixture.serviceDataSource.getServiceGroup(any(), any()) }
+        coVerify(exactly = 0) { fixture.serviceDataSource.editService(any()) }
     }
 
     @Test
@@ -172,7 +176,7 @@ internal class UpdateServiceImplTest {
             transactionManager.mockTransaction()
             allowServiceUpdates(userId, service.businessId)
             coEvery { businessDataSource.lockBusiness(service.businessId, RowLock.SHARED) } returns LockedBusiness("USD")
-            coEvery { serviceDataSource.lockServiceGroup(service.group.id, service.businessId) } returns service.group
+            coEvery { serviceDataSource.getServiceGroup(service.group.id, service.businessId) } returns service.group
             coEvery { serviceDataSource.editService(service) } throws Error.UniqueConstraintFailed("", RuntimeException())
         }
 
@@ -214,7 +218,7 @@ internal class UpdateServiceImplTest {
             transactionManager.mockTransaction()
             allowServiceUpdates(userId, service.businessId)
             coEvery { businessDataSource.lockBusiness(service.businessId, RowLock.SHARED) } returns LockedBusiness("USD")
-            coEvery { serviceDataSource.lockServiceGroup(service.group.id, service.businessId) } returns null
+            coEvery { serviceDataSource.getServiceGroup(service.group.id, service.businessId) } returns null
         }
 
         whenn()
@@ -237,7 +241,7 @@ internal class UpdateServiceImplTest {
             transactionManager.mockTransaction()
             allowServiceUpdates(userId, service.businessId)
             coEvery { businessDataSource.lockBusiness(service.businessId, RowLock.SHARED) } returns LockedBusiness("USD")
-            coEvery { serviceDataSource.lockServiceGroup(storedGroup.id, service.businessId) } returns storedGroup
+            coEvery { serviceDataSource.getServiceGroup(storedGroup.id, service.businessId) } returns storedGroup
             coEvery { serviceDataSource.editService(resolved) } returns resolved
         }
 
@@ -247,5 +251,32 @@ internal class UpdateServiceImplTest {
         then()
         assertEquals(storedGroup, result.getOrNull()?.group)
         coVerify(exactly = 1) { fixture.serviceDataSource.editService(resolved) }
+    }
+
+    @Test
+    fun `should lock the business before any other read`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+        val service = Service.stub()
+        with(fixture) {
+            transactionManager.mockTransaction()
+            allowServiceUpdates(userId, service.businessId)
+            coEvery { businessDataSource.lockBusiness(service.businessId, RowLock.SHARED) } returns LockedBusiness("USD")
+            coEvery { serviceDataSource.getServiceGroup(service.group.id, service.businessId) } returns service.group
+            coEvery { serviceDataSource.editService(service) } returns service
+        }
+
+        whenn()
+        val result = fixture.sut(userId, service)
+
+        then()
+        assertTrue(result.isSuccess)
+        coVerifyOrder {
+            fixture.businessDataSource.lockBusiness(service.businessId, RowLock.SHARED)
+            fixture.businessPermissionDataSource.getPermission(userId, service.businessId, BusinessResource.SERVICES)
+            fixture.serviceDataSource.getServiceGroup(service.group.id, service.businessId)
+            fixture.serviceDataSource.editService(service)
+        }
     }
 }

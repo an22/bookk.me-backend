@@ -20,6 +20,7 @@ import com.bookk.core.test.whenn
 import com.bookk.server.business.client.api.event.BusinessEvent
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.coVerifyOrder
 import io.mockk.mockk
 import io.mockk.slot
 import kotlinx.datetime.DayOfWeek
@@ -482,6 +483,7 @@ internal class UpdateBusinessImplTest {
 
         then()
         assertTrue(result.exceptionOrNull() is Error.NotFound)
+        coVerify(exactly = 0) { fixture.businessPermissionDataSource.getPermission(any(), any(), any()) }
         coVerify(exactly = 0) { fixture.businessDataSource.updateBusiness(any(), any()) }
     }
 
@@ -500,18 +502,47 @@ internal class UpdateBusinessImplTest {
     }
 
     @Test
-    fun `should not read the currency when user has no update permission`() = runUnitTest {
+    fun `should not check services or update when user has no update permission to change the currency`() = runUnitTest {
         given()
         val fixture = SutFixture()
-        fixture.transactionManager.mockTransaction()
-        fixture.grantPermission(ResourcePermission(view = true, update = false, delete = false))
+        val businessId = Uuid.random()
+        with(fixture) {
+            transactionManager.mockTransaction()
+            grantPermission(ResourcePermission(view = true, update = false, delete = false))
+            coEvery { businessDataSource.lockBusiness(businessId, RowLock.EXCLUSIVE) } returns LockedBusiness("USD")
+        }
 
         whenn()
-        val result = fixture.sut(requestUserId, updateModel(currencyCode = "EUR"))
+        val result = fixture.sut(requestUserId, updateModel(id = businessId, currencyCode = "EUR"))
 
         then()
         assertTrue(result.exceptionOrNull() is Error.OperationNotAllowed)
-        coVerify(exactly = 0) { fixture.businessDataSource.lockBusiness(any(), any()) }
+        coVerify(exactly = 0) { fixture.serviceDataSource.hasServices(any()) }
+        coVerify(exactly = 0) { fixture.businessDataSource.updateBusiness(any(), any()) }
+    }
+
+    @Test
+    fun `should lock the business before any other read when the currency is sent`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val businessId = Uuid.random()
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { businessDataSource.lockBusiness(businessId, RowLock.EXCLUSIVE) } returns LockedBusiness("USD")
+            coEvery { serviceDataSource.hasServices(businessId) } returns false
+        }
+
+        whenn()
+        val result = fixture.sut(requestUserId, updateModel(id = businessId, currencyCode = "EUR"))
+
+        then()
+        assertTrue(result.isSuccess)
+        coVerifyOrder {
+            fixture.businessDataSource.lockBusiness(businessId, RowLock.EXCLUSIVE)
+            fixture.businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.BUSINESS)
+            fixture.serviceDataSource.hasServices(businessId)
+            fixture.businessDataSource.updateBusiness(any(), any())
+        }
     }
 
     @Test

@@ -22,11 +22,12 @@ internal class CreateServiceImpl(
     override suspend fun invoke(requestUserId: Uuid, service: Service): Result<Service> {
         if (service.name.isBlank()) return Result.failure(Error.ValidationError())
         return transactionManager.transaction {
+            val businessCurrency = businessDataSource.lockSupportedCurrencyOrNull(service.businessId)
             businessPermissionDataSource.getPermission(requestUserId, service.businessId, BusinessResource.SERVICES)
                 .assert(PermissionAction.UPDATE)
-            val currency = businessDataSource.lockSupportedCurrencyOrNull(service.businessId) ?: throw Error.BusinessCurrencyInvalid()
+            val currency = businessCurrency ?: throw Error.BusinessCurrencyInvalid()
             val price = service.price.inCurrencyOrNull(currency) ?: throw Error.PricePrecisionInvalid()
-            val group = dataSource.lockServiceGroup(service.group.id, service.businessId) ?: throw Error.ServiceGroupNotFound()
+            val group = dataSource.getServiceGroup(service.group.id, service.businessId) ?: throw Error.ServiceGroupNotFound()
             dataSource.createService(service.copy(group = group, price = price))
         }.onConstraintFailure {
             throw Error.ServiceExist()

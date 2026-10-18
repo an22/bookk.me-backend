@@ -8,7 +8,6 @@ import com.bookk.business.domain.api.service.entity.Service
 import com.bookk.business.domain.api.service.entity.ServiceGroup
 import com.bookk.business.domain.datasource.ServiceDataSource
 import com.bookk.core.data.DataSource
-import com.bookk.core.data.forShare
 import com.bookk.core.domain.entity.Error
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
@@ -16,7 +15,6 @@ import org.jetbrains.exposed.v1.core.inList
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import org.jetbrains.exposed.v1.jdbc.select
-import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.update
 import kotlin.time.Clock
 import kotlin.uuid.Uuid
@@ -63,7 +61,6 @@ internal class ServiceDataSourceImpl : DataSource(), ServiceDataSource {
         ServiceTable.select(ServiceTable.id)
             .where { ServiceTable.businessId eq businessId }
             .limit(1)
-            .forShare()
             .empty()
             .not()
     }
@@ -74,8 +71,8 @@ internal class ServiceDataSourceImpl : DataSource(), ServiceDataSource {
         }.map { it.toDomain() }
     }
 
-    override suspend fun deleteService(id: Uuid) {
-        dbQuery { ServiceTable.deleteWhere { ServiceTable.id eq id } }
+    override suspend fun deleteService(id: Uuid, businessId: Uuid) {
+        dbQuery { ServiceTable.deleteWhere { (ServiceTable.id eq id) and (ServiceTable.businessId eq businessId) } }
     }
 
     override suspend fun createServiceGroup(group: ServiceGroup): ServiceGroup = dbQuery {
@@ -92,12 +89,10 @@ internal class ServiceDataSourceImpl : DataSource(), ServiceDataSource {
         }
     }
 
-    override suspend fun lockServiceGroup(id: Uuid, businessId: Uuid): ServiceGroup? = dbQuery {
-        ServiceGroupTable.selectAll()
-            .where { (ServiceGroupTable.id eq id) and (ServiceGroupTable.businessId eq businessId) }
-            .forShare()
-            .singleOrNull()
-            ?.let { ServiceGroupEntity.wrapRow(it).toDomain() }
+    override suspend fun getServiceGroup(id: Uuid, businessId: Uuid): ServiceGroup? = dbQuery {
+        ServiceGroupEntity.find {
+            (ServiceGroupTable.id eq id) and (ServiceGroupTable.businessId eq businessId)
+        }.singleOrNull()?.toDomain()
     }
 
     override suspend fun getServiceGroups(businessId: Uuid): List<ServiceGroup> = dbQuery {

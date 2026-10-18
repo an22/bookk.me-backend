@@ -160,6 +160,7 @@ internal class CreateEmployeeInvitationImplTest {
         val businessId = Uuid.random()
         with(fixture) {
             transactionManager.mockTransaction()
+            coEvery { businessDataSource.lockBusiness(businessId, RowLock.EXCLUSIVE) } returns LockedBusiness("USD")
             coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(view = true, update = false, delete = false)
         }
 
@@ -169,6 +170,7 @@ internal class CreateEmployeeInvitationImplTest {
         then()
         assertTrue(result.isFailure)
         assertTrue(result.exceptionOrNull() is Error.OperationNotAllowed)
+        coVerify(exactly = 0) { fixture.invitationDataSource.countPendingInvitations(any()) }
         coVerify(exactly = 0) { fixture.invitationDataSource.createInvitation(any()) }
     }
 
@@ -190,6 +192,7 @@ internal class CreateEmployeeInvitationImplTest {
         then()
         assertTrue(result.isFailure)
         assertTrue(result.exceptionOrNull() is Error.NotFound)
+        coVerify(exactly = 0) { fixture.businessPermissionDataSource.getPermission(any(), any(), any()) }
     }
 
     @Test
@@ -237,7 +240,7 @@ internal class CreateEmployeeInvitationImplTest {
     }
 
     @Test
-    fun `should lock the business before counting pending invitations`() = runUnitTest {
+    fun `should lock the business before any other read so the counts see every committed invitation`() = runUnitTest {
         given()
         val fixture = SutFixture()
         val requestUserId = Uuid.random()
@@ -257,7 +260,9 @@ internal class CreateEmployeeInvitationImplTest {
         then()
         coVerifyOrder {
             fixture.businessDataSource.lockBusiness(businessId, RowLock.EXCLUSIVE)
+            fixture.businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES)
             fixture.invitationDataSource.countPendingInvitations(businessId)
+            fixture.invitationDataSource.countInvitationsCreatedSince(businessId, any())
             fixture.invitationDataSource.createInvitation(any())
         }
     }

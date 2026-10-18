@@ -22,12 +22,12 @@ internal class UpdateServiceImpl(
     override suspend fun invoke(requestUserId: Uuid, service: Service): Result<Service> {
         if (service.name.isBlank()) return Result.failure(CreateService.Error.ValidationError())
         return transactionManager.transaction {
+            val businessCurrency = businessDataSource.lockSupportedCurrencyOrNull(service.businessId)
             businessPermissionDataSource.getPermission(requestUserId, service.businessId, BusinessResource.SERVICES)
                 .assert(PermissionAction.UPDATE)
-            val currency = businessDataSource.lockSupportedCurrencyOrNull(service.businessId)
-                ?: throw UpdateService.Error.BusinessCurrencyInvalid()
+            val currency = businessCurrency ?: throw UpdateService.Error.BusinessCurrencyInvalid()
             val price = service.price.inCurrencyOrNull(currency) ?: throw UpdateService.Error.PricePrecisionInvalid()
-            val group = dataSource.lockServiceGroup(service.group.id, service.businessId)
+            val group = dataSource.getServiceGroup(service.group.id, service.businessId)
                 ?: throw UpdateService.Error.ServiceGroupNotFound()
             dataSource.editService(service.copy(group = group, price = price))
         }.onConstraintFailure {

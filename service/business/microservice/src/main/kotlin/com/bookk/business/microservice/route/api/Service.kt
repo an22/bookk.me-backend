@@ -100,7 +100,7 @@ fun Route.serviceCrud() {
 
         /**
          * Summary: Delete service offering
-         * Description: Delete service offering
+         * Description: Delete service offering. A service id of another business is left untouched
          * Tag: service
          * Security: jwt
          * Response: 204 application/x-protobuf Service offering deleted

@@ -2,6 +2,7 @@ package com.bookk.user.data.datasource
 
 import com.bookk.core.data.DataSource
 import com.bookk.core.data.cache.CacheClient
+import com.bookk.core.domain.entity.runSuspendCatching
 import com.bookk.user.data.cache.UserCacheStrategy.deleteUser
 import com.bookk.user.data.cache.UserCacheStrategy.getUser
 import com.bookk.user.data.cache.UserCacheStrategy.save
@@ -32,7 +33,7 @@ internal class UserDataSourceImpl(
         }.let {
             user.copy(id = it.value)
         }.also {
-            runCatching { cacheClient.save(it) }
+            runSuspendCatching { cacheClient.save(it) }
         }
     }
 
@@ -50,7 +51,7 @@ internal class UserDataSourceImpl(
             .map { UserEntity.wrapRow(it).domain() }
             .singleOrNull()
             ?.also { user ->
-                runCatching { cacheClient.save(user) }
+                runSuspendCatching { cacheClient.save(user) }
                     .onFailure { cacheClient.deleteUser(user.id) }
             }
     }
@@ -64,6 +65,6 @@ internal class UserDataSourceImpl(
 
     override suspend fun deleteUser(id: Uuid) = dbQuery<Unit> {
         UserTable.deleteWhere { UserTable.id eq id }
-        runCatching { cacheClient.deleteUser(id) }
+        runSuspendCatching { cacheClient.deleteUser(id) }
     }
 }

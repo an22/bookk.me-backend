@@ -6,6 +6,13 @@ Simple permission-gated update; the working schedule and day-offs live on
 the business service and are not touched here (see the `Description` in the
 route KDoc).
 
+`automaticCompletion` controls whether the `MarkAppointmentsCompleted` job
+completes this business's past appointments (see [Scheduled (recurring)
+jobs](../scheduled-jobs.md)); when off, staff use [Complete
+appointment](complete-appointment.md). It is optional on the request — a
+`null` keeps the stored value, so clients that predate the field don't
+switch it back on.
+
 ```mermaid
 flowchart TD
     Start([PUT /api/appointments/settings/businessId]) --> PathCheck{path businessId == body.businessId?}
@@ -17,7 +24,7 @@ flowchart TD
     Suspended -- Yes --> R403s([403 BUSINESS_EMPLOYEE_ACCESS_SUSPENDED 200034])
     Suspended -- No --> Perm{caller update permission?}
     Perm -- No --> R404([404 Error.OperationNotAllowed])
-    Perm -- Yes --> Update[AppointmentSettingsDataSource.update update]
+    Perm -- Yes --> Update[AppointmentSettingsDataSource.update update - automaticCompletion only when non-null]
     Update --> Attach[Attach caller's permission onto the returned settings]
     Attach --> R200([200 Updated AppointmentSettings])
 ```

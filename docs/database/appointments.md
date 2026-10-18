@@ -11,6 +11,10 @@ way, but these are populated by resolving the ids synchronously from the
 business service at write time (`GetAppointmentBookingContext`, see
 [create-appointment-request](../operations/appointments/create-appointment-request.md))
 rather than replicated via events — the client only ever supplies the ids.
+The same holds for the additional services of an `APPOINTMENT_PRICE_ADJUSTMENT`
+(resolved through `GetServicesByIds` when an appointment is completed, see
+[complete-appointment](../operations/appointments/complete-appointment.md)).
+Both adjustment tables cascade-delete with their appointment.
 
 ```mermaid
 erDiagram
@@ -21,6 +25,8 @@ erDiagram
     BUSINESS_HAS_APPOINTMENTS ||--o{ WORKING_HOURS : "has"
     BUSINESS_HAS_APPOINTMENTS ||--o{ APPOINTMENT_PERMISSION_GRANTS : "grants"
     APPOINTMENT ||--o{ APPOINTMENT_SERVICES : "line items"
+    APPOINTMENT ||--o| APPOINTMENT_PRICE_ADJUSTMENT : "checkout price"
+    APPOINTMENT_PRICE_ADJUSTMENT ||--o{ APPOINTMENT_PRICE_ADJUSTMENT_SERVICES : "additional services"
     APPOINTMENT_REQUEST ||--o{ APPOINTMENT_REQUEST_SERVICES : "line items"
 
     BUSINESS_HAS_APPOINTMENTS {
@@ -37,7 +43,7 @@ erDiagram
 
     APPOINTMENT {
         uuid id PK
-        uuid user_id "logical FK -> user.profile.id; UK with business_id, date_start"
+        uuid user_id "logical FK -> user.profile.id; non-unique index with business_id, date_start (overlap checks)"
         uuid business_id FK
         uuid employee_id "logical FK -> business.employee.id"
         uuid employee_user_id "logical FK -> user.profile.id (employee's own userId)"
@@ -51,6 +57,7 @@ erDiagram
         string note
         enum status
         string cancellation_reason
+        enum completed_by "nullable; SYSTEM (MarkAppointmentsCompleted job) or USER (CompleteAppointment); set only while status = COMPLETED"
         timestamp createdAt
         timestamp updatedAt
     }
@@ -69,9 +76,34 @@ erDiagram
         timestamp updatedAt
     }
 
+    APPOINTMENT_PRICE_ADJUSTMENT {
+        uuid id PK
+        uuid appointment_id FK,UK "at most one per appointment; replaced on every CompleteAppointment carrying an adjustment"
+        string price_currency "must equal the appointment services currency"
+        long price_unscaled "final charged price, replaces the sum of booked and additional services"
+        int price_scale
+        string reason "nullable"
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    APPOINTMENT_PRICE_ADJUSTMENT_SERVICES {
+        uuid id PK
+        uuid price_adjustment_id FK
+        uuid service_id "logical FK -> business.service.id"
+        string service_name
+        uuid service_group_id "logical FK -> business.service_group.id"
+        string price_currency
+        long price_unscaled
+        int price_scale
+        long duration_minutes
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
     APPOINTMENT_REQUEST {
         uuid id PK
-        uuid user_id "logical FK -> user.profile.id; UK with business_id, date_start"
+        uuid user_id "logical FK -> user.profile.id; non-unique index with business_id, date_start (overlap checks)"
         uuid business_id FK
         uuid employee_id "logical FK -> business.employee.id"
         uuid employee_user_id "logical FK -> user.profile.id (employee's own userId)"
@@ -118,6 +150,7 @@ erDiagram
         int in_between_break_in_minutes
         string appointment_note
         bool automatic_approval
+        bool automatic_completion "default true; gates the MarkAppointmentsCompleted job for this business"
         timestamp createdAt
         timestamp updatedAt
     }

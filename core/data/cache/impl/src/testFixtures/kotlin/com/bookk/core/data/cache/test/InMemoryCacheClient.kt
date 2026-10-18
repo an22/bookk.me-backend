@@ -33,6 +33,17 @@ class InMemoryCacheClient(
         cache.put(key, InMemCacheEntry(data, expiration ?: 5.minutes))
     }
 
+    override suspend fun <V : Any> setIfAbsent(
+        key: String,
+        value: V,
+        kType: KType,
+        expiration: Duration?
+    ): Boolean {
+        val serializer = protobuf.serializersModule.serializer(kType)
+        val data = protobuf.encodeToByteArray(serializer, value)
+        return cache.asMap().putIfAbsent(key, InMemCacheEntry(data, expiration ?: 5.minutes)) == null
+    }
+
     override suspend fun <V : Any> get(key: String, kType: KType): V? {
         val serializer = protobuf.serializersModule.serializer(kType)
         return cache.getIfPresent(key)?.let {

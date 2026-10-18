@@ -6,10 +6,13 @@ import io.lettuce.core.ExperimentalLettuceCoroutinesApi
 import io.lettuce.core.RedisClient
 import io.lettuce.core.RedisURI
 import io.lettuce.core.SetArgs
+import io.lettuce.core.api.StatefulRedisConnection
+import io.lettuce.core.api.async.RedisAsyncCommands
 import io.lettuce.core.api.coroutines
-import io.lettuce.core.api.coroutines.RedisCoroutinesCommands
-import io.lettuce.core.api.coroutines.multi
 import io.lettuce.core.support.ConnectionPoolSupport
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.future.await
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.protobuf.ProtoBuf
 import kotlinx.serialization.serializer
 import java.nio.ByteBuffer
@@ -39,7 +42,7 @@ class RedisCacheClient(
     }
 
     override suspend fun <V : Any> set(key: String, value: V, kType: KType, expiration: Duration?) {
-        with(connectionPool.borrowObject()) {
+        withPooledConnection {
             val serializer = protobuf.serializersModule.serializer(kType)
             coroutines().apply {
                 set(
@@ -51,9 +54,18 @@ class RedisCacheClient(
         }
     }
 
+    override suspend fun <V : Any> setIfAbsent(key: String, value: V, kType: KType, expiration: Duration?): Boolean {
+        return withPooledConnection {
+            val serializer = protobuf.serializersModule.serializer(kType)
+            val setArgs = SetArgs().nx()
+            expiration?.let { setArgs.ex(it.toJavaDuration()) }
+            coroutines().set(key, ByteBuffer.wrap(protobuf.encodeToByteArray(serializer, value)), setArgs) == "OK"
+        }
+    }
+
     @Suppress("UNCHECKED_CAST")
     override suspend fun <V : Any> get(key: String, kType: KType): V? {
-        return with(connectionPool.borrowObject()) {
+        return withPooledConnection {
             val deserializer = protobuf.serializersModule.serializer(kType)
             coroutines().get(key)?.let { buffer ->
                 val array = ByteArray(buffer.remaining()).also { buffer.get(it) }
@@ -63,52 +75,62 @@ class RedisCacheClient(
     }
 
     override suspend fun withTransaction(action: suspend CacheClient<String>.() -> Unit) {
-        with(connectionPool.borrowObject()) {
-            coroutines().multi {
-                action(asCache())
+        withPooledConnection {
+            val commands = async()
+            commands.multi().await()
+            try {
+                action(commands.asTransactionCache())
+            } catch (failure: Throwable) {
+                withContext(NonCancellable) { commands.discard().await() }
+                throw failure
             }
+            commands.exec().await().filterIsInstance<Throwable>().firstOrNull()?.let { throw it }
         }
     }
 
     override suspend fun delete(key: String) {
-        with(connectionPool.borrowObject()) {
+        withPooledConnection {
             coroutines().del(key)
         }
     }
+
+    private inline fun <T> withPooledConnection(action: StatefulRedisConnection<String, ByteBuffer>.() -> T): T =
+        connectionPool.borrowObject().use { connection -> connection.action() }
 
     override fun close() {
         connectionPool.close()
         client.shutdown()
     }
 
-    private fun <K: Any> RedisCoroutinesCommands<K, ByteBuffer>.asCache() =
-        object : CacheClient<K> {
-            override suspend fun <V : Any> set(key: K, value: V, kType: KType, expiration: Duration?) {
+    private fun RedisAsyncCommands<String, ByteBuffer>.asTransactionCache() =
+        object : CacheClient<String> {
+            override suspend fun <V : Any> set(key: String, value: V, kType: KType, expiration: Duration?) {
                 val serializer = protobuf.serializersModule.serializer(kType)
-                this@asCache.set(
+                this@asTransactionCache.set(
                     key,
                     ByteBuffer.wrap(protobuf.encodeToByteArray(serializer, value)),
                     expiration?.let { SetArgs.Builder.ex(it.toJavaDuration()) } ?: SetArgs()
                 )
             }
 
-            @Suppress("UNCHECKED_CAST")
-            override suspend fun <V : Any> get(key: K, kType: KType): V? {
-                val deserializer = protobuf.serializersModule.serializer(kType)
-                return get(key)?.let { protobuf.decodeFromByteArray(deserializer, it.array()) as V }
+            override suspend fun <V : Any> setIfAbsent(key: String, value: V, kType: KType, expiration: Duration?): Boolean {
+                throw UnsupportedOperationException("Conditional set inside transaction is not supported, its result is only known after EXEC")
             }
 
-            override suspend fun delete(key: K) {
-                this@asCache.del(key)
+            override suspend fun <V : Any> get(key: String, kType: KType): V? {
+                throw UnsupportedOperationException("Reading inside transaction is not supported, values are only known after EXEC")
             }
 
-            override suspend fun withTransaction(action: suspend CacheClient<K>.() -> Unit) {
+            override suspend fun delete(key: String) {
+                this@asTransactionCache.del(key)
+            }
+
+            override suspend fun withTransaction(action: suspend CacheClient<String>.() -> Unit) {
                 throw UnsupportedOperationException("Transaction inside transaction is not supported")
             }
 
             override fun close() {
                 throw UnsupportedOperationException("Redis transaction is not closeable")
             }
-
         }
 }

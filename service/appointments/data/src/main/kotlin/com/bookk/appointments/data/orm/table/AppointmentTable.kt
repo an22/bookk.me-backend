@@ -1,5 +1,6 @@
 package com.bookk.appointments.data.orm.table
 
+import com.bookk.appointments.domain.api.entity.AppointmentCompletedBy
 import com.bookk.appointments.domain.api.entity.AppointmentStatus
 import com.bookk.core.data.database.BaseUUIDTable
 import org.jetbrains.exposed.v1.core.ReferenceOption
@@ -20,8 +21,9 @@ object AppointmentTable: BaseUUIDTable("appointment") {
     val note = varchar("note",2048)
     val status = enumeration("status", AppointmentStatus::class).index()
     val cancellationReason = varchar("cancellation_reason",2048)
+    val completedBy = enumeration("completed_by", AppointmentCompletedBy::class).nullable()
 
     init {
-        index(true, userId, businessId, dateStart)
+        index(false, userId, businessId, dateStart)
     }
 }

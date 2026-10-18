@@ -9,8 +9,7 @@ import com.bookk.appointments.domain.api.entity.AppointmentRequestStatus
 import com.bookk.appointments.domain.datasource.AppointmentRequestDataSource
 import com.bookk.core.data.DataSource
 import com.bookk.core.data.cache.CacheClient
-import com.bookk.core.data.cache.get
-import com.bookk.core.data.cache.set
+import com.bookk.core.data.cache.setIfAbsent
 import com.bookk.core.domain.entity.Error
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
@@ -34,16 +33,27 @@ internal class AppointmentRequestDataSourceImpl(
             ?.domain()
     }
 
-    override suspend fun getAll(businessId: Uuid): List<AppointmentRequest> = dbQuery {
-        AppointmentRequestEntity
-            .find { AppointmentRequestTable.businessId eq businessId }
-            .map { it.domain() }
+    override suspend fun getForUpdate(id: Uuid): AppointmentRequest? = dbQuery {
+        AppointmentRequestEntity.find { AppointmentRequestTable.id eq id }
+            .forUpdate()
+            .singleOrNull()
+            ?.domain()
     }
 
     override suspend fun getPending(businessId: Uuid): List<AppointmentRequest> = dbQuery {
         AppointmentRequestEntity
             .find {
                 AppointmentRequestTable.businessId.eq(businessId)
+                    .and(AppointmentRequestTable.status.eq(AppointmentRequestStatus.PENDING))
+            }
+            .map { it.domain() }
+    }
+
+    override suspend fun getPendingByUser(userId: Uuid, businessId: Uuid): List<AppointmentRequest> = dbQuery {
+        AppointmentRequestEntity
+            .find {
+                AppointmentRequestTable.userId.eq(userId)
+                    .and(AppointmentRequestTable.businessId.eq(businessId))
                     .and(AppointmentRequestTable.status.eq(AppointmentRequestStatus.PENDING))
             }
             .map { it.domain() }
@@ -125,12 +135,11 @@ internal class AppointmentRequestDataSourceImpl(
         }
     }
 
-    override suspend fun cacheOfferToken(token: String) = mapExceptions {
-        cacheClient.set(token, "marker", 10.minutes)
+    override suspend fun reserveOfferToken(token: String): Boolean = mapExceptions {
+        cacheClient.setIfAbsent(token, "marker", 10.minutes)
     }
 
-    override suspend fun isTokenInCache(token: String): Boolean = mapExceptions {
-        val entry: String? = cacheClient.get(token)
-        entry != null
+    override suspend fun releaseOfferToken(token: String) = mapExceptions {
+        cacheClient.delete(token)
     }
 }

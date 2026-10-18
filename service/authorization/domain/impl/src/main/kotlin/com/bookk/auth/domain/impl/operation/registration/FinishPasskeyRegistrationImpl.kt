@@ -11,6 +11,7 @@ import com.bookk.auth.domain.datasource.PassKeyDataSource
 import com.bookk.auth.domain.impl.passkey.createRelyingParty
 import com.bookk.auth.domain.repository.CacheableCredentialRepository
 import com.bookk.core.domain.datasource.transaction.TransactionManager
+import com.bookk.core.domain.entity.recoverSuspendCatching
 import com.bookk.core.toUUID
 import com.yubico.webauthn.FinishRegistrationOptions
 import com.yubico.webauthn.RegistrationResult
@@ -37,7 +38,7 @@ internal class FinishPasskeyRegistrationImpl(
             val challengeJson = passKeyDS.getCachedChallenge(request.requestId) ?: throw ChallengeWindowExpired()
             val challenge = PublicKeyCredentialCreationOptions.fromJson(challengeJson)
             validateRegistrationChallenge(request, challenge, pkc).asPasskeyCredential(pkc, challenge)
-        }.recoverCatching {
+        }.recoverSuspendCatching {
             when (it) {
                 is RegistrationFailedException -> throw VerificationFailed()
                 else -> throw it

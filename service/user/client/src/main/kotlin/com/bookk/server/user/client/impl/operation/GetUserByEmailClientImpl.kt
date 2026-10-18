@@ -1,6 +1,7 @@
 package com.bookk.server.user.client.impl.operation
 
 import com.bookk.core.domain.entity.SimpleServerError
+import com.bookk.core.domain.entity.runSuspendCatching
 import com.bookk.server.user.client.impl.UserRouting
 import com.bookk.user.domain.api.entity.EmailBody
 import com.bookk.user.domain.api.entity.User
@@ -16,7 +17,7 @@ import io.ktor.http.isSuccess
 internal class GetUserByEmailClientImpl(
     private val httpClient: HttpClient
 ) : GetUserByEmail {
-    override suspend fun invoke(body: EmailBody): Result<User> = runCatching {
+    override suspend fun invoke(body: EmailBody): Result<User> = runSuspendCatching {
         val response = httpClient.get(UserRouting.Api.Internal.User.Email()) {
             setBody(body)
         }

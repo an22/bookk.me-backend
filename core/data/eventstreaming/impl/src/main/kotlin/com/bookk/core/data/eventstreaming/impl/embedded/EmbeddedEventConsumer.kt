@@ -5,11 +5,14 @@ import com.bookk.core.data.eventstreaming.DltRetry
 import com.bookk.core.data.eventstreaming.EventStreaming.Consumer
 import com.bookk.core.data.eventstreaming.EventStreaming.Event
 import com.bookk.core.data.eventstreaming.ExhaustedEventDataSource
+import com.bookk.core.domain.entity.runSuspendCatching
 import io.ktor.util.collections.ConcurrentMap
 import io.ktor.util.logging.KtorSimpleLogger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onEach
@@ -40,7 +43,7 @@ class EmbeddedEventConsumer(
     ): Consumer<String> {
         types[topic] = type
         receivers[topic] = { event, attempt ->
-            runCatching { onEvent(event as T) }
+            runSuspendCatching { onEvent(event as T) }
                 .onFailure {
                     handleFailure(topic, event, attempt)
                     logger.error("Error while processing event for topic: ${event.topic}. Event: $event")
@@ -63,6 +66,7 @@ class EmbeddedEventConsumer(
                             try {
                                 receivers[event.topic]?.invoke(event, 0)
                             } catch (e: Throwable) {
+                                currentCoroutineContext().ensureActive()
                                 logger.error("Failed to handle: topic:{}, event:{}", event.topic, event)
                             }
                         }
@@ -104,7 +108,7 @@ class EmbeddedEventConsumer(
             topic = originalTopic,
             idempotencyKey = dltEvent.idempotencyKey
         )
-        runCatching { exhaustedEventDataSource.save(record) }
+        runSuspendCatching { exhaustedEventDataSource.save(record) }
             .onFailure {
                 logger.error("Failed to persist exhausted event for topic: {}. Retrying. Error: {}", originalTopic, it.message)
                 topicQueueHolder.publish(dltEvent.copy(attempt = dltEvent.attempt + 1))

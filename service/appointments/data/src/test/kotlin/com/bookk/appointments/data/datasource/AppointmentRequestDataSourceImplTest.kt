@@ -68,6 +68,23 @@ internal class AppointmentRequestDataSourceImplTest {
     }
 
     @Test
+    fun `should create request at the start of a declined one for the same client`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val userId = Uuid.random()
+        val declined = suspendTransaction { fixture.sut.create(fixture.buildRequest(userId = userId)) }
+        suspendTransaction { fixture.sut.decline(declined.id, "Fully booked") }
+
+        whenn()
+        val result = runCatching { suspendTransaction { fixture.sut.create(fixture.buildRequest(userId = userId)) } }
+
+        then()
+        assertTrue(result.isSuccess)
+        assertEquals(AppointmentRequestStatus.PENDING, result.getOrThrow().status)
+    }
+
+    @Test
     fun `should return null when request not found`() = runUnitTest {
         given()
         val fixture = SutFixture()
@@ -81,18 +98,27 @@ internal class AppointmentRequestDataSourceImplTest {
     }
 
     @Test
-    fun `should retrieve all requests for business`() = runUnitTest {
+    fun `should retrieve only pending requests of the given user in the business`() = runUnitTest {
         given()
         val fixture = SutFixture()
         fixture.setup()
+        val userId = Uuid.random()
+        val otherBusiness = BusinessSnapshot.stub()
+        suspendTransaction { fixture.subscriptionSut.attachBusiness(otherBusiness) }
+        val first = suspendTransaction { fixture.sut.create(fixture.buildRequest(userId = userId)) }
+        val second = suspendTransaction { fixture.sut.create(fixture.buildRequest(userId = userId)) }
+        val approved = suspendTransaction { fixture.sut.create(fixture.buildRequest(userId = userId)) }
+        suspendTransaction { fixture.sut.approve(approved) }
+        val declined = suspendTransaction { fixture.sut.create(fixture.buildRequest(userId = userId)) }
+        suspendTransaction { fixture.sut.decline(declined.id, "Fully booked") }
         suspendTransaction { fixture.sut.create(fixture.buildRequest()) }
-        suspendTransaction { fixture.sut.create(fixture.buildRequest()) }
+        suspendTransaction { fixture.sut.create(AppointmentRequest.stub(userId = userId, businessId = otherBusiness.id)) }
 
         whenn()
-        val all = suspendTransaction { fixture.sut.getAll(fixture.businessId) }
+        val pending = suspendTransaction { fixture.sut.getPendingByUser(userId, fixture.businessId) }
 
         then()
-        assertEquals(2, all.size)
+        assertEquals(setOf(first.id, second.id), pending.map { it.id }.toSet())
     }
 
     @Test
@@ -121,10 +147,10 @@ internal class AppointmentRequestDataSourceImplTest {
 
         whenn()
         suspendTransaction { fixture.sut.approve(created) }
-        val all = suspendTransaction { fixture.sut.getAll(fixture.businessId) }
+        val approved = suspendTransaction { fixture.sut.get(created.id) }
 
         then()
-        assertEquals(AppointmentRequestStatus.APPROVED, all.first().status)
+        assertEquals(AppointmentRequestStatus.APPROVED, approved?.status)
     }
 
     @Test
@@ -153,7 +179,7 @@ internal class AppointmentRequestDataSourceImplTest {
         suspendTransaction { fixture.sut.delete(created) }
 
         then()
-        assertTrue(suspendTransaction { fixture.sut.getAll(fixture.businessId) }.isEmpty())
+        assertNull(suspendTransaction { fixture.sut.get(created.id) })
     }
 
     @Test
@@ -216,8 +242,7 @@ internal class AppointmentRequestDataSourceImplTest {
         suspendTransaction { fixture.sut.cancelOutdated(Clock.System.now()) }
 
         then()
-        val all = suspendTransaction { fixture.sut.getAll(fixture.businessId) }
-        assertEquals(AppointmentRequestStatus.CANCELLED, all.first { it.id == created.id }.status)
+        assertEquals(AppointmentRequestStatus.CANCELLED, suspendTransaction { fixture.sut.get(created.id) }?.status)
     }
 
     @Test
@@ -232,33 +257,47 @@ internal class AppointmentRequestDataSourceImplTest {
         suspendTransaction { fixture.sut.cancelOutdated(Clock.System.now()) }
 
         then()
-        val all = suspendTransaction { fixture.sut.getAll(fixture.businessId) }
-        assertEquals(AppointmentRequestStatus.PENDING, all.first { it.id == created.id }.status)
+        assertEquals(AppointmentRequestStatus.PENDING, suspendTransaction { fixture.sut.get(created.id) }?.status)
     }
 
     @Test
-    fun `should cache offer token and detect it in cache`() = runUnitTest {
+    fun `should reserve an offer token that is not reserved yet`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+
+        whenn()
+        val reserved = fixture.sut.reserveOfferToken("offer-token-abc")
+
+        then()
+        assertTrue(reserved)
+    }
+
+    @Test
+    fun `should refuse to reserve an offer token that is already reserved`() = runUnitTest {
         given()
         val fixture = SutFixture()
         val token = "offer-token-abc"
+        fixture.sut.reserveOfferToken(token)
 
         whenn()
-        fixture.sut.cacheOfferToken(token)
+        val reservedAgain = fixture.sut.reserveOfferToken(token)
 
         then()
-        assertTrue(fixture.sut.isTokenInCache(token))
+        assertFalse(reservedAgain)
     }
 
     @Test
-    fun `should return false from isTokenInCache for missing token`() = runUnitTest {
+    fun `should reserve an offer token again after it is released`() = runUnitTest {
         given()
         val fixture = SutFixture()
+        val token = "offer-token-abc"
+        fixture.sut.reserveOfferToken(token)
 
         whenn()
-        val inCache = fixture.sut.isTokenInCache("nonexistent-token")
+        fixture.sut.releaseOfferToken(token)
 
         then()
-        assertFalse(inCache)
+        assertTrue(fixture.sut.reserveOfferToken(token))
     }
 
     @Test
@@ -326,5 +365,51 @@ internal class AppointmentRequestDataSourceImplTest {
 
         then()
         assertTrue(result.isSuccess)
+    }
+
+    @Test
+    fun `should read request with a row lock`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val created = suspendTransaction { fixture.sut.create(fixture.buildRequest()) }
+
+        whenn()
+        val found = suspendTransaction { fixture.sut.getForUpdate(created.id) }
+
+        then()
+        assertEquals(created.id, found?.id)
+        assertEquals(AppointmentRequestStatus.PENDING, found?.status)
+    }
+
+    @Test
+    fun `should return null when locking a missing request`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+
+        whenn()
+        val found = suspendTransaction { fixture.sut.getForUpdate(Uuid.random()) }
+
+        then()
+        assertNull(found)
+    }
+
+    @Test
+    fun `should decline a request locked in the same transaction`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val created = suspendTransaction { fixture.sut.create(fixture.buildRequest()) }
+
+        whenn()
+        val declined = suspendTransaction {
+            fixture.sut.getForUpdate(created.id)
+            fixture.sut.decline(created.id, "Fully booked")
+        }
+
+        then()
+        assertEquals(AppointmentRequestStatus.DECLINED, declined.status)
+        assertEquals(AppointmentRequestStatus.DECLINED, suspendTransaction { fixture.sut.get(created.id) }?.status)
     }
 }

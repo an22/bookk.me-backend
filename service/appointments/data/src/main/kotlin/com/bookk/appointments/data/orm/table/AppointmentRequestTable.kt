@@ -22,6 +22,6 @@ object AppointmentRequestTable : BaseUUIDTable("appointment_request") {
     val declineReason = varchar("decline_reason", 2048)
 
     init {
-        index(true, userId, businessId, dateStart)
+        index(false, userId, businessId, dateStart)
     }
 }

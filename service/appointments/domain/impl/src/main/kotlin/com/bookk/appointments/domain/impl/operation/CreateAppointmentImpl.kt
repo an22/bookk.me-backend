@@ -37,9 +37,10 @@ internal class CreateAppointmentImpl(
         userId: Uuid,
         appointmentRequestId: Uuid
     ): Result<Appointment> = transactionManager.transaction {
-        val request = requestDataSource.get(appointmentRequestId) ?: throw Error.NotFound()
+        val request = requestDataSource.getForUpdate(appointmentRequestId) ?: throw Error.NotFound()
         appointmentPermissionDataSource.getPermission(userId, request.businessId)
             .assertOrSelf(PermissionAction.UPDATE, actorId = userId, assigneeId = request.employee.userId)
+        request.requirePending()
         createAppointment(request)
     }
 

@@ -3,6 +3,7 @@ package com.bookk.core.client
 import com.bookk.core.domain.entity.BusinessError
 import com.bookk.core.domain.entity.Error
 import com.bookk.core.domain.entity.SimpleServerError
+import com.bookk.core.domain.entity.runSuspendCatching
 import io.ktor.client.call.body
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.HttpStatusCode
@@ -26,6 +27,6 @@ suspend inline fun <reified T> HttpResponse.bodyOrThrow(): T {
 
 suspend fun HttpResponse.throwOnFailure() {
     if (status.isSuccess()) return
-    val serverError = runCatching { body<SimpleServerError>() }
+    val serverError = runSuspendCatching { body<SimpleServerError>() }
     throw domainErrorOf(status, serverError.getOrNull(), serverError.exceptionOrNull())
 }

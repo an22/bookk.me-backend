@@ -27,10 +27,13 @@ import com.bookk.core.data.eventstreaming.send
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.entity.BusinessError
 import com.bookk.core.domain.entity.Error
+import com.bookk.core.domain.entity.runSuspendCatching
 import com.bookk.library.serializer.moneyFormatter
 import com.bookk.server.appointments.client.api.event.AppointmentEvent
 import com.bookk.server.business.client.api.BusinessClient
 import com.bookk.server.business.client.api.QuoteClaims
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 import library.signing.TokenValidatorFactory
 import library.signing.ValidationType
 import org.joda.money.Money
@@ -60,12 +63,21 @@ internal class CreateAppointmentRequestImpl(
     private val businessClient: BusinessClient
 ) : CreateAppointmentRequest {
 
-    override suspend fun invoke(userId: Uuid, draft: AppointmentRequestDraft): Result<Unit> {
-        if (requestDataSource.isTokenInCache(draft.offerToken)) return Result.failure(TokenAlreadyUsed())
-        if (hasInvalidServicesSignature(draft)) return Result.failure(ServicesSignatureMiss())
+    override suspend fun invoke(userId: Uuid, draft: AppointmentRequestDraft): Result<Unit> = runSuspendCatching {
+        if (!requestDataSource.reserveOfferToken(draft.offerToken)) throw TokenAlreadyUsed()
+        try {
+            book(userId, draft)
+        } catch (failure: Throwable) {
+            withContext(NonCancellable) { releaseOfferTokenBestEffort(draft.offerToken) }
+            throw failure
+        }
+    }
 
-        val quoteOffer = decodeQuoteOffer(draft.offerToken) ?: return Result.failure(ServicesSignatureMiss())
-        if (!quoteOfferMatchesDraft(draft, quoteOffer)) return Result.failure(ServicesSignatureMiss())
+    private suspend fun book(userId: Uuid, draft: AppointmentRequestDraft) {
+        if (hasInvalidServicesSignature(draft)) throw ServicesSignatureMiss()
+
+        val quoteOffer = decodeQuoteOffer(draft.offerToken) ?: throw ServicesSignatureMiss()
+        if (!quoteOfferMatchesDraft(draft, quoteOffer)) throw ServicesSignatureMiss()
 
         val context = businessClient
             .getAppointmentBookingContext(
@@ -74,12 +86,12 @@ internal class CreateAppointmentRequestImpl(
                 userId = userId,
                 serviceIds = draft.services.map { it.serviceId }
             )
-            .getOrElse { return Result.failure(it) }
+            .getOrThrow()
 
         val request = buildAppointmentRequest(userId, draft, context)
-        quoteMismatchError(request, quoteOffer)?.let { return Result.failure(it) }
+        quoteMismatchError(request, quoteOffer)?.let { throw it }
 
-        return createOrRequestAppointment(userId, draft, request)
+        createOrRequestAppointment(userId, request).getOrThrow()
     }
 
     private fun hasInvalidServicesSignature(draft: AppointmentRequestDraft): Boolean {
@@ -138,7 +150,7 @@ internal class CreateAppointmentRequestImpl(
         else -> null
     }
 
-    private suspend fun createOrRequestAppointment(userId: Uuid, draft: AppointmentRequestDraft, request: AppointmentRequest): Result<Unit> =
+    private suspend fun createOrRequestAppointment(userId: Uuid, request: AppointmentRequest): Result<Unit> =
         transactionManager.transaction<Unit> {
             val settings = settingsDataSource.getForUpdate(request.businessId) ?: throw Error.NotFound()
 
@@ -153,9 +165,12 @@ internal class CreateAppointmentRequestImpl(
             requestDataSource.create(request).also {
                 sendRequestCreatedNotification(request)
             }
-        }.onSuccess {
-            requestDataSource.cacheOfferToken(draft.offerToken)
         }
+
+    private suspend fun releaseOfferTokenBestEffort(offerToken: String) {
+        runSuspendCatching { requestDataSource.releaseOfferToken(offerToken) }
+            .onFailure { createAppointmentRequestLogger.error("Failed to release offer token, it stays unusable until it expires", it) }
+    }
 
     private suspend fun assertRequestIsSchedulable(request: AppointmentRequest, settings: AppointmentSettings) {
         if (request.date < Clock.System.now()) throw DateInThePastNotAllowed()

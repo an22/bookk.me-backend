@@ -13,28 +13,28 @@ fun Throwable.isPermissionFailure() = this is Error.OperationNotAllowed
 fun Throwable.isBusinessFailure() = this is BusinessError
 
 suspend inline fun <T> Result<T>.onConstraintFailure(crossinline action: suspend () -> Nothing): Result<T> {
-    return recoverCatching {
+    return recoverSuspendCatching {
         if (it.isConstraintFailure()) action()
         else throw it
     }
 }
 
 suspend inline fun <T> Result<T>.onPermissionsMissing(crossinline action: suspend () -> Nothing): Result<T> {
-    return recoverCatching {
+    return recoverSuspendCatching {
         if (it.isPermissionFailure()) action()
         else throw it
     }
 }
 
 suspend inline fun <T> Result<T>.onBusinessFailure(crossinline action: suspend (BusinessError) -> Nothing): Result<T> {
-    return recoverCatching {
+    return recoverSuspendCatching {
         if (it.isBusinessFailure()) action(it as BusinessError)
         else throw it
     }
 }
 
 suspend inline fun <T> Result<T>.onPermissionsMissingReturn(crossinline action: suspend () -> T): Result<T> {
-    return recoverCatching {
+    return recoverSuspendCatching {
         if (it.isPermissionFailure()) action()
         else throw it
     }

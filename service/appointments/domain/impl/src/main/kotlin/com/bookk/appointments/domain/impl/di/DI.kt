@@ -2,6 +2,7 @@ package com.bookk.appointments.domain.impl.di
 
 import com.bookk.appointments.domain.api.APPOINTMENTS_SCHEMA
 import com.bookk.appointments.domain.api.operation.CancelAppointment
+import com.bookk.appointments.domain.api.operation.CompleteAppointment
 import com.bookk.appointments.domain.api.operation.CreateAppointment
 import com.bookk.appointments.domain.api.operation.CreateAppointmentRequest
 import com.bookk.appointments.domain.api.operation.DeclineAppointmentRequest
@@ -17,10 +18,12 @@ import com.bookk.appointments.domain.api.operation.GetClientBusinessesAppointmen
 import com.bookk.appointments.domain.api.operation.GetPendingAppointmentRequests
 import com.bookk.appointments.domain.api.operation.GetSettings
 import com.bookk.appointments.domain.api.operation.IsAppointmentsEnabled
+import com.bookk.appointments.domain.api.operation.MarkAppointmentNoShow
 import com.bookk.appointments.domain.api.operation.MarkAppointmentsCompleted
 import com.bookk.appointments.domain.api.operation.UpdateAppointment
 import com.bookk.appointments.domain.impl.event.AppointmentEventHandler
 import com.bookk.appointments.domain.impl.operation.CancelAppointmentImpl
+import com.bookk.appointments.domain.impl.operation.CompleteAppointmentImpl
 import com.bookk.appointments.domain.impl.operation.CreateAppointmentImpl
 import com.bookk.appointments.domain.impl.operation.CreateAppointmentRequestImpl
 import com.bookk.appointments.domain.impl.operation.DeclineAppointmentRequestImpl
@@ -36,6 +39,7 @@ import com.bookk.appointments.domain.impl.operation.GetClientBusinessesAppointme
 import com.bookk.appointments.domain.impl.operation.GetPendingAppointmentRequestsImpl
 import com.bookk.appointments.domain.impl.operation.GetSettingsImpl
 import com.bookk.appointments.domain.impl.operation.IsAppointmentsEnabledImpl
+import com.bookk.appointments.domain.impl.operation.MarkAppointmentNoShowImpl
 import com.bookk.appointments.domain.impl.operation.MarkAppointmentsCompletedImpl
 import com.bookk.appointments.domain.impl.operation.SyncEmployeePermission
 import com.bookk.appointments.domain.impl.operation.UpdateAppointmentImpl
@@ -64,6 +68,8 @@ fun appointmentsDomainModule() = module {
         scopedOf(::GetAppointmentHistoryImpl) bind GetAppointmentHistory::class
         scopedOf(::UpdateAppointmentImpl) bind UpdateAppointment::class
         scopedOf(::CancelAppointmentImpl) bind CancelAppointment::class
+        scopedOf(::MarkAppointmentNoShowImpl) bind MarkAppointmentNoShow::class
+        scopedOf(::CompleteAppointmentImpl) bind CompleteAppointment::class
         scopedOf(::UpdateBusinessInformation)
         scopedOf(::SyncEmployeePermission)
         scopedOf(::DeclineAppointmentRequestImpl) bind DeclineAppointmentRequest::class

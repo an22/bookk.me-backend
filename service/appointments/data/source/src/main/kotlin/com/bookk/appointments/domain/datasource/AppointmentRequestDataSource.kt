@@ -7,8 +7,9 @@ import kotlin.uuid.Uuid
 interface AppointmentRequestDataSource {
 
     suspend fun get(id: Uuid): AppointmentRequest?
-    suspend fun getAll(businessId: Uuid): List<AppointmentRequest>
+    suspend fun getForUpdate(id: Uuid): AppointmentRequest?
     suspend fun getPending(businessId: Uuid): List<AppointmentRequest>
+    suspend fun getPendingByUser(userId: Uuid, businessId: Uuid): List<AppointmentRequest>
     suspend fun create(request: AppointmentRequest): AppointmentRequest
     suspend fun update(request: AppointmentRequest): AppointmentRequest
     suspend fun delete(request: AppointmentRequest)
@@ -19,6 +20,6 @@ interface AppointmentRequestDataSource {
     suspend fun cancelOutdated(before: Instant)
     suspend fun deleteForUser(userId: Uuid)
 
-    suspend fun cacheOfferToken(token: String)
-    suspend fun isTokenInCache(token: String): Boolean
+    suspend fun reserveOfferToken(token: String): Boolean
+    suspend fun releaseOfferToken(token: String)
 }

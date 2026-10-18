@@ -1,6 +1,8 @@
 package com.bookk.core.data
 
 import com.bookk.core.data.map.toDomain
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.withTimeout
@@ -20,6 +22,7 @@ abstract class DataSource {
         return try {
             action()
         } catch (e: Exception) {
+            currentCoroutineContext().ensureActive()
             throw e.toDomain()
         } finally {
             finally()

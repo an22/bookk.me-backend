@@ -2,13 +2,17 @@ package com.bookk.appointments.data.datasource
 
 import com.bookk.appointments.data.orm.entity.AppointmentEntity
 import com.bookk.appointments.data.orm.entity.AppointmentServiceEntity
+import com.bookk.appointments.data.orm.entity.withDetails
 import com.bookk.appointments.data.orm.table.AppointmentServicesTable
 import com.bookk.appointments.data.orm.table.AppointmentTable
+import com.bookk.appointments.data.orm.table.SettingsTable
 import com.bookk.appointments.domain.api.entity.Appointment
+import com.bookk.appointments.domain.api.entity.AppointmentCompletedBy
 import com.bookk.appointments.domain.api.entity.AppointmentPagination
 import com.bookk.appointments.domain.api.entity.AppointmentRepresentation
 import com.bookk.appointments.domain.api.entity.AppointmentRequest
 import com.bookk.appointments.domain.api.entity.AppointmentStatus
+import com.bookk.appointments.domain.api.entity.PriceAdjustment
 import com.bookk.appointments.domain.datasource.AppointmentDataSource
 import com.bookk.core.data.DataSource
 import com.bookk.core.domain.entity.Error
@@ -25,7 +29,6 @@ import org.jetbrains.exposed.v1.core.like
 import org.jetbrains.exposed.v1.core.lowerCase
 import org.jetbrains.exposed.v1.core.neq
 import org.jetbrains.exposed.v1.core.or
-import org.jetbrains.exposed.v1.dao.with
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.update
@@ -40,21 +43,33 @@ internal class AppointmentDataSourceImpl : DataSource(), AppointmentDataSource {
             ?.domain() ?: throw Error.NotFound()
     }
 
+    override suspend fun getForUpdate(id: Uuid): Appointment = dbQuery {
+        AppointmentEntity.find { AppointmentTable.id eq id }
+            .forUpdate()
+            .singleOrNull()
+            ?.domain() ?: throw Error.NotFound()
+    }
+
     override suspend fun getAll(businessId: Uuid): List<Appointment> = dbQuery {
         AppointmentEntity
             .find { AppointmentTable.businessId eq businessId }
+            .toList()
+            .withDetails()
             .map { it.domain() }
     }
 
-    override suspend fun getAllForDate(businessId: Uuid, range: ClosedRange<Instant>): List<Appointment> {
+    override suspend fun getAllForDate(businessId: Uuid, range: ClosedRange<Instant>, employeeId: Uuid?): List<Appointment> {
         return dbQuery {
+            val withinRange = AppointmentTable.businessId.eq(businessId)
+                .and(AppointmentTable.dateStart.greaterEq(range.start))
+                .and(AppointmentTable.dateEnd.lessEq(range.endInclusive))
             AppointmentEntity
                 .find {
-                    AppointmentTable.businessId.eq(businessId)
-                        .and(AppointmentTable.dateStart.greaterEq(range.start))
-                        .and(AppointmentTable.dateEnd.lessEq(range.endInclusive))
+                    employeeId?.let { withinRange.and(AppointmentTable.employeeId.eq(it)) } ?: withinRange
                 }
                 .orderBy(AppointmentTable.dateStart to SortOrder.ASC)
+                .toList()
+                .withDetails()
                 .map { it.domain() }
         }
     }
@@ -89,7 +104,7 @@ internal class AppointmentDataSourceImpl : DataSource(), AppointmentDataSource {
                 .limit(limit)
                 .offset(offset)
                 .toList()
-                .with(AppointmentEntity::services)
+                .withDetails()
                 .map { it.domain() }
             AppointmentPagination(
                 data = result,
@@ -143,7 +158,7 @@ internal class AppointmentDataSourceImpl : DataSource(), AppointmentDataSource {
         appointment.services.forEach {
             AppointmentServiceEntity.new(appointmentEntity.id, it)
         }
-        appointment
+        appointmentEntity.domain()
     }
 
     override suspend fun delete(id: Uuid) = dbQuery<Unit> {
@@ -161,15 +176,42 @@ internal class AppointmentDataSourceImpl : DataSource(), AppointmentDataSource {
     }
 
     override suspend fun markCompleted(before: Instant) = dbQuery<Unit> {
+        val autoCompletingBusinessIds = SettingsTable
+            .select(SettingsTable.businessId)
+            .where { SettingsTable.automaticCompletion eq true }
         AppointmentTable.update(
             where = {
                 AppointmentTable.status.eq(AppointmentStatus.SCHEDULED)
                     .and(AppointmentTable.dateEnd.less(before))
+                    .and(AppointmentTable.businessId.inSubQuery(autoCompletingBusinessIds))
             }
         ) {
             it[AppointmentTable.status] = AppointmentStatus.COMPLETED
+            it[AppointmentTable.completedBy] = AppointmentCompletedBy.SYSTEM
             it[AppointmentTable.updatedAt] = Clock.System.now()
         }
+    }
+
+    override suspend fun markCompletedByUser(id: Uuid): Appointment = dbQuery {
+        AppointmentEntity.findByIdAndUpdate(id) {
+            it.status = AppointmentStatus.COMPLETED
+            it.completedBy = AppointmentCompletedBy.USER
+            it.updatedAt = Clock.System.now()
+        }?.domain() ?: throw Error.NotFound()
+    }
+
+    override suspend fun adjustPrice(id: Uuid, adjustment: PriceAdjustment): Appointment = dbQuery {
+        val appointment = AppointmentEntity.findById(id) ?: throw Error.NotFound()
+        appointment.replacePriceAdjustment(adjustment)
+        appointment.domain()
+    }
+
+    override suspend fun markNoShow(id: Uuid): Appointment = dbQuery {
+        AppointmentEntity.findByIdAndUpdate(id) {
+            it.status = AppointmentStatus.NO_SHOW
+            it.completedBy = null
+            it.updatedAt = Clock.System.now()
+        }?.domain() ?: throw Error.NotFound()
     }
 
     override suspend fun anonymizeForUser(userId: Uuid) = dbQuery<Unit> {

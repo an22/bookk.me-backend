@@ -49,11 +49,39 @@ internal class GetAppointmentsForDateImplTest {
             transactionManager.mockTransaction()
             coEvery { appointmentPermissionDataSource.getPermission(userId, businessId) } returns ResourcePermission(view = true, update = false, delete = false)
             coEvery { settingsDataSource.get(businessId) } returns settings
-            coEvery { appointmentDataSource.getAllForDate(businessId, expectedRange) } returns appointments
+            coEvery { appointmentDataSource.getAllForDate(businessId, expectedRange, null) } returns appointments
         }
 
         whenn()
-        val result = fixture.sut(userId, businessId, date)
+        val result = fixture.sut(userId, businessId, date, employeeId = null)
+
+        then()
+        assertTrue(result.isSuccess)
+        assertEquals(appointments, result.getOrNull())
+    }
+
+    @Test
+    fun `should return only appointments of requested employee`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+        val businessId = Uuid.random()
+        val employeeId = Uuid.random()
+        val date = LocalDate(2024, 1, 15)
+        val settings = AppointmentSettings.stub(businessId)
+        val instant = date.atStartOfDayIn(settings.timeZone)
+        val expectedRange = instant..(instant + 1.days)
+        val appointments = listOf(Appointment.stub(businessId = businessId))
+
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { appointmentPermissionDataSource.getPermission(userId, businessId) } returns ResourcePermission(view = true, update = false, delete = false)
+            coEvery { settingsDataSource.get(businessId) } returns settings
+            coEvery { appointmentDataSource.getAllForDate(businessId, expectedRange, employeeId) } returns appointments
+        }
+
+        whenn()
+        val result = fixture.sut(userId, businessId, date, employeeId = employeeId)
 
         then()
         assertTrue(result.isSuccess)
@@ -74,7 +102,7 @@ internal class GetAppointmentsForDateImplTest {
         }
 
         whenn()
-        val result = fixture.sut(userId, businessId, date)
+        val result = fixture.sut(userId, businessId, date, employeeId = null)
 
         then()
         assertTrue(result.isFailure)
@@ -96,7 +124,7 @@ internal class GetAppointmentsForDateImplTest {
         }
 
         whenn()
-        val result = fixture.sut(userId, businessId, date)
+        val result = fixture.sut(userId, businessId, date, employeeId = null)
 
         then()
         assertTrue(result.isFailure)
@@ -119,11 +147,11 @@ internal class GetAppointmentsForDateImplTest {
             transactionManager.mockTransaction()
             coEvery { appointmentPermissionDataSource.getPermission(userId, businessId) } returns ResourcePermission(view = true, update = false, delete = false)
             coEvery { settingsDataSource.get(businessId) } returns settings
-            coEvery { appointmentDataSource.getAllForDate(businessId, expectedRange) } throws exception
+            coEvery { appointmentDataSource.getAllForDate(businessId, expectedRange, null) } throws exception
         }
 
         whenn()
-        val result = fixture.sut(userId, businessId, date)
+        val result = fixture.sut(userId, businessId, date, employeeId = null)
 
         then()
         assertTrue(result.isFailure)

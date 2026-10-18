@@ -18,24 +18,14 @@ import kotlinx.datetime.LocalTime
 import library.schedule.DayOffRange
 import library.schedule.Schedule
 import library.schedule.WorkHour
-import org.jetbrains.exposed.v1.core.SqlLogger
-import org.jetbrains.exposed.v1.core.Transaction
-import org.jetbrains.exposed.v1.core.statements.StatementContext
 import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import kotlin.uuid.Uuid
-
-private class CapturingSqlLogger : SqlLogger {
-    val statements = mutableListOf<String>()
-
-    override fun log(context: StatementContext, transaction: Transaction) {
-        statements += context.sql(transaction)
-    }
-}
 
 internal class AppointmentSettingsDataSourceImplTest {
 
@@ -105,6 +95,54 @@ internal class AppointmentSettingsDataSourceImplTest {
         then()
         assertEquals(20, updated.inBetweenBreakInMinutes)
         assertEquals("Updated note", updated.appointmentNote)
+    }
+
+    @Test
+    fun `should enable automatic completion for new settings by default`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+
+        whenn()
+        suspendTransaction { fixture.sut.create(AppointmentSettings.stub(fixture.businessId)) }
+
+        then()
+        assertTrue(suspendTransaction { fixture.sut.get(fixture.businessId) }!!.automaticCompletion)
+    }
+
+    @Test
+    fun `should update automatic completion`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        suspendTransaction { fixture.sut.create(AppointmentSettings.stub(fixture.businessId)) }
+
+        whenn()
+        val updated = suspendTransaction {
+            fixture.sut.update(AppointmentSettingsUpdate.stub(businessId = fixture.businessId, automaticCompletion = false))
+        }
+
+        then()
+        assertFalse(updated.automaticCompletion)
+        assertFalse(suspendTransaction { fixture.sut.get(fixture.businessId) }!!.automaticCompletion)
+    }
+
+    @Test
+    fun `should keep automatic completion when update omits it`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        suspendTransaction {
+            fixture.sut.create(AppointmentSettings.stub(fixture.businessId).copy(automaticCompletion = false))
+        }
+
+        whenn()
+        val updated = suspendTransaction {
+            fixture.sut.update(AppointmentSettingsUpdate.stub(businessId = fixture.businessId, automaticCompletion = null))
+        }
+
+        then()
+        assertFalse(updated.automaticCompletion)
     }
 
     @Test

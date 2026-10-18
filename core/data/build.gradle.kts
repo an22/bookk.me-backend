@@ -16,4 +16,6 @@ dependencies {
     testFixturesImplementation(libs.h2)
     testFixturesImplementation(libs.kotlin.coroutines)
     testFixturesImplementation(libs.mockk)
+
+    testImplementation(testFixtures(projects.core))
 }

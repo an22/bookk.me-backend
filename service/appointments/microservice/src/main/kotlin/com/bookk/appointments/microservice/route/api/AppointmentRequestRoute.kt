@@ -5,6 +5,7 @@ import com.bookk.appointments.domain.api.entity.AppointmentRequest
 import com.bookk.appointments.domain.api.entity.AppointmentRequestDraft
 import com.bookk.appointments.domain.api.operation.CreateAppointmentRequest
 import com.bookk.appointments.domain.api.operation.DeclineAppointmentRequest
+import com.bookk.appointments.domain.api.operation.GetAppointmentRequests
 import com.bookk.appointments.domain.api.operation.GetPendingAppointmentRequests
 import com.bookk.appointments.domain.impl.di.AppointmentsScope
 import com.bookk.appointments.microservice.route.AppointmentsRouting.Api
@@ -49,6 +50,27 @@ fun Routing.requests() {
                    description = "Caller is a suspended employee of this business - BUSINESS_EMPLOYEE_ACCESS_SUSPENDED (200034)"
                    ContentType.Application.ProtoBuf()
                }
+            }
+        }
+
+        /**
+         * Summary: Get own pending appointment requests
+         * Description: Get pending appointment requests the caller made in the business
+         * Tag: appointment
+         * Security: jwt
+         */
+        get<Api.Appointment.Requests.Own> {
+            val principal = requireNotNull(call.principal<AppPrincipal>())
+            val getRequests by application.injectScoped<GetAppointmentRequests>(AppointmentsScope)
+
+            call.respondWith(getRequests(principal.userId, it.parent.businessId))
+        }.describe {
+            responses {
+                response(HttpStatusCode.OK.value) {
+                    schema = jsonSchema<List<AppointmentRequest>>()
+                    description = "List of the caller's pending appointment requests"
+                    ContentType.Application.ProtoBuf()
+                }
             }
         }
 

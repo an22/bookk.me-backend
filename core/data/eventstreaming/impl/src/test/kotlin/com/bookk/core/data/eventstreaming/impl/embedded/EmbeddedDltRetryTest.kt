@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -192,5 +193,26 @@ internal class EmbeddedDltRetryTest {
         assertEquals(3, flakyAttempts.get())
         assertTrue(fixture.exhaustedEventDataSource.findByOriginalTopic(flakyTopic).isEmpty())
         assertTrue(fixture.exhaustedEventDataSource.findByOriginalTopic(healthyTopic).isEmpty())
+    }
+
+    @Test
+    fun `should not retry an event whose handler was cancelled`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val topic = "embedded.dlt.retry.cancelled"
+        val attempts = AtomicInteger(0)
+        fixture.consumer.registerReceiver<KeyedTestEvent, String>(topic) {
+            attempts.incrementAndGet()
+            throw CancellationException("cancelled")
+        }
+        fixture.consumer.start(backgroundScope)
+
+        whenn()
+        fixture.producer.send(KeyedTestEvent(entityId = "entity-1", sequence = 0, topic = topic))
+        advanceThroughRetries()
+
+        then()
+        assertEquals(1, attempts.get())
+        assertTrue(fixture.exhaustedEventDataSource.findByOriginalTopic(topic).isEmpty())
     }
 }

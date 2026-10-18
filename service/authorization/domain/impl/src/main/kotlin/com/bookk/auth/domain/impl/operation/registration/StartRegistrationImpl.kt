@@ -6,6 +6,7 @@ import com.bookk.auth.domain.api.registration.operation.StartRegistration
 import com.bookk.auth.domain.api.registration.operation.StartRegistration.Error.EmailAlreadyExist
 import com.bookk.auth.domain.api.registration.operation.StartRegistration.Error.InvalidEmailFormat
 import com.bookk.core.domain.entity.rethrowBusinessIf
+import com.bookk.core.domain.entity.runSuspendCatching
 import com.bookk.server.user.client.UserClient
 import io.ktor.http.HttpStatusCode
 import library.validation.EmailValidator
@@ -16,7 +17,7 @@ internal class StartRegistrationImpl(
     private val startPasskeyRegistration: StartPasskeyRegistration,
 ) : StartRegistration {
 
-    override suspend fun invoke(request: CreateAccountRequest) = runCatching {
+    override suspend fun invoke(request: CreateAccountRequest) = runSuspendCatching {
         if (!EmailValidator.isValid(request.email)) throw InvalidEmailFormat()
         userClient.getUserByEmail(request.email)
             .onSuccess { throw EmailAlreadyExist() }

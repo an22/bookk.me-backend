@@ -19,7 +19,8 @@ data class AppointmentSettings(
     @ProtoNumber(5) val automaticApproval: Boolean,
     @ProtoNumber(6) val inBetweenBreakInMinutes: Int,
     @ProtoNumber(7) val appointmentNote: String,
-    @ProtoNumber(8) val permissions: ResourcePermission
+    @ProtoNumber(8) val permissions: ResourcePermission,
+    @ProtoNumber(9) val automaticCompletion: Boolean
 ) {
     companion object {
         fun stub(businessId: Uuid = Uuid.random()) = AppointmentSettings(businessId = businessId, TimeZone.of("UTC"))
@@ -33,7 +34,8 @@ data class AppointmentSettings(
         automaticApproval = false,
         inBetweenBreakInMinutes = 10,
         appointmentNote = "",
-        permissions = ResourcePermission.NONE
+        permissions = ResourcePermission.NONE,
+        automaticCompletion = true
     )
 
     fun isInWorkday(date: Instant): Boolean {

@@ -8,6 +8,7 @@ import com.bookk.auth.domain.datasource.PassKeyDataSource
 import com.bookk.auth.domain.impl.passkey.createRelyingParty
 import com.bookk.auth.domain.repository.CacheableCredentialRepository
 import com.bookk.core.domain.datasource.transaction.TransactionManager
+import com.bookk.core.domain.entity.runSuspendCatching
 import com.bookk.core.toUUID
 import com.yubico.webauthn.AssertionRequest
 import com.yubico.webauthn.AssertionResult
@@ -25,7 +26,7 @@ internal class FinishAssertionImpl(
     private val credentialRepository: CacheableCredentialRepository,
     private val transactionManager: TransactionManager
 ) : FinishAssertion {
-    override suspend fun invoke(request: FinishAssertionRequest): Result<PasskeyCredential> = runCatching {
+    override suspend fun invoke(request: FinishAssertionRequest): Result<PasskeyCredential> = runSuspendCatching {
         val cachedRequest = passKeyDataSource.getCachedChallenge(request.requestId) ?: throw Error.ChallengeWindowExpired()
         val challenge = AssertionRequest.fromJson(cachedRequest)
         val response = PublicKeyCredential.parseAssertionResponseJson(request.publicKeyCredentialJson)

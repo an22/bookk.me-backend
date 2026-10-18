@@ -11,4 +11,5 @@ dependencies {
     implementation(libs.kotlin.coroutines)
     implementation(libs.ktor.protobuf)
     testImplementation(libs.kotlin.test)
+    testImplementation(testFixtures(projects.core))
 }

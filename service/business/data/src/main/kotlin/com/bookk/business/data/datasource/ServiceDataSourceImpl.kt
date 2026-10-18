@@ -22,7 +22,7 @@ internal class ServiceDataSourceImpl : DataSource(), ServiceDataSource {
             it[businessId] = service.businessId
             it[groupId] = service.group.id
             it[name] = service.name
-            it[duration] = service.duration.inWholeSeconds.toInt()
+            it[duration] = service.duration.inWholeMinutes.toInt()
             it[priceCurrency] = service.price.currencyUnit.code
             it[priceUnscaled] = service.price.amount.unscaledValue().longValueExact()
             it[priceScale] = service.price.scale
@@ -37,7 +37,7 @@ internal class ServiceDataSourceImpl : DataSource(), ServiceDataSource {
         ) {
             it[businessId] = service.businessId
             it[groupId] = service.group.id
-            it[duration] = service.duration.inWholeSeconds.toInt()
+            it[duration] = service.duration.inWholeMinutes.toInt()
             it[priceCurrency] = service.price.currencyUnit.code
             it[priceUnscaled] = service.price.amount.unscaledValue().longValueExact()
             it[priceScale] = service.price.scale

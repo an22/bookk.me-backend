@@ -2,7 +2,6 @@ package com.bookk.appointments.domain.impl.operation
 
 import com.bookk.appointments.domain.api.entity.AppointmentCancellation
 import com.bookk.appointments.domain.api.entity.AppointmentRequest
-import com.bookk.appointments.domain.api.entity.AppointmentRequestStatus
 import com.bookk.appointments.domain.api.operation.DeclineAppointmentRequest
 import com.bookk.appointments.domain.datasource.AppointmentPermissionDataSource
 import com.bookk.appointments.domain.datasource.AppointmentRequestDataSource
@@ -29,15 +28,11 @@ internal class DeclineAppointmentRequestImpl(
 ) : DeclineAppointmentRequest {
 
     override suspend fun invoke(userId: Uuid, cancellation: AppointmentCancellation): Result<Unit> = transactionManager.transaction {
-        val appointment = requestDataSource.get(cancellation.id) ?: throw Error.NotFound()
-        appointmentPermissionDataSource.getPermission(userId, cancellation.businessId)
+        val appointment = requestDataSource.getForUpdate(cancellation.id) ?: throw Error.NotFound()
+        appointmentPermissionDataSource.getPermission(userId, appointment.businessId)
             .assertOrSelf(PermissionAction.UPDATE, actorId = userId, assigneeId = appointment.employee.userId)
-        val declined = when (appointment.status) {
-            AppointmentRequestStatus.APPROVED -> throw DeclineAppointmentRequest.Error.AlreadyApproved()
-            AppointmentRequestStatus.DECLINED,
-            AppointmentRequestStatus.CANCELLED -> throw DeclineAppointmentRequest.Error.AlreadyDeclined()
-            AppointmentRequestStatus.PENDING -> requestDataSource.decline(cancellation.id, cancellation.reason)
-        }
+        appointment.requirePending()
+        val declined = requestDataSource.decline(cancellation.id, cancellation.reason)
         sendRequestDeclinedEvent(declined)
     }
 

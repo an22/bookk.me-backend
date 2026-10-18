@@ -20,11 +20,11 @@ internal class GetAppointmentsForDateImpl(
     private val settingsDataSource: AppointmentSettingsDataSource,
     private val transactionManager: TransactionManager
 ) : GetAppointmentsForDate {
-    override suspend fun invoke(userId: Uuid, businessId: Uuid, date: LocalDate): Result<List<Appointment>> = transactionManager.transaction {
+    override suspend fun invoke(userId: Uuid, businessId: Uuid, date: LocalDate, employeeId: Uuid?): Result<List<Appointment>> = transactionManager.transaction {
         appointmentPermissionDataSource.getPermission(userId, businessId).assert(PermissionAction.VIEW)
         val settings = settingsDataSource.get(businessId) ?: throw Error.NotFound()
         val instant = date.atStartOfDayIn(settings.timeZone)
         val range = instant..(instant + 1.days)
-        appointmentDataSource.getAllForDate(businessId, range)
+        appointmentDataSource.getAllForDate(businessId, range, employeeId)
     }
 }

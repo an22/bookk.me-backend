@@ -26,6 +26,12 @@ object AppointmentsRouting {
             @Resource("/{id}/cancel")
             class Cancel(val parent: Appointment = Appointment(), val id: Uuid)
 
+            @Resource("/{id}/no-show")
+            class NoShow(val parent: Appointment = Appointment(), val id: Uuid)
+
+            @Resource("/{id}/complete")
+            class Complete(val parent: Appointment = Appointment(), val id: Uuid)
+
             @Resource("/healthcheck")
             class HealthCheck(val parent: Appointment = Appointment())
 
@@ -36,14 +42,23 @@ object AppointmentsRouting {
             class RequestCancel(val parent: Appointment = Appointment(), val id: Uuid)
 
             @Resource("/request/{businessId}")
-            class Requests(val parent: Appointment = Appointment(), val businessId: Uuid)
+            class Requests(val parent: Appointment = Appointment(), val businessId: Uuid) {
+
+                @Resource("/mine")
+                class Own(val parent: Requests)
+            }
 
             @Resource("/settings/{businessId}")
             class Settings(val parent: Appointment = Appointment(), val businessId: Uuid)
         }
 
         @Resource("/appointments/list/{businessId}")
-        class Appointments(val parent: Api = Api(), val businessId: Uuid, val date: LocalDate)
+        class Appointments(
+            val parent: Api = Api(),
+            val businessId: Uuid,
+            val date: LocalDate,
+            val employeeId: Uuid? = null
+        )
 
         @Resource("/appointments/history/{businessId}")
         class AppointmentHistory(

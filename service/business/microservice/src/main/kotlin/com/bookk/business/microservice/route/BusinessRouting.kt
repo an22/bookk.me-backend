@@ -19,6 +19,12 @@ object BusinessRouting {
 
                     @Resource("/appointment-booking-context")
                     class AppointmentBookingContext(val parent: Id)
+
+                    @Resource("/appointment-reschedule-context")
+                    class AppointmentRescheduleContext(val parent: Id)
+
+                    @Resource("/services")
+                    class Services(val parent: Id)
                 }
             }
 

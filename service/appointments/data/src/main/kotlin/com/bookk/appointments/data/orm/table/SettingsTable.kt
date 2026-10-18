@@ -8,4 +8,5 @@ object SettingsTable: BaseUUIDTable("appointment_settings") {
     val inBetweenBreakInMinutes = integer("in_between_break_in_minutes")
     val appointmentNote = varchar("appointment_note", 2048)
     val automaticApproval = bool("automatic_approval")
+    val automaticCompletion = bool("automatic_completion").default(true)
 }

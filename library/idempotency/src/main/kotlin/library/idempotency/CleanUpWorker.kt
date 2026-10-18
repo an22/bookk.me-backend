@@ -1,6 +1,7 @@
 package library.idempotency
 
 import io.ktor.util.logging.KtorSimpleLogger
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
@@ -28,6 +29,8 @@ class CleanUpWorker(
                         idempotentResponseRepository.deleteExpiredResponses(
                             OffsetDateTime.now().minus(storedResponseTTL),
                         )
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         logger.error("Cannot clean up expired responses", e)
                     }

@@ -8,4 +8,5 @@ dependencies {
     implementation(projects.library.money)
     api(projects.library.schedule)
     api(projects.library.permissions)
+    testImplementation(testFixtures(projects.core))
 }

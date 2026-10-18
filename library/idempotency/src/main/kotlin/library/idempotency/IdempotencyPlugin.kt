@@ -17,6 +17,7 @@ import io.ktor.util.logging.KtorSimpleLogger
 import io.ktor.util.logging.debug
 import io.ktor.util.toMap
 import io.ktor.utils.io.toByteArray
+import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.json.Json
 import org.slf4j.Logger
 import java.time.OffsetDateTime
@@ -46,6 +47,8 @@ val IdempotencyPlugin =
         onCall { call ->
             try {
                 interceptRequest(call, logger, pluginConfig, responseRepository)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 logger.error("Cannot intercept request: $e to handle idempotency")
                 if (pluginConfig.failOnError) {
@@ -57,6 +60,8 @@ val IdempotencyPlugin =
         on(ResponseBodyReadyForSend) { call, content ->
             try {
                 storeResponse(call, logger, content, pluginConfig)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 logger.error("Cannot store response: $e")
                 if (pluginConfig.failOnError) {

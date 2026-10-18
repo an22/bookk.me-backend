@@ -41,12 +41,13 @@ internal class CreateBusinessImplTest {
         val userId = Uuid.random()
         val business = Business.stub(name = "Name", currencyCode = "USD")
         val user = UserSnapshot.stub(id = userId, name = "Owner", lastName = "Ownerson", email = "owner@example.com", phone = "+10000000000")
+        val ownerEmployee = Employee.stub(businessId = business.id, userId = userId)
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { businessDataSource.isBusinessExist(userId) } returns false
             coEvery { businessDataSource.createBusiness(userId, "Name", "USD", TimeZone.UTC) } returns business
             coEvery { userClient.getUserById(userId) } returns Result.success(user)
-            coEvery { employeeDataSource.createEmployee(any()) } returns Employee.stub(businessId = business.id, userId = userId)
+            coEvery { employeeDataSource.createEmployee(any()) } returns ownerEmployee
         }
 
         whenn()
@@ -54,7 +55,7 @@ internal class CreateBusinessImplTest {
 
         then()
         assertTrue(result.isSuccess)
-        assertEquals(business.copy(permissions = BusinessPermissions.FULL), result.getOrNull())
+        assertEquals(business.copy(permissions = BusinessPermissions.FULL, employeeId = ownerEmployee.id, clientId = null), result.getOrNull())
         coVerify(exactly = 1) {
             fixture.employeeDataSource.createEmployee(
                 match {

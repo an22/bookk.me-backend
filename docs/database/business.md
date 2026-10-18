@@ -102,7 +102,7 @@ erDiagram
         string lastname
         string phone
         string email
-        uuid user_id "logical FK -> user.profile.id"
+        uuid user_id "logical FK -> user.profile.id; UK with business_id"
         timestamp source_updated_at
         byte working_days
         timestamp suspended_at "nullable; set = suspended, grants read as NONE"

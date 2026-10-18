@@ -11,6 +11,7 @@ import com.bookk.core.data.eventstreaming.StandardEventProducer
 import com.bookk.core.data.eventstreaming.send
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.entity.Error
+import com.bookk.core.domain.entity.onConstraintFailure
 import com.bookk.server.business.client.api.event.BusinessEvent
 import com.bookk.server.user.client.UserClient
 import library.schedule.Schedule
@@ -75,6 +76,8 @@ internal class JoinBusinessImpl(
                 )
             )
             employee
+        }.onConstraintFailure {
+            throw JoinBusiness.Error.EmployeeExist()
         }
     }
 }

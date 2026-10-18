@@ -1,7 +1,7 @@
 package com.bookk.business.domain.impl.operation.business
 
 import com.bookk.business.domain.api.business.entity.Business
-import com.bookk.business.domain.api.business.entity.BusinessPermissions
+import com.bookk.business.domain.api.business.entity.BusinessViewer
 import com.bookk.business.domain.api.business.operation.GetDashboardBusiness
 import com.bookk.business.domain.datasource.BusinessDataSource
 import com.bookk.business.domain.datasource.BusinessPermissionDataSource
@@ -36,7 +36,7 @@ internal class GetDashboardBusinessImplTest {
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { businessDataSource.getDashboardBusiness(userId) } returns business
-            coEvery { businessPermissionDataSource.getPermissions(userId, business.id) } returns BusinessPermissions.NONE
+            coEvery { businessPermissionDataSource.getViewer(userId, business.id) } returns BusinessViewer.NONE
         }
 
         whenn()
@@ -45,6 +45,26 @@ internal class GetDashboardBusinessImplTest {
         then()
         assertTrue(result.isSuccess)
         assertEquals(business, result.getOrNull())
+    }
+
+    @Test
+    fun `should attach the caller's viewer to the business`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+        val business = Business.stub()
+        val viewer = BusinessViewer.stub(employeeId = Uuid.random(), clientId = Uuid.random())
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { businessDataSource.getDashboardBusiness(userId) } returns business
+            coEvery { businessPermissionDataSource.getViewer(userId, business.id) } returns viewer
+        }
+
+        whenn()
+        val result = fixture.sut(userId)
+
+        then()
+        assertEquals(business.viewedBy(viewer), result.getOrNull())
     }
 
     @Test

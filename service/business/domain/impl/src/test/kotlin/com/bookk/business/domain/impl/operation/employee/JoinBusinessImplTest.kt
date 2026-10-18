@@ -313,6 +313,25 @@ internal class JoinBusinessImplTest {
     }
 
     @Test
+    fun `should return failure when the user concurrently became an employee of the business`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val requestUserId = Uuid.random()
+        val invitation = EmployeeInvitation.stub()
+        with(fixture) {
+            stubHappyPath(requestUserId, invitation, Employee.stub(businessId = invitation.businessId, userId = requestUserId))
+            coEvery { employeeDataSource.createEmployee(any()) } throws Error.UniqueConstraintFailed("employee_business_id_user_id_unique", RuntimeException())
+        }
+
+        whenn()
+        val result = fixture.sut(requestUserId, requireNotNull(invitation.code))
+
+        then()
+        assertTrue(result.exceptionOrNull() is JoinBusiness.Error.EmployeeExist)
+        coVerify(exactly = 0) { fixture.eventProducer.send(any(), any()) }
+    }
+
+    @Test
     fun `should return failure when business does not exist`() = runUnitTest {
         given()
         val fixture = SutFixture()

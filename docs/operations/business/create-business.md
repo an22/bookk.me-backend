@@ -28,5 +28,5 @@ flowchart TD
     ResolveOwner --> CreateEmployee[EmployeeDataSource.createEmployee owner as employee of business.id, permissions = BusinessPermissions.FULL - also upserts the five business_permission_grants rows]
     CreateEmployee --> Constraint{Unique constraint violated?}
     Constraint -- Yes --> R422b
-    Constraint -- No --> R200([200 Created Business])
+    Constraint -- No --> R200([200 Created Business - permissions = FULL, employeeId = owner employee id, clientId = null])
 ```

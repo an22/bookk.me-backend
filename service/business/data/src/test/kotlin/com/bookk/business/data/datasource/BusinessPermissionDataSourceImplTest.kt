@@ -5,6 +5,7 @@ import com.bookk.business.data.orm.table.BusinessDayOffTable
 import com.bookk.business.data.orm.table.BusinessPermissionGrantsTable
 import com.bookk.business.data.orm.table.BusinessTable
 import com.bookk.business.data.orm.table.BusinessWorkingHoursTable
+import com.bookk.business.data.orm.table.ClientTable
 import com.bookk.business.data.orm.table.EmployeeCanProvideServiceTable
 import com.bookk.business.data.orm.table.EmployeeDayOffTable
 import com.bookk.business.data.orm.table.EmployeeTable
@@ -13,6 +14,8 @@ import com.bookk.business.data.orm.table.ServiceGroupTable
 import com.bookk.business.data.orm.table.ServiceTable
 import com.bookk.business.domain.api.business.entity.BusinessPermissions
 import com.bookk.business.domain.api.business.entity.BusinessResource
+import com.bookk.business.domain.api.business.entity.BusinessViewer
+import com.bookk.business.domain.api.client.entity.Client
 import com.bookk.business.domain.api.employee.entity.Employee
 import com.bookk.core.data.test.createTestDatabase
 import com.bookk.core.test.given
@@ -24,6 +27,7 @@ import library.permissions.EmployeeAccessSuspended
 import library.permissions.ResourcePermission
 import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import kotlin.time.Instant
@@ -43,10 +47,12 @@ internal class BusinessPermissionDataSourceImplTest {
             EmployeeCanProvideServiceTable,
             EmployeeWorkingHoursTable,
             EmployeeDayOffTable,
-            BusinessPermissionGrantsTable
+            BusinessPermissionGrantsTable,
+            ClientTable
         )
         val businessDataSource = BusinessDataSourceImpl()
         val employeeDataSource = EmployeeDataSourceImpl()
+        val clientDataSource = ClientDataSourceImpl()
         val sut = BusinessPermissionDataSourceImpl()
 
         suspend fun employee(userId: Uuid, businessName: String = "Salon"): Employee {
@@ -102,7 +108,7 @@ internal class BusinessPermissionDataSourceImplTest {
                 )
             )
         }
-        val permissions = suspendTransaction { fixture.sut.getPermissions(employee.userId, employee.businessId) }
+        val permissions = suspendTransaction { fixture.sut.getViewer(employee.userId, employee.businessId) }.permissions
 
         then()
         assertEquals(
@@ -153,7 +159,7 @@ internal class BusinessPermissionDataSourceImplTest {
         }
 
         whenn()
-        val permissions = suspendTransaction { fixture.sut.getPermissions(employee.userId, employee.businessId) }
+        val permissions = suspendTransaction { fixture.sut.getViewer(employee.userId, employee.businessId) }.permissions
 
         then()
         assertEquals(ResourcePermission(view = true, update = false, delete = false), permissions.clients)
@@ -224,7 +230,7 @@ internal class BusinessPermissionDataSourceImplTest {
     }
 
     @Test
-    fun `should return no permissions snapshot while the employee is suspended`() = runUnitTest {
+    fun `should hide the employee id and permissions from the viewer while the employee is suspended`() = runUnitTest {
         given()
         val fixture = SutFixture()
         val employee = fixture.employee(Uuid.random())
@@ -234,10 +240,113 @@ internal class BusinessPermissionDataSourceImplTest {
         }
 
         whenn()
-        val permissions = suspendTransaction { fixture.sut.getPermissions(employee.userId, employee.businessId) }
+        val viewer = suspendTransaction { fixture.sut.getViewer(employee.userId, employee.businessId) }
 
         then()
-        assertEquals(BusinessPermissions.NONE, permissions)
+        assertEquals(BusinessPermissions.NONE, viewer.permissions)
+        assertNull(viewer.employeeId)
+    }
+
+    @Test
+    fun `should keep the client id of a suspended employee who is also a client`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val employee = fixture.employee(Uuid.random())
+        val client = suspendTransaction {
+            fixture.employeeDataSource.setSuspendedAt(employee.id, Instant.fromEpochMilliseconds(1))
+            fixture.clientDataSource.createIntegratedClient(employee.businessId, Client.Integrated.stub(userId = employee.userId))
+        }
+
+        whenn()
+        val viewer = suspendTransaction { fixture.sut.getViewer(employee.userId, employee.businessId) }
+
+        then()
+        assertEquals(client.id, viewer.clientId)
+        assertNull(viewer.employeeId)
+    }
+
+    @Test
+    fun `should resolve the viewer's own employee id`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val employee = fixture.employee(Uuid.random())
+
+        whenn()
+        val viewer = suspendTransaction { fixture.sut.getViewer(employee.userId, employee.businessId) }
+
+        then()
+        assertEquals(employee.id, viewer.employeeId)
+        assertNull(viewer.clientId)
+    }
+
+    @Test
+    fun `should resolve the viewer's own client id`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+        val business = suspendTransaction { fixture.businessDataSource.createBusiness(Uuid.random(), "Salon", "USD", TimeZone.UTC) }
+        val client = suspendTransaction { fixture.clientDataSource.createIntegratedClient(business.id, Client.Integrated.stub(userId = userId)) }
+
+        whenn()
+        val viewer = suspendTransaction { fixture.sut.getViewer(userId, business.id) }
+
+        then()
+        assertEquals(BusinessViewer.stub(clientId = client.id), viewer)
+    }
+
+    @Test
+    fun `should return an empty viewer for a user who is neither employee nor client`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val employee = fixture.employee(Uuid.random())
+
+        whenn()
+        val viewer = suspendTransaction { fixture.sut.getViewer(Uuid.random(), employee.businessId) }
+
+        then()
+        assertEquals(BusinessViewer.NONE, viewer)
+    }
+
+    @Test
+    fun `should resolve viewers for several businesses in one call`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+        val employedAt = fixture.employee(userId, businessName = "Salon")
+        val suspendedAt = fixture.employee(userId, businessName = "Other Salon")
+        val strangerBusiness = suspendTransaction { fixture.businessDataSource.createBusiness(Uuid.random(), "Third Salon", "USD", TimeZone.UTC) }
+        val client = suspendTransaction {
+            fixture.sut.setPermissions(employedAt, mapOf(BusinessResource.CLIENTS to ResourcePermission.FULL))
+            fixture.sut.setPermissions(suspendedAt, mapOf(BusinessResource.CLIENTS to ResourcePermission.FULL))
+            fixture.employeeDataSource.setSuspendedAt(suspendedAt.id, Instant.fromEpochMilliseconds(1))
+            fixture.clientDataSource.createIntegratedClient(employedAt.businessId, Client.Integrated.stub(userId = userId))
+        }
+
+        whenn()
+        val viewers = suspendTransaction {
+            fixture.sut.getViewers(userId, listOf(employedAt.businessId, suspendedAt.businessId, strangerBusiness.id))
+        }
+
+        then()
+        assertEquals(setOf(employedAt.businessId, suspendedAt.businessId, strangerBusiness.id), viewers.keys)
+        val employedAtViewer = viewers.getValue(employedAt.businessId)
+        assertEquals(employedAt.id, employedAtViewer.employeeId)
+        assertEquals(client.id, employedAtViewer.clientId)
+        assertEquals(ResourcePermission.FULL, employedAtViewer.permissions.clients)
+        assertEquals(BusinessViewer.NONE, viewers.getValue(suspendedAt.businessId))
+        assertEquals(BusinessViewer.NONE, viewers.getValue(strangerBusiness.id))
+    }
+
+    @Test
+    fun `should return no viewers when no business is requested`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+
+        whenn()
+        val viewers = suspendTransaction { fixture.sut.getViewers(Uuid.random(), emptyList()) }
+
+        then()
+        assertTrue(viewers.isEmpty())
     }
 
     @Test

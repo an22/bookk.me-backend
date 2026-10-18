@@ -453,6 +453,43 @@ internal class EmployeeDataSourceImplTest {
     }
 
     @Test
+    fun `should reject a second employee row for the same user in the same business`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val userId = Uuid.random()
+        suspendTransaction { fixture.sut.createEmployee(Employee.stub(businessId = fixture.businessId, userId = userId)) }
+
+        whenn()
+        val result = runCatching {
+            suspendTransaction { fixture.sut.createEmployee(Employee.stub(businessId = fixture.businessId, userId = userId)) }
+        }
+
+        then()
+        assertTrue(result.exceptionOrNull() is Error.UniqueConstraintFailed)
+    }
+
+    @Test
+    fun `should allow the same user to be an employee of different businesses`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.setup()
+        val userId = Uuid.random()
+        val otherBusinessId = suspendTransaction {
+            fixture.businessSut.createBusiness(Uuid.random(), "Other Business", "USD", TimeZone.UTC)
+        }.id
+        suspendTransaction { fixture.sut.createEmployee(Employee.stub(businessId = fixture.businessId, userId = userId)) }
+
+        whenn()
+        val result = runCatching {
+            suspendTransaction { fixture.sut.createEmployee(Employee.stub(businessId = otherBusinessId, userId = userId)) }
+        }
+
+        then()
+        assertTrue(result.isSuccess)
+    }
+
+    @Test
     fun `should return null when user is not an employee of the business`() = runUnitTest {
         given()
         val fixture = SutFixture()

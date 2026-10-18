@@ -44,6 +44,7 @@ import library.schedule.DayOffRange
 import library.schedule.Schedule
 import library.schedule.WorkHour
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import org.koin.dsl.module
 import kotlin.uuid.Uuid
@@ -200,7 +201,7 @@ internal class BusinessCrudTest {
         
         whenn()
         val client = createTestClient()
-        val response = client.get(BusinessRouting.Api.Business())
+        val response = client.get(BusinessRouting.Api.Business.Mine())
         
         then()
         assertEquals(HttpStatusCode.OK, response.status)
@@ -234,6 +235,68 @@ internal class BusinessCrudTest {
 
         then()
         assertEquals(HttpStatusCode.OK, response.status)
+    }
+
+    @Test
+    fun `should return the caller's employee id and client id with the business`() = routeTest {
+        given()
+        val useCase: GetBusinessById = mockk()
+        val employeeId = Uuid.random()
+        val clientId = Uuid.random()
+        coEvery { useCase.invoke(businessId, userId) } returns
+            Result.success(Business.stub(id = businessId, employeeId = employeeId, clientId = clientId))
+
+        setupApplication(
+            extension = {
+                install(Authentication) {
+                    provider {
+                        authenticate { it.principal(AppPrincipal(Uuid.random(), userId, Uuid.random())) }
+                    }
+                }
+            },
+            diModule = module {
+                single { useCase }
+            },
+            routeUnderTest = { businessCrud() }
+        )
+
+        whenn()
+        val response = createTestClient().get(BusinessRouting.Api.Business.Id(id = businessId))
+
+        then()
+        val business = response.body<Business>()
+        assertEquals(employeeId, business.employeeId)
+        assertEquals(clientId, business.clientId)
+    }
+
+    @Test
+    fun `should return empty employee id and client id when the caller is neither`() = routeTest {
+        given()
+        val useCase: GetBusinessById = mockk()
+        coEvery { useCase.invoke(businessId, userId) } returns Result.success(Business.stub(id = businessId))
+
+        setupApplication(
+            extension = {
+                install(Authentication) {
+                    provider {
+                        authenticate { it.principal(AppPrincipal(Uuid.random(), userId, Uuid.random())) }
+                    }
+                }
+            },
+            diModule = module {
+                single { useCase }
+            },
+            routeUnderTest = { businessCrud() }
+        )
+
+        whenn()
+        val response = createTestClient().get(BusinessRouting.Api.Business.Id(id = businessId))
+
+        then()
+        val business = response.body<Business>()
+        assertEquals(HttpStatusCode.OK, response.status)
+        assertNull(business.employeeId)
+        assertNull(business.clientId)
     }
 
     @Test
@@ -355,7 +418,7 @@ internal class BusinessCrudTest {
 
         whenn()
         val client = createTestClient()
-        val response = client.get(BusinessRouting.Api.Business())
+        val response = client.get(BusinessRouting.Api.Business.Mine())
 
         then()
         assertEquals(HttpStatusCode.Unauthorized, response.status)

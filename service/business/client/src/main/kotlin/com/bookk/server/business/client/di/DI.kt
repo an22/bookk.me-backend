@@ -2,7 +2,7 @@ package com.bookk.server.business.client.di
 
 import com.bookk.business.domain.api.appointment.operation.GetAppointmentBookingContext
 import com.bookk.business.domain.api.appointment.operation.GetAppointmentRescheduleContext
-import com.bookk.business.domain.api.business.operation.GetBusinessById
+import com.bookk.business.domain.api.business.operation.GetBusinessDetails
 import com.bookk.business.domain.api.business.operation.GetBusinessPermission
 import com.bookk.business.domain.api.client.operation.GetClientBusinessIds
 import com.bookk.business.domain.api.service.operation.GetServicesByIds
@@ -12,7 +12,7 @@ import com.bookk.server.business.client.api.BusinessClient
 import com.bookk.server.business.client.impl.BusinessClientImpl
 import com.bookk.server.business.client.impl.operation.GetAppointmentBookingContextClientImpl
 import com.bookk.server.business.client.impl.operation.GetAppointmentRescheduleContextClientImpl
-import com.bookk.server.business.client.impl.operation.GetBusinessByIdClientImpl
+import com.bookk.server.business.client.impl.operation.GetBusinessDetailsClientImpl
 import com.bookk.server.business.client.impl.operation.GetBusinessPermissionClientImpl
 import com.bookk.server.business.client.impl.operation.GetClientBusinessIdsClientImpl
 import com.bookk.server.business.client.impl.operation.GetServicesByIdsClientImpl
@@ -88,7 +88,7 @@ fun businessClientModule(qualifier: Qualifier, clientTag: String) = module {
                 }
             }
         }
-        scoped<GetBusinessById> { GetBusinessByIdClientImpl(get(named(BUSINESS_HTTP_CLIENT))) }
+        scoped<GetBusinessDetails> { GetBusinessDetailsClientImpl(get(named(BUSINESS_HTTP_CLIENT))) }
         scoped<GetBusinessPermission> { GetBusinessPermissionClientImpl(get(named(BUSINESS_HTTP_CLIENT))) }
         scoped<GetAppointmentBookingContext> { GetAppointmentBookingContextClientImpl(get(named(BUSINESS_HTTP_CLIENT))) }
         scoped<GetAppointmentRescheduleContext> { GetAppointmentRescheduleContextClientImpl(get(named(BUSINESS_HTTP_CLIENT))) }

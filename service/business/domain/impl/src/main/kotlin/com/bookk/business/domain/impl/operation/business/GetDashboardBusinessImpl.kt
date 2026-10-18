@@ -15,6 +15,6 @@ internal class GetDashboardBusinessImpl(
 ): GetDashboardBusiness {
     override suspend fun invoke(userId: Uuid): Result<Business> = transactionManager.transaction {
         val business = businessDataSource.getDashboardBusiness(userId) ?: throw NotFound()
-        business.copy(permissions = businessPermissionDataSource.getPermissions(userId, business.id))
+        business.viewedBy(businessPermissionDataSource.getViewer(userId, business.id))
     }
 }

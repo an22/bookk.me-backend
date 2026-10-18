@@ -27,6 +27,7 @@ import io.ktor.server.application.install
 import io.ktor.server.auth.Authentication
 import io.ktor.server.auth.bearer
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
 import org.joda.money.Money
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -382,5 +383,214 @@ internal class ServiceCrudTest {
 
         then()
         assertEquals(HttpStatusCode.Unauthorized, response.status)
+    }
+
+    @Test
+    fun `should return unprocessable entity when price precision is invalid on create`() = routeTest {
+        given()
+        val useCase: CreateService = mockk()
+        val service = Service.stub(businessId = businessId)
+        coEvery { useCase.invoke(userId, service) } returns Result.failure(CreateService.Error.PricePrecisionInvalid())
+
+        setupApplication(
+            extension = {
+                install(Authentication) {
+                    provider {
+                        authenticate { it.principal(AppPrincipal(Uuid.random(), userId, Uuid.random())) }
+                    }
+                }
+            },
+            diModule = module { single { useCase } },
+            routeUnderTest = { serviceCrud() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.post(BusinessRouting.Api.Service(businessId = businessId)) {
+            setBody(service)
+        }
+
+        then()
+        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
+        assertEquals(BusinessErrorCodes.BUSINESS_SERVICE_PRICE_PRECISION_INVALID, response.body<SimpleServerError>().errorCode)
+    }
+
+    @Test
+    fun `should return unprocessable entity when price precision is invalid on update`() = routeTest {
+        given()
+        val useCase: UpdateService = mockk()
+        val service = Service.stub(businessId = businessId)
+        coEvery { useCase.invoke(userId, service) } returns Result.failure(UpdateService.Error.PricePrecisionInvalid())
+
+        setupApplication(
+            extension = {
+                install(Authentication) {
+                    provider {
+                        authenticate { it.principal(AppPrincipal(Uuid.random(), userId, Uuid.random())) }
+                    }
+                }
+            },
+            diModule = module { single { useCase } },
+            routeUnderTest = { serviceCrud() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.put(BusinessRouting.Api.Service.Id(BusinessRouting.Api.Service(businessId = businessId), service.id)) {
+            setBody(service)
+        }
+
+        then()
+        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
+        assertEquals(BusinessErrorCodes.BUSINESS_SERVICE_PRICE_PRECISION_INVALID, response.body<SimpleServerError>().errorCode)
+    }
+
+    @Test
+    fun `should return unprocessable entity when the business currency is invalid on create`() = routeTest {
+        given()
+        val useCase: CreateService = mockk()
+        val service = Service.stub(businessId = businessId)
+        coEvery { useCase.invoke(userId, service) } returns Result.failure(CreateService.Error.BusinessCurrencyInvalid())
+
+        setupApplication(
+            extension = {
+                install(Authentication) {
+                    provider {
+                        authenticate { it.principal(AppPrincipal(Uuid.random(), userId, Uuid.random())) }
+                    }
+                }
+            },
+            diModule = module { single { useCase } },
+            routeUnderTest = { serviceCrud() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.post(BusinessRouting.Api.Service(businessId = businessId)) {
+            setBody(service)
+        }
+
+        then()
+        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
+        assertEquals(BusinessErrorCodes.BUSINESS_SERVICE_BUSINESS_CURRENCY_INVALID, response.body<SimpleServerError>().errorCode)
+    }
+
+    @Test
+    fun `should return unprocessable entity when the business currency is invalid on update`() = routeTest {
+        given()
+        val useCase: UpdateService = mockk()
+        val service = Service.stub(businessId = businessId)
+        coEvery { useCase.invoke(userId, service) } returns Result.failure(UpdateService.Error.BusinessCurrencyInvalid())
+
+        setupApplication(
+            extension = {
+                install(Authentication) {
+                    provider {
+                        authenticate { it.principal(AppPrincipal(Uuid.random(), userId, Uuid.random())) }
+                    }
+                }
+            },
+            diModule = module { single { useCase } },
+            routeUnderTest = { serviceCrud() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.put(BusinessRouting.Api.Service.Id(BusinessRouting.Api.Service(businessId = businessId), service.id)) {
+            setBody(service)
+        }
+
+        then()
+        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
+        assertEquals(BusinessErrorCodes.BUSINESS_SERVICE_BUSINESS_CURRENCY_INVALID, response.body<SimpleServerError>().errorCode)
+    }
+
+    @Test
+    fun `should return bad request when path service id does not match body id on update`() = routeTest {
+        given()
+        val useCase: UpdateService = mockk()
+        val service = Service.stub(businessId = businessId)
+
+        setupApplication(
+            extension = {
+                install(Authentication) {
+                    provider {
+                        authenticate { it.principal(AppPrincipal(Uuid.random(), userId, Uuid.random())) }
+                    }
+                }
+            },
+            diModule = module { single { useCase } },
+            routeUnderTest = { serviceCrud() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.put(BusinessRouting.Api.Service.Id(BusinessRouting.Api.Service(businessId = businessId), Uuid.random())) {
+            setBody(service)
+        }
+
+        then()
+        assertEquals(HttpStatusCode.BadRequest, response.status)
+        coVerify(exactly = 0) { useCase.invoke(any(), any()) }
+    }
+
+    @Test
+    fun `should return unprocessable entity when the service group is not in the business on create`() = routeTest {
+        given()
+        val useCase: CreateService = mockk()
+        val service = Service.stub(businessId = businessId)
+        coEvery { useCase.invoke(userId, service) } returns Result.failure(CreateService.Error.ServiceGroupNotFound())
+
+        setupApplication(
+            extension = {
+                install(Authentication) {
+                    provider {
+                        authenticate { it.principal(AppPrincipal(Uuid.random(), userId, Uuid.random())) }
+                    }
+                }
+            },
+            diModule = module { single { useCase } },
+            routeUnderTest = { serviceCrud() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.post(BusinessRouting.Api.Service(businessId = businessId)) {
+            setBody(service)
+        }
+
+        then()
+        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
+        assertEquals(BusinessErrorCodes.BUSINESS_SERVICE_GROUP_NOT_EXISTS, response.body<SimpleServerError>().errorCode)
+    }
+
+    @Test
+    fun `should return unprocessable entity when the service group is not in the business on update`() = routeTest {
+        given()
+        val useCase: UpdateService = mockk()
+        val service = Service.stub(businessId = businessId)
+        coEvery { useCase.invoke(userId, service) } returns Result.failure(UpdateService.Error.ServiceGroupNotFound())
+
+        setupApplication(
+            extension = {
+                install(Authentication) {
+                    provider {
+                        authenticate { it.principal(AppPrincipal(Uuid.random(), userId, Uuid.random())) }
+                    }
+                }
+            },
+            diModule = module { single { useCase } },
+            routeUnderTest = { serviceCrud() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.put(BusinessRouting.Api.Service.Id(BusinessRouting.Api.Service(businessId = businessId), service.id)) {
+            setBody(service)
+        }
+
+        then()
+        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
+        assertEquals(BusinessErrorCodes.BUSINESS_SERVICE_GROUP_NOT_EXISTS, response.body<SimpleServerError>().errorCode)
     }
 }

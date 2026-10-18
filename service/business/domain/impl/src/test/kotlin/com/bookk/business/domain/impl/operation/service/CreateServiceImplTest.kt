@@ -4,7 +4,10 @@ import com.bookk.business.domain.api.business.entity.BusinessResource
 import com.bookk.business.domain.api.service.entity.Service
 import com.bookk.business.domain.api.service.entity.ServiceGroup
 import com.bookk.business.domain.api.service.operation.CreateService
+import com.bookk.business.domain.datasource.BusinessDataSource
 import com.bookk.business.domain.datasource.BusinessPermissionDataSource
+import com.bookk.business.domain.datasource.LockedBusiness
+import com.bookk.business.domain.datasource.RowLock
 import com.bookk.business.domain.datasource.ServiceDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.datasource.transaction.mockTransaction
@@ -14,45 +17,41 @@ import com.bookk.core.test.runUnitTest
 import com.bookk.core.test.then
 import com.bookk.core.test.whenn
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
 import library.permissions.ResourcePermission
 import org.joda.money.Money
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import kotlin.time.Duration.Companion.minutes
-import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
 internal class CreateServiceImplTest {
 
     private class SutFixture {
         val serviceDataSource = mockk<ServiceDataSource>()
+        val businessDataSource = mockk<BusinessDataSource>()
         val businessPermissionDataSource = mockk<BusinessPermissionDataSource>()
         val transactionManager = mockk<TransactionManager>()
-        val sut = CreateServiceImpl(serviceDataSource, businessPermissionDataSource, transactionManager)
-    }
+        val sut = CreateServiceImpl(serviceDataSource, businessDataSource, businessPermissionDataSource, transactionManager)
 
-    private fun createTestService(name: String = "Service") = Service(
-        id = Uuid.random(),
-        businessId = Uuid.random(),
-        group = ServiceGroup(Uuid.random(), Uuid.random(), "Group", Instant.fromEpochMilliseconds(0)),
-        name = name,
-        duration = 30.minutes,
-        price = Money.parse("USD 100"),
-        isAvailable = true,
-        createdAt = Instant.fromEpochMilliseconds(0)
-    )
+        fun allowServiceUpdates(userId: Uuid, businessId: Uuid) {
+            coEvery { businessPermissionDataSource.getPermission(userId, businessId, BusinessResource.SERVICES) } returns
+                ResourcePermission(view = false, update = true, delete = false)
+        }
+    }
 
     @Test
     fun `should create service successfully when valid data provided`() = runUnitTest {
         given()
         val fixture = SutFixture()
         val userId = Uuid.random()
-        val service = createTestService()
+        val service = Service.stub(price = Money.parse("USD 100"))
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { businessPermissionDataSource.getPermission(userId, service.businessId, BusinessResource.SERVICES) } returns ResourcePermission(view = false, update = true, delete = false)
+            allowServiceUpdates(userId, service.businessId)
+            coEvery { businessDataSource.lockBusiness(service.businessId, RowLock.SHARED) } returns LockedBusiness("USD")
+            coEvery { serviceDataSource.lockServiceGroup(service.group.id, service.businessId) } returns service.group
             coEvery { serviceDataSource.createService(service) } returns service
         }
 
@@ -65,11 +64,96 @@ internal class CreateServiceImplTest {
     }
 
     @Test
+    fun `should price the service in the business currency whatever currency the request carries`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+        val service = Service.stub(price = Money.parse("USD 100"))
+        val priced = service.copy(price = Money.parse("EUR 100"))
+        with(fixture) {
+            transactionManager.mockTransaction()
+            allowServiceUpdates(userId, service.businessId)
+            coEvery { businessDataSource.lockBusiness(service.businessId, RowLock.SHARED) } returns LockedBusiness("EUR")
+            coEvery { serviceDataSource.lockServiceGroup(service.group.id, service.businessId) } returns service.group
+            coEvery { serviceDataSource.createService(priced) } returns priced
+        }
+
+        whenn()
+        val result = fixture.sut(userId, service)
+
+        then()
+        assertEquals(priced, result.getOrNull())
+        coVerify(exactly = 1) { fixture.serviceDataSource.createService(priced) }
+    }
+
+    @Test
+    fun `should accept a price whose trailing zero decimals the business currency does not use`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+        val service = Service.stub(price = Money.parse("USD 100.00"))
+        val priced = service.copy(price = Money.parse("JPY 100"))
+        with(fixture) {
+            transactionManager.mockTransaction()
+            allowServiceUpdates(userId, service.businessId)
+            coEvery { businessDataSource.lockBusiness(service.businessId, RowLock.SHARED) } returns LockedBusiness("JPY")
+            coEvery { serviceDataSource.lockServiceGroup(service.group.id, service.businessId) } returns service.group
+            coEvery { serviceDataSource.createService(priced) } returns priced
+        }
+
+        whenn()
+        val result = fixture.sut(userId, service)
+
+        then()
+        assertEquals(priced, result.getOrNull())
+    }
+
+    @Test
+    fun `should return failure when the price has more decimals than the business currency allows`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+        val service = Service.stub(price = Money.parse("USD 100.50"))
+        with(fixture) {
+            transactionManager.mockTransaction()
+            allowServiceUpdates(userId, service.businessId)
+            coEvery { businessDataSource.lockBusiness(service.businessId, RowLock.SHARED) } returns LockedBusiness("JPY")
+        }
+
+        whenn()
+        val result = fixture.sut(userId, service)
+
+        then()
+        assertTrue(result.exceptionOrNull() is CreateService.Error.PricePrecisionInvalid)
+        coVerify(exactly = 0) { fixture.serviceDataSource.createService(any()) }
+    }
+
+    @Test
+    fun `should return not found when the business does not exist`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+        val service = Service.stub()
+        with(fixture) {
+            transactionManager.mockTransaction()
+            allowServiceUpdates(userId, service.businessId)
+            coEvery { businessDataSource.lockBusiness(service.businessId, RowLock.SHARED) } returns null
+        }
+
+        whenn()
+        val result = fixture.sut(userId, service)
+
+        then()
+        assertTrue(result.exceptionOrNull() is Error.NotFound)
+        coVerify(exactly = 0) { fixture.serviceDataSource.createService(any()) }
+    }
+
+    @Test
     fun `should return failure when name is blank`() = runUnitTest {
         given()
         val fixture = SutFixture()
         val userId = Uuid.random()
-        val service = createTestService(name = "")
+        val service = Service.stub(name = "")
 
         whenn()
         val result = fixture.sut(userId, service)
@@ -84,7 +168,7 @@ internal class CreateServiceImplTest {
         given()
         val fixture = SutFixture()
         val userId = Uuid.random()
-        val service = createTestService()
+        val service = Service.stub()
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { businessPermissionDataSource.getPermission(userId, service.businessId, BusinessResource.SERVICES) } returns ResourcePermission(view = true, update = false, delete = false)
@@ -96,6 +180,7 @@ internal class CreateServiceImplTest {
         then()
         assertTrue(result.isFailure)
         assertTrue(result.exceptionOrNull() is Error.OperationNotAllowed)
+        coVerify(exactly = 0) { fixture.businessDataSource.lockBusiness(any(), any()) }
     }
 
     @Test
@@ -103,10 +188,12 @@ internal class CreateServiceImplTest {
         given()
         val fixture = SutFixture()
         val userId = Uuid.random()
-        val service = createTestService()
+        val service = Service.stub()
         with(fixture) {
             transactionManager.mockTransaction()
-            coEvery { businessPermissionDataSource.getPermission(userId, service.businessId, BusinessResource.SERVICES) } returns ResourcePermission(view = false, update = true, delete = false)
+            allowServiceUpdates(userId, service.businessId)
+            coEvery { businessDataSource.lockBusiness(service.businessId, RowLock.SHARED) } returns LockedBusiness("USD")
+            coEvery { serviceDataSource.lockServiceGroup(service.group.id, service.businessId) } returns service.group
             coEvery { serviceDataSource.createService(service) } throws Error.UniqueConstraintFailed("", RuntimeException())
         }
 
@@ -116,5 +203,70 @@ internal class CreateServiceImplTest {
         then()
         assertTrue(result.isFailure)
         assertTrue(result.exceptionOrNull() is CreateService.Error.ServiceExist)
+    }
+
+    @Test
+    fun `should return failure when the stored business currency is not supported`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+        val service = Service.stub()
+        with(fixture) {
+            transactionManager.mockTransaction()
+            allowServiceUpdates(userId, service.businessId)
+            coEvery { businessDataSource.lockBusiness(service.businessId, RowLock.SHARED) } returns LockedBusiness("usd")
+        }
+
+        whenn()
+        val result = fixture.sut(userId, service)
+
+        then()
+        assertTrue(result.exceptionOrNull() is CreateService.Error.BusinessCurrencyInvalid)
+        coVerify(exactly = 0) { fixture.serviceDataSource.createService(any()) }
+    }
+
+    @Test
+    fun `should return failure when the service group does not belong to the business`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+        val service = Service.stub()
+        with(fixture) {
+            transactionManager.mockTransaction()
+            allowServiceUpdates(userId, service.businessId)
+            coEvery { businessDataSource.lockBusiness(service.businessId, RowLock.SHARED) } returns LockedBusiness("USD")
+            coEvery { serviceDataSource.lockServiceGroup(service.group.id, service.businessId) } returns null
+        }
+
+        whenn()
+        val result = fixture.sut(userId, service)
+
+        then()
+        assertTrue(result.exceptionOrNull() is CreateService.Error.ServiceGroupNotFound)
+        coVerify(exactly = 0) { fixture.serviceDataSource.createService(any()) }
+    }
+
+    @Test
+    fun `should store and return the stored service group instead of the one in the request`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+        val storedGroup = ServiceGroup.stub(name = "Stored")
+        val service = Service.stub(businessId = storedGroup.businessId, group = storedGroup.copy(name = "Sent by client"))
+        val resolved = service.copy(group = storedGroup)
+        with(fixture) {
+            transactionManager.mockTransaction()
+            allowServiceUpdates(userId, service.businessId)
+            coEvery { businessDataSource.lockBusiness(service.businessId, RowLock.SHARED) } returns LockedBusiness("USD")
+            coEvery { serviceDataSource.lockServiceGroup(storedGroup.id, service.businessId) } returns storedGroup
+            coEvery { serviceDataSource.createService(resolved) } returns resolved
+        }
+
+        whenn()
+        val result = fixture.sut(userId, service)
+
+        then()
+        assertEquals(storedGroup, result.getOrNull()?.group)
+        coVerify(exactly = 1) { fixture.serviceDataSource.createService(resolved) }
     }
 }

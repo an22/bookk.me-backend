@@ -37,7 +37,7 @@ A business can hold at most `CreateEmployeeInvitation.MAX_PENDING_INVITATIONS`
 count, so revoking an unused code or letting the daily expiry job run frees a
 slot. To keep two concurrent requests from both passing the check, the
 operation first takes a row lock on the business
-(`BusinessDataSource.lockBusiness`, `SELECT … FOR UPDATE`, which also serves
+(`BusinessDataSource.lockBusiness(businessId, RowLock.EXCLUSIVE)`, `SELECT … FOR UPDATE`, which also serves
 as the existence check) and only then counts, so creations for the same
 business are serialized until the transaction commits.
 
@@ -63,7 +63,7 @@ flowchart TD
     Suspended -- Yes --> R403s([403 BUSINESS_EMPLOYEE_ACCESS_SUSPENDED 200034])
     Suspended -- No --> Perm{caller EMPLOYEES.update?}
     Perm -- No --> R404a([404 Error.OperationNotAllowed])
-    Perm -- Yes --> LockBiz[BusinessDataSource.lockBusiness businessId, SELECT FOR UPDATE]
+    Perm -- Yes --> LockBiz[BusinessDataSource.lockBusiness businessId EXCLUSIVE, SELECT FOR UPDATE]
     LockBiz -- not found --> R404b([404 Error.NotFound])
     LockBiz -- locked --> Count[EmployeeInvitationDataSource.countPendingInvitations businessId]
     Count -- ">= MAX_PENDING_INVITATIONS 20" --> R422([422 PendingInvitationsLimitReached, BUSINESS_EMPLOYEE_PENDING_INVITATIONS_LIMIT_REACHED 200028])

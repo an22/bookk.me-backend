@@ -19,7 +19,7 @@ internal class DeleteServiceGroupImpl(
         return transactionManager.transaction {
             businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.SERVICES)
                 .assert(PermissionAction.DELETE)
-            dataSource.deleteServiceGroup(id)
+            dataSource.deleteServiceGroup(id, businessId)
         }
     }
 }

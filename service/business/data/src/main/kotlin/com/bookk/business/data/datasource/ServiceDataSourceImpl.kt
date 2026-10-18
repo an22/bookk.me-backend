@@ -8,10 +8,15 @@ import com.bookk.business.domain.api.service.entity.Service
 import com.bookk.business.domain.api.service.entity.ServiceGroup
 import com.bookk.business.domain.datasource.ServiceDataSource
 import com.bookk.core.data.DataSource
+import com.bookk.core.data.forShare
+import com.bookk.core.domain.entity.Error
+import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.inList
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insertAndGetId
+import org.jetbrains.exposed.v1.jdbc.select
+import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.update
 import kotlin.time.Clock
 import kotlin.uuid.Uuid
@@ -32,11 +37,11 @@ internal class ServiceDataSourceImpl : DataSource(), ServiceDataSource {
     }
 
     override suspend fun editService(service: Service): Service = dbQuery {
-        ServiceTable.update(
-            where = { ServiceTable.id eq service.id }
+        val updatedRows = ServiceTable.update(
+            where = { (ServiceTable.id eq service.id) and (ServiceTable.businessId eq service.businessId) }
         ) {
-            it[businessId] = service.businessId
             it[groupId] = service.group.id
+            it[name] = service.name
             it[duration] = service.duration.inWholeMinutes.toInt()
             it[priceCurrency] = service.price.currencyUnit.code
             it[priceUnscaled] = service.price.amount.unscaledValue().longValueExact()
@@ -44,6 +49,7 @@ internal class ServiceDataSourceImpl : DataSource(), ServiceDataSource {
             it[available] = service.isAvailable
             it[updatedAt] = Clock.System.now()
         }
+        if (updatedRows == 0) throw Error.NotFound()
         service
     }
 
@@ -51,6 +57,15 @@ internal class ServiceDataSourceImpl : DataSource(), ServiceDataSource {
         ServiceEntity.find {
             ServiceTable.businessId eq businessId
         }.map { it.toDomain() }
+    }
+
+    override suspend fun hasServices(businessId: Uuid): Boolean = dbQuery {
+        ServiceTable.select(ServiceTable.id)
+            .where { ServiceTable.businessId eq businessId }
+            .limit(1)
+            .forShare()
+            .empty()
+            .not()
     }
 
     override suspend fun getServicesByIds(ids: List<Uuid>): List<Service> = dbQuery {
@@ -71,8 +86,18 @@ internal class ServiceDataSourceImpl : DataSource(), ServiceDataSource {
         group.copy(id = id.value)
     }
 
-    override suspend fun deleteServiceGroup(id: Uuid) {
-        dbQuery { ServiceGroupTable.deleteWhere { ServiceGroupTable.id eq id } }
+    override suspend fun deleteServiceGroup(id: Uuid, businessId: Uuid) {
+        dbQuery {
+            ServiceGroupTable.deleteWhere { (ServiceGroupTable.id eq id) and (ServiceGroupTable.businessId eq businessId) }
+        }
+    }
+
+    override suspend fun lockServiceGroup(id: Uuid, businessId: Uuid): ServiceGroup? = dbQuery {
+        ServiceGroupTable.selectAll()
+            .where { (ServiceGroupTable.id eq id) and (ServiceGroupTable.businessId eq businessId) }
+            .forShare()
+            .singleOrNull()
+            ?.let { ServiceGroupEntity.wrapRow(it).toDomain() }
     }
 
     override suspend fun getServiceGroups(businessId: Uuid): List<ServiceGroup> = dbQuery {

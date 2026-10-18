@@ -44,7 +44,7 @@ internal class DeleteServiceGroupImplTest {
 
         then()
         assertTrue(result.isSuccess)
-        coVerify(exactly = 1) { fixture.serviceDataSource.deleteServiceGroup(id) }
+        coVerify(exactly = 1) { fixture.serviceDataSource.deleteServiceGroup(id, businessId) }
     }
 
     @Test

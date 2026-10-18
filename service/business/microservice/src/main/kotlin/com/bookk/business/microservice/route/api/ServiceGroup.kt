@@ -75,7 +75,7 @@ fun Route.serviceGroupCrud() {
 
         /**
          * Summary: Delete service group
-         * Description: Delete service group with all services that belongs to it
+         * Description: Delete service group with all services that belongs to it. A group id of another business is left untouched
          * Tag: service_group
          * Security: jwt
          * Response: 204 application/x-protobuf Service group deleted

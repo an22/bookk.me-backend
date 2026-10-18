@@ -4,9 +4,27 @@
 
 Partial update: every field on `BusinessUpdateModel` is nullable and only
 non-null fields are applied. String fields are silently truncated to the
-entity's max length rather than rejected. Publishes `BusinessEvent.Updated`
+entity's max length rather than rejected, except `currencyCode`, which is
+validated. Publishes `BusinessEvent.Updated`
 so other services (appointments' business snapshot, in particular) stay in
 sync.
+
+The currency is locked once the business has a service: every service price
+and every appointment snapshot taken from it is denominated in it, and money
+in two currencies cannot be summed. Re-sending the stored currency is a no-op
+and always allowed, so clients that send the full model keep working.
+`lockBusiness(id, RowLock.EXCLUSIVE)` takes the business row lock
+(`SELECT … FOR UPDATE`), which waits for every `CreateService`/`UpdateService`
+holding `RowLock.SHARED` (`LOCK IN SHARE MODE`) on the same row. `hasServices`
+is itself a locking read (`LOCK IN SHARE MODE`): under REPEATABLE READ a plain
+read would use the snapshot fixed by the earlier permission lookup and miss a
+service committed while this transaction waited for the lock
+(`BusinessRowLockMariaDbTest` reproduces exactly that against MariaDB).
+
+A stored currency that `CurrencyValidator` rejects (written before currency
+validation existed, e.g. `usd`) does not lock: its prices cannot be in that
+currency, and without this the business could neither price services nor
+repair its currency.
 
 ```mermaid
 flowchart TD
@@ -24,8 +42,21 @@ flowchart TD
     WorkHours -- Yes --> R422a([422 BUSINESS_ACTIVE_DAY_WITHOUT_WORK_HOURS 200019])
     WorkHours -- No --> DayOffRange{any dayOff.start > end?}
     DayOffRange -- Yes --> R422b([422 BUSINESS_INVALID_DAY_OFF_RANGE 200020])
-    DayOffRange -- No --> Truncate[Truncate name/description/currencyCode/address/socials to max length]
-    ScheduleGiven -- No --> Truncate
+    DayOffRange -- No --> CurrencyGiven{body.currencyCode present?}
+    ScheduleGiven -- No --> CurrencyGiven
+    CurrencyGiven -- Yes --> Lock[BusinessDataSource.lockBusiness id EXCLUSIVE - FOR UPDATE on the business row]
+    Lock --> Found{business found?}
+    Found -- No --> R404nf([404 Error.NotFound])
+    Found -- Yes --> SameCurrency{currencyCode == stored currency?}
+    SameCurrency -- Yes --> Truncate
+    SameCurrency -- No --> ValidCurrency{CurrencyValidator.isValid currencyCode?}
+    ValidCurrency -- No --> R422c([422 BUSINESS_INVALID_CURRENCY 200035])
+    ValidCurrency -- Yes --> StoredValid{CurrencyValidator.isValid stored currency?}
+    StoredValid -- No --> Truncate
+    StoredValid -- Yes --> HasServices{ServiceDataSource.hasServices id - LOCK IN SHARE MODE?}
+    HasServices -- Yes --> R422d([422 BUSINESS_CURRENCY_LOCKED 200036])
+    HasServices -- No --> Truncate
+    CurrencyGiven -- No --> Truncate[Truncate name/description/address/socials to max length]
     Truncate --> Update[BusinessDataSource.updateBusiness updatedModel updatedAt]
     Update --> Event[eventProducer.send BusinessEvent.Updated]
     Event --> R204([204 No Content])

@@ -765,4 +765,91 @@ internal class BusinessCrudTest {
         then()
         assertEquals(HttpStatusCode.Unauthorized, response.status)
     }
+
+    @Test
+    fun `should return unprocessable entity when creating a business with an unsupported currency`() = routeTest {
+        given()
+        val useCase: CreateBusiness = mockk()
+        coEvery { useCase.invoke(userId, any()) } returns Result.failure(CreateBusiness.Error.InvalidCurrency())
+
+        setupApplication(
+            extension = {
+                install(Authentication) {
+                    provider {
+                        authenticate { it.principal(AppPrincipal(Uuid.random(), userId, Uuid.random())) }
+                    }
+                }
+            },
+            diModule = module { single { useCase } },
+            routeUnderTest = { businessCrud() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.post(BusinessRouting.Api.Business()) {
+            setBody(BusinessCreateRequest("Name", "ABC", TimeZone.UTC))
+        }
+
+        then()
+        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
+        assertEquals(BusinessErrorCodes.BUSINESS_INVALID_CURRENCY, response.body<SimpleServerError>().errorCode)
+    }
+
+    @Test
+    fun `should return unprocessable entity when updating a business with an unsupported currency`() = routeTest {
+        given()
+        val useCase: UpdateBusiness = mockk()
+        coEvery { useCase.invoke(userId, any()) } returns Result.failure(UpdateBusiness.Error.InvalidCurrency())
+
+        setupApplication(
+            extension = {
+                install(Authentication) {
+                    provider {
+                        authenticate { it.principal(AppPrincipal(Uuid.random(), userId, Uuid.random())) }
+                    }
+                }
+            },
+            diModule = module { single { useCase } },
+            routeUnderTest = { businessCrud() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.put(BusinessRouting.Api.Business.Id(id = businessId)) {
+            setBody(updateModel().copy(currencyCode = "EUR"))
+        }
+
+        then()
+        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
+        assertEquals(BusinessErrorCodes.BUSINESS_INVALID_CURRENCY, response.body<SimpleServerError>().errorCode)
+    }
+
+    @Test
+    fun `should return unprocessable entity when changing the currency of a business that has services`() = routeTest {
+        given()
+        val useCase: UpdateBusiness = mockk()
+        coEvery { useCase.invoke(userId, any()) } returns Result.failure(UpdateBusiness.Error.CurrencyLocked())
+
+        setupApplication(
+            extension = {
+                install(Authentication) {
+                    provider {
+                        authenticate { it.principal(AppPrincipal(Uuid.random(), userId, Uuid.random())) }
+                    }
+                }
+            },
+            diModule = module { single { useCase } },
+            routeUnderTest = { businessCrud() }
+        )
+
+        whenn()
+        val client = createTestClient()
+        val response = client.put(BusinessRouting.Api.Business.Id(id = businessId)) {
+            setBody(updateModel().copy(currencyCode = "EUR"))
+        }
+
+        then()
+        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
+        assertEquals(BusinessErrorCodes.BUSINESS_CURRENCY_LOCKED, response.body<SimpleServerError>().errorCode)
+    }
 }

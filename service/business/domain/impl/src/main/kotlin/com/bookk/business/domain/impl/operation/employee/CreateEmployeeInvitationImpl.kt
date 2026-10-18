@@ -7,6 +7,7 @@ import com.bookk.business.domain.api.employee.operation.CreateEmployeeInvitation
 import com.bookk.business.domain.datasource.BusinessDataSource
 import com.bookk.business.domain.datasource.BusinessPermissionDataSource
 import com.bookk.business.domain.datasource.EmployeeInvitationDataSource
+import com.bookk.business.domain.datasource.RowLock
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.entity.Error
 import library.permissions.PermissionAction
@@ -25,7 +26,7 @@ internal class CreateEmployeeInvitationImpl(
         return transactionManager.transaction {
             businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES)
                 .assert(PermissionAction.UPDATE)
-            if (!businessDataSource.lockBusiness(businessId)) throw Error.NotFound()
+            businessDataSource.lockBusiness(businessId, RowLock.EXCLUSIVE) ?: throw Error.NotFound()
             val pendingInvitations = invitationDataSource.countPendingInvitations(businessId)
             if (pendingInvitations >= CreateEmployeeInvitation.MAX_PENDING_INVITATIONS) {
                 throw CreateEmployeeInvitation.Error.PendingInvitationsLimitReached()

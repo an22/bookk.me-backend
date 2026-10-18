@@ -11,6 +11,8 @@ import com.bookk.business.data.orm.table.EmployeeTable
 import com.bookk.business.data.orm.table.EmployeeWorkingHoursTable
 import com.bookk.business.domain.api.business.entity.BusinessUpdateModel
 import com.bookk.business.domain.api.employee.entity.Employee
+import com.bookk.business.domain.datasource.LockedBusiness
+import com.bookk.business.domain.datasource.RowLock
 import com.bookk.core.data.test.createTestDatabase
 import com.bookk.core.test.given
 import com.bookk.core.test.runUnitTest
@@ -103,18 +105,33 @@ internal class BusinessDataSourceImplTest {
     }
 
     @Test
-    fun `should lock an existing business`() = runUnitTest {
+    fun `should return the stored currency when locking an existing business exclusively`() = runUnitTest {
         given()
         val fixture = SutFixture()
         val created = suspendTransaction {
-            fixture.sut.createBusiness(Uuid.random(), "Salon", "USD", TimeZone.UTC)
+            fixture.sut.createBusiness(Uuid.random(), "Salon", "EUR", TimeZone.UTC)
         }
 
         whenn()
-        val locked = suspendTransaction { fixture.sut.lockBusiness(created.id) }
+        val locked = suspendTransaction { fixture.sut.lockBusiness(created.id, RowLock.EXCLUSIVE) }
 
         then()
-        assertTrue(locked)
+        assertEquals(LockedBusiness("EUR"), locked)
+    }
+
+    @Test
+    fun `should return the stored currency when locking an existing business shared`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val created = suspendTransaction {
+            fixture.sut.createBusiness(Uuid.random(), "Salon", "EUR", TimeZone.UTC)
+        }
+
+        whenn()
+        val locked = suspendTransaction { fixture.sut.lockBusiness(created.id, RowLock.SHARED) }
+
+        then()
+        assertEquals(LockedBusiness("EUR"), locked)
     }
 
     @Test
@@ -123,10 +140,10 @@ internal class BusinessDataSourceImplTest {
         val fixture = SutFixture()
 
         whenn()
-        val locked = suspendTransaction { fixture.sut.lockBusiness(Uuid.random()) }
+        val locked = suspendTransaction { fixture.sut.lockBusiness(Uuid.random(), RowLock.EXCLUSIVE) }
 
         then()
-        assertFalse(locked)
+        assertNull(locked)
     }
 
     @Test

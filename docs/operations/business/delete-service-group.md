@@ -5,6 +5,13 @@
 Deletes the group and, per the route's own description, every service that
 belongs to it (cascading delete happens at the datasource/table level).
 
+The delete is scoped to the business the permission check ran against
+(`WHERE id = ? AND business_id = ?`). A group id of another business matches
+nothing and the route still answers 204, exactly like an unknown id, so the
+response does not reveal whether that group exists. Before this scoping, a
+caller with `SERVICES.delete` in one business could delete any business's
+group and, through the cascade, all of its services.
+
 ```mermaid
 flowchart TD
     Start([DELETE /api/business/businessId/service_group/id]) --> Auth{JWT valid?}
@@ -14,6 +21,6 @@ flowchart TD
     Suspended -- Yes --> R403s([403 BUSINESS_EMPLOYEE_ACCESS_SUSPENDED 200034])
     Suspended -- No --> Perm{caller SERVICES.delete?}
     Perm -- No --> R404([404 Error.OperationNotAllowed])
-    Perm -- Yes --> Delete[ServiceDataSource.deleteServiceGroup id - cascades to member services]
+    Perm -- Yes --> Delete[ServiceDataSource.deleteServiceGroup id businessId - only within the business, cascades to member services]
     Delete --> R204([204 Service group deleted])
 ```

@@ -9,7 +9,10 @@ import com.bookk.business.domain.api.business.entity.Business
 import com.bookk.business.domain.api.business.entity.BusinessUpdateModel
 import com.bookk.business.domain.api.business.entity.UserBusinesses
 import com.bookk.business.domain.datasource.BusinessDataSource
+import com.bookk.business.domain.datasource.LockedBusiness
+import com.bookk.business.domain.datasource.RowLock
 import com.bookk.core.data.DataSource
+import com.bookk.core.data.forShare
 import com.bookk.core.domain.entity.Error
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -47,12 +50,13 @@ internal class BusinessDataSourceImpl : DataSource(), BusinessDataSource {
         BusinessEntity.findById(id)?.toDomain()
     }
 
-    override suspend fun lockBusiness(id: Uuid): Boolean = dbQuery {
-        BusinessTable.select(BusinessTable.id)
-            .where { BusinessTable.id eq id }
-            .forUpdate()
-            .empty()
-            .not()
+    override suspend fun lockBusiness(id: Uuid, lock: RowLock): LockedBusiness? = dbQuery {
+        val query = BusinessTable.select(BusinessTable.currency).where { BusinessTable.id eq id }
+        val lockedQuery = when (lock) {
+            RowLock.SHARED -> query.forShare()
+            RowLock.EXCLUSIVE -> query.forUpdate()
+        }
+        lockedQuery.singleOrNull()?.let { LockedBusiness(currencyCode = it[BusinessTable.currency]) }
     }
 
     override suspend fun isBusinessExist(userId: Uuid): Boolean = dbQuery {

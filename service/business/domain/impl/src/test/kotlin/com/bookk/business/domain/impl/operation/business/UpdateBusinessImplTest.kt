@@ -6,6 +6,9 @@ import com.bookk.business.domain.api.business.entity.BusinessUpdateModel
 import com.bookk.business.domain.api.business.operation.UpdateBusiness
 import com.bookk.business.domain.datasource.BusinessDataSource
 import com.bookk.business.domain.datasource.BusinessPermissionDataSource
+import com.bookk.business.domain.datasource.LockedBusiness
+import com.bookk.business.domain.datasource.RowLock
+import com.bookk.business.domain.datasource.ServiceDataSource
 import com.bookk.core.data.eventstreaming.StandardEventProducer
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.datasource.transaction.mockTransaction
@@ -40,10 +43,11 @@ internal class UpdateBusinessImplTest {
 
     private class SutFixture {
         val businessDataSource = mockk<BusinessDataSource>(relaxed = true)
+        val serviceDataSource = mockk<ServiceDataSource>()
         val businessPermissionDataSource = mockk<BusinessPermissionDataSource>(relaxed = true)
         val transactionManager = mockk<TransactionManager>()
         val eventProducer = mockk<StandardEventProducer>(relaxed = true)
-        val sut = UpdateBusinessImpl(businessDataSource, businessPermissionDataSource, transactionManager, eventProducer)
+        val sut = UpdateBusinessImpl(businessDataSource, serviceDataSource, businessPermissionDataSource, transactionManager, eventProducer)
 
         init {
             coEvery { businessPermissionDataSource.getPermission(any(), any(), BusinessResource.BUSINESS) } returns ResourcePermission.FULL
@@ -93,7 +97,6 @@ internal class UpdateBusinessImplTest {
             name = "A".repeat(1000),
             description = "D".repeat(2000),
             address = "Addr".repeat(200),
-            currencyCode = "USDD",
             timeZone = TimeZone.UTC,
             socials = listOf(Business.Social(Business.SocialKind.INSTAGRAM, "V".repeat(500)))
         )
@@ -108,7 +111,6 @@ internal class UpdateBusinessImplTest {
                 it.name?.length == Business.MAX_NAME_LENGTH &&
                 it.description?.length == Business.MAX_DESCRIPTION_LENGTH &&
                 it.address?.length == Business.MAX_ADDRESS_LENGTH &&
-                it.currencyCode?.length == Business.MAX_CURRENCY_CODE &&
                 it.socials?.firstOrNull()?.value?.length == Business.MAX_SOCIAL_LENGTH
             }, any())
         }
@@ -385,6 +387,167 @@ internal class UpdateBusinessImplTest {
 
         then()
         assertEquals(false, result.isSuccess)
+        coVerify(exactly = 0) { fixture.businessDataSource.updateBusiness(any(), any()) }
+    }
+
+    @Test
+    fun `should change the currency when the business has no services`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val businessId = Uuid.random()
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { businessDataSource.lockBusiness(businessId, RowLock.EXCLUSIVE) } returns LockedBusiness("USD")
+            coEvery { serviceDataSource.hasServices(businessId) } returns false
+        }
+
+        whenn()
+        val result = fixture.sut(requestUserId, updateModel(id = businessId, currencyCode = "EUR"))
+
+        then()
+        assertTrue(result.isSuccess)
+        coVerify(exactly = 1) { fixture.businessDataSource.updateBusiness(match { it.currencyCode == "EUR" }, any()) }
+    }
+
+    @Test
+    fun `should return failure when changing the currency of a business that has services`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val businessId = Uuid.random()
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { businessDataSource.lockBusiness(businessId, RowLock.EXCLUSIVE) } returns LockedBusiness("USD")
+            coEvery { serviceDataSource.hasServices(businessId) } returns true
+        }
+
+        whenn()
+        val result = fixture.sut(requestUserId, updateModel(id = businessId, currencyCode = "EUR"))
+
+        then()
+        assertTrue(result.exceptionOrNull() is UpdateBusiness.Error.CurrencyLocked)
+        coVerify(exactly = 0) { fixture.businessDataSource.updateBusiness(any(), any()) }
+        coVerify(exactly = 0) { fixture.eventProducer.send(any(BusinessEvent.Updated::class), any()) }
+    }
+
+    @Test
+    fun `should accept the stored currency unchanged when the business has services`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val businessId = Uuid.random()
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { businessDataSource.lockBusiness(businessId, RowLock.EXCLUSIVE) } returns LockedBusiness("USD")
+            coEvery { serviceDataSource.hasServices(businessId) } returns true
+        }
+
+        whenn()
+        val result = fixture.sut(requestUserId, updateModel(id = businessId, name = "New Name", currencyCode = "USD"))
+
+        then()
+        assertTrue(result.isSuccess)
+        coVerify(exactly = 1) { fixture.businessDataSource.updateBusiness(match { it.currencyCode == "USD" }, any()) }
+    }
+
+    @Test
+    fun `should return failure when currency code is not a supported currency`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val businessId = Uuid.random()
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { businessDataSource.lockBusiness(businessId, RowLock.EXCLUSIVE) } returns LockedBusiness("USD")
+            coEvery { serviceDataSource.hasServices(businessId) } returns false
+        }
+
+        whenn()
+        val result = fixture.sut(requestUserId, updateModel(id = businessId, currencyCode = "USDD"))
+
+        then()
+        assertTrue(result.exceptionOrNull() is UpdateBusiness.Error.InvalidCurrency)
+        coVerify(exactly = 0) { fixture.businessDataSource.updateBusiness(any(), any()) }
+    }
+
+    @Test
+    fun `should return not found when changing the currency of an unknown business`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val businessId = Uuid.random()
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { businessDataSource.lockBusiness(businessId, RowLock.EXCLUSIVE) } returns null
+        }
+
+        whenn()
+        val result = fixture.sut(requestUserId, updateModel(id = businessId, currencyCode = "EUR"))
+
+        then()
+        assertTrue(result.exceptionOrNull() is Error.NotFound)
+        coVerify(exactly = 0) { fixture.businessDataSource.updateBusiness(any(), any()) }
+    }
+
+    @Test
+    fun `should not lock the business when the update leaves the currency untouched`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.transactionManager.mockTransaction()
+
+        whenn()
+        val result = fixture.sut(requestUserId, updateModel(name = "New Name"))
+
+        then()
+        assertTrue(result.isSuccess)
+        coVerify(exactly = 0) { fixture.businessDataSource.lockBusiness(any(), any()) }
+    }
+
+    @Test
+    fun `should not read the currency when user has no update permission`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.transactionManager.mockTransaction()
+        fixture.grantPermission(ResourcePermission(view = true, update = false, delete = false))
+
+        whenn()
+        val result = fixture.sut(requestUserId, updateModel(currencyCode = "EUR"))
+
+        then()
+        assertTrue(result.exceptionOrNull() is Error.OperationNotAllowed)
+        coVerify(exactly = 0) { fixture.businessDataSource.lockBusiness(any(), any()) }
+    }
+
+    @Test
+    fun `should allow replacing an unsupported stored currency even when the business has services`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val businessId = Uuid.random()
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { businessDataSource.lockBusiness(businessId, RowLock.EXCLUSIVE) } returns LockedBusiness("usd")
+            coEvery { serviceDataSource.hasServices(businessId) } returns true
+        }
+
+        whenn()
+        val result = fixture.sut(requestUserId, updateModel(id = businessId, currencyCode = "USD"))
+
+        then()
+        assertTrue(result.isSuccess)
+        coVerify(exactly = 1) { fixture.businessDataSource.updateBusiness(match { it.currencyCode == "USD" }, any()) }
+    }
+
+    @Test
+    fun `should return failure when replacing an unsupported stored currency with another unsupported one`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val businessId = Uuid.random()
+        with(fixture) {
+            transactionManager.mockTransaction()
+            coEvery { businessDataSource.lockBusiness(businessId, RowLock.EXCLUSIVE) } returns LockedBusiness("usd")
+        }
+
+        whenn()
+        val result = fixture.sut(requestUserId, updateModel(id = businessId, currencyCode = "XXX"))
+
+        then()
+        assertTrue(result.exceptionOrNull() is UpdateBusiness.Error.InvalidCurrency)
         coVerify(exactly = 0) { fixture.businessDataSource.updateBusiness(any(), any()) }
     }
 }

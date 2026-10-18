@@ -5,6 +5,7 @@ import com.bookk.business.domain.api.business.entity.BusinessResource
 import com.bookk.business.domain.api.business.entity.BusinessUpdateModel
 import com.bookk.business.domain.datasource.BusinessDataSource
 import com.bookk.business.domain.datasource.BusinessPermissionDataSource
+import com.bookk.business.domain.datasource.ServiceDataSource
 import com.bookk.core.data.eventstreaming.impl.kafka.KafkaEventProducer
 import com.bookk.core.data.eventstreaming.impl.kafka.KafkaTestBroker
 import com.bookk.core.domain.datasource.transaction.TransactionManager
@@ -44,6 +45,7 @@ internal class UpdateBusinessImplEventTest {
 
     private class SutFixture {
         val businessDataSource = mockk<BusinessDataSource>(relaxed = true)
+        val serviceDataSource = mockk<ServiceDataSource>()
         val businessPermissionDataSource = mockk<BusinessPermissionDataSource>(relaxed = true)
         val transactionManager = mockk<TransactionManager>()
         val eventProducer = KafkaEventProducer(
@@ -51,7 +53,7 @@ internal class UpdateBusinessImplEventTest {
             client = "update-business-test",
             protoBuf = KafkaTestBroker.protoBuf
         )
-        val sut = UpdateBusinessImpl(businessDataSource, businessPermissionDataSource, transactionManager, eventProducer)
+        val sut = UpdateBusinessImpl(businessDataSource, serviceDataSource, businessPermissionDataSource, transactionManager, eventProducer)
 
         init {
             coEvery { businessPermissionDataSource.getPermission(any(), any(), BusinessResource.BUSINESS) } returns ResourcePermission.FULL

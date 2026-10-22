@@ -64,7 +64,7 @@ class EmbeddedEventConsumer(
                         .receiveAsFlow()
                         .onEach { event ->
                             try {
-                                receivers[event.topic]?.invoke(event, 0)
+                                decoded(event)?.let { receivers[event.topic]?.invoke(it, 0) }
                             } catch (e: Throwable) {
                                 currentCoroutineContext().ensureActive()
                                 logger.error("Failed to handle: topic:{}, event:{}", event.topic, event)
@@ -75,6 +75,17 @@ class EmbeddedEventConsumer(
         )
             .onEach { logger.debug("Event received: topic:{}, event:{}", it.topic, it) }
             .launchIn(scope)
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun decoded(event: Event<String>): Event<String>? {
+        if (event !is EmbeddedEncodedEvent) return event
+        val type = types[event.topic] ?: return null
+        return runCatching {
+            protoBuf.decodeFromByteArray(protoBuf.serializersModule.serializer(type), event.payload) as Event<String>
+        }.onFailure {
+            logger.debug("Received unprocessable event, Topic: {}. Error: {}", event.topic, it.message)
+        }.getOrNull()
     }
 
     private suspend fun handleFailure(topic: String, event: Event<String>, attempt: Int) {

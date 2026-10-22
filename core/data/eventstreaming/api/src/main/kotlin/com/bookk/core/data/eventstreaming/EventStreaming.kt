@@ -23,6 +23,10 @@ interface EventStreaming {
         suspend fun <T : Event<K>> send(data: T, kType: KType)
     }
 
+    interface RawProducer<K> {
+        suspend fun publish(topic: K, partitionKey: String?, payload: ByteArray)
+    }
+
     interface Event<K> {
         val topic: K
         val idempotencyKey: String

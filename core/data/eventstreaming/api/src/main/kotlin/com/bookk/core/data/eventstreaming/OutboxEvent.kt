@@ -22,4 +22,13 @@ class OutboxEvent(
         result = 31 * result + payload.contentHashCode()
         return result
     }
+
+    companion object {
+        fun stub(
+            id: Long = 1,
+            topic: String = "topic",
+            partitionKey: String? = null,
+            payload: ByteArray = byteArrayOf()
+        ) = OutboxEvent(id = id, topic = topic, partitionKey = partitionKey, payload = payload)
+    }
 }

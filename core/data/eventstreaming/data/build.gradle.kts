@@ -9,4 +9,6 @@ dependencies {
 
     testImplementation(testFixtures(projects.core))
     testImplementation(testFixtures(projects.core.data))
+    testImplementation(testFixtures(projects.core.domain.datasource))
+    testImplementation(libs.testcontainers.junit)
 }

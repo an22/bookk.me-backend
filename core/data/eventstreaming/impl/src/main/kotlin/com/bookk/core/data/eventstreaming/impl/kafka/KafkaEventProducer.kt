@@ -17,7 +17,7 @@ class KafkaEventProducer(
     servers: List<String>,
     client: String,
     private val protoBuf: ProtoBuf
-) : EventStreaming.Producer<String> {
+) : EventStreaming.Producer<String>, EventStreaming.RawProducer<String> {
 
     private val producer = KafkaProducer(
         mapOf(
@@ -40,9 +40,9 @@ class KafkaEventProducer(
         publish(dltEvent.originalTopic, null, dltEvent.payload)
     }
 
-    private suspend fun publish(topic: String, key: String?, payload: ByteArray) {
+    override suspend fun publish(topic: String, partitionKey: String?, payload: ByteArray) {
         suspendCancellableCoroutine { continuation ->
-            producer.send(ProducerRecord(topic, key, payload)) { metadata, exception ->
+            producer.send(ProducerRecord(topic, partitionKey, payload)) { metadata, exception ->
                 when {
                     metadata != null -> continuation.resume(Unit)
                     else -> continuation.cancel(exception)

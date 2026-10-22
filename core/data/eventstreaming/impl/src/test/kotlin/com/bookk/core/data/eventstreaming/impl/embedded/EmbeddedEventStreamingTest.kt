@@ -21,6 +21,8 @@ internal class EmbeddedEventStreamingTest {
         val topicQueueHolder = TopicQueueHolder<String>()
         val protoBuf = ProtoBuf { encodeDefaults = true }
         val producer = EmbeddedEventProducer(topicQueueHolder, protoBuf)
+
+        fun encode(event: KeyedTestEvent) = protoBuf.encodeToByteArray(KeyedTestEvent.serializer(), event)
     }
 
     private fun SutFixture.newConsumer() = EmbeddedEventConsumer(topicQueueHolder, protoBuf, InMemoryExhaustedEventDataSource())
@@ -81,5 +83,68 @@ internal class EmbeddedEventStreamingTest {
 
         then()
         assertTrue(received.isEmpty())
+    }
+
+    @Test
+    fun `should deliver a raw published event decoded to its subscriber`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val topic = "topic.raw"
+        val consumer = fixture.newConsumer()
+        val received = ConcurrentLinkedQueue<KeyedTestEvent>()
+        consumer.registerReceiver<KeyedTestEvent, String>(topic) { event -> received += event }
+        consumer.start(backgroundScope)
+        val event = KeyedTestEvent(entityId = "entity-1", sequence = 7, topic = topic)
+
+        whenn()
+        fixture.producer.publish(topic = topic, partitionKey = "entity-1", payload = fixture.encode(event))
+        runCurrent()
+
+        then()
+        assertEquals(listOf(event), received.toList())
+    }
+
+    @Test
+    fun `should decode a raw published event for every subscriber of the same topic`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val topic = "topic.raw.shared"
+        val firstServiceConsumer = fixture.newConsumer()
+        val secondServiceConsumer = fixture.newConsumer()
+        val firstReceived = ConcurrentLinkedQueue<KeyedTestEvent>()
+        val secondReceived = ConcurrentLinkedQueue<KeyedTestEvent>()
+        firstServiceConsumer.registerReceiver<KeyedTestEvent, String>(topic) { event -> firstReceived += event }
+        secondServiceConsumer.registerReceiver<KeyedTestEvent, String>(topic) { event -> secondReceived += event }
+        firstServiceConsumer.start(backgroundScope)
+        secondServiceConsumer.start(backgroundScope)
+        val event = KeyedTestEvent(entityId = "entity-1", sequence = 7, topic = topic)
+
+        whenn()
+        fixture.producer.publish(topic = topic, partitionKey = "entity-1", payload = fixture.encode(event))
+        runCurrent()
+
+        then()
+        assertEquals(listOf(event), firstReceived.toList())
+        assertEquals(listOf(event), secondReceived.toList())
+    }
+
+    @Test
+    fun `should drop a raw published event it cannot decode and keep delivering later events`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val topic = "topic.raw.corrupt"
+        val consumer = fixture.newConsumer()
+        val received = ConcurrentLinkedQueue<KeyedTestEvent>()
+        consumer.registerReceiver<KeyedTestEvent, String>(topic) { event -> received += event }
+        consumer.start(backgroundScope)
+        val event = KeyedTestEvent(entityId = "entity-1", sequence = 7, topic = topic)
+
+        whenn()
+        fixture.producer.publish(topic = topic, partitionKey = null, payload = byteArrayOf(-1, -1, -1))
+        fixture.producer.publish(topic = topic, partitionKey = "entity-1", payload = fixture.encode(event))
+        runCurrent()
+
+        then()
+        assertEquals(listOf(event), received.toList())
     }
 }

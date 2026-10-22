@@ -159,4 +159,23 @@ internal class KafkaEventProducerTest {
         val decoded = KafkaTestBroker.protoBuf.decodeFromByteArray<NullableFieldTestEvent>(records.single().value())
         assertEquals("+10000000000", decoded.optional)
     }
+
+    @Test
+    fun `should publish raw bytes under the given topic and partition key`() = runIntegrationTest {
+        given()
+        val topic = topicNamed()
+        KafkaTestBroker.createTopic(topic, partitions = 3)
+        val event = KeyedTestEvent(entityId = "entity-1", sequence = 7, topic = topic)
+        val payload = KafkaTestBroker.protoBuf.encodeToByteArray(KeyedTestEvent.serializer(), event)
+
+        whenn()
+        val records = withContext(Dispatchers.IO) {
+            producer().publish(topic = topic, partitionKey = "entity-1", payload = payload)
+            KafkaTestBroker.drain(topic, expected = 1)
+        }
+
+        then()
+        assertEquals("entity-1", records.single().key())
+        assertEquals(event, KafkaTestBroker.protoBuf.decodeFromByteArray<KeyedTestEvent>(records.single().value()))
+    }
 }

@@ -1,6 +1,7 @@
 package com.bookk.core.service.enity
 
 import com.bookk.core.domain.entity.BusinessError
+import com.bookk.core.domain.entity.CoreErrorCodes
 import com.bookk.core.domain.entity.Error
 import com.bookk.core.domain.entity.SimpleServerError
 import io.ktor.http.HttpStatusCode
@@ -23,6 +24,16 @@ suspend inline fun <reified R : Any> RoutingCall.respondWith(result: Result<R>) 
                     respond(
                         status = HttpStatusCode.fromValue(error.statusCode),
                         message = SimpleServerError(error.code, error.message)
+                    )
+                }
+
+                is Error.TransactionConflict -> {
+                    respond(
+                        status = HttpStatusCode.Conflict,
+                        message = SimpleServerError(
+                            CoreErrorCodes.TRANSACTION_CONFLICT,
+                            "The request conflicted with concurrent changes, retry it"
+                        )
                     )
                 }
 

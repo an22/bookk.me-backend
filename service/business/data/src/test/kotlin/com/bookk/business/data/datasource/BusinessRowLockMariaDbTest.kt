@@ -4,6 +4,7 @@ import com.bookk.business.domain.api.employee.entity.EmployeeInvitation
 import com.bookk.business.domain.api.service.entity.Service
 import com.bookk.business.domain.api.service.entity.ServiceGroup
 import com.bookk.business.domain.datasource.RowLock
+import com.bookk.core.data.ExposedTransactionManager
 import com.bookk.core.data.database.createDatabase
 import com.bookk.core.domain.entity.runSuspendCatching
 import com.bookk.core.test.given
@@ -292,5 +293,80 @@ internal class BusinessRowLockMariaDbTest {
 
         then()
         assertFalse(exclusiveLock.isSuccess)
+    }
+
+    @Test
+    fun `should retry an update of a row another transaction changed after the snapshot`() = runIntegrationTest {
+        given()
+        val fixture = SutFixture()
+        val service = fixture.createService(fixture.createBusinessWithGroup())
+        val transactionManager = ExposedTransactionManager(database)
+        val snapshotTaken = CompletableDeferred<Unit>()
+        val concurrentEditCommitted = CompletableDeferred<Unit>()
+        var attempts = 0
+
+        whenn()
+        val result = withContext(Dispatchers.IO) {
+            val edit = async {
+                transactionManager.transaction {
+                    attempts++
+                    fixture.serviceDataSource.getServices(service.businessId)
+                    snapshotTaken.complete(Unit)
+                    concurrentEditCommitted.await()
+                    fixture.serviceDataSource.editService(service.copy(name = "Edited after retry"))
+                }
+            }
+            snapshotTaken.await()
+            suspendTransaction(db = database) {
+                fixture.serviceDataSource.editService(service.copy(name = "Concurrent edit"))
+            }
+            concurrentEditCommitted.complete(Unit)
+            edit.await()
+        }
+        val stored = suspendTransaction(db = database) { fixture.serviceDataSource.getServices(service.businessId) }
+
+        then()
+        assertTrue(result.isSuccess)
+        assertEquals(2, attempts)
+        assertEquals(listOf("Edited after retry"), stored.map { it.name })
+    }
+
+    @Test
+    fun `should retry the deadlock victim until both transactions commit`() = runIntegrationTest {
+        given()
+        val fixture = SutFixture()
+        val firstBusinessId = fixture.createBusinessWithGroup().businessId
+        val secondBusinessId = fixture.createBusinessWithGroup().businessId
+        val transactionManager = ExposedTransactionManager(database)
+        val firstLocked = CompletableDeferred<Unit>()
+        val secondLocked = CompletableDeferred<Unit>()
+        var attempts = 0
+
+        whenn()
+        val results = withContext(Dispatchers.IO) {
+            val forward = async {
+                transactionManager.transaction {
+                    attempts++
+                    fixture.businessDataSource.lockBusiness(firstBusinessId, RowLock.EXCLUSIVE)
+                    firstLocked.complete(Unit)
+                    secondLocked.await()
+                    fixture.businessDataSource.lockBusiness(secondBusinessId, RowLock.EXCLUSIVE)
+                }
+            }
+            val backward = async {
+                transactionManager.transaction {
+                    attempts++
+                    fixture.businessDataSource.lockBusiness(secondBusinessId, RowLock.EXCLUSIVE)
+                    secondLocked.complete(Unit)
+                    firstLocked.await()
+                    fixture.businessDataSource.lockBusiness(firstBusinessId, RowLock.EXCLUSIVE)
+                }
+            }
+            listOf(forward.await(), backward.await())
+        }
+
+        then()
+        assertTrue(results.all { it.isSuccess })
+        assertEquals(3, attempts)
     }
 }

@@ -9,6 +9,7 @@ import com.bookk.core.test.whenn
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import java.sql.SQLException
 import kotlin.coroutines.cancellation.CancellationException
 
 internal class ExposedTransactionManagerTest {
@@ -52,5 +53,97 @@ internal class ExposedTransactionManagerTest {
         then()
         assertTrue(thrown is CancellationException)
         assertEquals("cancelled", thrown?.message)
+    }
+
+    @Test
+    fun `should retry a conflicting transaction and return the result of the attempt that succeeds`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        var attempts = 0
+
+        whenn()
+        val result = fixture.sut.transaction {
+            attempts++
+            if (attempts == 1) throw Error.TransactionConflict("conflict", SQLException())
+            "value"
+        }
+
+        then()
+        assertEquals("value", result.getOrNull())
+        assertEquals(2, attempts)
+    }
+
+    @Test
+    fun `should give up with a transaction conflict once every attempt conflicted`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        var attempts = 0
+
+        whenn()
+        val result = fixture.sut.transaction<Unit> {
+            attempts++
+            throw Error.TransactionConflict("conflict", SQLException())
+        }
+
+        then()
+        assertTrue(result.exceptionOrNull() is Error.TransactionConflict)
+        assertEquals(ExposedTransactionManager.MAX_ATTEMPTS_ON_CONFLICT, attempts)
+    }
+
+    @Test
+    fun `should not retry a failure that is not a transaction conflict`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        var attempts = 0
+
+        whenn()
+        val result = fixture.sut.transaction<Unit> {
+            attempts++
+            throw Error.NotFound()
+        }
+
+        then()
+        assertTrue(result.exceptionOrNull() is Error.NotFound)
+        assertEquals(1, attempts)
+    }
+
+    @Test
+    fun `should run a block failing with a raw sql exception exactly once`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        var attempts = 0
+
+        whenn()
+        val result = fixture.sut.transaction<Unit> {
+            attempts++
+            throw SQLException("broken")
+        }
+
+        then()
+        assertTrue(result.exceptionOrNull() is Error.DatabaseError)
+        assertEquals(1, attempts)
+    }
+
+    @Test
+    fun `should retry only the outermost transaction when a nested one conflicts`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        var outerAttempts = 0
+        var innerAttempts = 0
+
+        whenn()
+        val result = fixture.sut.transaction {
+            outerAttempts++
+            fixture.sut.transaction {
+                innerAttempts++
+                if (innerAttempts == 1) throw Error.TransactionConflict("conflict", SQLException())
+                "value"
+            }.getOrThrow()
+        }
+
+        then()
+        assertEquals("value", result.getOrNull())
+        assertEquals(2, outerAttempts)
+        assertEquals(2, innerAttempts)
     }
 }

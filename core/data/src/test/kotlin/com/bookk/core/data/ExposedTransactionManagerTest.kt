@@ -7,6 +7,7 @@ import com.bookk.core.test.runUnitTest
 import com.bookk.core.test.then
 import com.bookk.core.test.whenn
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.sql.SQLException
@@ -145,5 +146,42 @@ internal class ExposedTransactionManagerTest {
         assertEquals("value", result.getOrNull())
         assertEquals(2, outerAttempts)
         assertEquals(2, innerAttempts)
+    }
+
+    @Test
+    fun `should report being in a transaction inside its own transaction block`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+
+        whenn()
+        val result = fixture.sut.transaction { fixture.sut.isInTransaction() }
+
+        then()
+        assertEquals(true, result.getOrNull())
+    }
+
+    @Test
+    fun `should report not being in a transaction outside any transaction block`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+
+        whenn()
+        val inTransaction = fixture.sut.isInTransaction()
+
+        then()
+        assertFalse(inTransaction)
+    }
+
+    @Test
+    fun `should report not being in a transaction inside a transaction of another database`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val otherDatabase = ExposedTransactionManager(createTestDatabase())
+
+        whenn()
+        val result = otherDatabase.transaction { fixture.sut.isInTransaction() }
+
+        then()
+        assertEquals(false, result.getOrNull())
     }
 }

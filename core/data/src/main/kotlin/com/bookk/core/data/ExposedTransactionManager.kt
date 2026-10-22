@@ -15,12 +15,15 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.random.Random
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
+import org.jetbrains.exposed.v1.jdbc.transactions.TransactionManager as JdbcTransactionManager
 
 class ExposedTransactionManager(private val database: Database) : TransactionManager {
     override suspend fun <T> transaction(transaction: suspend () -> T): Result<T> {
         if (currentCoroutineContext()[OutermostTransaction] != null) return attempt(transaction)
         return withContext(OutermostTransaction) { retryOnConflict(transaction) }
     }
+
+    override suspend fun isInTransaction(): Boolean = JdbcTransactionManager.currentOrNull()?.db == database
 
     private suspend fun <T> retryOnConflict(transaction: suspend () -> T): Result<T> {
         var attempt = 1

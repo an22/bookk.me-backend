@@ -14,16 +14,23 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.slot
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.currentTime
 import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.testTimeSource
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 internal class IdempotentDeliveryTest {
 
@@ -37,11 +44,11 @@ internal class IdempotentDeliveryTest {
         init {
             every { storage.claimTtl } returns claimTtl
             coEvery { storage.markProcessed(any(), any(), any()) } just Runs
-            coEvery { storage.release(any(), any(), any()) } just Runs
+            coEvery { storage.release(any(), any(), any(), any()) } just Runs
         }
 
         fun claimReturns(vararg claims: EventClaim) {
-            coEvery { storage.claim("business_group", event.topic, event.idempotencyKey) } returnsMany claims.toList()
+            coEvery { storage.claim("business_group", event.topic, event.idempotencyKey, any()) } returnsMany claims.toList()
         }
 
         suspend fun deliver(onEvent: suspend (KeyedTestEvent) -> Unit = { handled.incrementAndGet() }) =
@@ -109,7 +116,7 @@ internal class IdempotentDeliveryTest {
     fun `should fail only after the claim stayed in progress for the whole claim ttl`() = runUnitTest {
         given()
         val fixture = SutFixture()
-        coEvery { fixture.storage.claim(any(), any(), any()) } returns EventClaim.IN_PROGRESS
+        coEvery { fixture.storage.claim(any(), any(), any(), any()) } returns EventClaim.IN_PROGRESS
 
         whenn()
         val result = fixture.deliver()
@@ -131,7 +138,7 @@ internal class IdempotentDeliveryTest {
 
         then()
         assertTrue(result.exceptionOrNull() is IllegalStateException)
-        coVerify(exactly = 1) { fixture.storage.release("business_group", fixture.event.topic, fixture.event.idempotencyKey) }
+        coVerify(exactly = 1) { fixture.storage.release("business_group", fixture.event.topic, fixture.event.idempotencyKey, any()) }
         coVerify(exactly = 0) { fixture.storage.markProcessed(any(), any(), any()) }
     }
 
@@ -146,7 +153,7 @@ internal class IdempotentDeliveryTest {
 
         then()
         assertTrue(result.exceptionOrNull() is CancellationException)
-        coVerify(exactly = 1) { fixture.storage.release("business_group", fixture.event.topic, fixture.event.idempotencyKey) }
+        coVerify(exactly = 1) { fixture.storage.release("business_group", fixture.event.topic, fixture.event.idempotencyKey, any()) }
     }
 
     @Test
@@ -164,14 +171,14 @@ internal class IdempotentDeliveryTest {
 
         then()
         assertTrue(delivery.isCancelled)
-        coVerify(exactly = 1) { fixture.storage.release("business_group", fixture.event.topic, fixture.event.idempotencyKey) }
+        coVerify(exactly = 1) { fixture.storage.release("business_group", fixture.event.topic, fixture.event.idempotencyKey, any()) }
     }
 
     @Test
     fun `should fail without handling the event when the claim cannot be taken`() = runUnitTest {
         given()
         val fixture = SutFixture()
-        coEvery { fixture.storage.claim(any(), any(), any()) } throws IllegalStateException("cache down")
+        coEvery { fixture.storage.claim(any(), any(), any(), any()) } throws IllegalStateException("cache down")
 
         whenn()
         val result = fixture.deliver()
@@ -193,6 +200,62 @@ internal class IdempotentDeliveryTest {
 
         then()
         assertEquals(DeliveryOutcome.HANDLED, result.getOrNull())
-        coVerify(exactly = 0) { fixture.storage.release(any(), any(), any()) }
+        coVerify(exactly = 0) { fixture.storage.release(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `should release the claim under the delivery id it claimed with`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val claimedAs = slot<String>()
+        val releasedAs = slot<String>()
+        coEvery { fixture.storage.claim(any(), any(), any(), capture(claimedAs)) } returns EventClaim.CLAIMED
+        coEvery { fixture.storage.release(any(), any(), any(), capture(releasedAs)) } just Runs
+
+        whenn()
+        fixture.deliver { throw IllegalStateException("boom") }
+
+        then()
+        assertEquals(claimedAs.captured, releasedAs.captured)
+    }
+
+    @Test
+    fun `should claim every delivery under its own delivery id`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val claimedAs = mutableListOf<String>()
+        coEvery { fixture.storage.claim(any(), any(), any(), capture(claimedAs)) } returns EventClaim.ALREADY_PROCESSED
+
+        whenn()
+        fixture.deliver()
+        fixture.deliver()
+
+        then()
+        assertEquals(2, claimedAs.size)
+        assertNotEquals(claimedAs[0], claimedAs[1])
+    }
+
+    @Test
+    fun `should not let a delivery whose claim expired free the claim of the delivery that took over`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val storage = inMemoryEventIdempotencyStorage(testTimeSource)
+        val sut = IdempotentDelivery("business_group", storage, KtorSimpleLogger("IdempotentDeliveryTest"))
+        val handled = AtomicInteger(0)
+        launch {
+            sut.deliver(fixture.event) { handled.incrementAndGet(); delay(storage.claimTtl + 30.seconds); throw IllegalStateException("slow failure") }
+        }
+        runCurrent()
+        launch {
+            sut.deliver(fixture.event) { handled.incrementAndGet(); delay(storage.claimTtl) }
+        }
+        advanceTimeBy(storage.claimTtl + 40.seconds)
+
+        whenn()
+        val lateDuplicate = async { sut.deliver(fixture.event) { handled.incrementAndGet() } }
+
+        then()
+        assertEquals(DeliveryOutcome.SKIPPED_DUPLICATE, lateDuplicate.await().getOrNull())
+        assertEquals(2, handled.get())
     }
 }

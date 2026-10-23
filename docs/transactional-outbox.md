@@ -111,7 +111,7 @@ sequenceDiagram
     end
     Kafka->>Consumer: record (same partition for same partitionKey)
     Consumer->>Consumer: decode payload with the receiver's registered KType
-    Consumer->>Store: claim(consumerGroup, topic, idempotencyKey), atomic SET NX
+    Consumer->>Store: claim(consumerGroup, topic, idempotencyKey, deliveryId), atomic SET NX
     opt IN_PROGRESS (claim held by an unfinished or crashed delivery)
         Consumer->>Store: claim again every second, for up to the claim TTL (1 min)
     end
@@ -124,7 +124,7 @@ sequenceDiagram
         alt handler succeeds
             Consumer->>Store: markProcessed (kept 24h)
         else handler fails (a cancellation it threw itself counts as a failure)
-            Consumer->>Store: release, so the retry can claim it again
+            Consumer->>Store: release(deliveryId): deleted only while the claim is still this delivery's, so the retry can claim it again
             Consumer->>Kafka: DltEvent to topic_consumerGroup_dlt via KafkaEventProducer directly (not the outbox)
             Note over Consumer,Kafka: retried with backoff, after DEFAULT_MAX_ATTEMPTS saved to exhausted_event
         end
@@ -175,6 +175,7 @@ sequenceDiagram
 | Broker unreachable, or `publish` throws | The relay's batch rolls back and the rows stay. Retried after `idleDelay`. Business writes keep inserting outbox rows meanwhile: the relay runs at READ COMMITTED, so its `FOR UPDATE` takes no gap lock (`OutboxRelayMariaDbTest`). |
 | Crash after publish, before the delete commits | The batch is published again. Kafka and embedded consumers skip it through `EventIdempotencyStorage` (same `idempotencyKey`, keyed per consumer group, so every consuming service still handles it once). |
 | Consumer crashes mid-handler | Its claim stays for up to 1 minute. A redelivery in that window waits for it (re-claiming every second), then handles the event once the claim expires. Only a claim still held after the TTL sends the event through the DLT retries. A handler is expected to finish within the claim TTL. |
+| Handler outlives its claim, then fails | Another delivery may already have claimed the event (or finished it). The late `release` is a compare-and-delete on its own `deliveryId` (`CacheClient.deleteIfEquals`, a Lua script on Redis), so it frees neither the other delivery's claim nor the processed marker, and a later duplicate is still skipped. The event itself can be handled twice in this case: the slow handler and the one that took over both ran. |
 | Idempotency store (Redis) unreachable | A failed claim is retried through the DLT like a handler failure. A failed `markProcessed` is logged only: the handler already succeeded and is not run again. |
 | Two relays for the same schema | The second relay's `FOR UPDATE` waits for the first to commit, then finds the rows deleted. Each row is published once, in id order (`OutboxRelayMariaDbTest`). |
 | Consumer can't decode a payload | Logged and dropped, as with Kafka. Later events keep flowing. |

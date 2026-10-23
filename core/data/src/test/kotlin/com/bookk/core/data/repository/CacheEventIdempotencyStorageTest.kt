@@ -11,14 +11,32 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import kotlin.reflect.KType
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.TestTimeSource
 import kotlin.uuid.Uuid
 
 internal class CacheEventIdempotencyStorageTest {
 
     private class SutFixture {
-        val sut = CacheEventIdempotencyStorage(InMemoryCacheClient())
+        val timeSource = TestTimeSource()
+        val sut = CacheEventIdempotencyStorage(InMemoryCacheClient(timeSource = timeSource))
         val topic = "topic.idempotency"
         val idempotencyKey = Uuid.random().toString()
+        val delivery = Uuid.random().toString()
+        val otherDelivery = Uuid.random().toString()
+
+        suspend fun claim(deliveryId: String = delivery, consumerGroup: String = "business_group", topic: String = this.topic) =
+            sut.claim(consumerGroup, topic, idempotencyKey, deliveryId)
+
+        suspend fun markProcessed(consumerGroup: String = "business_group") =
+            sut.markProcessed(consumerGroup, topic, idempotencyKey)
+
+        suspend fun release(deliveryId: String = delivery) =
+            sut.release("business_group", topic, idempotencyKey, deliveryId)
+
+        fun expireClaim() {
+            timeSource += sut.claimTtl + 1.seconds
+        }
     }
 
     private class KeyReleasedAfterFirstClaimAttemptCacheClient(
@@ -42,7 +60,7 @@ internal class CacheEventIdempotencyStorageTest {
         val sut = CacheEventIdempotencyStorage(KeyReleasedAfterFirstClaimAttemptCacheClient())
 
         whenn()
-        val claim = sut.claim("business_group", fixture.topic, fixture.idempotencyKey)
+        val claim = sut.claim("business_group", fixture.topic, fixture.idempotencyKey, fixture.delivery)
 
         then()
         assertEquals(EventClaim.CLAIMED, claim)
@@ -54,7 +72,7 @@ internal class CacheEventIdempotencyStorageTest {
         val fixture = SutFixture()
 
         whenn()
-        val claim = fixture.sut.claim("business_group", fixture.topic, fixture.idempotencyKey)
+        val claim = fixture.claim()
 
         then()
         assertEquals(EventClaim.CLAIMED, claim)
@@ -64,10 +82,10 @@ internal class CacheEventIdempotencyStorageTest {
     fun `should report an event claimed by the same consumer group as in progress`() = runUnitTest {
         given()
         val fixture = SutFixture()
-        fixture.sut.claim("business_group", fixture.topic, fixture.idempotencyKey)
+        fixture.claim()
 
         whenn()
-        val claim = fixture.sut.claim("business_group", fixture.topic, fixture.idempotencyKey)
+        val claim = fixture.claim(deliveryId = fixture.otherDelivery)
 
         then()
         assertEquals(EventClaim.IN_PROGRESS, claim)
@@ -77,11 +95,11 @@ internal class CacheEventIdempotencyStorageTest {
     fun `should report an event marked as processed as already processed`() = runUnitTest {
         given()
         val fixture = SutFixture()
-        fixture.sut.claim("business_group", fixture.topic, fixture.idempotencyKey)
-        fixture.sut.markProcessed("business_group", fixture.topic, fixture.idempotencyKey)
+        fixture.claim()
+        fixture.markProcessed()
 
         whenn()
-        val claim = fixture.sut.claim("business_group", fixture.topic, fixture.idempotencyKey)
+        val claim = fixture.claim()
 
         then()
         assertEquals(EventClaim.ALREADY_PROCESSED, claim)
@@ -91,12 +109,12 @@ internal class CacheEventIdempotencyStorageTest {
     fun `should keep an event processed after another claim attempt`() = runUnitTest {
         given()
         val fixture = SutFixture()
-        fixture.sut.claim("business_group", fixture.topic, fixture.idempotencyKey)
-        fixture.sut.markProcessed("business_group", fixture.topic, fixture.idempotencyKey)
-        fixture.sut.claim("business_group", fixture.topic, fixture.idempotencyKey)
+        fixture.claim()
+        fixture.markProcessed()
+        fixture.claim()
 
         whenn()
-        val claim = fixture.sut.claim("business_group", fixture.topic, fixture.idempotencyKey)
+        val claim = fixture.claim()
 
         then()
         assertEquals(EventClaim.ALREADY_PROCESSED, claim)
@@ -106,11 +124,11 @@ internal class CacheEventIdempotencyStorageTest {
     fun `should let an event be claimed again after its claim is released`() = runUnitTest {
         given()
         val fixture = SutFixture()
-        fixture.sut.claim("business_group", fixture.topic, fixture.idempotencyKey)
-        fixture.sut.release("business_group", fixture.topic, fixture.idempotencyKey)
+        fixture.claim()
+        fixture.release()
 
         whenn()
-        val claim = fixture.sut.claim("business_group", fixture.topic, fixture.idempotencyKey)
+        val claim = fixture.claim()
 
         then()
         assertEquals(EventClaim.CLAIMED, claim)
@@ -120,11 +138,11 @@ internal class CacheEventIdempotencyStorageTest {
     fun `should claim an event processed by another consumer group`() = runUnitTest {
         given()
         val fixture = SutFixture()
-        fixture.sut.claim("user_group", fixture.topic, fixture.idempotencyKey)
-        fixture.sut.markProcessed("user_group", fixture.topic, fixture.idempotencyKey)
+        fixture.claim(consumerGroup = "user_group")
+        fixture.markProcessed(consumerGroup = "user_group")
 
         whenn()
-        val claim = fixture.sut.claim("business_group", fixture.topic, fixture.idempotencyKey)
+        val claim = fixture.claim()
 
         then()
         assertEquals(EventClaim.CLAIMED, claim)
@@ -134,12 +152,57 @@ internal class CacheEventIdempotencyStorageTest {
     fun `should claim the same idempotency key independently on another topic`() = runUnitTest {
         given()
         val fixture = SutFixture()
-        fixture.sut.claim("business_group", fixture.topic, fixture.idempotencyKey)
+        fixture.claim()
 
         whenn()
-        val claim = fixture.sut.claim("business_group", "topic.other", fixture.idempotencyKey)
+        val claim = fixture.claim(topic = "topic.other")
 
         then()
         assertEquals(EventClaim.CLAIMED, claim)
+    }
+
+    @Test
+    fun `should let another delivery claim an event whose claim expired`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.claim()
+        fixture.expireClaim()
+
+        whenn()
+        val claim = fixture.claim(deliveryId = fixture.otherDelivery)
+
+        then()
+        assertEquals(EventClaim.CLAIMED, claim)
+    }
+
+    @Test
+    fun `should keep the claim of the delivery that took over when the delivery whose claim expired releases it`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.claim()
+        fixture.expireClaim()
+        fixture.claim(deliveryId = fixture.otherDelivery)
+
+        whenn()
+        fixture.release()
+
+        then()
+        assertEquals(EventClaim.IN_PROGRESS, fixture.claim(deliveryId = Uuid.random().toString()))
+    }
+
+    @Test
+    fun `should keep an event processed when the delivery whose claim expired releases it`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.claim()
+        fixture.expireClaim()
+        fixture.claim(deliveryId = fixture.otherDelivery)
+        fixture.markProcessed()
+
+        whenn()
+        fixture.release()
+
+        then()
+        assertEquals(EventClaim.ALREADY_PROCESSED, fixture.claim(deliveryId = Uuid.random().toString()))
     }
 }

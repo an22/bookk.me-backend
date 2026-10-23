@@ -1,6 +1,7 @@
 package com.bookk.core.data.repository
 
 import com.bookk.core.data.cache.CacheClient
+import com.bookk.core.data.cache.deleteIfEquals
 import com.bookk.core.data.cache.get
 import com.bookk.core.data.cache.set
 import com.bookk.core.data.cache.setIfAbsent
@@ -14,7 +15,8 @@ import kotlin.time.Duration.Companion.minutes
 
 @Serializable
 private class EventProcessingRecord(
-    @ProtoNumber(1) val processed: Boolean
+    @ProtoNumber(1) val processed: Boolean,
+    @ProtoNumber(2) val deliveryId: String = ""
 )
 
 class CacheEventIdempotencyStorage(
@@ -23,10 +25,10 @@ class CacheEventIdempotencyStorage(
 
     override val claimTtl: Duration = CLAIM_TTL
 
-    override suspend fun claim(consumerGroup: String, topic: String, idempotencyKey: String): EventClaim {
+    override suspend fun claim(consumerGroup: String, topic: String, idempotencyKey: String, deliveryId: String): EventClaim {
         val key = key(consumerGroup, topic, idempotencyKey)
         repeat(CLAIM_ATTEMPTS) {
-            if (cacheClient.setIfAbsent(key, EventProcessingRecord(processed = false), CLAIM_TTL)) return EventClaim.CLAIMED
+            if (cacheClient.setIfAbsent(key, claimOf(deliveryId), CLAIM_TTL)) return EventClaim.CLAIMED
             val record: EventProcessingRecord = cacheClient.get(key) ?: return@repeat
             return if (record.processed) EventClaim.ALREADY_PROCESSED else EventClaim.IN_PROGRESS
         }
@@ -37,9 +39,11 @@ class CacheEventIdempotencyStorage(
         cacheClient.set(key(consumerGroup, topic, idempotencyKey), EventProcessingRecord(processed = true), PROCESSED_TTL)
     }
 
-    override suspend fun release(consumerGroup: String, topic: String, idempotencyKey: String) {
-        cacheClient.delete(key(consumerGroup, topic, idempotencyKey))
+    override suspend fun release(consumerGroup: String, topic: String, idempotencyKey: String, deliveryId: String) {
+        cacheClient.deleteIfEquals(key(consumerGroup, topic, idempotencyKey), claimOf(deliveryId))
     }
+
+    private fun claimOf(deliveryId: String) = EventProcessingRecord(processed = false, deliveryId = deliveryId)
 
     private fun key(consumerGroup: String, topic: String, idempotencyKey: String) =
         "event:$consumerGroup:$topic:$idempotencyKey"

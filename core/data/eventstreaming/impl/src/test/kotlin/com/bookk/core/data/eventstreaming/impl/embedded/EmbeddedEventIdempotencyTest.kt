@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
+import kotlin.uuid.Uuid
 
 internal class EmbeddedEventIdempotencyTest {
 
@@ -180,7 +181,7 @@ internal class EmbeddedEventIdempotencyTest {
         consumer.registerReceiver<KeyedTestEvent, String>(topic) { attempts.incrementAndGet() }
         consumer.start(backgroundScope)
         val event = KeyedTestEvent(entityId = "entity-1", sequence = 0, topic = topic)
-        fixture.eventIdempotencyStorage.claim("business_group", topic, event.idempotencyKey)
+        fixture.eventIdempotencyStorage.claim("business_group", topic, event.idempotencyKey, Uuid.random().toString())
 
         whenn()
         fixture.producer.send(event)
@@ -206,7 +207,7 @@ internal class EmbeddedEventIdempotencyTest {
         runCurrent()
 
         then()
-        assertEquals(EventClaim.CLAIMED, fixture.eventIdempotencyStorage.claim("business_group", topic, event.idempotencyKey))
+        assertEquals(EventClaim.CLAIMED, fixture.eventIdempotencyStorage.claim("business_group", topic, event.idempotencyKey, Uuid.random().toString()))
     }
 
     @Test
@@ -214,7 +215,7 @@ internal class EmbeddedEventIdempotencyTest {
         given()
         val storage = mockk<EventIdempotencyStorage>()
         every { storage.claimTtl } returns 1.minutes
-        coEvery { storage.claim(any(), any(), any()) } throws RuntimeException("cache down") andThen EventClaim.CLAIMED
+        coEvery { storage.claim(any(), any(), any(), any()) } throws RuntimeException("cache down") andThen EventClaim.CLAIMED
         coEvery { storage.markProcessed(any(), any(), any()) } just Runs
         val fixture = SutFixture(eventIdempotencyStorage = storage)
         val topic = "embedded.idempotency.claim-failure"
@@ -237,9 +238,9 @@ internal class EmbeddedEventIdempotencyTest {
         given()
         val storage = mockk<EventIdempotencyStorage>()
         every { storage.claimTtl } returns 1.minutes
-        coEvery { storage.claim(any(), any(), any()) } returns EventClaim.CLAIMED
+        coEvery { storage.claim(any(), any(), any(), any()) } returns EventClaim.CLAIMED
         coEvery { storage.markProcessed(any(), any(), any()) } throws RuntimeException("cache down")
-        coEvery { storage.release(any(), any(), any()) } just Runs
+        coEvery { storage.release(any(), any(), any(), any()) } just Runs
         val fixture = SutFixture(eventIdempotencyStorage = storage)
         val topic = "embedded.idempotency.mark-failure"
         val consumer = fixture.newConsumer()
@@ -254,6 +255,6 @@ internal class EmbeddedEventIdempotencyTest {
         then()
         assertEquals(1, attempts.get())
         assertTrue(fixture.exhaustedEventDataSource.findByOriginalTopic(topic).isEmpty())
-        coVerify(exactly = 0) { storage.release(any(), any(), any()) }
+        coVerify(exactly = 0) { storage.release(any(), any(), any(), any()) }
     }
 }

@@ -12,6 +12,7 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration.Companion.seconds
+import kotlin.uuid.Uuid
 
 internal class EventClaimedByUnfinishedDelivery(topic: String, idempotencyKey: String) :
     IllegalStateException("Event is claimed by an unfinished delivery, topic: $topic, idempotencyKey: $idempotencyKey")
@@ -33,41 +34,42 @@ internal class IdempotentDelivery(
 ) {
 
     suspend fun <T : Event<String>> deliver(event: T, onEvent: suspend (T) -> Unit): Result<DeliveryOutcome> {
-        val claim = runSuspendCatching { awaitSettledClaim(event) }
+        val deliveryId = Uuid.random().toString()
+        val claim = runSuspendCatching { awaitSettledClaim(event, deliveryId) }
             .getOrElse { return Result.failure(it) }
         return when (claim) {
-            EventClaim.CLAIMED -> handleClaimed(event, onEvent)
+            EventClaim.CLAIMED -> handleClaimed(event, deliveryId, onEvent)
             EventClaim.IN_PROGRESS -> Result.failure(EventClaimedByUnfinishedDelivery(event.topic, event.idempotencyKey))
             EventClaim.ALREADY_PROCESSED -> Result.success(DeliveryOutcome.SKIPPED_DUPLICATE)
         }
     }
 
-    private suspend fun awaitSettledClaim(event: Event<String>): EventClaim {
-        var claim = claim(event)
+    private suspend fun awaitSettledClaim(event: Event<String>, deliveryId: String): EventClaim {
+        var claim = claim(event, deliveryId)
         repeat(claimPollsWithinTtl()) {
             if (claim != EventClaim.IN_PROGRESS) return claim
             delay(CLAIM_POLL_INTERVAL)
-            claim = claim(event)
+            claim = claim(event, deliveryId)
         }
         return claim
     }
 
     private fun claimPollsWithinTtl(): Int = (eventIdempotencyStorage.claimTtl / CLAIM_POLL_INTERVAL).toInt() + 1
 
-    private suspend fun claim(event: Event<String>): EventClaim =
-        eventIdempotencyStorage.claim(consumerGroup, event.topic, event.idempotencyKey)
+    private suspend fun claim(event: Event<String>, deliveryId: String): EventClaim =
+        eventIdempotencyStorage.claim(consumerGroup, event.topic, event.idempotencyKey, deliveryId)
 
-    private suspend fun <T : Event<String>> handleClaimed(event: T, onEvent: suspend (T) -> Unit): Result<DeliveryOutcome> {
+    private suspend fun <T : Event<String>> handleClaimed(event: T, deliveryId: String, onEvent: suspend (T) -> Unit): Result<DeliveryOutcome> {
         val handled = try {
             runSuspendCatching { onEvent(event) }
         } catch (e: CancellationException) {
-            release(event)
+            release(event, deliveryId)
             currentCoroutineContext().ensureActive()
             return Result.failure(e)
         }
         handled
             .onSuccess { markProcessed(event) }
-            .onFailure { release(event) }
+            .onFailure { release(event, deliveryId) }
         return handled.map { DeliveryOutcome.HANDLED }
     }
 
@@ -76,8 +78,8 @@ internal class IdempotentDelivery(
             .onFailure { logger.error("Failed to mark event as processed, topic: {}, idempotencyKey: {}. Error: {}", event.topic, event.idempotencyKey, it.message) }
     }
 
-    private suspend fun release(event: Event<String>) = withContext(NonCancellable) {
-        runSuspendCatching { eventIdempotencyStorage.release(consumerGroup, event.topic, event.idempotencyKey) }
+    private suspend fun release(event: Event<String>, deliveryId: String) = withContext(NonCancellable) {
+        runSuspendCatching { eventIdempotencyStorage.release(consumerGroup, event.topic, event.idempotencyKey, deliveryId) }
             .onFailure { logger.error("Failed to release event claim, topic: {}, idempotencyKey: {}. Error: {}", event.topic, event.idempotencyKey, it.message) }
     }
 

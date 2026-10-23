@@ -22,7 +22,7 @@ concurrency:
 jobs:
   deploy:
     name: Deploy monolith ${{ inputs.version }}
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     environment: production
     env:
       ANSIBLE_CONFIG: ${{ github.workspace }}/deployment/ansible/ansible.cfg

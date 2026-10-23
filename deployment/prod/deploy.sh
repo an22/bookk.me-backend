@@ -37,4 +37,3 @@ docker stack deploy vpn --compose-file vpn/vpn-compose.yml
 docker stack deploy nginx --compose-file nginx/nginx-compose.yml
 docker secret create dozzle-auth orchestrator/dozzle/users.actual.yaml
 docker stack deploy orchestrator --compose-file orchestrator/orchestrator-compose.yml
-docker stack deploy runner --compose-file runner/runner-compose.yml

@@ -44,10 +44,6 @@ infra_stacks:
     name: admin
     source: adminpanel
     compose: [admin-compose.yml]
-  runner:
-    name: runner
-    source: dev/runner
-    compose: [runner-compose.yml]
 
 monolith:
   stack:

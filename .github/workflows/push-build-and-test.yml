@@ -10,7 +10,7 @@ jobs:
 
   verify:
     name: Build and test
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout

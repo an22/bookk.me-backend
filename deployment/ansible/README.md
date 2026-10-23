@@ -4,7 +4,7 @@ Runs from your machine (or CI) over SSH against the prod swarm. Nothing is insta
 
 Prod runs the **monolith** (`MonolithServer`, events in-process, no Kafka) as one stack: the app, one MariaDB holding all five schemas, and one Redis. The app answers on the network aliases `authorization.service`, `user.service`, `business.service`, `appointments.service` and `notifications.service`, so nginx routes `/api/<svc>` to it unchanged.
 
-The compose files in `deployment/prod`, `deployment/adminpanel` and `deployment/dev/runner` stay the source of truth: a stack deploy copies the stack's directory to `/opt/bookk/stacks/<stack>/` on the manager, writes its secret files from the vault next to it, and runs `docker stack deploy` there with the stack's variables in the environment. Kafka (`deployment/prod/kafka`) and the per-service stacks (`deployment/prod/microservice`) are not deployed by Ansible.
+The compose files in `deployment/prod` and `deployment/adminpanel` stay the source of truth: a stack deploy copies the stack's directory to `/opt/bookk/stacks/<stack>/` on the manager, writes its secret files from the vault next to it, and runs `docker stack deploy` there with the stack's variables in the environment. Kafka (`deployment/prod/kafka`) and the per-service stacks (`deployment/prod/microservice`) are not deployed by Ansible.
 
 ## One-time setup
 
@@ -59,11 +59,7 @@ make deploy v=0.15.2 first=1   # the monolith, creating its stack
 | Edit secrets | `make vault-edit` |
 | Syntax check / lint | `make syntax` / `make lint` |
 
-Tags: `hosts`, `swarm`, `vpn`, `nginx`, `orchestrator`, `monitoring`, `admin`, `runner`.
-
-## GitHub runners
-
-The runner stack registers its runners through a GitHub App (`RUNNER_APP_ID`, `RUNNER_APP_PRIVATE_KEY` in `vault_stack_env`), so no token ever expires: the container creates a short-lived registration token from the app key whenever a runner has to (re)register. The app needs the repository permission **Administration: Read and write** and must be installed on both repositories. Verify it with `scripts/check-runner-app.sh <app-id> <key.pem>`.
+Tags: `hosts`, `swarm`, `vpn`, `nginx`, `orchestrator`, `monitoring`, `admin`.
 
 ## Safety rails
 
@@ -82,12 +78,12 @@ GitHub Actions only publishes images and calls this playbook; it never runs `doc
 
 - `.github/workflows/monolith-publish.yml` runs on a `monolith/<version>` tag: it checks the tag equals `version` in the root `build.gradle.kts`, pushes `ghcr.io/an22/com.bookk.server:<version>`, then calls the deploy workflow.
 - `.github/workflows/microservice-publish.yml` runs on an `auth/`, `user/`, `business/`, `appointment/` or `notification/<version>` tag and only publishes `ghcr.io/an22/com.bookk.server.microservice.<service>:<version>` (same version check); nothing deploys microservices while prod runs the monolith.
-- `.github/workflows/deploy.yml` runs `ansible-playbook playbooks/deploy.yml -e version=<version>` on the self-hosted runner. Run it by hand (**Actions → Deploy monolith → Run workflow**) to redeploy or roll back to any published version.
+- `.github/workflows/deploy.yml` runs `ansible-playbook playbooks/deploy.yml -e version=<version>` on a GitHub-hosted runner. Run it by hand (**Actions → Deploy monolith → Run workflow**) to redeploy or roll back to any published version.
 
-The deploy job installs Ansible with `uv` (the runner image ships Python 3.8, too old for current Ansible), pinned to the same versions as a local Homebrew install: ansible-core 2.21.5, community.docker 5.4.0, community.general 13.5.0. It pulls with the registry token from the vault, not `GITHUB_TOKEN`: the deploy passes `--with-registry-auth`, which stores the credentials in the swarm service for later pulls, and `GITHUB_TOKEN` expires when the job ends.
+Every workflow runs on GitHub-hosted `ubuntu-latest` runners; nothing runs inside the swarm. The deploy job therefore reaches the manager over SSH from GitHub's address ranges, which change, so the manager's SSH port must accept connections from the internet (key-only root login) at the `vault_hosts['manager-1']` address. The job installs Ansible with `uv`, pinned to the same versions as a local Homebrew install: ansible-core 2.21.5, community.docker 5.4.0, community.general 13.5.0. It pulls with the registry token from the vault, not `GITHUB_TOKEN`: the deploy passes `--with-registry-auth`, which stores the credentials in the swarm service for later pulls, and `GITHUB_TOKEN` expires when the job ends.
 
 GitHub setup the workflows need:
 - Secrets `ANSIBLE_VAULT_PASSWORD` (new), `SSH_PRIVATE_KEY`, `SSH_KNOWN_HOSTS` and `GRADLE_ENCRYPTION_KEY` (already used by the old workflows).
 - An environment `production` (**Settings → Environments**) with yourself as required reviewer, so every deploy waits for an approval. Without protection rules GitHub creates it on first use and deploys without asking.
 
-`make infra` / `make bootstrap` are never run from CI: they redeploy the runner stack, which would restart the runner executing the job. Run them from your machine.
+`make infra` / `make bootstrap` are not wired into CI: infrastructure changes are rare and reviewed by hand, so run them from your machine.

@@ -59,12 +59,3 @@
       vars:
         stack: "{{ infra_stacks.admin }}"
       tags: [admin]
-
-    - name: Deploy the runner stack
-      ansible.builtin.include_role:
-        name: stack
-        apply:
-          tags: [runner]
-      vars:
-        stack: "{{ infra_stacks.runner }}"
-      tags: [runner]

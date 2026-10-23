@@ -10,8 +10,9 @@ from pathlib import Path
 PLACEHOLDER = "CHANGE_ME"
 DEPLOYMENT_DIR = Path(__file__).resolve().parents[2]
 PROD_DIR = DEPLOYMENT_DIR / "prod"
-RETIRED_STACK_ENV = ["RUNNER_ACCESS_TOKEN", "MOBILE_RUNNER_ACCESS_TOKEN", "RUNNER_APP_ID", "RUNNER_APP_PRIVATE_KEY"]
+RETIRED_STACK_ENV = ["RUNNER_ACCESS_TOKEN", "MOBILE_RUNNER_ACCESS_TOKEN", "RUNNER_APP_ID", "RUNNER_APP_PRIVATE_KEY", "VPN_SUBNET"]
 RETIRED_STACK_ENV_PREFIXES = ["KAFKA_"]
+REQUIRED_KEYS = ["vault_vpn_password"]
 RETIRED_KEYS = ["vault_service_env"]
 RETIRED_SWARM_SECRETS = ["jwt_master_key", "jwt_quote_key"]
 
@@ -63,6 +64,8 @@ def is_retired_stack_env(name):
 def normalize(vault):
     for key in RETIRED_KEYS:
         vault.pop(key, None)
+    for key in REQUIRED_KEYS:
+        vault.setdefault(key, None)
     vault["vault_stack_env"] = {name: value for name, value in (vault.get("vault_stack_env") or {}).items() if not is_retired_stack_env(name)}
     swarm_secrets = {name: value for name, value in (vault.get("vault_swarm_secrets") or {}).items() if name not in RETIRED_SWARM_SECRETS}
     for name, value in generated_secrets().items():

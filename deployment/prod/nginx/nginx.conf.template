@@ -28,7 +28,7 @@ server {
   ssl_session_timeout 1d;
   ssl_session_tickets off;
 
-  allow 10.8.0.0/24;
+  allow ${VPN_SUBNET};
   deny all;
 
   location / {
@@ -53,7 +53,7 @@ server {
   ssl_session_timeout 1d;
   ssl_session_tickets off;
 
-  allow 10.8.0.0/24;
+  allow ${VPN_SUBNET};
   deny all;
 
   location / {
@@ -77,7 +77,7 @@ server {
   ssl_session_timeout 1d;
   ssl_session_tickets off;
 
-  allow 10.8.0.0/24;
+  allow ${VPN_SUBNET};
   deny all;
 
   location / {
@@ -102,6 +102,9 @@ server {
   ssl_session_timeout 1d;
   ssl_session_tickets off;
 
+  allow ${VPN_SUBNET};
+  deny all;
+
   location / {
       set $upstream vpn;
       proxy_pass http://$upstream:51821;
@@ -124,7 +127,7 @@ server {
   ssl_session_timeout 1d;
   ssl_session_tickets off;
 
-  allow 10.8.0.0/24;
+  allow ${VPN_SUBNET};
   deny all;
 
   location / {
@@ -148,7 +151,7 @@ server {
   ssl_session_timeout 1d;
   ssl_session_tickets off;
 
-  allow 10.8.0.0/24;
+  allow ${VPN_SUBNET};
   deny all;
 
   location / {
@@ -174,7 +177,7 @@ server {
   ssl_session_timeout 1d;
   ssl_session_tickets off;
 
-  allow 10.8.0.0/24;
+  allow ${VPN_SUBNET};
   deny all;
 
   location / {

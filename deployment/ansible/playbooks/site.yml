@@ -24,6 +24,21 @@
         stack: "{{ infra_stacks.vpn }}"
       tags: [vpn]
 
+    - name: Create the default VPN clients
+      ansible.builtin.include_role:
+        name: vpn_clients
+        apply:
+          tags: [vpn]
+      tags: [vpn]
+
+    - name: Connect the manager to the VPN
+      ansible.builtin.include_role:
+        name: vpn_host
+        apply:
+          tags: [vpn]
+      when: not ansible_check_mode
+      tags: [vpn]
+
     - name: Deploy the nginx stack
       ansible.builtin.include_role:
         name: stack

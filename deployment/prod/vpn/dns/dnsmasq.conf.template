@@ -5,7 +5,7 @@ server=8.8.4.4
 server=8.8.8.8
 server=1.1.1.1
 #explicitly define host-ip mappings
-host-record=${DOMAIN_NAME}, 10.8.0.2
+host-record=${DOMAIN_NAME}, ${VPN_HOST_ADDRESS}
 cname=grafana.${DOMAIN_NAME}, ${DOMAIN_NAME}
 cname=prometheus.${DOMAIN_NAME}, ${DOMAIN_NAME}
 cname=local.${DOMAIN_NAME}, ${DOMAIN_NAME}

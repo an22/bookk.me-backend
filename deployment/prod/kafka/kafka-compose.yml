@@ -1,15 +1,9 @@
-version: "3.9"
-
 networks:
   operational:
     external: true
 
 volumes:
-  kafka_1_volume:
-    driver: local
-  kafka_2_volume:
-    driver: local
-  kafka_3_volume:
+  kafka_volume:
     driver: local
 
 x-templates:
@@ -21,9 +15,11 @@ x-templates:
     deploy:
       mode: replicated
       replicas: 1
+      placement:
+        constraints: [ node.role == worker ]
       update_config:
         parallelism: 1
-        order: start-first
+        order: stop-first
         failure_action: rollback
         delay: 10s
       rollback_config:
@@ -36,98 +32,55 @@ x-templates:
         window: 120s
 
 services:
-  kafka-1:
+  kafka:
     <<: *replicated
-    image: bitnami/kafka:3.8.0
+    image: apache/kafka-native:4.2.1
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints: [ node.labels.kafka == true ]
+      update_config:
+        parallelism: 1
+        order: stop-first
+        failure_action: rollback
+        delay: 10s
+      rollback_config:
+        parallelism: 0
+        order: stop-first
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+        window: 120s
     networks:
       operational:
         aliases:
-          - first.kafka
+          - kafka
     volumes:
-      - kafka_1_volume:/bitnami/kafka
+      - kafka_volume:/home/appuser
     environment:
       # KRaft
-      KAFKA_CFG_NODE_ID: 1
-      KAFKA_CFG_PROCESS_ROLES: broker,controller
-      KAFKA_KRAFT_CLUSTER_ID: ${KAFKA_CLUSTER_ID}
-      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 1@first.kafka:${KAFKA_CONTROLLER_PORT},2@second.kafka:${KAFKA_CONTROLLER_PORT},3@third.kafka:${KAFKA_CONTROLLER_PORT}
+      CLUSTER_ID: ${KAFKA_CLUSTER_ID}
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_CONTROLLER_QUORUM_BOOTSTRAP_SERVERS: kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       # Listeners
-      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_CFG_LISTENERS: CONTROLLER://:${KAFKA_CONTROLLER_PORT},PLAINTEXT://:${KAFKA_BROKER_PORT}
-      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
       # Config
-      KAFKA_CFG_NUM_PARTITIONS: 3
-      # Clustering
-      KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
-      KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
-      KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR: 2
-    # Swarm
-    deploy:
-      placement:
-        constraints: [node.role == worker]
-
-  kafka-2:
-    <<: *replicated
-    image: bitnami/kafka:3.8.0
-    networks:
-      operational:
-        aliases:
-          - second.kafka
-    volumes:
-      - kafka_2_volume:/bitnami/kafka
-    environment:
-      # KRaft
-      KAFKA_CFG_NODE_ID: 2
-      KAFKA_CFG_PROCESS_ROLES: broker,controller
-      KAFKA_KRAFT_CLUSTER_ID: ${KAFKA_CLUSTER_ID}
-      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 1@first.kafka:${KAFKA_CONTROLLER_PORT},2@second.kafka:${KAFKA_CONTROLLER_PORT},3@third.kafka:${KAFKA_CONTROLLER_PORT}
-      # Listeners
-      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_CFG_LISTENERS: CONTROLLER://:${KAFKA_CONTROLLER_PORT},PLAINTEXT://:${KAFKA_BROKER_PORT}
-      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
-      # Config
-      KAFKA_CFG_NUM_PARTITIONS: 3
-      # Clustering
-      KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
-      KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
-      KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR: 2
-    #    swarm
-    deploy:
-      placement:
-        constraints: [node.role == worker]
-
-  kafka-3:
-    <<: *replicated
-    image: bitnami/kafka:3.8.0
-    networks:
-      operational:
-        aliases:
-          - third.kafka
-    volumes:
-      - kafka_3_volume:/bitnami/kafka
-    environment:
-      # KRaft
-      KAFKA_CFG_NODE_ID: 3
-      KAFKA_CFG_PROCESS_ROLES: broker,controller
-      KAFKA_KRAFT_CLUSTER_ID: ${KAFKA_CLUSTER_ID}
-      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 1@first.kafka:${KAFKA_CONTROLLER_PORT},2@second.kafka:${KAFKA_CONTROLLER_PORT},3@third.kafka:${KAFKA_CONTROLLER_PORT}
-      # Listeners
-      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_CFG_LISTENERS: CONTROLLER://:${KAFKA_CONTROLLER_PORT},PLAINTEXT://:${KAFKA_BROKER_PORT}
-      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
-      # Config
-      KAFKA_CFG_NUM_PARTITIONS: 3
-      # Clustering
-      KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
-      KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
-      KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR: 2
-    # swarm
-    deploy:
-      placement:
-        constraints: [node.role == worker]
+      KAFKA_NUM_PARTITIONS: 3
+      KAFKA_LOG_DIRS: /home/appuser/kafka-data
+      # Native Image Memory Management
+      KAFKA_OPTS: "-Xmx256M -Xms128M"
+      KAFKA_HEAP_OPTS: "-Xmx256M -Xms128M"
 
   kafka-ui:
     <<: *replicated
@@ -137,12 +90,13 @@ services:
         aliases:
           - ui.kafka
     environment:
-      KAFKA_CLUSTERS_0_BOOTSTRAP_SERVERS: first.kafka:9092
+      KAFKA_CLUSTERS_0_BOOTSTRAP_SERVERS: kafka:9092
       KAFKA_CLUSTERS_0_NAME: ${KAFKA_CLUSTER_ID}
       AUTH_TYPE: "LOGIN_FORM"
       SPRING_SECURITY_USER_NAME: ${KAFKA_UI_USERNAME}
       SPRING_SECURITY_USER_PASSWORD: ${KAFKA_UI_PASSWORD}
-    # swarm
     deploy:
+      mode: replicated
+      replicas: 1
       placement:
-        constraints: [node.role == manager]
+        constraints: [ node.role == manager ]

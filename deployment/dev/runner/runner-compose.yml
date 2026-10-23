@@ -14,7 +14,9 @@ services:
     environment:
       RUN_AS_ROOT: "true"
       RUNNER_NAME: backend-runner
-      RUNNER_TOKEN: ${RUNNER_ACCESS_TOKEN}
+      APP_ID: ${RUNNER_APP_ID}
+      APP_PRIVATE_KEY: ${RUNNER_APP_PRIVATE_KEY}
+      APP_LOGIN: an22
       RUNNER_WORKDIR: /tmp/runner/work
       CONFIGURED_ACTIONS_RUNNER_FILES_DIR: /runner/data
       RUNNER_SCOPE: 'repo'
@@ -39,7 +41,9 @@ services:
     environment:
       RUN_AS_ROOT: "true"
       RUNNER_NAME: mobile-runner
-      RUNNER_TOKEN: ${MOBILE_RUNNER_ACCESS_TOKEN}
+      APP_ID: ${RUNNER_APP_ID}
+      APP_PRIVATE_KEY: ${RUNNER_APP_PRIVATE_KEY}
+      APP_LOGIN: an22
       RUNNER_WORKDIR: /tmp/runner/work
       CONFIGURED_ACTIONS_RUNNER_FILES_DIR: /runner/data
       RUNNER_SCOPE: 'repo'

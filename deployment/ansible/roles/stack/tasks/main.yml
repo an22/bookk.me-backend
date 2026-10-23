@@ -1,0 +1,47 @@
+- name: Read the deployed stacks
+  ansible.builtin.command: docker stack ls --format '{{ "{{" }}.Name{{ "}}" }}'
+  register: deployed_stacks
+  changed_when: false
+  check_mode: false
+
+- name: "Refuse to create stack {{ stack.name }} unless allow_new_stacks is set"
+  ansible.builtin.assert:
+    that: stack.name in deployed_stacks.stdout_lines or allow_new_stacks | bool
+    fail_msg: >-
+      Stack '{{ stack.name }}' is not deployed on this swarm (deployed: {{ deployed_stacks.stdout_lines | join(', ') }}).
+      If it runs under another name, fix the name in group_vars/all/main.yml; otherwise rerun with -e allow_new_stacks=true.
+    quiet: true
+
+- name: "Create the directory for stack {{ stack.name }}"
+  ansible.builtin.file:
+    path: "{{ remote_stacks_dir }}/{{ stack.name }}"
+    state: directory
+    mode: "0700"
+
+- name: "Copy the files of stack {{ stack.name }}"
+  ansible.builtin.copy:
+    src: "{{ deployment_dir }}/{{ stack.source }}/"
+    dest: "{{ remote_stacks_dir }}/{{ stack.name }}/"
+    mode: preserve
+  diff: false
+
+- name: "Write the secret files of stack {{ stack.name }}"
+  ansible.builtin.copy:
+    content: "{{ item.value }}"
+    dest: "{{ remote_stacks_dir }}/{{ stack.name }}/{{ item.key }}"
+    mode: "0600"
+  diff: false
+  loop: "{{ (stack.files | default({})) | combine(stack_files) | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+  no_log: true
+
+- name: "Deploy stack {{ stack.name }}"
+  community.docker.docker_stack:
+    name: "{{ stack.name }}"
+    compose: "{{ stack.compose | map('regex_replace', '^', remote_stacks_dir ~ '/' ~ stack.name ~ '/') | list }}"
+    with_registry_auth: true
+    resolve_image: "{{ stack_resolve_image }}"
+    prune: "{{ stack_prune }}"
+    state: present
+  environment: "{{ stack_env | combine(stack_extra_env) }}"

@@ -1,0 +1,50 @@
+- name: Skip hosts that are not Debian-based
+  ansible.builtin.meta: end_host
+  when: ansible_facts['os_family'] != 'Debian'
+
+- name: Install Python libraries the Docker modules need
+  ansible.builtin.apt:
+    name:
+      - ca-certificates
+      - curl
+      - python3-docker
+      - python3-jsondiff
+      - python3-yaml
+      - python3-requests
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Check whether Docker is already installed
+  ansible.builtin.command: docker --version
+  register: docker_version
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Install Docker from the official repository
+  when: docker_version.rc != 0
+  block:
+    - name: Add the Docker apt repository
+      ansible.builtin.deb822_repository:
+        name: docker
+        types: [deb]
+        uris: "https://download.docker.com/linux/{{ ansible_facts['distribution'] | lower }}"
+        suites: ["{{ ansible_facts['distribution_release'] }}"]
+        components: [stable]
+        signed_by: "https://download.docker.com/linux/{{ ansible_facts['distribution'] | lower }}/gpg"
+
+    - name: Install Docker Engine
+      ansible.builtin.apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+        state: present
+        update_cache: true
+
+- name: Keep Docker running
+  ansible.builtin.service:
+    name: docker
+    state: started
+    enabled: true

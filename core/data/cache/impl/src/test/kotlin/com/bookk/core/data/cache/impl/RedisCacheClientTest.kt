@@ -30,8 +30,8 @@ internal class RedisCacheClientTest {
     companion object {
         private const val PASSWORD = "test-password"
 
-        private val container = GenericContainer(DockerImageName.parse("redis:6.2.14-alpine"))
-            .withCommand("redis-server", "--requirepass", PASSWORD)
+        private val container = GenericContainer(DockerImageName.parse("valkey/valkey:8.1-alpine"))
+            .withCommand("valkey-server", "--requirepass", PASSWORD)
             .withExposedPorts(6379)
 
         @JvmStatic
@@ -41,7 +41,7 @@ internal class RedisCacheClientTest {
         }
 
         private fun connectedClients(): Int {
-            val info = container.execInContainer("redis-cli", "-a", PASSWORD, "--no-auth-warning", "info", "clients").stdout
+            val info = container.execInContainer("valkey-cli", "-a", PASSWORD, "--no-auth-warning", "info", "clients").stdout
             return info.lineSequence().first { it.startsWith("connected_clients:") }.substringAfter(':').trim().toInt()
         }
     }

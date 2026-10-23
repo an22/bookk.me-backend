@@ -64,18 +64,29 @@ services:
         window: 120s
 
   redis:
-    image: bitnami/redis:6.2.14
+    image: valkey/valkey:8.1-alpine
+    command:
+      - valkey-server
+      - --requirepass
+      - ${APPLICATION_REDIS_PASSWORD}
+      - --appendonly
+      - "yes"
+      - --rename-command
+      - FLUSHDB
+      - ""
+      - --rename-command
+      - FLUSHALL
+      - ""
+      - --rename-command
+      - CONFIG
+      - ""
     volumes:
-      - redis_data:/opt/bitnami/redis/
+      - redis_data:/data
 
     networks:
       operational:
         aliases:
           - ${APPLICATION_SERVICE_NAME}.redis
-
-    environment:
-      REDIS_DISABLE_COMMANDS: FLUSHDB,FLUSHALL,CONFIG
-      REDIS_PASSWORD: ${APPLICATION_REDIS_PASSWORD}
 
     deploy:
       placement:

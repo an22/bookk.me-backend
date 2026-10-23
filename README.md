@@ -178,9 +178,9 @@ Each service has a `<Svc>Migration.kt` that diffs the Exposed table definitions 
 
 ## Deployment
 
-Images are built with Jib and published per service by GitHub Actions (`.github/workflows/*-service-publish.yml`); `push-build-and-test.yml` builds and tests every push and pull request.
+Production runs the **monolith** on **Docker Swarm**, next to separate infrastructure stacks (`deployment/prod/`): VPN (WireGuard), nginx, orchestrator (Dozzle), monitoring (Prometheus + Grafana + Alertmanager) and the GitHub runners. Everything is deployed with Ansible (`deployment/ansible/`, see its README): `make bootstrap` / `make infra` for hosts, swarm and infrastructure, `make deploy v=<version>` for the monolith.
 
-Production runs on **Docker Swarm**, deployed as separate stacks (`deployment/prod/`): VPN (WireGuard), nginx, orchestrator, monitoring (Prometheus + Grafana + Alertmanager + Dozzle), and the service stack itself. `deployment/prod/deploy.sh` provisions the overlay networks and brings up the supporting stacks.
+GitHub Actions only builds and publishes: `push-build-and-test.yml` builds and tests every push and pull request, and pushing a `monolith/<version>` tag runs `monolith-publish.yml`, which publishes `ghcr.io/an22/com.bookk.server:<version>` with Jib and then deploys it through `deploy.yml` (the same Ansible playbook, gated by the `production` environment). The microservice images are still published for when the services are split out again: a `auth/`, `user/`, `business/`, `appointment/` or `notification/<version>` tag runs `microservice-publish.yml`, which publishes `ghcr.io/an22/com.bookk.server.microservice.<service>:<version>` and deploys nothing.
 
 ---
 

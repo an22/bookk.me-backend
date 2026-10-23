@@ -5,6 +5,7 @@ sealed class Error(cause: Throwable) : Throwable(cause) {
     class NotFound : Error(IllegalStateException())
     class DatabaseError(val text: String, cause: Throwable) : Error(cause)
     class UniqueConstraintFailed(val text: String, cause: Throwable) : Error(cause)
+    class TransactionConflict(val text: String, cause: Throwable) : Error(cause)
     class UnknownError(cause: Throwable) : Error(cause)
 }
 

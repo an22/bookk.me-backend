@@ -135,6 +135,13 @@ Every event that crosses a service boundary, who fires it, and who reacts.
 react to a single account deletion, independently and in no guaranteed
 order.
 
+Business events are delivered through the transactional outbox: the
+`eventProducer.send` node in each producer diagram stores the event in the
+service's `outbox_event` table inside the operation's transaction, and
+`OutboxRelay` publishes it after commit. An event therefore exists only if
+the operation committed, and reaches its consumers at least once. See
+[Transactional outbox](../transactional-outbox.md) for the full flow.
+
 | Event | Producer | Consumer(s) |
 |---|---|---|
 | `AuthEvent.UserDeleted` | [Delete account](authorization/delete-account.md) | [appointments](appointments/on-user-deleted.md), [business](business/on-user-deleted.md), [notifications](notifications/on-user-deleted.md), [user](user/on-user-deleted.md) |

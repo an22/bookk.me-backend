@@ -51,7 +51,6 @@ data class Business(
     companion object {
         const val MAX_NAME_LENGTH = 512
         const val MAX_DESCRIPTION_LENGTH = 1024
-        const val MAX_CURRENCY_CODE = 3
         const val MAX_ADDRESS_LENGTH = 512
         const val MAX_SOCIAL_LENGTH = 256
 

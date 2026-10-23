@@ -21,7 +21,9 @@ flowchart TD
     Auth -- Yes --> NameCheck{NameValidator.isValid name?}
     NameCheck -- No --> R422a([422 BUSINESS_NAME_VALIDATION_ERROR 200002])
     NameCheck -- Yes --> Tx[[Begin transaction]]
-    Tx --> Exists{businessDataSource.isBusinessExist userId?}
+    Tx --> CurrencyCheck{CurrencyValidator.isValid currencyCode?}
+    CurrencyCheck -- No --> R422c([422 BUSINESS_INVALID_CURRENCY 200035])
+    CurrencyCheck -- Yes --> Exists{businessDataSource.isBusinessExist userId?}
     Exists -- Yes --> R422b([422 BUSINESS_ALREADY_EXIST 200001])
     Exists -- No --> Create[BusinessDataSource.createBusiness userId name currencyCode timeZone]
     Create --> ResolveOwner[UserClient.getUserById userId]

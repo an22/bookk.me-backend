@@ -116,4 +116,19 @@ internal class CreateBusinessImplTest {
         assertTrue(result.isFailure)
         assertTrue(result.exceptionOrNull() is CreateBusiness.Error.BusinessExist)
     }
+
+    @Test
+    fun `should return failure when currency code is not a supported currency`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        val userId = Uuid.random()
+        fixture.transactionManager.mockTransaction()
+
+        whenn()
+        val result = fixture.sut(userId, BusinessCreateRequest(name = "Name", currencyCode = "ABC", timeZone = TimeZone.UTC))
+
+        then()
+        assertTrue(result.exceptionOrNull() is CreateBusiness.Error.InvalidCurrency)
+        coVerify(exactly = 0) { fixture.businessDataSource.createBusiness(any(), any(), any(), any()) }
+    }
 }

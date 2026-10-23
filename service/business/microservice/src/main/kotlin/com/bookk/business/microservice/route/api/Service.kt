@@ -29,12 +29,12 @@ fun Route.serviceCrud() {
     authenticate {
         /**
          * Summary: Create a new service
-         * Description: Creates a new service offering that can be presented to the clients
+         * Description: Creates a new service offering that can be presented to the clients. The price is always stored in the business currency, the currency sent in the body is ignored. The group must belong to the business, the response carries the stored group
          * Tag: service
          * Security: jwt
          * Body: application/x-protobuf [com.bookk.business.domain.api.service.entity.Service]
          * Response: 200 application/x-protobuf [com.bookk.business.domain.api.service.entity.Service] Created service entity
-         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Create service errors<br>BUSINESS_SERVICE_EXISTS (200007) Service with this name already exists<br>BUSINESS_SERVICE_NAME_VALIDATION_ERROR (200008) Invalid service name
+         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Create service errors<br>BUSINESS_SERVICE_EXISTS (200007) Service with this name already exists<br>BUSINESS_SERVICE_NAME_VALIDATION_ERROR (200008) Invalid service name<br>BUSINESS_SERVICE_PRICE_PRECISION_INVALID (200037) Service price has more decimal places than the business currency allows<br>BUSINESS_SERVICE_BUSINESS_CURRENCY_INVALID (200038) Business currency is not a supported currency, update the business currency first<br>BUSINESS_SERVICE_GROUP_NOT_EXISTS (200012) Service group does not exist in this business
          * Response: 403 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Caller is a suspended employee of this business<br>BUSINESS_EMPLOYEE_ACCESS_SUSPENDED (200034) Your access to this business is suspended
          * See: docs/operations/business/create-service.md
          */
@@ -53,12 +53,14 @@ fun Route.serviceCrud() {
 
         /**
          * Summary: Update service
-         * Description: Updates a new service offering that can be presented to the clients
+         * Description: Updates a new service offering that can be presented to the clients. The price is always stored in the business currency, the currency sent in the body is ignored. The group must belong to the business, the response carries the stored group
          * Tag: service
          * Security: jwt
          * Body: application/x-protobuf [com.bookk.business.domain.api.service.entity.Service]
          * Response: 200 application/x-protobuf [com.bookk.business.domain.api.service.entity.Service] Updated service entity
-         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Update service errors<br>BUSINESS_SERVICE_EXISTS (200007) Service with this name already exists<br>BUSINESS_SERVICE_NAME_VALIDATION_ERROR (200008) Invalid service name
+         * Response: 400 application/x-protobuf Path business id or service id does not match the body
+         * Response: 404 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] User is not allowed to update services of the business, or the service does not belong to it
+         * Response: 422 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Update service errors<br>BUSINESS_SERVICE_EXISTS (200007) Service with this name already exists<br>BUSINESS_SERVICE_NAME_VALIDATION_ERROR (200008) Invalid service name<br>BUSINESS_SERVICE_PRICE_PRECISION_INVALID (200037) Service price has more decimal places than the business currency allows<br>BUSINESS_SERVICE_BUSINESS_CURRENCY_INVALID (200038) Business currency is not a supported currency, update the business currency first<br>BUSINESS_SERVICE_GROUP_NOT_EXISTS (200012) Service group does not exist in this business
          * Response: 403 application/x-protobuf [com.bookk.core.domain.entity.SimpleServerError] Caller is a suspended employee of this business<br>BUSINESS_EMPLOYEE_ACCESS_SUSPENDED (200034) Your access to this business is suspended
          * See: docs/operations/business/update-service.md
          */
@@ -67,7 +69,7 @@ fun Route.serviceCrud() {
             val body = call.receive<Service>()
             val updateService by application.injectScoped<UpdateService>(BusinessScope)
 
-            if (it.parent.businessId != body.businessId) {
+            if (it.parent.businessId != body.businessId || it.id != body.id) {
                 call.respond(HttpStatusCode.BadRequest, "Bad request")
             } else {
                 call.respondWith(
@@ -98,7 +100,7 @@ fun Route.serviceCrud() {
 
         /**
          * Summary: Delete service offering
-         * Description: Delete service offering
+         * Description: Delete service offering. A service id of another business is left untouched
          * Tag: service
          * Security: jwt
          * Response: 204 application/x-protobuf Service offering deleted

@@ -7,6 +7,8 @@ import com.bookk.business.domain.api.employee.operation.CreateEmployeeInvitation
 import com.bookk.business.domain.datasource.BusinessDataSource
 import com.bookk.business.domain.datasource.BusinessPermissionDataSource
 import com.bookk.business.domain.datasource.EmployeeInvitationDataSource
+import com.bookk.business.domain.datasource.LockedBusiness
+import com.bookk.business.domain.datasource.RowLock
 import com.bookk.core.domain.datasource.transaction.TransactionManager
 import com.bookk.core.domain.datasource.transaction.mockTransaction
 import com.bookk.core.domain.entity.Error
@@ -50,7 +52,7 @@ internal class CreateEmployeeInvitationImplTest {
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(view = false, update = true, delete = false)
-            coEvery { businessDataSource.lockBusiness(businessId) } returns true
+            coEvery { businessDataSource.lockBusiness(businessId, RowLock.EXCLUSIVE) } returns LockedBusiness("USD")
             coEvery { invitationDataSource.countPendingInvitations(businessId) } returns 0L
             coEvery { invitationDataSource.countInvitationsCreatedSince(businessId, any()) } returns 0L
             coEvery { invitationDataSource.createInvitation(capture(persisted)) } answers { persisted.captured }
@@ -78,7 +80,7 @@ internal class CreateEmployeeInvitationImplTest {
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(view = false, update = true, delete = false)
-            coEvery { businessDataSource.lockBusiness(businessId) } returns true
+            coEvery { businessDataSource.lockBusiness(businessId, RowLock.EXCLUSIVE) } returns LockedBusiness("USD")
             coEvery { invitationDataSource.countPendingInvitations(businessId) } returns 0L
             coEvery { invitationDataSource.countInvitationsCreatedSince(businessId, any()) } returns 0L
             coEvery { invitationDataSource.createInvitation(capture(persisted)) } answers { persisted.captured }
@@ -105,7 +107,7 @@ internal class CreateEmployeeInvitationImplTest {
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(view = false, update = true, delete = false)
-            coEvery { businessDataSource.lockBusiness(businessId) } returns true
+            coEvery { businessDataSource.lockBusiness(businessId, RowLock.EXCLUSIVE) } returns LockedBusiness("USD")
             coEvery { invitationDataSource.countPendingInvitations(businessId) } returns 0L
             coEvery { invitationDataSource.countInvitationsCreatedSince(businessId, any()) } returns 0L
             coEvery { invitationDataSource.createInvitation(any()) } answers {
@@ -134,7 +136,7 @@ internal class CreateEmployeeInvitationImplTest {
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(view = false, update = true, delete = false)
-            coEvery { businessDataSource.lockBusiness(businessId) } returns true
+            coEvery { businessDataSource.lockBusiness(businessId, RowLock.EXCLUSIVE) } returns LockedBusiness("USD")
             coEvery { invitationDataSource.countPendingInvitations(businessId) } returns 0L
             coEvery { invitationDataSource.countInvitationsCreatedSince(businessId, any()) } returns 0L
             coEvery {
@@ -158,6 +160,7 @@ internal class CreateEmployeeInvitationImplTest {
         val businessId = Uuid.random()
         with(fixture) {
             transactionManager.mockTransaction()
+            coEvery { businessDataSource.lockBusiness(businessId, RowLock.EXCLUSIVE) } returns LockedBusiness("USD")
             coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(view = true, update = false, delete = false)
         }
 
@@ -167,6 +170,7 @@ internal class CreateEmployeeInvitationImplTest {
         then()
         assertTrue(result.isFailure)
         assertTrue(result.exceptionOrNull() is Error.OperationNotAllowed)
+        coVerify(exactly = 0) { fixture.invitationDataSource.countPendingInvitations(any()) }
         coVerify(exactly = 0) { fixture.invitationDataSource.createInvitation(any()) }
     }
 
@@ -179,7 +183,7 @@ internal class CreateEmployeeInvitationImplTest {
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(view = false, update = true, delete = false)
-            coEvery { businessDataSource.lockBusiness(businessId) } returns false
+            coEvery { businessDataSource.lockBusiness(businessId, RowLock.EXCLUSIVE) } returns null
         }
 
         whenn()
@@ -188,6 +192,7 @@ internal class CreateEmployeeInvitationImplTest {
         then()
         assertTrue(result.isFailure)
         assertTrue(result.exceptionOrNull() is Error.NotFound)
+        coVerify(exactly = 0) { fixture.businessPermissionDataSource.getPermission(any(), any(), any()) }
     }
 
     @Test
@@ -199,7 +204,7 @@ internal class CreateEmployeeInvitationImplTest {
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(view = false, update = true, delete = false)
-            coEvery { businessDataSource.lockBusiness(businessId) } returns true
+            coEvery { businessDataSource.lockBusiness(businessId, RowLock.EXCLUSIVE) } returns LockedBusiness("USD")
             coEvery { invitationDataSource.countPendingInvitations(businessId) } returns CreateEmployeeInvitation.MAX_PENDING_INVITATIONS.toLong()
         }
 
@@ -220,7 +225,7 @@ internal class CreateEmployeeInvitationImplTest {
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(view = false, update = true, delete = false)
-            coEvery { businessDataSource.lockBusiness(businessId) } returns true
+            coEvery { businessDataSource.lockBusiness(businessId, RowLock.EXCLUSIVE) } returns LockedBusiness("USD")
             coEvery { invitationDataSource.countPendingInvitations(businessId) } returns CreateEmployeeInvitation.MAX_PENDING_INVITATIONS.toLong() - 1
             coEvery { invitationDataSource.countInvitationsCreatedSince(businessId, any()) } returns 0L
             coEvery { invitationDataSource.createInvitation(any()) } answers { firstArg() }
@@ -235,7 +240,7 @@ internal class CreateEmployeeInvitationImplTest {
     }
 
     @Test
-    fun `should lock the business before counting pending invitations`() = runUnitTest {
+    fun `should lock the business before any other read so the counts see every committed invitation`() = runUnitTest {
         given()
         val fixture = SutFixture()
         val requestUserId = Uuid.random()
@@ -243,7 +248,7 @@ internal class CreateEmployeeInvitationImplTest {
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(view = false, update = true, delete = false)
-            coEvery { businessDataSource.lockBusiness(businessId) } returns true
+            coEvery { businessDataSource.lockBusiness(businessId, RowLock.EXCLUSIVE) } returns LockedBusiness("USD")
             coEvery { invitationDataSource.countPendingInvitations(businessId) } returns 0L
             coEvery { invitationDataSource.countInvitationsCreatedSince(businessId, any()) } returns 0L
             coEvery { invitationDataSource.createInvitation(any()) } answers { firstArg() }
@@ -254,8 +259,10 @@ internal class CreateEmployeeInvitationImplTest {
 
         then()
         coVerifyOrder {
-            fixture.businessDataSource.lockBusiness(businessId)
+            fixture.businessDataSource.lockBusiness(businessId, RowLock.EXCLUSIVE)
+            fixture.businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES)
             fixture.invitationDataSource.countPendingInvitations(businessId)
+            fixture.invitationDataSource.countInvitationsCreatedSince(businessId, any())
             fixture.invitationDataSource.createInvitation(any())
         }
     }
@@ -268,7 +275,7 @@ internal class CreateEmployeeInvitationImplTest {
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(view = false, update = true, delete = false)
-            coEvery { businessDataSource.lockBusiness(businessId) } returns true
+            coEvery { businessDataSource.lockBusiness(businessId, RowLock.EXCLUSIVE) } returns LockedBusiness("USD")
             coEvery { invitationDataSource.countPendingInvitations(businessId) } returns 0L
             coEvery { invitationDataSource.countInvitationsCreatedSince(businessId, any()) } returns CreateEmployeeInvitation.MAX_INVITATIONS_PER_DAY.toLong()
         }
@@ -290,7 +297,7 @@ internal class CreateEmployeeInvitationImplTest {
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(view = false, update = true, delete = false)
-            coEvery { businessDataSource.lockBusiness(businessId) } returns true
+            coEvery { businessDataSource.lockBusiness(businessId, RowLock.EXCLUSIVE) } returns LockedBusiness("USD")
             coEvery { invitationDataSource.countPendingInvitations(businessId) } returns 0L
             coEvery { invitationDataSource.countInvitationsCreatedSince(businessId, any()) } returns CreateEmployeeInvitation.MAX_INVITATIONS_PER_DAY.toLong() - 1
             coEvery { invitationDataSource.createInvitation(any()) } answers { firstArg() }
@@ -313,7 +320,7 @@ internal class CreateEmployeeInvitationImplTest {
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { businessPermissionDataSource.getPermission(requestUserId, businessId, BusinessResource.EMPLOYEES) } returns ResourcePermission(view = false, update = true, delete = false)
-            coEvery { businessDataSource.lockBusiness(businessId) } returns true
+            coEvery { businessDataSource.lockBusiness(businessId, RowLock.EXCLUSIVE) } returns LockedBusiness("USD")
             coEvery { invitationDataSource.countPendingInvitations(businessId) } returns 0L
             coEvery { invitationDataSource.countInvitationsCreatedSince(businessId, capture(since)) } returns 0L
             coEvery { invitationDataSource.createInvitation(any()) } answers { firstArg() }

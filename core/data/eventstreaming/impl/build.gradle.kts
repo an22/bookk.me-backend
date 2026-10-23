@@ -16,6 +16,9 @@ dependencies {
     testFixturesApi(libs.kafka.client)
     testFixturesApi(libs.ktor.protobuf)
     testFixturesApi(libs.testcontainers.kafka)
+    testFixturesImplementation(projects.core.data)
+    testFixturesImplementation(projects.core.data.cache.api)
+    testFixturesImplementation(testFixtures(projects.core.data.cache.impl))
 
     testImplementation(testFixtures(projects.core))
     testImplementation(libs.testcontainers.junit)

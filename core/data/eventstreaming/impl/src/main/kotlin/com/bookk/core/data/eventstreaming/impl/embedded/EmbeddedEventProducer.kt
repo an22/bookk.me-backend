@@ -9,10 +9,14 @@ import kotlin.reflect.KType
 class EmbeddedEventProducer(
     private val topicQueueHolder: TopicQueueHolder<String>,
     private val protoBuf: ProtoBuf,
-) : EventStreaming.Producer<String> {
+) : EventStreaming.Producer<String>, EventStreaming.RawProducer<String> {
 
     override suspend fun <T : EventStreaming.Event<String>> send(data: T, kType: KType) {
         topicQueueHolder.publish(data)
+    }
+
+    override suspend fun publish(topic: String, partitionKey: String?, payload: ByteArray) {
+        topicQueueHolder.publish(EmbeddedEncodedEvent(topic = topic, partitionKey = partitionKey, payload = payload))
     }
 
     @Suppress("UNCHECKED_CAST")

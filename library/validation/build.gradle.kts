@@ -3,5 +3,6 @@ plugins {
 }
 
 dependencies {
+    implementation(libs.joda.money)
     testImplementation(testFixtures(projects.core))
 }

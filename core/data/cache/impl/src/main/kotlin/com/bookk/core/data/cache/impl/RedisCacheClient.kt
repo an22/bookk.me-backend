@@ -5,6 +5,7 @@ import com.bookk.core.data.cache.impl.codec.ProtobufRedisCodec
 import io.lettuce.core.ExperimentalLettuceCoroutinesApi
 import io.lettuce.core.RedisClient
 import io.lettuce.core.RedisURI
+import io.lettuce.core.ScriptOutputType
 import io.lettuce.core.SetArgs
 import io.lettuce.core.api.StatefulRedisConnection
 import io.lettuce.core.api.async.RedisAsyncCommands
@@ -94,6 +95,18 @@ class RedisCacheClient(
         }
     }
 
+    override suspend fun <V : Any> deleteIfEquals(key: String, expected: V, kType: KType) {
+        withPooledConnection {
+            val serializer = protobuf.serializersModule.serializer(kType)
+            coroutines().eval<Long>(
+                DELETE_IF_EQUALS_SCRIPT,
+                ScriptOutputType.INTEGER,
+                arrayOf(key),
+                ByteBuffer.wrap(protobuf.encodeToByteArray(serializer, expected))
+            )
+        }
+    }
+
     private inline fun <T> withPooledConnection(action: StatefulRedisConnection<String, ByteBuffer>.() -> T): T =
         connectionPool.borrowObject().use { connection -> connection.action() }
 
@@ -125,6 +138,10 @@ class RedisCacheClient(
                 this@asTransactionCache.del(key)
             }
 
+            override suspend fun <V : Any> deleteIfEquals(key: String, expected: V, kType: KType) {
+                throw UnsupportedOperationException("Conditional delete inside transaction is not supported, the compared value is only known after EXEC")
+            }
+
             override suspend fun withTransaction(action: suspend CacheClient<String>.() -> Unit) {
                 throw UnsupportedOperationException("Transaction inside transaction is not supported")
             }
@@ -133,4 +150,9 @@ class RedisCacheClient(
                 throw UnsupportedOperationException("Redis transaction is not closeable")
             }
         }
+
+    private companion object {
+        const val DELETE_IF_EQUALS_SCRIPT =
+            "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end"
+    }
 }

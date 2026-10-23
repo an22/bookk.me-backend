@@ -23,6 +23,20 @@ interface EventStreaming {
         suspend fun <T : Event<K>> send(data: T, kType: KType)
     }
 
+    interface RawProducer<K> {
+        suspend fun publish(topic: K, partitionKey: String?, payload: ByteArray)
+
+        suspend fun publishAll(records: List<RawRecord<K>>) {
+            records.forEach { publish(it.topic, it.partitionKey, it.payload) }
+        }
+    }
+
+    class RawRecord<K>(
+        val topic: K,
+        val partitionKey: String?,
+        val payload: ByteArray
+    )
+
     interface Event<K> {
         val topic: K
         val idempotencyKey: String

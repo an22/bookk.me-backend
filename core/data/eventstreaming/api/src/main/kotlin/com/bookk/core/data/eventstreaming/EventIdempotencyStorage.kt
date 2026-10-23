@@ -1,13 +1,19 @@
 package com.bookk.core.data.eventstreaming
 
-interface EventIdempotencyStorage {
-    suspend fun markEventAsProcessed(
-        resource: String,
-        idempotencyKey: String
-    )
+import kotlin.time.Duration
 
-    suspend fun isEventProcessed(
-        resource: String,
-        idempotencyKey: String
-    ): Boolean
+interface EventIdempotencyStorage {
+    val claimTtl: Duration
+
+    suspend fun claim(consumerGroup: String, topic: String, idempotencyKey: String, deliveryId: String): EventClaim
+
+    suspend fun markProcessed(consumerGroup: String, topic: String, idempotencyKey: String)
+
+    suspend fun release(consumerGroup: String, topic: String, idempotencyKey: String, deliveryId: String)
+}
+
+enum class EventClaim {
+    CLAIMED,
+    IN_PROGRESS,
+    ALREADY_PROCESSED
 }

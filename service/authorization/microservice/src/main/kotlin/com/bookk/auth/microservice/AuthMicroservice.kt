@@ -36,7 +36,7 @@ fun authEmbeddedModule() = module {
     includes(
         authDomainModule(),
         authDataModule(),
-        embeddedEventStreamingModule(AuthScope),
+        embeddedEventStreamingModule(AuthScope, AUTH_SERVICE_NAME),
         cacheModule()
     )
 }

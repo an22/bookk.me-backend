@@ -3,20 +3,26 @@ package com.bookk.core.data.cache.test
 import com.bookk.core.data.cache.CacheClient
 import com.github.benmanes.caffeine.cache.Caffeine
 import com.github.benmanes.caffeine.cache.Expiry
+import com.github.benmanes.caffeine.cache.Ticker
 import kotlinx.serialization.protobuf.ProtoBuf
 import kotlinx.serialization.serializer
 import kotlin.reflect.KType
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
+import kotlin.time.TimeSource
 import kotlin.time.toJavaDuration
 
 class InMemoryCacheClient(
-    private val protobuf: ProtoBuf = ProtoBuf { encodeDefaults = true }
+    private val protobuf: ProtoBuf = ProtoBuf { encodeDefaults = true },
+    timeSource: TimeSource = TimeSource.Monotonic,
 ): CacheClient<String> {
 
     private class InMemCacheEntry(val value: ByteArray, val ttl: Duration)
 
+    private val createdAt = timeSource.markNow()
+
     private val cache = Caffeine<String, InMemCacheEntry>.newBuilder()
+        .ticker(Ticker { createdAt.elapsedNow().inWholeNanoseconds })
         .expireAfter(Expiry.creating<String, InMemCacheEntry> { _, value -> value.ttl.toJavaDuration() })
         .maximumSize(10_000)
         .build<String, InMemCacheEntry>()
@@ -57,6 +63,12 @@ class InMemoryCacheClient(
 
     override suspend fun delete(key: String) {
         cache.invalidate(key)
+    }
+
+    override suspend fun <V : Any> deleteIfEquals(key: String, expected: V, kType: KType) {
+        val serializer = protobuf.serializersModule.serializer(kType)
+        val data = protobuf.encodeToByteArray(serializer, expected)
+        cache.asMap().computeIfPresent(key) { _, entry -> entry.takeUnless { it.value.contentEquals(data) } }
     }
 
     override fun close() {

@@ -36,10 +36,16 @@ A business can hold at most `CreateEmployeeInvitation.MAX_PENDING_INVITATIONS`
 (20) `PENDING` invitations at once; redeemed, revoked and expired ones do not
 count, so revoking an unused code or letting the daily expiry job run frees a
 slot. To keep two concurrent requests from both passing the check, the
-operation first takes a row lock on the business
-(`BusinessDataSource.lockBusiness`, `SELECT … FOR UPDATE`, which also serves
-as the existence check) and only then counts, so creations for the same
-business are serialized until the transaction commits.
+operation's first statement is a row lock on the business
+(`BusinessDataSource.lockBusiness(businessId, RowLock.EXCLUSIVE)`,
+`SELECT … FOR UPDATE`, which also serves as the existence check), before even
+the permission lookup, and only then counts, so creations for the same
+business are serialized until the transaction commits. The order matters:
+InnoDB fixes a REPEATABLE READ snapshot at the first plain read, so with the
+permission lookup first the counts would read a snapshot from before the lock
+wait and miss the invitation the previous holder just committed, letting two
+concurrent requests both take the last slot (reproduced against MariaDB in
+`BusinessRowLockMariaDbTest`).
 
 The pending cap alone does not stop a create → revoke → create loop, since
 each revoke frees a slot. A second, rolling quota closes that: a business can
@@ -59,13 +65,13 @@ flowchart TD
     Start([POST /api/business/businessId/employee_invitation]) --> Auth{JWT valid?}
     Auth -- No --> R401([401 Unauthorized])
     Auth -- Yes --> Tx[[Begin transaction]]
-    Tx --> Suspended{BusinessPermissionDataSource.getPermission - caller is a suspended employee of the business?}
+    Tx --> LockBiz[BusinessDataSource.lockBusiness businessId EXCLUSIVE, SELECT FOR UPDATE, first statement of the transaction]
+    LockBiz -- not found --> R404b([404 Error.NotFound])
+    LockBiz -- locked --> Suspended{BusinessPermissionDataSource.getPermission - caller is a suspended employee of the business?}
     Suspended -- Yes --> R403s([403 BUSINESS_EMPLOYEE_ACCESS_SUSPENDED 200034])
     Suspended -- No --> Perm{caller EMPLOYEES.update?}
     Perm -- No --> R404a([404 Error.OperationNotAllowed])
-    Perm -- Yes --> LockBiz[BusinessDataSource.lockBusiness businessId, SELECT FOR UPDATE]
-    LockBiz -- not found --> R404b([404 Error.NotFound])
-    LockBiz -- locked --> Count[EmployeeInvitationDataSource.countPendingInvitations businessId]
+    Perm -- Yes --> Count[EmployeeInvitationDataSource.countPendingInvitations businessId]
     Count -- ">= MAX_PENDING_INVITATIONS 20" --> R422([422 PendingInvitationsLimitReached, BUSINESS_EMPLOYEE_PENDING_INVITATIONS_LIMIT_REACHED 200028])
     Count -- below limit --> CountToday[EmployeeInvitationDataSource.countInvitationsCreatedSince businessId, now - 24h, any status]
     CountToday -- ">= MAX_INVITATIONS_PER_DAY 50" --> R422b([422 DailyInvitationsLimitReached, BUSINESS_EMPLOYEE_DAILY_INVITATIONS_LIMIT_REACHED 200029])

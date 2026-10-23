@@ -6,11 +6,11 @@ import com.bookk.appointments.domain.impl.operation.SyncEmployeePermission
 import com.bookk.appointments.domain.impl.operation.UpdateBusinessInformation
 import com.bookk.business.domain.api.business.entity.BusinessPermissions
 import com.bookk.core.data.eventstreaming.impl.InMemoryExhaustedEventDataSource
+import com.bookk.core.data.eventstreaming.impl.inMemoryEventIdempotencyStorage
 import com.bookk.core.data.eventstreaming.impl.kafka.KafkaEventConsumer
 import com.bookk.core.data.eventstreaming.impl.kafka.KafkaEventProducer
 import com.bookk.core.data.eventstreaming.impl.kafka.KafkaTestBroker
 import com.bookk.core.data.eventstreaming.impl.kafka.NoopProducer
-import com.bookk.core.data.eventstreaming.impl.kafka.RecordingIdempotencyStorage
 import com.bookk.core.data.eventstreaming.send
 import com.bookk.core.test.given
 import com.bookk.core.test.runIntegrationTest
@@ -64,7 +64,7 @@ internal class AppointmentEventHandlerEventTest {
         val consumer = KafkaEventConsumer(
             servers = KafkaTestBroker.servers,
             consumerGroup = "appointment-handler-${Uuid.random()}",
-            eventIdempotencyStorage = RecordingIdempotencyStorage(),
+            eventIdempotencyStorage = inMemoryEventIdempotencyStorage(),
             protoBuf = KafkaTestBroker.protoBuf,
             dltProducer = NoopProducer(),
             exhaustedEventDataSource = InMemoryExhaustedEventDataSource()

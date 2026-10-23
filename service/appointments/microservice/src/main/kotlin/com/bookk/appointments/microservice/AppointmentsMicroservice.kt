@@ -40,7 +40,7 @@ fun appointmentsEmbeddedModule() = module {
         appointmentsDomainModule(),
         appointmentsDataModule(),
         cacheModule(),
-        embeddedEventStreamingModule(AppointmentsScope),
+        embeddedEventStreamingModule(AppointmentsScope, APPOINTMENTS_SERVICE_NAME),
         businessClientModule(AppointmentsScope, APPOINTMENTS_SERVICE_NAME)
     )
 }

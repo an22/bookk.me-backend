@@ -4,6 +4,7 @@ import com.bookk.core.data.eventstreaming.DltRetry
 import com.bookk.core.data.eventstreaming.ExhaustedEventDataSource
 import com.bookk.core.data.eventstreaming.impl.FlakyExhaustedEventDataSource
 import com.bookk.core.data.eventstreaming.impl.InMemoryExhaustedEventDataSource
+import com.bookk.core.data.eventstreaming.impl.inMemoryEventIdempotencyStorage
 import com.bookk.core.data.eventstreaming.impl.kafka.KeyedTestEvent
 import com.bookk.core.data.eventstreaming.registerReceiver
 import com.bookk.core.data.eventstreaming.send
@@ -32,7 +33,13 @@ internal class EmbeddedDltRetryTest {
         val topicQueueHolder = TopicQueueHolder<String>()
         val protoBuf = ProtoBuf { encodeDefaults = true }
         val producer = EmbeddedEventProducer(topicQueueHolder, protoBuf)
-        val consumer = EmbeddedEventConsumer(topicQueueHolder, protoBuf, exhaustedEventDataSource)
+        val consumer = EmbeddedEventConsumer(
+            topicQueueHolder = topicQueueHolder,
+            protoBuf = protoBuf,
+            exhaustedEventDataSource = exhaustedEventDataSource,
+            eventIdempotencyStorage = inMemoryEventIdempotencyStorage(),
+            consumerGroup = "business_group",
+        )
     }
 
     /**
@@ -196,7 +203,7 @@ internal class EmbeddedDltRetryTest {
     }
 
     @Test
-    fun `should not retry an event whose handler was cancelled`() = runUnitTest {
+    fun `should retry an event whose handler threw its own cancellation`() = runUnitTest {
         given()
         val fixture = SutFixture()
         val topic = "embedded.dlt.retry.cancelled"
@@ -212,7 +219,7 @@ internal class EmbeddedDltRetryTest {
         advanceThroughRetries()
 
         then()
-        assertEquals(1, attempts.get())
-        assertTrue(fixture.exhaustedEventDataSource.findByOriginalTopic(topic).isEmpty())
+        assertEquals(DltRetry.DEFAULT_MAX_ATTEMPTS, attempts.get())
+        assertEquals(1, fixture.exhaustedEventDataSource.findByOriginalTopic(topic).size)
     }
 }

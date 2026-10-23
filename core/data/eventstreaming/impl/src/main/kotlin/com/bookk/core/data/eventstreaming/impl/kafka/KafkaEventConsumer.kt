@@ -6,6 +6,8 @@ import com.bookk.core.data.eventstreaming.EventIdempotencyStorage
 import com.bookk.core.data.eventstreaming.EventStreaming
 import com.bookk.core.data.eventstreaming.EventStreaming.Event
 import com.bookk.core.data.eventstreaming.ExhaustedEventDataSource
+import com.bookk.core.data.eventstreaming.impl.IdempotentDelivery
+import com.bookk.core.data.eventstreaming.impl.logDelivered
 import com.bookk.core.data.eventstreaming.send
 import com.bookk.core.domain.entity.runSuspendCatching
 import io.ktor.util.collections.ConcurrentMap
@@ -31,11 +33,12 @@ import org.apache.kafka.common.serialization.ByteArrayDeserializer
 import org.apache.kafka.common.serialization.StringDeserializer
 import java.time.Duration
 import kotlin.reflect.KType
+import kotlin.time.Duration.Companion.milliseconds
 
 class KafkaEventConsumer(
     servers: List<String>,
-    consumerGroup: String,
-    private val eventIdempotencyStorage: EventIdempotencyStorage,
+    private val consumerGroup: String,
+    eventIdempotencyStorage: EventIdempotencyStorage,
     private val protoBuf: ProtoBuf,
     private val dltProducer: EventStreaming.Producer<String>,
     private val exhaustedEventDataSource: ExhaustedEventDataSource,
@@ -43,6 +46,7 @@ class KafkaEventConsumer(
 ) : EventStreaming.Consumer<String> {
 
     private val logger = KtorSimpleLogger("KafkaEventConsumer")
+    private val idempotentDelivery = IdempotentDelivery(consumerGroup, eventIdempotencyStorage, logger)
     private val receivers = ConcurrentMap<String, suspend (ByteArray, Int) -> Unit>()
 
     private val consumer = KafkaConsumer(
@@ -69,18 +73,13 @@ class KafkaEventConsumer(
             }.onFailure {
                 logger.debug("Received unprocessable event, Topic: {}. Error: {}", topic, it.message)
             }.onSuccess { event ->
-                if (!eventIdempotencyStorage.isEventProcessed(event.topic, event.idempotencyKey)) {
-                    runSuspendCatching {
-                        logger.debug("Received event, Topic: {}. Event: {}", event.topic, event)
-                        onEvent(event)
-                    }.onSuccess {
-                        eventIdempotencyStorage.markEventAsProcessed(event.topic, event.idempotencyKey)
-                        logger.debug("Event successfully processed for topic: {}. Event: {}", event.topic, event)
-                    }.onFailure { error ->
+                logger.debug("Received event, Topic: {}. Event: {}", event.topic, event)
+                idempotentDelivery.deliver(event, onEvent)
+                    .onSuccess { outcome -> logger.logDelivered(event, outcome) }
+                    .onFailure { error ->
                         handleFailure(topic, rawBytes, attempt)
                         logger.error("Error while processing event for topic: ${event.topic}. Event: $event, $error")
                     }
-                }
             }
         }
         return this
@@ -89,7 +88,7 @@ class KafkaEventConsumer(
     override fun start(scope: CoroutineScope): Job {
         val originalTopics = receivers.keys.toList()
         originalTopics.forEach { topic ->
-            receivers[DltRetry.dltTopic(topic)] = { rawBytes, _ -> retryFromDlt(rawBytes) }
+            receivers[DltRetry.dltTopic(topic, consumerGroup)] = { rawBytes, _ -> retryFromDlt(rawBytes) }
         }
         consumer.subscribe(receivers.keys)
         return flow {
@@ -114,7 +113,7 @@ class KafkaEventConsumer(
 
     private suspend fun handleFailure(topic: String, rawBytes: ByteArray, attempt: Int) {
         val nextAttempt = attempt + 1
-        val dltEvent = DltEvent(payload = rawBytes, originalTopic = topic, attempt = nextAttempt, topic = DltRetry.dltTopic(topic))
+        val dltEvent = DltEvent(payload = rawBytes, originalTopic = topic, attempt = nextAttempt, topic = DltRetry.dltTopic(topic, consumerGroup))
         if (DltRetry.isExhausted(nextAttempt, maxAttempts)) {
             persistOrRequeue(dltEvent)
         } else {
@@ -129,7 +128,7 @@ class KafkaEventConsumer(
     }
 
     private suspend fun route(dltEvent: DltEvent) {
-        delay(DltRetry.backoffMillis(dltEvent.attempt))
+        delay(DltRetry.backoffMillis(dltEvent.attempt).milliseconds)
         if (DltRetry.isExhausted(dltEvent.attempt, maxAttempts)) {
             persistOrRequeue(dltEvent)
         } else {

@@ -1,5 +1,6 @@
 package com.bookk.core.data.cache.impl
 
+import com.bookk.core.data.cache.deleteIfEquals
 import com.bookk.core.data.cache.get
 import com.bookk.core.data.cache.set
 import com.bookk.core.data.cache.setIfAbsent
@@ -120,6 +121,36 @@ internal class RedisCacheClientTest {
 
         then()
         assertTrue(reserved)
+        fixture.sut.close()
+    }
+
+    @Test
+    fun `should keep the key when it holds a value other than the expected one`() = runIntegrationTest {
+        given()
+        val fixture = SutFixture()
+        val key = "compare-kept-${Uuid.random()}"
+        withContext(Dispatchers.IO) { fixture.sut.set(key, "current", 1.minutes) }
+
+        whenn()
+        withContext(Dispatchers.IO) { fixture.sut.deleteIfEquals(key, "expected") }
+
+        then()
+        assertEquals("current", withContext(Dispatchers.IO) { fixture.sut.get<String, String>(key) })
+        fixture.sut.close()
+    }
+
+    @Test
+    fun `should delete the key when it holds the expected value`() = runIntegrationTest {
+        given()
+        val fixture = SutFixture()
+        val key = "compare-deleted-${Uuid.random()}"
+        withContext(Dispatchers.IO) { fixture.sut.set(key, "expected", 1.minutes) }
+
+        whenn()
+        withContext(Dispatchers.IO) { fixture.sut.deleteIfEquals(key, "expected") }
+
+        then()
+        assertNull(withContext(Dispatchers.IO) { fixture.sut.get<String, String>(key) })
         fixture.sut.close()
     }
 

@@ -29,7 +29,7 @@ fun userEmbeddedModule() = module {
         userDomainModule(),
         userDataModule(),
         cacheModule(),
-        embeddedEventStreamingModule(UserScope)
+        embeddedEventStreamingModule(UserScope, USER_SERVICE_NAME)
     )
 }
 

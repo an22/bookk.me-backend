@@ -22,5 +22,11 @@ interface CreateBusiness {
             code = BusinessErrorCodes.BUSINESS_NAME_VALIDATION_ERROR,
             message = "Business name invalid"
         )
+
+        class InvalidCurrency : BusinessError(
+            statusCode = HttpStatusCode.UnprocessableEntity.value,
+            code = BusinessErrorCodes.BUSINESS_INVALID_CURRENCY,
+            message = "Currency code is not a supported ISO 4217 currency"
+        ), Error
     }
 }

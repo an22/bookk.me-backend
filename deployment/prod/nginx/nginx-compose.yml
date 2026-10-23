@@ -18,7 +18,7 @@ configs:
     file: certificates/dns_hostinger.sh
 
   nginx_config:
-    name: nginx-v45
+    name: nginx-v46
     file: nginx.conf.template
 
   nginx_cert_wait_script:

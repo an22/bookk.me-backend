@@ -47,8 +47,6 @@ bin/
 deployment/prod/keys
 deployment/dev/db/encryption.key
 deployment/prod/microservice/db/*.key
-deployment/elastic-stack/elasticsearch/certs/*
-!deployment/elastic-stack/elasticsearch/certs/instances.yml
 local.properties
 !deployment/dev/security/*
 !deployment/orchestrator/dozzle/users.actual.yaml

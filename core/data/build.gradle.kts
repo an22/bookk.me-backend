@@ -20,4 +20,5 @@ dependencies {
     testImplementation(testFixtures(projects.core))
     testImplementation(projects.core.data.cache.api)
     testImplementation(testFixtures(projects.core.data.cache.impl))
+    testImplementation(libs.testcontainers.junit)
 }

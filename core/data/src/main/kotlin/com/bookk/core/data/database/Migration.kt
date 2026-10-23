@@ -14,7 +14,7 @@ fun createDatabase(
 ): Database {
     Flyway.configure()
         .dataSource(
-            "jdbc:$dbUrl:$dbPort",
+            "jdbc:$dbUrl:$dbPort/$schemaName?createDatabaseIfNotExist=true",
             dbUsername,
             dbPassword
         )

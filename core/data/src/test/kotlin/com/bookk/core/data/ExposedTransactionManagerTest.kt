@@ -1,6 +1,7 @@
 package com.bookk.core.data
 
 import com.bookk.core.data.test.createTestDatabase
+import com.bookk.core.domain.datasource.transaction.TransactionIsolation
 import com.bookk.core.domain.entity.Error
 import com.bookk.core.test.given
 import com.bookk.core.test.runUnitTest
@@ -10,8 +11,10 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import java.sql.Connection
 import java.sql.SQLException
 import kotlin.coroutines.cancellation.CancellationException
+import org.jetbrains.exposed.v1.jdbc.transactions.TransactionManager as JdbcTransactionManager
 
 internal class ExposedTransactionManagerTest {
 
@@ -29,6 +32,20 @@ internal class ExposedTransactionManagerTest {
 
         then()
         assertEquals("value", result.getOrNull())
+    }
+
+    @Test
+    fun `should run the transaction at the requested isolation level`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+
+        whenn()
+        val result = fixture.sut.transaction(TransactionIsolation.READ_COMMITTED) {
+            JdbcTransactionManager.current().connection.transactionIsolation
+        }
+
+        then()
+        assertEquals(Connection.TRANSACTION_READ_COMMITTED, result.getOrNull())
     }
 
     @Test

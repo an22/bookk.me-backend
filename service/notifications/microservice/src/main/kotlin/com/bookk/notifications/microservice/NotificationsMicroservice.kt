@@ -32,7 +32,7 @@ fun notificationsEmbeddedModule() = module {
     includes(
         notificationsDomainModule(),
         notificationsDataModule(),
-        embeddedEventStreamingModule(NotificationsScope),
+        embeddedEventStreamingModule(NotificationsScope, NOTIFICATIONS_SERVICE_NAME),
         cacheModule()
     )
 }

@@ -1,6 +1,7 @@
 package com.bookk.core.data.eventstreaming.data.outbox
 
 import com.bookk.core.data.eventstreaming.EventStreaming
+import com.bookk.core.data.eventstreaming.EventStreaming.RawRecord
 import com.bookk.core.data.eventstreaming.OutboxEvent
 import com.bookk.core.data.eventstreaming.OutboxEventDataSource
 import com.bookk.core.domain.datasource.transaction.TransactionManager
@@ -32,14 +33,18 @@ internal class OutboxRelayTest {
         val batchSize = 2
         val idleDelay = 1.seconds
         val sut = OutboxRelay(outboxEventDataSource, transactionManager, rawProducer, batchSize, idleDelay)
+        val published = mutableListOf<RawRecord<String>>()
 
         init {
             transactionManager.mockTransaction()
-            coEvery { rawProducer.publish(any(), any(), any()) } just runs
+            coEvery { rawProducer.publishAll(any()) } coAnswers { published += firstArg<List<RawRecord<String>>>() }
             coEvery { outboxEventDataSource.delete(any()) } just runs
         }
 
-        fun OutboxEvent.isPublished() = coVerify(exactly = 1) { rawProducer.publish(topic, partitionKey, payload) }
+        fun OutboxEvent.isPublished() = assertEquals(
+            1,
+            published.count { it.topic == topic && it.partitionKey == partitionKey && it.payload.contentEquals(payload) }
+        )
     }
 
     @Test
@@ -55,9 +60,10 @@ internal class OutboxRelayTest {
 
         then()
         assertEquals(2, result.getOrNull())
+        assertEquals(listOf("topic.first" to "key", "topic.second" to null), fixture.published.map { it.topic to it.partitionKey })
+        assertEquals(listOf(first.payload, second.payload), fixture.published.map { it.payload })
         coVerifyOrder {
-            fixture.rawProducer.publish("topic.first", "key", first.payload)
-            fixture.rawProducer.publish("topic.second", null, second.payload)
+            fixture.rawProducer.publishAll(any())
             fixture.outboxEventDataSource.delete(listOf(1L, 2L))
         }
     }
@@ -73,7 +79,7 @@ internal class OutboxRelayTest {
 
         then()
         assertEquals(0, result.getOrNull())
-        coVerify(exactly = 0) { fixture.rawProducer.publish(any(), any(), any()) }
+        assertTrue(fixture.published.isEmpty())
     }
 
     @Test
@@ -83,7 +89,7 @@ internal class OutboxRelayTest {
         val first = OutboxEvent.stub(id = 1, topic = "topic.first")
         val second = OutboxEvent.stub(id = 2, topic = "topic.second")
         coEvery { fixture.outboxEventDataSource.lockPending(fixture.batchSize) } returns listOf(first, second)
-        coEvery { fixture.rawProducer.publish("topic.second", any(), any()) } throws IllegalStateException("broker down")
+        coEvery { fixture.rawProducer.publishAll(any()) } throws IllegalStateException("broker down")
 
         whenn()
         val result = fixture.sut.relayBatch()

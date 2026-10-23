@@ -33,6 +33,7 @@ import kotlin.uuid.Uuid
 internal class OutboxRelayMariaDbTest {
 
     companion object {
+        private val SLOWER_THAN_INNODB_TRX_CACHE_REFRESH = 150.milliseconds
         private const val PASSWORD = "test-password"
         private const val PORT = 3306
 
@@ -81,10 +82,15 @@ internal class OutboxRelayMariaDbTest {
             }
         }
 
+        suspend fun enqueueFailingFastOnLockWait(topic: String) = suspendTransaction(db = database) {
+            exec("SET SESSION innodb_lock_wait_timeout = 1")
+            outboxEventDataSource.enqueue(topic = topic, partitionKey = null, payload = byteArrayOf(1))
+        }
+
         suspend fun remainingEvents(): Long = suspendTransaction(db = database) { OutboxEventTable.selectAll().count() }
 
         suspend fun awaitTransactionWaitingForLock() {
-            while (transactionsWaitingForLock() == 0L) delay(10.milliseconds)
+            while (transactionsWaitingForLock() == 0L) delay(SLOWER_THAN_INNODB_TRX_CACHE_REFRESH)
         }
 
         private suspend fun transactionsWaitingForLock(): Long = suspendTransaction(db = database) {
@@ -124,6 +130,33 @@ internal class OutboxRelayMariaDbTest {
         assertEquals(listOf("topic.first", "topic.second", "topic.third"), holderProducer.publishedTopics.toList())
         assertTrue(waiterProducer.publishedTopics.isEmpty())
         assertEquals(0, fixture.remainingEvents())
+    }
+
+    @Test
+    fun `should accept a new outbox event while a relay is publishing its batch`() = runIntegrationTest {
+        given()
+        val fixture = SutFixture()
+        fixture.enqueue("topic.first", "topic.second")
+        val holderPublishing = CompletableDeferred<Unit>()
+        val enqueueFinished = CompletableDeferred<Unit>()
+        val holderProducer = RecordingProducer {
+            holderPublishing.complete(Unit)
+            enqueueFinished.await()
+        }
+
+        whenn()
+        val enqueueResult = withContext(Dispatchers.IO) {
+            val holder = async { fixture.relay(holderProducer).relayBatch() }
+            holderPublishing.await()
+            val result = runCatching { fixture.enqueueFailingFastOnLockWait("topic.during-relay") }
+            enqueueFinished.complete(Unit)
+            holder.await()
+            result
+        }
+
+        then()
+        assertTrue(enqueueResult.isSuccess, "enqueue failed with ${enqueueResult.exceptionOrNull()}")
+        assertEquals(1, fixture.remainingEvents())
     }
 
     @Test

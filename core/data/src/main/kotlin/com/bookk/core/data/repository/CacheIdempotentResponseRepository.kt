@@ -3,7 +3,6 @@ package com.bookk.core.data.repository
 import com.bookk.core.data.cache.CacheClient
 import com.bookk.core.data.cache.get
 import com.bookk.core.data.cache.set
-import com.bookk.core.data.eventstreaming.EventIdempotencyStorage
 import kotlinx.serialization.Serializable
 import library.idempotency.IdempotencyKey
 import library.idempotency.IdempotencyResponse
@@ -19,7 +18,7 @@ private class SerializableIdempotencyResponse(
 
 class CacheIdempotentResponseRepository(
     private val cacheClient: CacheClient<String>
-) : IdempotentResponseRepository, EventIdempotencyStorage {
+) : IdempotentResponseRepository {
 
     override suspend fun storeResponse(
         resource: String,
@@ -56,13 +55,5 @@ class CacheIdempotentResponseRepository(
 
     override suspend fun deleteExpiredResponses(lastValidDate: OffsetDateTime) {
         //Responses are deleted automatically
-    }
-
-    override suspend fun markEventAsProcessed(resource: String, idempotencyKey: String) {
-        storeResponse(resource, IdempotencyKey(idempotencyKey), ByteArray(0))
-    }
-
-    override suspend fun isEventProcessed(resource: String, idempotencyKey: String): Boolean {
-        return getResponseOrLock(resource, IdempotencyKey(idempotencyKey)) != null
     }
 }

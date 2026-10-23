@@ -1,6 +1,7 @@
 package com.bookk.core.data.eventstreaming.impl.embedded
 
 import com.bookk.core.data.eventstreaming.impl.InMemoryExhaustedEventDataSource
+import com.bookk.core.data.eventstreaming.impl.inMemoryEventIdempotencyStorage
 import com.bookk.core.data.eventstreaming.impl.kafka.KeyedTestEvent
 import com.bookk.core.data.eventstreaming.registerReceiver
 import com.bookk.core.data.eventstreaming.send
@@ -21,11 +22,18 @@ internal class EmbeddedEventStreamingTest {
         val topicQueueHolder = TopicQueueHolder<String>()
         val protoBuf = ProtoBuf { encodeDefaults = true }
         val producer = EmbeddedEventProducer(topicQueueHolder, protoBuf)
+        val eventIdempotencyStorage = inMemoryEventIdempotencyStorage()
 
         fun encode(event: KeyedTestEvent) = protoBuf.encodeToByteArray(KeyedTestEvent.serializer(), event)
     }
 
-    private fun SutFixture.newConsumer() = EmbeddedEventConsumer(topicQueueHolder, protoBuf, InMemoryExhaustedEventDataSource())
+    private fun SutFixture.newConsumer(consumerGroup: String = "business_group") = EmbeddedEventConsumer(
+        topicQueueHolder = topicQueueHolder,
+        protoBuf = protoBuf,
+        exhaustedEventDataSource = InMemoryExhaustedEventDataSource(),
+        eventIdempotencyStorage = eventIdempotencyStorage,
+        consumerGroup = consumerGroup,
+    )
 
     @Test
     fun `should deliver published event to its subscriber`() = runUnitTest {
@@ -50,8 +58,8 @@ internal class EmbeddedEventStreamingTest {
         given()
         val fixture = SutFixture()
         val topic = "topic.shared"
-        val firstServiceConsumer = fixture.newConsumer()
-        val secondServiceConsumer = fixture.newConsumer()
+        val firstServiceConsumer = fixture.newConsumer(consumerGroup = "user_group")
+        val secondServiceConsumer = fixture.newConsumer(consumerGroup = "business_group")
         val firstReceived = ConcurrentLinkedQueue<KeyedTestEvent>()
         val secondReceived = ConcurrentLinkedQueue<KeyedTestEvent>()
         firstServiceConsumer.registerReceiver<KeyedTestEvent, String>(topic) { event -> firstReceived += event }
@@ -109,8 +117,8 @@ internal class EmbeddedEventStreamingTest {
         given()
         val fixture = SutFixture()
         val topic = "topic.raw.shared"
-        val firstServiceConsumer = fixture.newConsumer()
-        val secondServiceConsumer = fixture.newConsumer()
+        val firstServiceConsumer = fixture.newConsumer(consumerGroup = "user_group")
+        val secondServiceConsumer = fixture.newConsumer(consumerGroup = "business_group")
         val firstReceived = ConcurrentLinkedQueue<KeyedTestEvent>()
         val secondReceived = ConcurrentLinkedQueue<KeyedTestEvent>()
         firstServiceConsumer.registerReceiver<KeyedTestEvent, String>(topic) { event -> firstReceived += event }

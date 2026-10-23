@@ -1,6 +1,5 @@
 package com.bookk.core.data.eventstreaming.impl.kafka
 
-import com.bookk.core.data.eventstreaming.EventIdempotencyStorage
 import com.bookk.core.data.eventstreaming.EventStreaming
 import kotlinx.serialization.protobuf.ProtoBuf
 import org.apache.kafka.clients.admin.Admin
@@ -60,17 +59,6 @@ object KafkaTestBroker {
             return collected
         }
     }
-}
-
-class RecordingIdempotencyStorage : EventIdempotencyStorage {
-    private val processed = mutableSetOf<String>()
-
-    override suspend fun markEventAsProcessed(resource: String, idempotencyKey: String) {
-        synchronized(processed) { processed += "$resource:$idempotencyKey" }
-    }
-
-    override suspend fun isEventProcessed(resource: String, idempotencyKey: String): Boolean =
-        synchronized(processed) { processed.contains("$resource:$idempotencyKey") }
 }
 
 class NoopProducer : EventStreaming.Producer<String> {

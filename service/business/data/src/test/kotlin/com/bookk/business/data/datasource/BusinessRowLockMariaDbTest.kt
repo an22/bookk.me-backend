@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.containers.wait.strategy.Wait
 import org.testcontainers.utility.DockerImageName
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Instant
@@ -36,6 +37,7 @@ import kotlin.uuid.Uuid
 internal class BusinessRowLockMariaDbTest {
 
     companion object {
+        private val SLOWER_THAN_INNODB_TRX_CACHE_REFRESH = 150.milliseconds
         private const val PASSWORD = "test-password"
         private const val PORT = 3306
 
@@ -113,7 +115,7 @@ internal class BusinessRowLockMariaDbTest {
         }
 
         private suspend fun awaitTransactionWaitingForLock() {
-            while (transactionsWaitingForLock() == 0L) delay(10.milliseconds)
+            while (transactionsWaitingForLock() == 0L) delay(SLOWER_THAN_INNODB_TRX_CACHE_REFRESH)
         }
 
         private suspend fun transactionsWaitingForLock(): Long = suspendTransaction(db = database) {
@@ -340,13 +342,13 @@ internal class BusinessRowLockMariaDbTest {
         val transactionManager = ExposedTransactionManager(database)
         val firstLocked = CompletableDeferred<Unit>()
         val secondLocked = CompletableDeferred<Unit>()
-        var attempts = 0
+        val attempts = AtomicInteger(0)
 
         whenn()
         val results = withContext(Dispatchers.IO) {
             val forward = async {
                 transactionManager.transaction {
-                    attempts++
+                    attempts.incrementAndGet()
                     fixture.businessDataSource.lockBusiness(firstBusinessId, RowLock.EXCLUSIVE)
                     firstLocked.complete(Unit)
                     secondLocked.await()
@@ -355,7 +357,7 @@ internal class BusinessRowLockMariaDbTest {
             }
             val backward = async {
                 transactionManager.transaction {
-                    attempts++
+                    attempts.incrementAndGet()
                     fixture.businessDataSource.lockBusiness(secondBusinessId, RowLock.EXCLUSIVE)
                     secondLocked.complete(Unit)
                     firstLocked.await()
@@ -367,6 +369,6 @@ internal class BusinessRowLockMariaDbTest {
 
         then()
         assertTrue(results.all { it.isSuccess })
-        assertEquals(3, attempts)
+        assertEquals(3, attempts.get())
     }
 }

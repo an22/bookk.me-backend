@@ -22,6 +22,7 @@ dependencies {
     implementation(projects.core.domain)
     implementation(projects.core.data.eventstreaming.api)
     implementation(projects.core.data.eventstreaming.impl)
+    implementation(projects.core.data.eventstreaming.data)
     implementation(projects.core.data.cache.api)
     implementation(projects.core.data.cache.impl)
     implementation(projects.library.signing.api)

@@ -1,9 +1,10 @@
 package com.bookk.core.data.eventstreaming.impl.kafka
 
 import com.bookk.core.data.eventstreaming.DltRetry
+import com.bookk.core.data.eventstreaming.ExhaustedEventDataSource
 import com.bookk.core.data.eventstreaming.impl.FlakyExhaustedEventDataSource
 import com.bookk.core.data.eventstreaming.impl.InMemoryExhaustedEventDataSource
-import com.bookk.core.data.eventstreaming.ExhaustedEventDataSource
+import com.bookk.core.data.eventstreaming.impl.inMemoryEventIdempotencyStorage
 import com.bookk.core.data.eventstreaming.registerReceiver
 import com.bookk.core.data.eventstreaming.send
 import com.bookk.core.test.given
@@ -37,9 +38,11 @@ internal class KafkaDltRetryTest {
 
     private fun producer() = KafkaEventProducer(KafkaTestBroker.servers, "dlt-retry-test-${Uuid.random()}", KafkaTestBroker.protoBuf)
 
-    private fun prepareTopics(topic: String) {
+    private fun consumerGroupFor(topic: String) = "$topic-group"
+
+    private fun prepareTopics(topic: String, consumerGroup: String = consumerGroupFor(topic)) {
         KafkaTestBroker.createTopic(topic, partitions = 1)
-        KafkaTestBroker.createTopic(DltRetry.dltTopic(topic), partitions = 1)
+        KafkaTestBroker.createTopic(DltRetry.dltTopic(topic, consumerGroup), partitions = 1)
     }
 
     private fun consumer(
@@ -47,8 +50,8 @@ internal class KafkaDltRetryTest {
         exhaustedEventDataSource: ExhaustedEventDataSource = InMemoryExhaustedEventDataSource(),
     ) = KafkaEventConsumer(
         servers = KafkaTestBroker.servers,
-        consumerGroup = "$topic-${Uuid.random()}",
-        eventIdempotencyStorage = RecordingIdempotencyStorage(),
+        consumerGroup = consumerGroupFor(topic),
+        eventIdempotencyStorage = inMemoryEventIdempotencyStorage(),
         protoBuf = KafkaTestBroker.protoBuf,
         dltProducer = producer(),
         exhaustedEventDataSource = exhaustedEventDataSource,
@@ -151,7 +154,7 @@ internal class KafkaDltRetryTest {
         val flakyTopic = "dlt.retry.isolation.flaky.${Uuid.random()}"
         val healthyTopic = "dlt.retry.isolation.healthy.${Uuid.random()}"
         prepareTopics(flakyTopic)
-        prepareTopics(healthyTopic)
+        prepareTopics(healthyTopic, consumerGroupFor(flakyTopic))
         val flakyAttempts = AtomicInteger(0)
         val flakyReceived = ConcurrentLinkedQueue<KeyedTestEvent>()
         val healthyReceived = ConcurrentLinkedQueue<KeyedTestEvent>()

@@ -5,7 +5,6 @@ import java.io.File
 object AppLevelConstants {
     const val APP_NAME = "BookkMe"
     const val SERIALIZER = SupportedSerializers.PROTOBUF.STR
-    const val BUILD_TYPE = BuildType.DEBUG.STR
 
     val domainName: String
         get() = System.getenv("APPLICATION_DOMAIN_NAME").orEmpty()
@@ -53,16 +52,6 @@ object AppLevelConstants {
 
         data object PROTOBUF : SupportedSerializers {
             const val STR = "PROTOBUF"
-        }
-    }
-
-    sealed interface BuildType {
-        data object DEBUG : BuildType {
-            const val STR = "DEBUG"
-        }
-
-        data object RELEASE : BuildType {
-            const val STR = "RELEASE"
         }
     }
 }

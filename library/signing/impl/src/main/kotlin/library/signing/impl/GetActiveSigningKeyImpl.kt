@@ -5,10 +5,11 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import library.signing.GetActiveSigningKey
 import library.signing.SigningKey
-import library.signing.impl.key.RsaSigningKeyFactory
+import library.signing.impl.key.SigningKeyPairGenerator
 
 internal class GetActiveSigningKeyImpl(
     private val signingKeyDataSource: SigningKeyDataSource,
+    private val keyPairGenerator: SigningKeyPairGenerator,
     private val transactionManager: TransactionManager
 ) : GetActiveSigningKey {
 
@@ -17,7 +18,7 @@ internal class GetActiveSigningKeyImpl(
     override suspend fun invoke(): Result<SigningKey> = transactionManager.transaction {
         mutex.withLock {
             signingKeyDataSource.getActiveKey() ?: run {
-                val (publicKeyPem, privateKeyPem) = RsaSigningKeyFactory.generate()
+                val (publicKeyPem, privateKeyPem) = keyPairGenerator.generate()
                 signingKeyDataSource.insertKey(publicKeyPem, privateKeyPem)
             }
         }

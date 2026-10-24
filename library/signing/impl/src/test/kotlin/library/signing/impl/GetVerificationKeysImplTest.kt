@@ -9,13 +9,9 @@ import com.bookk.core.test.whenn
 import io.mockk.coEvery
 import io.mockk.mockk
 import library.signing.SigningKey
-import library.signing.SigningKeyStatus
-import library.signing.impl.key.RsaSigningKeyFactory
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import kotlin.time.Clock
-import kotlin.uuid.Uuid
 
 internal class GetVerificationKeysImplTest {
 
@@ -25,23 +21,11 @@ internal class GetVerificationKeysImplTest {
         val sut = GetVerificationKeysImpl(signingKeyDataSource, transactionManager)
     }
 
-    private fun makeSigningKey(): SigningKey {
-        val (publicKey, privateKey) = RsaSigningKeyFactory.generate()
-        return SigningKey(
-            id = Uuid.random(),
-            publicKeyPem = publicKey,
-            privateKeyPem = privateKey,
-            status = SigningKeyStatus.ACTIVE,
-            createdAt = Clock.System.now(),
-            retiredAt = null
-        )
-    }
-
     @Test
     fun `should return verification keys from datasource`() = runUnitTest {
         given()
         val fixture = SutFixture()
-        val keys = listOf(makeSigningKey(), makeSigningKey())
+        val keys = listOf(SigningKey.stub(), SigningKey.stub())
         with(fixture) {
             transactionManager.mockTransaction()
             coEvery { signingKeyDataSource.getVerificationKeys() } returns keys

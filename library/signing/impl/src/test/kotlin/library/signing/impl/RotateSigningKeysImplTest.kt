@@ -8,39 +8,34 @@ import com.bookk.core.test.then
 import com.bookk.core.test.whenn
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import library.signing.SigningKey
 import library.signing.SigningKeyStatus
+import library.signing.impl.key.SigningKeyPairGenerator
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import kotlin.time.Clock
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Instant
-import kotlin.uuid.Uuid
 
 internal class RotateSigningKeysImplTest {
 
     private class SutFixture {
         val signingKeyDataSource = mockk<SigningKeyDataSource>()
+        val keyPairGenerator = mockk<SigningKeyPairGenerator>()
         val transactionManager = mockk<TransactionManager>()
-        val sut = RotateSigningKeysImpl(signingKeyDataSource, transactionManager)
+        val sut = RotateSigningKeysImpl(signingKeyDataSource, keyPairGenerator, transactionManager)
     }
 
     @Test
     fun `should demote the current active key and insert a new active key`() = runUnitTest {
         given()
         val fixture = SutFixture()
-        val previousActive = SigningKey(
-            id = Uuid.random(),
-            publicKeyPem = "public",
-            privateKeyPem = "private",
-            status = SigningKeyStatus.ACTIVE,
-            createdAt = Clock.System.now(),
-            retiredAt = null
-        )
+        val previousActive = SigningKey.stub()
         with(fixture) {
             coEvery { signingKeyDataSource.getActiveKey() } returns previousActive
-            coEvery { signingKeyDataSource.insertKey(any(), any()) } returns mockk()
+            every { keyPairGenerator.generate() } returns ("generated-public" to "generated-private")
+            coEvery { signingKeyDataSource.insertKey(any(), any()) } returns SigningKey.stub()
             coEvery { signingKeyDataSource.updateStatus(any(), any(), any()) } returns Unit
             coEvery { signingKeyDataSource.deleteRetiredBefore(any<Instant>()) } returns Unit
             transactionManager.mockTransaction()
@@ -51,7 +46,7 @@ internal class RotateSigningKeysImplTest {
 
         then()
         assertTrue(result.isSuccess)
-        coVerify(exactly = 1) { fixture.signingKeyDataSource.insertKey(any(), any()) }
+        coVerify(exactly = 1) { fixture.signingKeyDataSource.insertKey("generated-public", "generated-private") }
         coVerify(exactly = 1) {
             fixture.signingKeyDataSource.updateStatus(previousActive.id, SigningKeyStatus.RETIRING, any())
         }
@@ -64,7 +59,8 @@ internal class RotateSigningKeysImplTest {
         val fixture = SutFixture()
         with(fixture) {
             coEvery { signingKeyDataSource.getActiveKey() } returns null
-            coEvery { signingKeyDataSource.insertKey(any(), any()) } returns mockk()
+            every { keyPairGenerator.generate() } returns ("generated-public" to "generated-private")
+            coEvery { signingKeyDataSource.insertKey(any(), any()) } returns SigningKey.stub()
             coEvery { signingKeyDataSource.deleteRetiredBefore(any<Instant>()) } returns Unit
             transactionManager.mockTransaction()
         }
@@ -74,7 +70,7 @@ internal class RotateSigningKeysImplTest {
 
         then()
         assertTrue(result.isSuccess)
-        coVerify(exactly = 1) { fixture.signingKeyDataSource.insertKey(any(), any()) }
+        coVerify(exactly = 1) { fixture.signingKeyDataSource.insertKey("generated-public", "generated-private") }
         coVerify(exactly = 0) { fixture.signingKeyDataSource.updateStatus(any(), any(), any()) }
     }
 }

@@ -6,5 +6,7 @@ all:
       hosts:
         manager-1:
           ansible_host: "{{ vault_hosts['manager-1'] }}"
+          swarm_labels:
+            monitoring: "true"
     workers:
       hosts: {}

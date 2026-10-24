@@ -15,6 +15,7 @@ RETIRED_STACK_ENV_PREFIXES = ["KAFKA_"]
 REQUIRED_KEYS = ["vault_vpn_password"]
 RETIRED_KEYS = ["vault_service_env"]
 RETIRED_SWARM_SECRETS = ["jwt_master_key", "jwt_quote_key"]
+PROMETHEUS_USER = "admin"
 
 
 def generated_secrets():
@@ -28,6 +29,21 @@ def generated_secrets():
             "firebase_key": None,
         },
     }
+
+
+def prometheus_web_config(password):
+    import bcrypt
+
+    password_hash = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+    return f"basic_auth_users:\n  {PROMETHEUS_USER}: {password_hash}\n"
+
+
+def add_prometheus_credentials(swarm_secrets):
+    if swarm_secrets.get("prometheus_password") in (None, PLACEHOLDER):
+        swarm_secrets["prometheus_password"] = secrets.token_urlsafe(32)
+        swarm_secrets.pop("prometheus_web_config", None)
+    if swarm_secrets.get("prometheus_web_config") in (None, PLACEHOLDER):
+        swarm_secrets["prometheus_web_config"] = prometheus_web_config(swarm_secrets["prometheus_password"])
 
 
 def read_env_file(path):
@@ -75,6 +91,7 @@ def normalize(vault):
                     swarm_secrets[secret] = secret_value
         elif vault.get(name) in (None, PLACEHOLDER):
             vault[name] = value
+    add_prometheus_credentials(swarm_secrets)
     vault["vault_swarm_secrets"] = swarm_secrets
     return vault
 

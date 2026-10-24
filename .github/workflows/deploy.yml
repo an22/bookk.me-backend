@@ -28,7 +28,7 @@ jobs:
       ANSIBLE_CONFIG: ${{ github.workspace }}/deployment/ansible/ansible.cfg
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install SSH key
         shell: bash

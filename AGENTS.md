@@ -197,6 +197,8 @@ Required imports: `io.ktor.http.ContentType`, `io.ktor.openapi.jsonSchema`, `io.
 
 Run: `./gradlew :service:<svc>:microservice:test` / `:service:<svc>:domain:impl:test` (append `--tests "com.bookk...ClassName"` to filter).
 
+Keep Testcontainers at **1.21.4 or newer** (`testcontainers` in `gradle/libs.versions.toml`). Docker Engine 29, which GitHub's `ubuntu-latest` runners ship, rejects API versions below 1.44. Older Testcontainers (1.20.4) negotiate 1.32, so every container test in CI fails in `@BeforeAll` as `initializationError` / `IllegalStateException` ("Could not find a valid Docker environment"). The same tests still pass against a local Docker Desktop 27. Gradle stops at the first failing module, so CI usually reports only one such test (`MigrationMariaDbTest`).
+
 Hard rules (enforced by fixtures or review):
 - NEVER `runBlocking`. Operation tests: `runUnitTest { }`; route tests: `routeTest { }` (both from core fixtures).
 - `given()` / `whenn()` / `then()` markers are **required in every test** — `runUnitTest` asserts at runtime that all three were called; a test without them fails.

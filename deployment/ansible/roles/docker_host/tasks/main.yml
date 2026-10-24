@@ -1,6 +1,8 @@
-- name: Skip hosts that are not Debian-based
-  ansible.builtin.meta: end_host
-  when: ansible_facts['os_family'] != 'Debian'
+- name: Require a Debian-based host
+  ansible.builtin.assert:
+    that: ansible_facts['os_family'] == 'Debian'
+    fail_msg: "{{ inventory_hostname }} runs {{ ansible_facts['distribution'] }}: the docker_host role only installs Docker and its Python libraries with apt"
+    quiet: true
 
 - name: Install Python libraries the Docker modules need
   ansible.builtin.apt:
@@ -48,3 +50,38 @@
     name: docker
     state: started
     enabled: true
+
+- name: Free port 53 for the VPN's dnsmasq on managers
+  when: inventory_hostname in groups['managers']
+  block:
+    - name: Create the systemd-resolved drop-in directory
+      ansible.builtin.file:
+        path: /etc/systemd/resolved.conf.d
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Turn off the systemd-resolved stub listener
+      ansible.builtin.copy:
+        dest: /etc/systemd/resolved.conf.d/no-stub-listener.conf
+        content: |
+          [Resolve]
+          DNSStubListener=no
+        owner: root
+        group: root
+        mode: "0644"
+      register: resolved_stub_config
+
+    - name: Resolve through the upstream servers instead of the stub
+      ansible.builtin.file:
+        src: /run/systemd/resolve/resolv.conf
+        dest: /etc/resolv.conf
+        state: link
+        force: true
+
+    - name: Restart systemd-resolved to release port 53
+      ansible.builtin.systemd_service:
+        name: systemd-resolved
+        state: restarted
+      when: resolved_stub_config is changed

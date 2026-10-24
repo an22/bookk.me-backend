@@ -1,5 +1,6 @@
 vault_hosts:
   manager-1: !unsafe "203.0.113.10"
+  worker-1: !unsafe "203.0.113.11"
 
 vault_registry_username: !unsafe "github-user"
 vault_registry_password: !unsafe "ghp_classic_token_with_read_packages"

@@ -23,15 +23,15 @@
   check_mode: false
 
 - name: Create the missing default VPN clients
-  ansible.builtin.command:
-    argv:
-      - docker
-      - exec
-      - --interactive
-      - "{{ wg_easy_container.stdout_lines | first }}"
-      - node
-      - --eval
-      - "{{ lookup('ansible.builtin.file', 'ensure-clients.js') }}"
+  ansible.builtin.shell: >-
+    docker exec --interactive
+    "$(docker ps --quiet
+    --filter label=com.docker.swarm.service.name={{ infra_stacks.vpn.name }}_wg-easy
+    --filter status=running | head -n 1)"
+    node --eval "$ENSURE_CLIENTS_SCRIPT"
+  environment:
+    ENSURE_CLIENTS_SCRIPT: "{{ lookup('ansible.builtin.file', 'ensure-clients.js') }}"
+  args:
     stdin: "{{ {'password': vault_vpn_password, 'clients': vpn_clients, 'addresses': {vpn_host_client: vpn_host_address}, 'addressTemplate': vpn_address_template} | to_json }}"
   register: vpn_clients_result
   until: vpn_clients_result.rc in [0, vpn_login_rejected_exit_code]

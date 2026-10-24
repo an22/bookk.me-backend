@@ -2,6 +2,7 @@
 import argparse
 import base64
 import json
+import re
 import secrets
 import subprocess
 import sys
@@ -10,6 +11,7 @@ from pathlib import Path
 PLACEHOLDER = "CHANGE_ME"
 DEPLOYMENT_DIR = Path(__file__).resolve().parents[2]
 PROD_DIR = DEPLOYMENT_DIR / "prod"
+INVENTORY = DEPLOYMENT_DIR / "ansible/inventory/prod.yml"
 RETIRED_STACK_ENV = ["RUNNER_ACCESS_TOKEN", "MOBILE_RUNNER_ACCESS_TOKEN", "RUNNER_APP_ID", "RUNNER_APP_PRIVATE_KEY", "VPN_SUBNET"]
 RETIRED_STACK_ENV_PREFIXES = ["KAFKA_"]
 REQUIRED_KEYS = ["vault_vpn_password"]
@@ -74,6 +76,10 @@ def swarm_manager_host():
     return endpoint.split("@")[-1] if endpoint.startswith("ssh://") else None
 
 
+def inventory_hosts():
+    return list(dict.fromkeys(re.findall(r"vault_hosts\['([^']+)'\]", INVENTORY.read_text())))
+
+
 def is_retired_stack_env(name):
     return name in RETIRED_STACK_ENV or any(name.startswith(prefix) for prefix in RETIRED_STACK_ENV_PREFIXES)
 
@@ -83,6 +89,10 @@ def normalize(vault):
         vault.pop(key, None)
     for key in REQUIRED_KEYS:
         vault.setdefault(key, None)
+    hosts = vault.get("vault_hosts") or {}
+    for host in inventory_hosts():
+        hosts.setdefault(host, None)
+    vault["vault_hosts"] = hosts
     vault["vault_stack_env"] = {name: value for name, value in (vault.get("vault_stack_env") or {}).items() if not is_retired_stack_env(name)}
     swarm_secrets = {name: value for name, value in (vault.get("vault_swarm_secrets") or {}).items() if name not in RETIRED_SWARM_SECRETS}
     for name, value in generated_secrets().items():
@@ -109,9 +119,16 @@ def import_from_files():
     }
 
 
+def as_text(value):
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    return value if isinstance(value, str) else str(value)
+
+
 def scalar(value):
     if value is None:
         return "!unsafe " + json.dumps(PLACEHOLDER)
+    value = as_text(value)
     if "\n" in value:
         return None
     return "!unsafe " + json.dumps(value)
@@ -127,10 +144,18 @@ def emit(lines, indent, name, value):
         for key, child in value.items():
             emit(lines, indent + 2, key, child)
         return
+    if isinstance(value, list):
+        if not value:
+            lines.append(f"{pad}{name}: []")
+            return
+        lines.append(f"{pad}{name}:")
+        lines.extend(f"{pad}  - {scalar(item)}" for item in value)
+        return
     single_line = scalar(value)
     if single_line is not None:
         lines.append(f"{pad}{name}: {single_line}")
         return
+    value = as_text(value)
     body = value.rstrip("\n")
     trailing_newlines = len(value) - len(body)
     chomping = {0: "-", 1: ""}.get(trailing_newlines, "+")

@@ -9,4 +9,9 @@ all:
           swarm_labels:
             monitoring: "true"
     workers:
-      hosts: {}
+      hosts:
+        worker-1:
+          ansible_host: "{{ vault_hosts['worker-1'] }}"
+          swarm_labels:
+            database: "true"
+            kafka: "true"

@@ -20,6 +20,9 @@ configs:
   mariadb_encryption_config:
     name: monolith-mariadb-encryption-v1
     file: ./db/my.cnf
+  mariadb_tuning_config:
+    name: monolith-mariadb-tuning-v1
+    file: ./db/tuning.cnf
   mariadb_init_schemas:
     name: monolith-mariadb-init-schemas-v1
     file: ./db/init-schemas.sh
@@ -63,6 +66,9 @@ services:
       - source: mariadb_encryption_config
         target: /etc/mysql/conf.d/encryption.cnf
         mode: 0444
+      - source: mariadb_tuning_config
+        target: /etc/mysql/conf.d/tuning.cnf
+        mode: 0444
       - source: mariadb_init_schemas
         target: /docker-entrypoint-initdb.d/init-schemas.sh
         mode: 0444
@@ -87,6 +93,9 @@ services:
         order: stop-first
         failure_action: rollback
         delay: 10s
+      resources:
+        limits:
+          memory: 3G
 
   redis:
     image: valkey/valkey:8.1-alpine
@@ -96,6 +105,10 @@ services:
       - ${APPLICATION_REDIS_PASSWORD}
       - --appendonly
       - "yes"
+      - --maxmemory
+      - 512mb
+      - --maxmemory-policy
+      - noeviction
       - --rename-command
       - FLUSHDB
       - ""
@@ -124,6 +137,9 @@ services:
         order: stop-first
         failure_action: rollback
         delay: 10s
+      resources:
+        limits:
+          memory: 768M
 
   monolith:
     image: ${APPLICATION_SERVICE_IMAGE}:${APPLICATION_SERVICE_VERSION}
@@ -139,6 +155,7 @@ services:
     env_file: monolith.env
     environment:
       APPLICATION_SERVICE_VERSION: ${APPLICATION_SERVICE_VERSION}
+      JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=70 -XX:+ExitOnOutOfMemoryError
       TZ: UTC
     secrets:
       - signing_key_encryption_key
@@ -151,4 +168,4 @@ services:
       <<: *replicated
       resources:
         limits:
-          memory: 1024M
+          memory: 1536M

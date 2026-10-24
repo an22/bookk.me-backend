@@ -51,6 +51,6 @@ class CacheEventIdempotencyStorage(
     private companion object {
         const val CLAIM_ATTEMPTS = 3
         val CLAIM_TTL = 1.minutes
-        val PROCESSED_TTL = 24.hours
+        val PROCESSED_TTL = 1.hours
     }
 }

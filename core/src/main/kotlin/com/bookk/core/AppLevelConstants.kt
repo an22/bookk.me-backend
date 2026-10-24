@@ -33,6 +33,8 @@ object AppLevelConstants {
         get() = System.getenv("APPLICATION_DB_USER")
     val dbPassword: String
         get() = System.getenv("APPLICATION_DB_PASSWORD")
+    val dbPoolSize: Int
+        get() = System.getenv("APPLICATION_DB_POOL_SIZE")?.toIntOrNull() ?: 10
     val signingKeyEncryptionKey: String
         get() = readSecret("signing_key_encryption_key")
     val firebasePrivateKey: String

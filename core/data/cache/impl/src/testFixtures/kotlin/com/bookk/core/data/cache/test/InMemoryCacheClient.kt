@@ -23,7 +23,7 @@ class InMemoryCacheClient(
 
     private val cache = Caffeine<String, InMemCacheEntry>.newBuilder()
         .ticker(Ticker { createdAt.elapsedNow().inWholeNanoseconds })
-        .expireAfter(Expiry.creating<String, InMemCacheEntry> { _, value -> value.ttl.toJavaDuration() })
+        .expireAfter(Expiry.writing<String, InMemCacheEntry> { _, value -> value.ttl.toJavaDuration() })
         .maximumSize(10_000)
         .build<String, InMemCacheEntry>()
 
@@ -68,7 +68,8 @@ class InMemoryCacheClient(
     override suspend fun <V : Any> deleteIfEquals(key: String, expected: V, kType: KType) {
         val serializer = protobuf.serializersModule.serializer(kType)
         val data = protobuf.encodeToByteArray(serializer, expected)
-        cache.asMap().computeIfPresent(key) { _, entry -> entry.takeUnless { it.value.contentEquals(data) } }
+        val entry = cache.getIfPresent(key) ?: return
+        if (entry.value.contentEquals(data)) cache.asMap().remove(key, entry)
     }
 
     override fun close() {

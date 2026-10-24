@@ -9,7 +9,7 @@
     that: stack.name in deployed_stacks.stdout_lines or allow_new_stacks | bool
     fail_msg: >-
       Stack '{{ stack.name }}' is not deployed on this swarm (deployed: {{ deployed_stacks.stdout_lines | join(', ') }}).
-      If it runs under another name, fix the name in group_vars/all/main.yml; otherwise rerun with -e allow_new_stacks=true.
+      If it runs under another name, fix the name in inventory/group_vars/all/main.yml; otherwise rerun with -e allow_new_stacks=true.
     quiet: true
 
 - name: "Create the directory for stack {{ stack.name }}"

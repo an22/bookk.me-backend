@@ -3,6 +3,8 @@
   tags: [hosts]
   roles:
     - docker_host
+    - role: ssh_hardening
+      tags: [ssh]
 
 - name: Set up the swarm, networks and secrets
   hosts: managers:workers

@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 .SHELLFLAGS := -o pipefail -c
-VAULT := group_vars/all/vault.yml
+VAULT := inventory/group_vars/all/vault.yml
 ANSIBLE_PYTHON := $(shell head -1 "$$(command -v ansible)" | sed 's/^\#!//')
 TAGS_ARG := $(if $(tags),--tags $(tags))
 

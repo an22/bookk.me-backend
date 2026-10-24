@@ -29,6 +29,7 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.openapi.OpenApiDocSource
 import io.ktor.server.routing.routing
 import io.ktor.server.routing.routingRoot
+import io.micrometer.core.instrument.distribution.DistributionStatisticConfig
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import kotlinx.serialization.json.Json
@@ -41,6 +42,7 @@ import org.koin.core.module.Module
 import org.koin.ktor.ext.get
 import org.koin.ktor.plugin.Koin
 import org.slf4j.event.Level
+import kotlin.time.Duration.Companion.milliseconds
 
 
 fun startServer(
@@ -57,9 +59,7 @@ fun startServer(
         },
         module = {
             val prometheusRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
-            install(MicrometerMetrics) {
-                registry = prometheusRegistry
-            }
+            installRequestMetrics(prometheusRegistry)
             install(Koin) {
                 modules(
                     *diModules.toTypedArray(),
@@ -67,18 +67,7 @@ fun startServer(
                     tokenValidatorModule()
                 )
             }
-            install(CallLogging) {
-                level = when (AppLevelConstants.BUILD_TYPE) {
-                    AppLevelConstants.BuildType.DEBUG.STR -> Level.DEBUG
-                    else -> Level.INFO
-                }
-                format { call ->
-                    val status = call.response.status()
-                    val httpMethod = call.request.httpMethod.value
-                    val path = call.request.path()
-                    "[$status], $httpMethod $path"
-                }
-            }
+            installRequestLogging()
             install(Resources)
             install(IdempotencyPlugin) {
                 idempotentResponseRepository = get()
@@ -114,6 +103,31 @@ fun startServer(
             }
         }
     ).start(wait = true)
+}
+
+private val requestDurationBuckets = listOf(5, 10, 25, 50, 100, 250, 500, 1_000, 2_500, 5_000, 10_000)
+    .map { millis -> millis.milliseconds.inWholeNanoseconds.toDouble() }
+    .toDoubleArray()
+
+internal fun Application.installRequestMetrics(registry: PrometheusMeterRegistry) {
+    install(MicrometerMetrics) {
+        this.registry = registry
+        distributionStatisticConfig = DistributionStatisticConfig.builder()
+            .serviceLevelObjectives(*requestDurationBuckets)
+            .build()
+    }
+}
+
+internal fun Application.installRequestLogging() {
+    install(CallLogging) {
+        level = Level.INFO
+        format { call ->
+            val status = call.response.status()
+            val httpMethod = call.request.httpMethod.value
+            val path = call.request.path()
+            "[$status], $httpMethod $path"
+        }
+    }
 }
 
 private fun Application.installAuthPlugin() {

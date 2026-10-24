@@ -8,6 +8,7 @@ import com.bookk.business.domain.api.client.operation.GetClientBusinessIds
 import com.bookk.business.domain.api.service.operation.GetServicesByIds
 import com.bookk.core.AppLevelConstants
 import com.bookk.core.AppLevelConstants.SupportedSerializers
+import com.bookk.core.client.installInternalCallLogging
 import com.bookk.server.business.client.api.BusinessClient
 import com.bookk.server.business.client.impl.BusinessClientImpl
 import com.bookk.server.business.client.impl.operation.GetAppointmentBookingContextClientImpl
@@ -22,10 +23,6 @@ import io.ktor.client.plugins.HttpRequestRetry
 import io.ktor.client.plugins.UserAgent
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
-import io.ktor.client.plugins.logging.DEFAULT
-import io.ktor.client.plugins.logging.LogLevel
-import io.ktor.client.plugins.logging.Logger
-import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.plugins.resources.Resources
 import io.ktor.http.ContentType
 import io.ktor.http.URLProtocol
@@ -67,13 +64,7 @@ fun businessClientModule(qualifier: Qualifier, clientTag: String) = module {
                         }
                     }
                 }
-                install(Logging) {
-                    logger = Logger.DEFAULT
-                    level = when (AppLevelConstants.BUILD_TYPE) {
-                        AppLevelConstants.BuildType.DEBUG.STR -> LogLevel.BODY
-                        else -> LogLevel.INFO
-                    }
-                }
+                installInternalCallLogging()
                 defaultRequest {
                     host = System.getenv("APPLICATION_BUSINESS_SERVICE_HOSTNAME")
 

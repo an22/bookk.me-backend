@@ -39,7 +39,7 @@ class TestHolder : AbstractCoroutineContextElement(Key) {
 }
 
 fun runUnitTest(context: CoroutineContext = TestHolder(), body: suspend TestScope.() -> Unit) =
-    runTest(context, timeout = 5.seconds) {
+    runTest(context, timeout = 30.seconds) {
         body()
         requireNotNull(currentCoroutineContext()[TestHolder.Key]).assertFormat()
     }

@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import kotlin.reflect.KType
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TestTimeSource
 import kotlin.uuid.Uuid
@@ -36,6 +37,10 @@ internal class CacheEventIdempotencyStorageTest {
 
         fun expireClaim() {
             timeSource += sut.claimTtl + 1.seconds
+        }
+
+        fun advanceBy(duration: Duration) {
+            timeSource += duration
         }
     }
 
@@ -103,6 +108,36 @@ internal class CacheEventIdempotencyStorageTest {
 
         then()
         assertEquals(EventClaim.ALREADY_PROCESSED, claim)
+    }
+
+    @Test
+    fun `should still report an event as already processed just under an hour after it was processed`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.claim()
+        fixture.markProcessed()
+        fixture.advanceBy(1.hours - 1.seconds)
+
+        whenn()
+        val claim = fixture.claim(deliveryId = fixture.otherDelivery)
+
+        then()
+        assertEquals(EventClaim.ALREADY_PROCESSED, claim)
+    }
+
+    @Test
+    fun `should forget a processed event an hour after it was processed`() = runUnitTest {
+        given()
+        val fixture = SutFixture()
+        fixture.claim()
+        fixture.markProcessed()
+        fixture.advanceBy(1.hours)
+
+        whenn()
+        val claim = fixture.claim(deliveryId = fixture.otherDelivery)
+
+        then()
+        assertEquals(EventClaim.CLAIMED, claim)
     }
 
     @Test

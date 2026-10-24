@@ -28,7 +28,7 @@ server {
   ssl_session_timeout 1d;
   ssl_session_tickets off;
 
-  allow 10.8.0.0/24;
+  allow ${VPN_SUBNET};
   deny all;
 
   location / {
@@ -53,7 +53,7 @@ server {
   ssl_session_timeout 1d;
   ssl_session_tickets off;
 
-  allow 10.8.0.0/24;
+  allow ${VPN_SUBNET};
   deny all;
 
   location / {
@@ -77,37 +77,12 @@ server {
   ssl_session_timeout 1d;
   ssl_session_tickets off;
 
-  allow 10.8.0.0/24;
+  allow ${VPN_SUBNET};
   deny all;
 
   location / {
       set $upstream ui.kafka;
       proxy_pass http://$upstream:8080;
-  }
-}
-
-server {
-  listen 443 ssl http2;
-  server_name         kibana.${DOMAIN_NAME};
-  access_log  off;
-
-  ssl_certificate     /etc/nginx/ssl/${DOMAIN_NAME}/fullchain.pem;
-  ssl_certificate_key /etc/nginx/ssl/${DOMAIN_NAME}/key.pem;
-
-  ssl_protocols       TLSv1.2 TLSv1.3;
-  ssl_ciphers         ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384;
-  ssl_prefer_server_ciphers off;
-
-  ssl_session_cache   shared:SSL:10m;
-  ssl_session_timeout 1d;
-  ssl_session_tickets off;
-
-  allow 10.8.0.0/24;
-  deny all;
-
-  location / {
-      set $upstream kibana.${DOMAIN_NAME};
-      proxy_pass http://$upstream:5601;
   }
 }
 
@@ -127,30 +102,11 @@ server {
   ssl_session_timeout 1d;
   ssl_session_tickets off;
 
+  allow ${VPN_SUBNET};
+  deny all;
+
   location / {
       set $upstream vpn;
-      proxy_pass http://$upstream:51821;
-  }
-}
-
-server {
-  listen 443 ssl http2;
-  server_name         vpnadmin.${DOMAIN_NAME};
-  access_log  off;
-
-  ssl_certificate     /etc/nginx/ssl/${DOMAIN_NAME}/fullchain.pem;
-  ssl_certificate_key /etc/nginx/ssl/${DOMAIN_NAME}/key.pem;
-
-  ssl_protocols       TLSv1.2 TLSv1.3;
-  ssl_ciphers         ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384;
-  ssl_prefer_server_ciphers off;
-
-  ssl_session_cache   shared:SSL:10m;
-  ssl_session_timeout 1d;
-  ssl_session_tickets off;
-
-  location / {
-      set $upstream vpnadmin;
       proxy_pass http://$upstream:51821;
   }
 }
@@ -171,7 +127,7 @@ server {
   ssl_session_timeout 1d;
   ssl_session_tickets off;
 
-  allow 10.8.0.0/24;
+  allow ${VPN_SUBNET};
   deny all;
 
   location / {
@@ -195,7 +151,7 @@ server {
   ssl_session_timeout 1d;
   ssl_session_tickets off;
 
-  allow 10.8.0.0/24;
+  allow ${VPN_SUBNET};
   deny all;
 
   location / {
@@ -221,7 +177,7 @@ server {
   ssl_session_timeout 1d;
   ssl_session_tickets off;
 
-  allow 10.8.0.0/24;
+  allow ${VPN_SUBNET};
   deny all;
 
   location / {

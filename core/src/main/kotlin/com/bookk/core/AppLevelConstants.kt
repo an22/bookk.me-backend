@@ -5,7 +5,6 @@ import java.io.File
 object AppLevelConstants {
     const val APP_NAME = "BookkMe"
     const val SERIALIZER = SupportedSerializers.PROTOBUF.STR
-    const val BUILD_TYPE = BuildType.DEBUG.STR
 
     val domainName: String
         get() = System.getenv("APPLICATION_DOMAIN_NAME").orEmpty()
@@ -33,6 +32,8 @@ object AppLevelConstants {
         get() = System.getenv("APPLICATION_DB_USER")
     val dbPassword: String
         get() = System.getenv("APPLICATION_DB_PASSWORD")
+    val dbPoolSize: Int
+        get() = System.getenv("APPLICATION_DB_POOL_SIZE")?.toIntOrNull() ?: 10
     val signingKeyEncryptionKey: String
         get() = readSecret("signing_key_encryption_key")
     val firebasePrivateKey: String
@@ -51,16 +52,6 @@ object AppLevelConstants {
 
         data object PROTOBUF : SupportedSerializers {
             const val STR = "PROTOBUF"
-        }
-    }
-
-    sealed interface BuildType {
-        data object DEBUG : BuildType {
-            const val STR = "DEBUG"
-        }
-
-        data object RELEASE : BuildType {
-            const val STR = "RELEASE"
         }
     }
 }

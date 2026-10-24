@@ -6,4 +6,5 @@ dependencies {
     api(projects.core.domain)
 
     testImplementation(testFixtures(projects.core))
+    testImplementation(libs.ktor.client.mock)
 }

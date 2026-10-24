@@ -122,7 +122,7 @@ sequenceDiagram
     else CLAIMED
         Consumer->>Handler: onEvent(event), runs its own transaction
         alt handler succeeds
-            Consumer->>Store: markProcessed (kept 24h)
+            Consumer->>Store: markProcessed (kept 1h)
         else handler fails (a cancellation it threw itself counts as a failure)
             Consumer->>Store: release(deliveryId): deleted only while the claim is still this delivery's, so the retry can claim it again
             Consumer->>Kafka: DltEvent to topic_consumerGroup_dlt via KafkaEventProducer directly (not the outbox)

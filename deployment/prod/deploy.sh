@@ -29,7 +29,7 @@ else
     sudo apt install wireguard
 fi
 
-password_hash="$(docker run ghcr.io/wg-easy/wg-easy:nightly wgpw "$wireguard_admin_password")"
+password_hash="$(docker run ghcr.io/wg-easy/wg-easy:14@sha256:5f26407fd2ede54df76d63304ef184576a6c1bb73f934a58a11abdd852fab549 wgpw "$wireguard_admin_password")"
 
 export VPN_PASSWORD_HASH="$password_hash"
 
@@ -37,4 +37,3 @@ docker stack deploy vpn --compose-file vpn/vpn-compose.yml
 docker stack deploy nginx --compose-file nginx/nginx-compose.yml
 docker secret create dozzle-auth orchestrator/dozzle/users.actual.yaml
 docker stack deploy orchestrator --compose-file orchestrator/orchestrator-compose.yml
-docker stack deploy runner --compose-file runner/runner-compose.yml

@@ -3,7 +3,7 @@ version: "3.9"
 volumes:
   kafka_volume:
     driver: local
-  redis_data:
+  valkey_data:
     driver: local
   database_data:
     driver: local
@@ -95,16 +95,27 @@ services:
       KAFKA_CLUSTERS_0_NAME: "R6YjCd49YUUaN6hC4tFH4Ljy"
 
   redis:
-    image: bitnami/redis:6.2.14
+    image: valkey/valkey:8.1-alpine
     hostname: redis_local
+    command:
+      - valkey-server
+      - --requirepass
+      - "R6YjCd49YUUaN6hC4tFH4Ljy"
+      - --appendonly
+      - "yes"
+      - --rename-command
+      - FLUSHDB
+      - ""
+      - --rename-command
+      - FLUSHALL
+      - ""
+      - --rename-command
+      - CONFIG
+      - ""
     volumes:
-      - redis_data:/opt/bitnami/redis/
+      - valkey_data:/data
     ports:
       - '127.0.0.1:6379:6379'
-
-    environment:
-      REDIS_DISABLE_COMMANDS: FLUSHDB,FLUSHALL,CONFIG
-      REDIS_PASSWORD: "R6YjCd49YUUaN6hC4tFH4Ljy"
     deploy:
       resources:
         limits:

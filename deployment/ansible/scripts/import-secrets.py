@@ -22,6 +22,7 @@ def generated_secrets():
     return {
         "vault_monolith_db_password": secrets.token_urlsafe(32),
         "vault_monolith_db_root_password": secrets.token_urlsafe(32),
+        "vault_monolith_db_exporter_password": secrets.token_urlsafe(32),
         "vault_monolith_redis_password": secrets.token_urlsafe(32),
         "vault_swarm_secrets": {
             "mariadb_encryption_key": f"1;{secrets.token_hex(32)}\n",

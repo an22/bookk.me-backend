@@ -35,4 +35,5 @@ dependencies {
     testFixturesImplementation(libs.koin.core)
     testFixturesImplementation(libs.koin.ktor)
     testFixturesImplementation(testFixtures(projects.core))
+    testImplementation(testFixtures(projects.core))
 }

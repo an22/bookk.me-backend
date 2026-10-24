@@ -42,3 +42,22 @@ scrape_configs:
       - names: ['tasks.monolith_monolith']
         type: A
         port: 80
+
+  - job_name: 'mariadb'
+    dns_sd_configs:
+      - names: ['tasks.monolith_database-exporter']
+        type: A
+        port: 9104
+
+  - job_name: 'valkey'
+    dns_sd_configs:
+      - names: ['tasks.monolith_redis-exporter']
+        type: A
+        port: 9121
+
+  - job_name: 'loki'
+    scrape_interval: 1m
+    dns_sd_configs:
+      - names: ['tasks.loki']
+        type: A
+        port: 3100

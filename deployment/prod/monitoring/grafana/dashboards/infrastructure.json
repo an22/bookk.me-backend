@@ -63,7 +63,9 @@
           },
           "expr": "(1 - avg by (instance) (rate(node_cpu_seconds_total{job=\"node-exporter\", mode=\"idle\"}[5m]))) * on(instance) group_left(nodename) node_uname_info{job=\"node-exporter\"}",
           "legendFormat": "{{nodename}}",
-          "range": true
+          "instant": true,
+          "range": false,
+          "format": "time_series"
         }
       ],
       "fieldConfig": {
@@ -101,6 +103,10 @@
         "valueMode": "color",
         "namePlacement": "left",
         "sizing": "auto",
+        "text": {
+          "titleSize": 14,
+          "valueSize": 20
+        },
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -134,7 +140,9 @@
           },
           "expr": "(1 - node_memory_MemAvailable_bytes{job=\"node-exporter\"} / node_memory_MemTotal_bytes{job=\"node-exporter\"}) * on(instance) group_left(nodename) node_uname_info{job=\"node-exporter\"}",
           "legendFormat": "{{nodename}}",
-          "range": true
+          "instant": true,
+          "range": false,
+          "format": "time_series"
         }
       ],
       "fieldConfig": {
@@ -172,6 +180,10 @@
         "valueMode": "color",
         "namePlacement": "left",
         "sizing": "auto",
+        "text": {
+          "titleSize": 14,
+          "valueSize": 20
+        },
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -205,7 +217,9 @@
           },
           "expr": "(1 - node_filesystem_avail_bytes{job=\"node-exporter\", fstype=~\"ext4|xfs|btrfs\"} / node_filesystem_size_bytes{job=\"node-exporter\", fstype=~\"ext4|xfs|btrfs\"}) * on(instance) group_left(nodename) node_uname_info{job=\"node-exporter\"}",
           "legendFormat": "{{nodename}} {{mountpoint}}",
-          "range": true
+          "instant": true,
+          "range": false,
+          "format": "time_series"
         }
       ],
       "fieldConfig": {
@@ -243,6 +257,10 @@
         "valueMode": "color",
         "namePlacement": "left",
         "sizing": "auto",
+        "text": {
+          "titleSize": 14,
+          "valueSize": 20
+        },
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -274,7 +292,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "(1 - avg by (instance) (rate(node_cpu_seconds_total{job=\"node-exporter\", mode=\"idle\"}[$__rate_interval]))) * on(instance) group_left(nodename) node_uname_info{job=\"node-exporter\"}",
+          "expr": "max by (nodename) ((1 - avg by (instance) (rate(node_cpu_seconds_total{job=\"node-exporter\", mode=\"idle\"}[$__rate_interval]))) * on(instance) group_left(nodename) node_uname_info{job=\"node-exporter\"})",
           "legendFormat": "{{nodename}}",
           "range": true
         }
@@ -337,7 +355,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "(node_memory_MemTotal_bytes{job=\"node-exporter\"} - node_memory_MemAvailable_bytes{job=\"node-exporter\"}) * on(instance) group_left(nodename) node_uname_info{job=\"node-exporter\"}",
+          "expr": "max by (nodename) ((node_memory_MemTotal_bytes{job=\"node-exporter\"} - node_memory_MemAvailable_bytes{job=\"node-exporter\"}) * on(instance) group_left(nodename) node_uname_info{job=\"node-exporter\"})",
           "legendFormat": "{{nodename}} used",
           "range": true
         },
@@ -347,7 +365,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "node_memory_MemTotal_bytes{job=\"node-exporter\"} * on(instance) group_left(nodename) node_uname_info{job=\"node-exporter\"}",
+          "expr": "max by (nodename) (node_memory_MemTotal_bytes{job=\"node-exporter\"} * on(instance) group_left(nodename) node_uname_info{job=\"node-exporter\"})",
           "legendFormat": "{{nodename}} total",
           "range": true
         }
@@ -424,7 +442,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum by (instance) (rate(node_network_receive_bytes_total{job=\"node-exporter\", device!~\"lo|veth.*|docker.*|br-.*|vx-.*|virbr.*|wg.*\"}[$__rate_interval])) * on(instance) group_left(nodename) node_uname_info{job=\"node-exporter\"}",
+          "expr": "max by (nodename) (sum by (instance) (rate(node_network_receive_bytes_total{job=\"node-exporter\", device!~\"lo|veth.*|docker.*|br-.*|vx-.*|virbr.*|wg.*\"}[$__rate_interval])) * on(instance) group_left(nodename) node_uname_info{job=\"node-exporter\"})",
           "legendFormat": "{{nodename}} in",
           "range": true
         },
@@ -434,7 +452,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum by (instance) (rate(node_network_transmit_bytes_total{job=\"node-exporter\", device!~\"lo|veth.*|docker.*|br-.*|vx-.*|virbr.*|wg.*\"}[$__rate_interval])) * on(instance) group_left(nodename) node_uname_info{job=\"node-exporter\"}",
+          "expr": "max by (nodename) (sum by (instance) (rate(node_network_transmit_bytes_total{job=\"node-exporter\", device!~\"lo|veth.*|docker.*|br-.*|vx-.*|virbr.*|wg.*\"}[$__rate_interval])) * on(instance) group_left(nodename) node_uname_info{job=\"node-exporter\"})",
           "legendFormat": "{{nodename}} out",
           "range": true
         }
@@ -495,7 +513,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "(node_filesystem_size_bytes{job=\"node-exporter\", fstype=~\"ext4|xfs|btrfs\"} - node_filesystem_avail_bytes{job=\"node-exporter\", fstype=~\"ext4|xfs|btrfs\"}) * on(instance) group_left(nodename) node_uname_info{job=\"node-exporter\"}",
+          "expr": "max by (nodename, mountpoint) ((node_filesystem_size_bytes{job=\"node-exporter\", fstype=~\"ext4|xfs|btrfs\"} - node_filesystem_avail_bytes{job=\"node-exporter\", fstype=~\"ext4|xfs|btrfs\"}) * on(instance) group_left(nodename) node_uname_info{job=\"node-exporter\"})",
           "legendFormat": "{{nodename}} {{mountpoint}} used",
           "range": true
         },
@@ -505,7 +523,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "node_filesystem_size_bytes{job=\"node-exporter\", fstype=~\"ext4|xfs|btrfs\"} * on(instance) group_left(nodename) node_uname_info{job=\"node-exporter\"}",
+          "expr": "max by (nodename, mountpoint) (node_filesystem_size_bytes{job=\"node-exporter\", fstype=~\"ext4|xfs|btrfs\"} * on(instance) group_left(nodename) node_uname_info{job=\"node-exporter\"})",
           "legendFormat": "{{nodename}} {{mountpoint}} size",
           "range": true
         }
@@ -583,7 +601,7 @@
     {
       "type": "table",
       "title": "Services",
-      "description": "Every swarm service. Memory is the sum over its containers; % of limit is its fullest container. Started in the last hour counts deploys and restarts: a number that keeps growing is a crash loop.",
+      "description": "Every swarm service. Memory is the sum over its containers; % of limit is its fullest container. Started in the last hour counts deploys and restarts. Crashed counts containers that started in the last 15 minutes and stopped again, what the ContainerRestarting alert fires on.",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -660,6 +678,18 @@
           "instant": true,
           "range": false,
           "format": "table"
+        },
+        {
+          "refId": "G",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (container_label_com_docker_swarm_service_name) (service:containers_stopped_after_start:15m) or count by (container_label_com_docker_swarm_service_name) (container_last_seen{container_label_com_docker_swarm_service_name!=\"\"}) * 0",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table"
         }
       ],
       "transformations": [
@@ -680,6 +710,7 @@
               "Value #D": "% of limit",
               "Value #E": "CPU (cores)",
               "Value #F": "Started in the last hour",
+              "Value #G": "Crashed (15 min)",
               "container_label_com_docker_swarm_service_name": "Service"
             }
           }
@@ -770,6 +801,52 @@
               {
                 "id": "decimals",
                 "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Crashed (15 min)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Crashed (15 min)"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "red",
+                      "value": 1
+                    }
+                  ]
+                }
               }
             ]
           },

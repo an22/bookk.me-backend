@@ -8,10 +8,7 @@
     </appender>
 
     <!-- Root -->
-    <root level="info">
-        <appender-ref ref="STDOUT"/>
-    </root>
-    <root level="debug">
+    <root level="${APPLICATION_LOG_LEVEL:-info}">
         <appender-ref ref="STDOUT"/>
     </root>
 

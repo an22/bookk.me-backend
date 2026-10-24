@@ -164,6 +164,18 @@
           "queryType": "range"
         }
       ],
+      "transformations": [
+        {
+          "id": "reduce",
+          "options": {
+            "mode": "seriesToRows",
+            "reducers": [
+              "sum"
+            ],
+            "includeTimeField": false
+          }
+        }
+      ],
       "fieldConfig": {
         "defaults": {
           "unit": "short",
@@ -178,7 +190,8 @@
           },
           "color": {
             "mode": "thresholds"
-          }
+          },
+          "min": 0
         },
         "overrides": []
       },
@@ -190,17 +203,15 @@
         "namePlacement": "left",
         "sizing": "auto",
         "reduceOptions": {
-          "calcs": [
-            "sum"
-          ],
-          "fields": "",
-          "values": false
+          "calcs": [],
+          "fields": "/^Total$/",
+          "values": true
         }
       },
       "id": 1,
       "gridPos": {
         "h": 6,
-        "w": 12,
+        "w": 9,
         "x": 0,
         "y": 0
       }
@@ -225,6 +236,18 @@
           "queryType": "range"
         }
       ],
+      "transformations": [
+        {
+          "id": "reduce",
+          "options": {
+            "mode": "seriesToRows",
+            "reducers": [
+              "sum"
+            ],
+            "includeTimeField": false
+          }
+        }
+      ],
       "fieldConfig": {
         "defaults": {
           "unit": "short",
@@ -239,7 +262,8 @@
           },
           "color": {
             "mode": "thresholds"
-          }
+          },
+          "min": 0
         },
         "overrides": []
       },
@@ -251,18 +275,85 @@
         "namePlacement": "left",
         "sizing": "auto",
         "reduceOptions": {
-          "calcs": [
-            "sum"
-          ],
-          "fields": "",
-          "values": false
+          "calcs": [],
+          "fields": "/^Total$/",
+          "values": true
         }
       },
       "id": 2,
       "gridPos": {
         "h": 6,
-        "w": 12,
-        "x": 12,
+        "w": 9,
+        "x": 9,
+        "y": 0
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Log storage, 14 days",
+      "description": "Compressed log data Loki would keep over its 14-day retention at the last day's rate. Loki deletes by age only; the LogStorageGrowing alert fires above 5GB.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(increase(loki_ingester_chunk_size_bytes_sum[1d])) * 14",
+          "legendFormat": "",
+          "range": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 3000000000.0
+              },
+              {
+                "color": "red",
+                "value": 5000000000.0
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "noValue": "no data yet"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value",
+        "justifyMode": "center",
+        "orientation": "auto"
+      },
+      "id": 3,
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 18,
         "y": 0
       }
     },
@@ -319,7 +410,7 @@
           "sort": "desc"
         }
       },
-      "id": 3,
+      "id": 4,
       "gridPos": {
         "h": 7,
         "w": 24,
@@ -357,7 +448,7 @@
         "dedupStrategy": "none",
         "sortOrder": "Descending"
       },
-      "id": 4,
+      "id": 5,
       "gridPos": {
         "h": 22,
         "w": 24,

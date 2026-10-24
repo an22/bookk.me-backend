@@ -15,6 +15,9 @@ secrets:
     external: true
   firebase_key:
     external: true
+  mariadb_exporter_init:
+    name: monolith-mariadb-exporter-init-v1
+    file: ./db/exporter-init.sql
 
 configs:
   mariadb_encryption_config:
@@ -49,6 +52,8 @@ x-templates:
 services:
   database:
     image: mariadb:11.8.3-ubi9
+    command:
+      - --init-file=/run/secrets/mariadb_exporter_init
     networks:
       operational:
         aliases:
@@ -61,6 +66,8 @@ services:
     secrets:
       - source: mariadb_encryption_key
         target: /etc/mysql/encryption/encryption.key
+        mode: 0444
+      - source: mariadb_exporter_init
         mode: 0444
     configs:
       - source: mariadb_encryption_config
@@ -140,6 +147,44 @@ services:
       resources:
         limits:
           memory: 768M
+
+  database-exporter:
+    image: prom/mysqld-exporter:v0.20.0
+    command:
+      - --mysqld.address=monolith.database:3306
+      - --mysqld.username=exporter
+      - --no-collect.slave_status
+    environment:
+      MYSQLD_EXPORTER_PASSWORD: ${MONOLITH_DB_EXPORTER_PASSWORD}
+    networks:
+      - operational
+    logging:
+      options:
+        max-size: 5m
+        max-file: 5
+    deploy:
+      <<: *replicated
+      resources:
+        limits:
+          memory: 64M
+
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.93.0
+    environment:
+      REDIS_ADDR: redis://monolith.redis:6379
+      REDIS_PASSWORD: ${APPLICATION_REDIS_PASSWORD}
+      REDIS_EXPORTER_CONFIG_COMMAND: "-"
+    networks:
+      - operational
+    logging:
+      options:
+        max-size: 5m
+        max-file: 5
+    deploy:
+      <<: *replicated
+      resources:
+        limits:
+          memory: 64M
 
   monolith:
     image: ${APPLICATION_SERVICE_IMAGE}:${APPLICATION_SERVICE_VERSION}
